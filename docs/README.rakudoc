@@ -1,0 +1,8 @@
+=begin rakudoc
+=TITLE RakuDoc renderer
+
+=SUBTITLE Renders RakuDoc sources into an output format dependent on templates
+
+In progress
+
+=end rakudoc
