@@ -3,8 +3,8 @@
 
 
 ## Table of Contents
-[Head](#head)  
-[Head](#head)  
+[Requirements](#requirements)  
+[Background](#background)  
 [Aims](#aims)  
 [Process flow](#process-flow)  
 [Template management](#template-management)  
@@ -22,10 +22,7 @@
 [Verify](#verify)  
 
 ----
-# head
-
-Requirements
-
+# Requirements
 *  Render RakuDoc v2 as specified
 
 *  Allow for customisation
@@ -44,10 +41,7 @@ Requirements
 
 *  Allow for multithreading as much as possible.
 
-# head
-
-Background
-
+# Background
 This renderer is based on the experience of writing `Raku::Pod::Render`, so the following is some background on RPR, which in turn was mostly based on Pod::To::BigPage.
 
 ## Aims
@@ -307,4 +301,4 @@ Throws an exception if any of the above are not true.
 
 
 ----
-Rendered from design at 2023-11-02T22:11:46Z
+Rendered from design at 2023-11-02T22:13:58Z

@@ -4,7 +4,7 @@
 =SUBTITLE Design document for a renderer will render a RakuDoc source that is compliant with RakuDoc version 2.
 It uses the RakuAST statement list as input. It is a text oriented renderer, not a code oriented renderer.
 
-=head Requirements
+=head1 Requirements
 
 =item Render RakuDoc v2 as specified
 =item Allow for customisation
@@ -16,7 +16,7 @@ It uses the RakuAST statement list as input. It is a text oriented renderer, not
 =item2 C<RakuDoc::To::HTML> instantiates the Renderer and supplies what is needed for the output.
 =item Allow for multithreading as much as possible.
 
-=head Background
+=head1 Background
 
 This renderer is based on the experience of writing C<Raku::Pod::Render>, so the following is some background on
 RPR, which in turn was mostly based on Pod::To::BigPage.
