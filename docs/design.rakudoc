@@ -194,7 +194,7 @@ restrictive and required more knowledge to write a plugin.
 
 =head1 New design
 
-The render method of an instance of the RakuAST-Render (RR) class
+The render method of an instance of the RakuDoc-Processor (RP) class
 transforms a RakuAST statement list (the methods input) into a ProcessedRakuDoc object (returned object).
 
 If the RR instance has not been modified, the Stringification of the ProcessedRakuDoc (RPD) object will be
@@ -270,5 +270,23 @@ Checks the following:
 =item All internal links are satisfied by an element in the targets structure
 
 Throws an exception if any of the above are not true.
+
+=head2 Templates
+
+A template has the form C< key => ^%prm { ... }
+
+Inside a template block C<%prm> holds the parameters for the template.
+
+=begin code
+    <tag-name>%prm<contents></tag-name>
+    <new> %tml<another-template> </new>
+    <prev> %tml<prior> </prev>
+
+    <tag-name>Ƥ(contents)</tag-name>
+    <new> Ƭ(another-template) </new>
+    <prev> Ƭ() </prev>
+    <escaped> Ǝ(contents) </escaped>
+
+=end code
 
 =end rakudoc

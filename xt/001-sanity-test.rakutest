@@ -1,0 +1,6 @@
+use v6.d;
+use Test;
+plan 1;
+use-ok 'RakuDoc::Templates', 'sanity test';
+
+done-testing;

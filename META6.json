@@ -1,0 +1,31 @@
+{
+  "name": "Rakuast::RakuDoc::Render",
+  "description": "Renders RakuDoc v2 to text, HTML, Markdown",
+  "version": "0.1.0",
+  "perl": "6.e",
+  "authors": [
+    "Richard Hainsworth"
+  ],
+  "auth": "zef:finanalyst",
+  "depends": [],
+  "test-depends": [
+    "Test"
+  ],
+  "provides": {
+    "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
+    "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
+    "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",
+    "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
+    "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
+  },
+  "resources": [],
+  "support": {
+    "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",
+    "email": "richard@hainsworth.wales",
+    "source": "https://github.com/finanalyst/rakuast-rakudoc-render.git"
+  },
+  "license": "Artistic-2.0",
+  "source-url": "git://github.com/finanalyst/rakuast-rakudoc-render.git",
+  "bin": [],
+  "source-type": "git"
+}

@@ -1,0 +1,53 @@
+use v6.d;
+use Test;
+use RakuDoc::Templates;
+
+plan *;
+# All the templates here return Str, so no need to worry about premature stringification.
+
+my %globals is Template-directory = %(
+    aaa => -> %prm, $tmpl {
+        'orig: ' ~ %prm<contents>;
+    },
+    bbb => -> %prm, $tmpl { '<bb-aaa-tab>' ~ $tmpl('aaa') ~ '</end-tab>' },
+    ccc => -> %prm, $tmpl { '<cc-aaa-tab>' ~ $tmpl('aaa', %(:contents('never'),)) ~ '</end-tab>' },
+    ddd => -> %prm, $tmpl { 'stuff ' ~ $tmpl('head') ~ ' more' },
+    eee => -> %prm, $tmpl { 'try something ' ~ $tmpl.prev ~ 'new' },
+    fff => -> %prm, $tmpl { '<bb-aaa-tab>' ~ $tmpl<aaa> ~ '</end-tab>' },
+    ggg => -> %prm, $tmpl { '<start>' ~ %prm<contents> ~ '<end>' }
+);
+is %globals<aaa>(%(:contents<hi there>)), 'orig: hi there', 'simple interpolation';
+is %globals<bbb>(%(:contents<bold statement>,)), '<bb-aaa-tab>orig: bold statement</end-tab>',
+        'call another template with same params';
+is %globals<fff>(%(:contents<bold statement>,)), '<bb-aaa-tab>orig: bold statement</end-tab>', 'calls another template with <> with same parameters';
+is %globals<ccc>(%()), '<cc-aaa-tab>orig: never</end-tab>', 'calls another template with different 0 parameters';
+%globals<aaa> = -> %prm, $tmpl {
+    qq:to/TMP/;
+        <layer 1> { $tmpl.prev } </layer 1>
+        TMP
+
+};
+is %globals<aaa>(%(:contents<now there>)), q:to/TST/, 'calls a previous template';
+<layer 1> orig: now there </layer 1>
+TST
+%globals<aaa> = -> %prm, $tmpl {
+    qq:to/TMP/;
+        <layer 2> { $tmpl.prev } </layer 2>
+        TMP
+
+};
+is %globals<aaa>(%(:contents<let this be now>)), q:to/TST/, 'calls a previous, previous template';
+<layer 2> <layer 1> orig: let this be now </layer 1>
+ </layer 2>
+TST
+
+throws-like { %globals<head>(%(:contents<hi there>)) }, X::Unexpected-Template,
+        message => / 'Template ｢head｣ is not known' /, 'try to call unregistered template';
+throws-like { %globals<ddd>(%(:contents<hi there>)) }, X::Unexpected-Template,
+        message => / 'Template ｢head｣ is not known' /, 'try to call unregistered template inside another templ';
+
+is %globals<eee>( %() ), 'try something new', 'calls .prev for end of a stack';
+
+%globals<ggg> = -> %prm, $tmpl { %prm<contents> = 'Chapter ' ~ %prm<contents> ; $tmpl.prev( %prm ) }
+is %globals<ggg>(%(:contents<Some stuff>)), '<start>Chapter Some stuff<end>', 'pre processing for a prev template';
+done-testing;
