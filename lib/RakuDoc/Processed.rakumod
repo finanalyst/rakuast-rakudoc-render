@@ -105,7 +105,7 @@ class RakuDoc::Processed {
 
 #| Add one processed object to another, push toc, concat body, merge other structures
 multi sub infix:<+>( RakuDoc::Processed $p, RakuDoc::Processed $q ) is export {
-    $p.body ~ $q.body;
+    sink $p.body ~ $q.body;
     $p.toc.push: $q.toc;
     $p.index ,= $q.index;
     # TODO this is probably wrong as same name keys will be over-written

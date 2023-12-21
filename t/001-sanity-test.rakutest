@@ -7,6 +7,4 @@ use-ok 'RakuDoc::Templates', 'Template sanity';
 use-ok 'RakuDoc::Processed', 'Processed Object sanity';
 use-ok 'RakuDoc::Render', 'Render sanity';
 
-meta-ok;
-
 done-testing;

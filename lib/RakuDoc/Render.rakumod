@@ -7,9 +7,9 @@ class RakuDoc::Processor {
     has %.templates is Template-directory;
     has Supplier::Preserving $.delayed .= new();
     has RakuDoc::Processed $.running;
-    has $.output-format = 'text';
+    has $.output-format;
 
-    submethod BUILD( :output-format ) {
+    submethod BUILD( :$output-format = 'text') {
         %!templates = text-temps;
     }
 
@@ -49,7 +49,9 @@ class RakuDoc::Processor {
         }
         $*rpo= [+] await $ast.paragraphs.map( start self.handle( $_ ) );
     }
-    multi method handle( RakuAST::Doc::DeclaratorTarget:D $ast ) { #ignore declarator blocks }
+    multi method handle( RakuAST::Doc::DeclaratorTarget:D $ast ) {
+        #ignore declarator blocks
+    }
     multi method handle( RakuAST::Doc::Markup:D $ast           ) { 
         $*blocks{ 'MARKUP / ' ~ $ast.letter }++ 
     }
@@ -59,9 +61,6 @@ class RakuDoc::Processor {
     }
     multi method handle( RakuAST::Doc::Row:D $ast              ) {
         self.handle(  'ROW' )
-    }
-    multi method handle( RakuAST::Doc::Config:D $ast           ) { 
-        $*blocks{ 'ROW' }++ 
     }
     multi method handle( Cool:D $ast                           ) {
         self.handle(  $ast.WHICH.Str )
