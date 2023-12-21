@@ -1,0 +1,11 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan *;
+
+my RakuDoc::Processor $rrp .= new;
+
+say $rrp.templates.gist;
+
+done-testing;

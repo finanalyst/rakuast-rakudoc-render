@@ -7,11 +7,15 @@
     "Richard Hainsworth"
   ],
   "auth": "zef:finanalyst",
-  "depends": [],
+  "depends": [
+    "PrettyDump"
+  ],
   "test-depends": [
-    "Test"
+    "Test",
+    "Test::META"
   ],
   "provides": {
+    "RakuDoc::Plugin": "lib/RakuDoc/Plugin.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
     "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",

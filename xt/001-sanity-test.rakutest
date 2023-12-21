@@ -1,6 +1,12 @@
 use v6.d;
 use Test;
-plan 1;
-use-ok 'RakuDoc::Templates', 'sanity test';
+use Test::META;
+
+plan 3;
+use-ok 'RakuDoc::Templates', 'Template sanity';
+use-ok 'RakuDoc::Processed', 'Processed Object sanity';
+use-ok 'RakuDoc::Render', 'Render sanity';
+
+meta-ok;
 
 done-testing;

@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Templates;
 
-plan *;
+plan 10;
 # All the templates here return Str, so no need to worry about premature stringification.
 
 my %globals is Template-directory = %(

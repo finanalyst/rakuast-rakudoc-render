@@ -162,6 +162,10 @@ because RPR only has plugins for the rendering stage. C<Collection> has plugins 
 
 =item Several RakuDoc v1 functions, eg. I<Alias>, were not implemented.
 
+=item The algorithm for naming targets from C<X<>>, C<L<>, Headings, needs to be more flexible. The Raku
+Documentation suite has an idiosyncratic naming system. Hard-coding it into the Renderer is not good.
+In principle, the rewrite-target method could be over-ridden, but there is not enough context given to it.
+
 =head2 Lessons
 
 =item RPR extensively uses plugins (more later), even though they were not a part of the initial design. Plugins
@@ -214,6 +218,15 @@ To produce a rendering in an output (eg. HTML), the calling software will
 information provided in template files)
 
 =head2 RakuAST-Render (RR) class
+
+A RakuDoc::Processor object is created by a RakuDoc::Rendering module.
+
+The processor has an output format, defaulting to text. When templates are attached
+to the processor, they must match the output format.
+
+The module that creates and uses a processor object is responsible for obtaining the
+RakuAST statements, eg. from a source file, and for writing the processed object
+to an output file.
 
 =head3 render( RakuAST::Block @list, :%meta --> ProcessedRakuDoc )
 

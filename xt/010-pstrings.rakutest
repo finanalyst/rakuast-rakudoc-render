@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Templates;
 
-plan *;
+plan 13;
 
 my PStr $s .= new;
 my $p = Supplier::Preserving.new;

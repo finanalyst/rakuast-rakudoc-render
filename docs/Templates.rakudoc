@@ -4,16 +4,25 @@
 
 =head1 Overview
 
-RakuDoc-Render (RR) uses plugins and templates to customise blocks.
+RakuDoc-Render (RR) uses I<plugins> to customise blocks. A plugin will
+add custom data and templates to an instance of an RR B<processor>.
 
-The templates are added to an instance of the Template-directory class. This should be
-transparent to a user and works like a Hash with some automagical behaviour.
-An I<RR> processor instance will add templates to the Template-directory.
+The templates are added to an instance of the B<Template-directory> class held
+within the I<processor>.
 
-When a template is added to Template-directory with the name of an existing
-template, the old value is pushed onto a stack, and can be accessed.
+The custom data is also added to the I<processor>'s B<Template-directory> object.
 
-The templates are specified as a list of Pairs of the form
+Within a template, all the registered templates and custom data of the I<processor>
+can be accessed.
+
+When a template is added to a I<Template-directory> and the template name
+already exists, the old value is pushed onto a stack, and can be accessed.
+
+=head1 Templates
+
+A I<Template-directory> object is an extended Hash structure.
+
+Templates are specified as a list of Pairs of the form
 =begin code
     # psuedocode
     <key> => -> <Hash>, <Template object> <Block>
@@ -28,16 +37,38 @@ where
 =item C<$tmpl> is a I<Template> object, see below, and conventionally is called C<$tmpl>.
 =item The contents of the block is a normal Raku program and should return a Str or PStr (see below).
 =item2 The block shown above is the I<pointy> form, so the object returned is the value of the last statement
-=begin item2 If the Raku program in the block is more easily written using a C<return> statement, then
+=item2 If the Raku program in the block is more easily written using a C<return> statement, then
 a C<sub> form should be used, eg.
 
     key => sub ( %prm, $tmpl ) { ... }
-=end item2
+
+=head1 Custom data
+
+A I<Template-directory> object also has a C< %.data > structure, which is intended for use by plugins
+that need to make extra data available for templates.
+
+For example, suppose a custom block is written to include data about all the documents in a website,
+and the information is collected into a structure called C<%files>, which is to be available to
+the template C<listfiles>, then we could have
+=begin code
+    my %temp-dir is Target-directory = listfile => -> %prm, $tmpl {
+        my %file-data = $tmpl.globals.data<listfiles>
+        # code to create the output string using the data
+    }
+
+    # somewhere later
+    %temp-dir.data<listfiles> = %files;
+    # use the template
+    my $rv = %temp-dir<listfile>;
+=end code
+
+The C<%temp-dir> object, which is an instance of the I<Template-directory> class,
+provides access to the data through the C<.globals> attribute of the I<Template> object.
 
 =head1 Template object
 
 The Template object contains a reference to the Template-directory object, so all the templates registered
-with the RakuDoc processor can be accessed.
+with the RakuDoc processor, and all the data attached to it, can be accessed.
 
 Inside the Raku block of a new template, the following methods can be used on the C<$tmpl> object.
 
