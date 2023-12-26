@@ -2,22 +2,28 @@ use v6.d;
 use Test;
 use RakuDoc::Templates;
 
-plan 13;
+plan 16;
 
 my PStr $s .= new;
-my $p = Supplier::Preserving.new;
-lives-ok { $s ~= PCell.new(:s($p.Supply), :id<AAA>) }, 'right concatenation of PCell lives';
+my $com-channel = Supplier::Preserving.new;
+lives-ok { $s ~= PCell.new(:$com-channel, :id<AAA>) }, 'right concatenation of PCell lives';
 is $s.Str, '｢AAA UNAVAILABLE｣', 'PCell stringifies with UNAVAILABLE';
 lives-ok { $s ~= "Some stuff " }, 'right concatenation of Str lives';
-$s ~= PCell.new(:s($p.Supply), :id<BBB>);
+$s ~= PCell.new(:$com-channel, :id<BBB>);
 is $s.Str, '｢AAA UNAVAILABLE｣Some stuff ｢BBB UNAVAILABLE｣', 'still UNAVAILABLE';
 my $payload = 'second value first';
-$p.emit(%(:$payload, :id<BBB>));
+$com-channel.emit(%(:$payload, :id<BBB>));
 like $s.Str, / 'AAA' .+ $payload /, 'AAA is still unavailable, payload now in stringification';
 lives-ok { sink '<start tab>' ~ $s }, 'left concatenation works';
 like $s.Str, / 'start tab' .+ 'AAA' .+ $payload /, 'string added to start';
+like $s.debug, /
+    'PCell'
+    .+ 'Waiting for: AAA'
+    .+ 'Expanded to:'
+    /, 'debug method works';
 $payload = 'first value now';
-$p.emit(%(:$payload, :id<AAA>));
+$com-channel.emit(%(:$payload, :id<AAA>));
+unlike $s.debug, / 'PCell, Waiting' /, 'debug shows no waiting';
 unlike $s.Str, / AAA /, 'AAA UNKNOWN removed';
 like $s.Str, / $payload /, 'replaced  by payload';
 sink '<begin>' ~ $s ~ '<end>';
@@ -25,5 +31,9 @@ like $s.Str, /  '<begin>' .+ '<end>' $ /, 'multiple concatenations';
 is $s.lead, '<begin><start tab>', 'lead returns initial string elements';
 like $s.Str, / ^ $payload /, 'lead removes the initial strings';
 is $s.tail, '<end>', 'tail returns last string elements';
+
+$s .= new;
+$s ~= 'start' ~ PCell.new(:$com-channel, :id('AAA'));
+like $s.Str, / 'start' .+ 'AAA'/, 'concatenation with starting Str';
 
 done-testing;

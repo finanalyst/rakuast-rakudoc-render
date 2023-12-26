@@ -1,0 +1,78 @@
+use v6.d;
+use Test;
+use RakuDoc::Processed;
+use RakuDoc::Templates;
+use Test::Deeply::Relaxed;
+
+use PrettyDump;
+my $com-channel = Supplier::Preserving.new;
+
+plan 10;
+
+my RakuDoc::Processed $rp .= new(:source-data(%(:name('test prs'), :extra<extra>)));
+is $rp.source-data<name>, 'test prs', 'source data ammended';
+is $rp.source-data<extra>, 'extra', 'source data has extra';
+
+my ProcessedState $ps .= new;
+my ProcessedState $pt .= new;
+my ProcessedState $pu .= new;
+$ps.body ~= 'start' ~ PCell.new(:$com-channel, :id('AAA')) ~ PCell.new(:$com-channel, :id('BBB'));
+my $payload = '｢some stuff｣';
+$com-channel.emit(%(:$payload, :id<AAA>));
+like $ps.body.Str, /
+    'start'
+    .* { $payload }
+    'BBB'
+    /, 'ProcessState body handles PStr';
+$pt.body ~= 'end';
+lives-ok { $pu += [+] $ps, $pt }, 'ProcessedState objects can be added';
+like $pu.body.Str, /
+    'start'
+    .* { $payload }
+    .+ 'BBB'
+    .+ 'end'
+    /, 'ProcessedState object body added as expected';
+$payload = '｢more things｣';
+$com-channel.emit(%(:$payload, :id<BBB>));
+
+like $pu.body.Str, /
+    { $payload }
+/, 'body PStr BBB expanded after addition';
+
+# renew ps
+$ps .= new;
+$ps.body ~= 'start' ~ PCell.new(:$com-channel, :id('XXX')) ~ PCell.new(:$com-channel, :id('YYY'));
+
+$ps.toc.append: %(<one two three> Z=> 1 ..*), %(<four five> Z=> 'a' ..*), ;
+$pt.toc.append: %(<tone ttwo tthree> Z=> 1 ..*), %(<tfour tfive> Z=> 'a' ..*), ;
+$pu += [+] $ps, $pt;
+subtest {
+    my @toc = $pu.toc;
+    is @toc.elems, 4, 'elems OK';
+    is-deeply @toc[0].keys.sort, <one three two>, 'first elem as expected';
+    is-deeply @toc[3].keys.sort, <tfive tfour>, 'fourth elem as expected';
+}, 'ProcessedState object toc added as expected';
+
+$ps.index = %( syntax => ['one',], kind => ['two',]);
+$pt.index = %( syntax => ['tone',], xxx => ['yyy',]);
+$pu += [+] $ps, $pt;
+my %expected-ind = %(
+    syntax => ['one', 'tone'],
+    kind => ['two'],
+    xxx => ['yyy'],
+);
+is-deeply-relaxed $pu.index, %expected-ind, 'ProcessedState object index added as expected';
+
+$ps.semantics = %( syntax => ['one',], kind => ['two',]);
+$pt.semantics = %( syntax => ['tone',], xxx => ['yyy',]);
+$pu += [+] $ps, $pt;
+is-deeply-relaxed $pu.semantics, %expected-ind, 'ProcessedState object semantics added as expected';
+
+$payload = '｢more things｣';
+$com-channel.emit(%(:$payload, :id<XXX>));
+
+like $pu.body.Str, /
+    [ { $payload } .+? ] ** 3
+/, 'body PStr XXX expanded after addition with three occurrences';
+
+done-testing;
