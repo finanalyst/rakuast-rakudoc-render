@@ -84,10 +84,17 @@ class PCell {
         "\x3018 PCell, "
                 ~ ($!text.defined ?? "Expanded to: $!text \x3019" !! "Waiting for: $.id \x3019")
     }
+    method is-expanded( --> Bool ) {
+        $.Str; # trigger tap
+        $!text.defined
+    }
 }
 
 class PStr {
-    has @.string;
+    has @.string = ('', );
+    multi method new( *@string ) {
+        self.bless(:@string)
+    }
     method Str {
         @!string>>.Str.join
     }
@@ -103,26 +110,45 @@ class PStr {
         self
     }
     multi method post(Str(Any) $s) {
-        @!string.push($s);
+        @!string.append($s);
         self
     }
     multi method post(PCell $s) {
-        @!string.push($s);
+        @!string.append($s);
         self
     }
     multi method merge(PStr $s) {
-        @!string.push($s.string);
+        @!string.append($s.string);
         self
     }
-    method lead() {
-        my Str $rv;
-        while @!string[0] ~~ Str { $rv ~= @!string.shift }
-        $rv
+    #| Strips PStr and returns first Str or '' if 1st is PCell
+    method lead( --> Str ) {
+        $.strip;
+        @!string[0] ~~ Str ?? @!string[0] !! ''
     }
-    method tail() {
-        my Str $rv;
-        while @!string[*- 1] ~~ Str { $rv ~= @!string.pop }
-        $rv
+    #| Strips PStr and returns last Str or '' if 1st is PCell
+    method tail( --> Str ) {
+        $.strip;
+        @!string[*-1] ~~ Str ?? @!string[*-1] !! ''
+    }
+    #| replace any PCells that have been expanded with a plain Str
+    #| concatenate any adjacent Str elements
+    method strip() {
+        my @new;
+        for @!string -> $elem is copy {
+            $elem = $elem.Str if $elem ~~ PCell and $elem.is-expanded;
+            if ($elem ~~ Str) and +@new and (@new[*-1] ~~ Str) {
+                @new[*-1] ~= $elem
+            }
+            else { @new.append: $elem }
+        }
+        @!string = @new if +@new
+    }
+    #| return whether there are PCells in the string
+    method has-PCells( --> Bool ) {
+        my Bool $has = False;
+        $has ||= ($_ ~~ PCell).so for @!string;
+        $has
     }
 }
 

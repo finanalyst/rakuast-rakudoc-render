@@ -1,12 +1,27 @@
 use v6.d;
 use Test;
-use RakuDoc::Templates;
+
 use RakuDoc::Render;
 
 plan *;
 
-my RakuDoc::Processor $rrp .= new;
+my $ast;
+my RakuDoc::Processor $rdp .= new;
 
-say $rrp.templates.gist;
+is $rdp.output-format, 'text', 'defaults to Text';
+$ast = Q:to/QAST/.AST;
+    =head Test text
+    QAST
+my $rv = $rdp.render( $ast );
 
+isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
+say $rv;
+#$ast = Q:to/QAST/.AST;
+#    =begin rakudoc :kind<sub> :subkind<operator> :category<Language>
+#    =head This is a header
+#
+#    Some text in a paragraph
+#    =end rakudoc
+#    QAST
+#say $ast;
 done-testing;

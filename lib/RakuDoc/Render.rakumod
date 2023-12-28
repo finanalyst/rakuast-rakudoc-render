@@ -14,40 +14,50 @@ class RakuDoc::Processor {
     }
 
     method render($ast , :%source-data --> RakuDoc::Processed) {
-        $!current .= new(%source-data);
+        $!current .= new(:%source-data);
         #| create the config hash
-        my %*config;
-        $!current += [+] await $ast.rakudoc.map({ start self.handle($_) });
+        my %*scoped-data;
+        my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
+        $!current += $_ for @prs;
         # statements now created
-        say $.current.gist;
+        $.current;
     }
 
+    #| handle methods create a local version of $*prs, which is returned
     proto method handle(|c --> ProcessedState) {
         my ProcessedState $*prs .= new;
         {*}
-        $*prs
     }
     multi method handle(Str:D $ast) {
-        $*prs.body ~ $ast
+        $*prs.body ~= $ast.trim;
+        $*prs
     }
     multi method handle(RakuAST::Node:D $ast) {
-        $*prs = [+] await $ast.rakudoc.map({ start self.handle($_) });
+        my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
+        $*prs += $_ for @prs;
+        $*prs
     }
     multi method handle(RakuAST::Doc::Block:D $ast) {
+        # When a built in block, other than =item, is started,
+        # there may be a list of items or defns, which need to be
+        # completed and rendered
+        $*prs.body ~= $.gen-item-list() unless $ast.type and $ast.type eq 'item';
+        $*prs.body ~= $.gen-defn-list() unless $ast.type and $ast.type eq 'defn';
         given $ast.type {
-            when 'alias' { '' }
-            when 'code' { '' }
+            when 'alias' { $.gen-alias( $ast ) }
+            when 'code' { $.gen-code( $ast ) }
             when 'comment' { '' }
             when 'config' { '' }
-            when 'head' { '' }
-            when 'implicit-code' { '' }
-            when 'item' { '' }
-            when 'pod' { '' }
-            when 'rakudoc' { '' }
-            when 'table' { '' }
-            default { '' }
+            when 'head' { $.gen-head( $ast ) }
+            when 'implicit-code' { $.gen-code( $ast ) }
+            when 'item' { $.gen-item( $ast ) }
+            when 'rakudoc' | 'pod' { $.gen-rakudoc( $ast ) }
+#            when 'rakudoc' { '' }
+            when 'section' { $.section( $ast ) }
+            when 'table' { $.gen-table( $ast ) }
+            default { $.gen-unknown( $ast ) }
         }
-        $*prs = [+] await $ast.paragraphs.map({ start self.handle($_) });
+        $*prs
     }
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
         #ignore declarator blocks
@@ -57,7 +67,9 @@ class RakuDoc::Processor {
     }
     multi method handle(RakuAST::Doc::Paragraph:D $ast) {
         $*blocks{'PARAGRAPH'}++;
-        $*prs = [+] await $ast.atoms.map({ start self.handle($_) });
+        my ProcessedState @prs = $ast.atoms.map({ $.handle($_) });
+        $*prs += $_ for @prs;
+        $*prs
     }
     multi method handle(RakuAST::Doc::Row:D $ast) {
         self.handle('ROW')
@@ -65,7 +77,89 @@ class RakuDoc::Processor {
     multi method handle(Cool:D $ast) {
         self.handle($ast.WHICH.Str)
     }
+    # gen-XX methods take an $ast and adds a string to $*prs.body
+    # based on a template
+    method gen-alias( $ast ) {
+        ''
+    }
+    method gen-code( $ast ) {
+        ''
+    }
+    method gen-head( $ast ) {
 
+        my $level = $ast.level > 1 ?? $ast.level !! 1;
+        my $target = name-id( $ast );
+        my @rejects;
+        until $.is-target-unique( $target ) {
+            @rejects.push( $target );
+            $target = name-id( $ast, :@rejects )
+        }
+        $.register-target( $target );
+        my $contents = $.contents($ast);
+        $*prs.body ~= %!templates<head>(
+            %( :$level, :$target, :$contents )
+        )
+    }
+    method gen-item( $ast ) {
+        ''
+    }
+    method gen-rakudoc( $ast ) {
+        ''
+    }
+    method gen-section( $ast ) {
+        ''
+    }
+    method gen-table( $ast ) {
+        ''
+    }
+    method gen-unknown( $ast ) {
+        ''
+    }
+    method gen-item-list() {
+        ''
+    }
+    method gen-defn-list() { '' }
+    method is-target-unique( $targ --> Bool ) {
+        ! $!current.targets{ $targ }
+    }
+    method register-target( $targ ) {
+        $!current.targets{ $targ }++
+    }
+    #| The 'contents' method assumes
+    #|   $*prs is defined and that $ast.paragraphs is sequence.
+    #|   These are true inside a handle for a RakuDoc::Block
+    method contents($ast) {
+        my ProcessedState @prs = $ast.paragraphs.map({ $.handle($_) });
+        # if the Block has embedded RakuDoc, then there may be links
+        # and index markup, which need to be added to the main $*prs
+        # but the content text as Pstr should not be added to the $*prs
+        # until it has been rendered in the template
+        my ProcessedState $rv  .= new;
+        $rv += $_ for @prs;
+        my PStr $text = $rv.body;
+        $rv.body .= new;
+        $*prs += $rv;
+        $text
+    }
+}
+
+
+#| Strip out formatting code and links from a Title or Link
+multi sub recurse-until-str(Str:D $s) is export { $s }
+multi sub recurse-until-str(RakuAST::Doc::Block $n) is export {
+    $n.paragraphs>>.&recurse-until-str().join
+}
+#| name-id takes an ast and an optional array of rejects
+#| returns a Str to be used as an internal target
+#| renderers should sub-class name-id
+sub name-id( $ast, :@rejects  --> Str ) {
+    my $target = recurse-until-str($ast).join.trim;
+    if +@rejects {
+        # if plain target is rejected, then start adding a suffix
+        $target ~= '_0';
+        $target += 1 while $target ~~ any( @rejects )
+    }
+    $target
 }
 sub text-temps {
     %(

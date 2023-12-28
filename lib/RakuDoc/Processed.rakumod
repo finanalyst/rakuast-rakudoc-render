@@ -41,7 +41,7 @@ class ProcessedState {
     #| Hash of SEMANTIC => [ PStr | Str ]
     has Array %.semantics;
 
-    multi method gist(ProcessedState:U: ) { 'Undefined PodFile' }
+    multi method gist(ProcessedState:U: ) { 'Undefined ProcessedState object' }
 
     multi method gist(ProcessedState:D: Int :$output = 175 ) {
         qq:to/GIST/;
@@ -88,10 +88,11 @@ class RakuDoc::Processed is ProcessedState {
     has SetHash $.targets;
 
     submethod BUILD( :%source-data ) {
-        %!source-data ,= %source-data
+        %!source-data ,= %source-data;
+        $!targets .= new;
     }
     
-    multi method gist(RakuDoc::Processed:U: ) { 'Undefined PodFile' }
+    multi method gist(RakuDoc::Processed:U: ) { 'Undefined RakuDoc::Processed object' }
     
     multi method gist(RakuDoc::Processed:D: Int :$output = 175 ) {
         qq:to/GIST/;

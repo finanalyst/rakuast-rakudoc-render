@@ -2,16 +2,30 @@ use v6.d;
 use Test;
 use RakuDoc::Templates;
 
-plan 16;
-
-my PStr $s .= new;
 my $com-channel = Supplier::Preserving.new;
+my $payload;
+
+plan 29;
+
+#tests of PCell
+my PCell $pc .= new(:$com-channel, :id<FFF>);
+nok $pc.is-expanded, 'PCell not expanded yet';
+is $pc.Str, '｢FFF UNAVAILABLE｣', 'stringifies with an unavailable message';
+like $pc.debug, / 'Waiting for: FFF' /,'debug string with id';
+$payload = 'some stuff';
+$com-channel.emit(%(:$payload, :id<FFF>));
+like $pc.debug, / 'Expanded to:' /,'Expanding changes debug str';
+is $pc.Str, 'some stuff', 'stringifies with payload';
+ok $pc.is-expanded, 'PCell now expanded';
+
+# tests of PStr
+my PStr $s .= new;
 lives-ok { $s ~= PCell.new(:$com-channel, :id<AAA>) }, 'right concatenation of PCell lives';
 is $s.Str, '｢AAA UNAVAILABLE｣', 'PCell stringifies with UNAVAILABLE';
 lives-ok { $s ~= "Some stuff " }, 'right concatenation of Str lives';
 $s ~= PCell.new(:$com-channel, :id<BBB>);
 is $s.Str, '｢AAA UNAVAILABLE｣Some stuff ｢BBB UNAVAILABLE｣', 'still UNAVAILABLE';
-my $payload = 'second value first';
+$payload = 'second value first';
 $com-channel.emit(%(:$payload, :id<BBB>));
 like $s.Str, / 'AAA' .+ $payload /, 'AAA is still unavailable, payload now in stringification';
 lives-ok { sink '<start tab>' ~ $s }, 'left concatenation works';
@@ -28,12 +42,23 @@ unlike $s.Str, / AAA /, 'AAA UNKNOWN removed';
 like $s.Str, / $payload /, 'replaced  by payload';
 sink '<begin>' ~ $s ~ '<end>';
 like $s.Str, /  '<begin>' .+ '<end>' $ /, 'multiple concatenations';
-is $s.lead, '<begin><start tab>', 'lead returns initial string elements';
-like $s.Str, / ^ $payload /, 'lead removes the initial strings';
-is $s.tail, '<end>', 'tail returns last string elements';
+ok $s.has-PCells, 'finds PCells in string';
+lives-ok { $s.strip }, 'method strip runs ok';
+nok $s.has-PCells, 'strip removes all expanded PCells';
+my $rv = $s.Str;
+is $rv, '<begin><start tab>first value nowSome stuff second value first<end>', '$s now just a string';
+is $s.lead, $rv, 'lead same as whole string';
+is $s.tail, $rv, 'tail same as whole string';
 
 $s .= new;
 $s ~= 'start' ~ PCell.new(:$com-channel, :id('AAA'));
 like $s.Str, / 'start' .+ 'AAA'/, 'concatenation with starting Str';
+sink 'more at front ' ~ $s;
+is $s.lead, 'more at front start', 'concatenated front strings';
+$s ~= ' with stuff at end' ~ ' <end>';
+is $s.tail, ' with stuff at end <end>', 'concatenated final strings';
 
+lives-ok { $s .= new: 'one ', PCell.new(:$com-channel, :id('AAA')), ' two'},
+        'creates a new Pstr from a list';
+like $s.Str, / 'one' .+ 'AAA' .+ 'two' /, 'expected PStr';
 done-testing;
