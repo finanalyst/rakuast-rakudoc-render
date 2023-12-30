@@ -103,22 +103,27 @@ class PStr {
     }
     multi method pre(Str(Any) $s) {
         @!string.unshift($s);
+        $.strip;
         self
     }
     multi method pre(PCell $s) {
         @!string.unshift($s);
+        $.strip;
         self
     }
     multi method post(Str(Any) $s) {
         @!string.append($s);
+        $.strip;
         self
     }
     multi method post(PCell $s) {
         @!string.append($s);
+        $.strip;
         self
     }
     multi method merge(PStr $s) {
         @!string.append($s.string);
+        $.strip;
         self
     }
     #| Strips PStr and returns first Str or '' if 1st is PCell

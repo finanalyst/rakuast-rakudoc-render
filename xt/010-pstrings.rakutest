@@ -5,7 +5,7 @@ use RakuDoc::Templates;
 my $com-channel = Supplier::Preserving.new;
 my $payload;
 
-plan 29;
+plan 28;
 
 #tests of PCell
 my PCell $pc .= new(:$com-channel, :id<FFF>);
@@ -22,6 +22,7 @@ ok $pc.is-expanded, 'PCell now expanded';
 my PStr $s .= new;
 lives-ok { $s ~= PCell.new(:$com-channel, :id<AAA>) }, 'right concatenation of PCell lives';
 is $s.Str, '｢AAA UNAVAILABLE｣', 'PCell stringifies with UNAVAILABLE';
+ok $s.has-PCells, 'finds PCells in string';
 lives-ok { $s ~= "Some stuff " }, 'right concatenation of Str lives';
 $s ~= PCell.new(:$com-channel, :id<BBB>);
 is $s.Str, '｢AAA UNAVAILABLE｣Some stuff ｢BBB UNAVAILABLE｣', 'still UNAVAILABLE';
@@ -33,7 +34,6 @@ like $s.Str, / 'start tab' .+ 'AAA' .+ $payload /, 'string added to start';
 like $s.debug, /
     'PCell'
     .+ 'Waiting for: AAA'
-    .+ 'Expanded to:'
     /, 'debug method works';
 $payload = 'first value now';
 $com-channel.emit(%(:$payload, :id<AAA>));
@@ -42,8 +42,6 @@ unlike $s.Str, / AAA /, 'AAA UNKNOWN removed';
 like $s.Str, / $payload /, 'replaced  by payload';
 sink '<begin>' ~ $s ~ '<end>';
 like $s.Str, /  '<begin>' .+ '<end>' $ /, 'multiple concatenations';
-ok $s.has-PCells, 'finds PCells in string';
-lives-ok { $s.strip }, 'method strip runs ok';
 nok $s.has-PCells, 'strip removes all expanded PCells';
 my $rv = $s.Str;
 is $rv, '<begin><start tab>first value nowSome stuff second value first<end>', '$s now just a string';

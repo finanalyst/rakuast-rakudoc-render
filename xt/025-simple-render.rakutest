@@ -1,27 +1,41 @@
 use v6.d;
 use Test;
+use Test::Deeply::Relaxed;
 
 use RakuDoc::Render;
+$RakuDoc::Render::TEST = True;
 
-plan *;
+plan 7;
 
 my $ast;
+my $rv;
 my RakuDoc::Processor $rdp .= new;
 
 is $rdp.output-format, 'text', 'defaults to Text';
 $ast = Q:to/QAST/.AST;
-    =head Test text
+    =head1 Test text
     QAST
-my $rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast );
 
 isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
-say $rv;
-#$ast = Q:to/QAST/.AST;
-#    =begin rakudoc :kind<sub> :subkind<operator> :category<Language>
-#    =head This is a header
-#
-#    Some text in a paragraph
-#    =end rakudoc
-#    QAST
-#say $ast;
+like $rv.body.Str, / '<head>' .+ 'Test text' .+ '</head>' /, 'head template works';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc :kind<sub> :subkind<operator> :category<Language>
+    =head This is a header
+
+    Some text in a paragraph
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+is-deeply-relaxed $rv.source-data<rakudoc-config>, %(:kind<sub>, :subkind<operator>, :category<Language>),
+        'places rakudoc metadata correctly';
+$ast = Q:to/QAST/.AST;
+    =for head :!toc :id<Quick id>
+    Second test text
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body.Str, / '<head>' .+ 'level' .+ 1 .+ '</head>' /, 'plain head has level 1';
+like $rv.body.Str, / '<head>' .+ 'toc' .+ 'False' .+ '</head>' /, 'head got toc data';
+like $rv.body.Str, / '<head>' .+ 'id' .+ 'Quick id' .+ '</head>' /, 'head got id data';
+
 done-testing;
