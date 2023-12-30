@@ -39,6 +39,7 @@ class X::Unexpected-Template is Exception {
 class Template-directory does Associative {
     has %.fields handles < push EXISTS-KEY iterator list keys values >;
     has %.data;
+    has %.helper;
     multi method AT-KEY ($key) is rw {
         with %!fields{$key} {
             .[*- 1].globals = self;

@@ -60,7 +60,7 @@ class RakuDoc::Processor {
     has ScopedData $!scoped-data .= new;
 
     submethod BUILD(:$!output-format = 'text', :$test = False ) {
-        %!templates = $test ?? test-text-temps() !! text-temps();
+        %!templates = text-temps( :$test );
     }
 
     method render($ast, :%source-data --> RakuDoc::Processed) {
@@ -160,15 +160,10 @@ class RakuDoc::Processor {
     }
     method gen-head($ast) {
         my $level = $ast.level > 1 ?? $ast.level !! 1;
-        my $target = name-id($ast);
-        my @rejects;
-        until $.is-target-unique($target) {
-            @rejects.push($target);
-            $target = name-id($ast, :@rejects)
-        }
+        my $target = $.name-id($ast, :make-unique);
         $.register-target($target);
         my $contents = $.contents($ast);
-        my %config = get-meta($ast);
+        my %config = $.get-meta($ast);
         my %scoped-head = $!scoped-data.config;
         %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
         $*prs.body ~= %!templates<head>(
@@ -179,13 +174,13 @@ class RakuDoc::Processor {
         ''
     }
     method gen-rakudoc($ast) {
-        my %config = get-meta($ast);
+        my %config = $.get-meta($ast);
         $!current.source-data<rakudoc-config> = %config;
         my $contents = $.contents($ast);
         $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) )
     }
     method gen-section($ast) {
-        my %config = get-meta($ast);
+        my %config = $.get-meta($ast);
         my $contents = $.contents($ast);
         $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
@@ -203,18 +198,18 @@ class RakuDoc::Processor {
     }
     # directive type methods
     method manage-config($ast) {
-        my %options = get-meta($ast);
+        my %options = $.get-meta($ast);
         my $name = $ast.paragraphs[0].Str;
         $name = $name ~ '1' if $name ~~ / ^ 'item' $ | ^ 'head' $ /;
         $!scoped-data.config( { $name => %options } );
     }
     method manage-aliases($ast) {
-        my %options = get-meta($ast);
+        my %options = $.get-meta($ast);
         my $name = $ast.paragraphs[0].Str;
         $!scoped-data.aliases( %options );
     }
     method manage-definitions($ast) {
-        my %options = get-meta($ast);
+        my %options = $.get-meta($ast);
         my $name = $ast.paragraphs[0].Str;
         $!scoped-data.definitions( %options );
     }
@@ -250,6 +245,181 @@ class RakuDoc::Processor {
         $*prs += $rv;
         $text
     }
+    # the following are methods that may be called from within a template
+    # templates have a data
+
+    #| name-id takes an ast and an optional :make-unique
+    #| returns a Str target to be used as an internal target
+    #| renderers should ensure target is unique if :make-unique True
+    #| renderers should sub-class name-id
+    #| renderers can use method is-target-unique to test for uniqueness
+    method name-id($ast, :$make-unique = False  --> Str) {
+        my $target = recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
+        return $target unless $make-unique;
+        return $target if $.is-target-unique($target);
+        my @rejects = $target, ;
+        # if plain target is rejected, then start adding a suffix
+        $target ~= '_0';
+        $target += 1 while $target ~~ any(@rejects);
+        $target
+    }
+    #| gets the meta data from a block
+    method get-meta($ast --> Hash) {
+        $ast.config.pairs.map(
+            { .key => .value.literalize }
+        ).hash
+    }
+    
+    #| returns hash of test templates
+    multi sub text-temps( :test($)! where * eq True ) {
+        %(
+            code => -> %prm, $tmpl {
+                "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
+            },
+            input => -> %prm, $tmpl {
+                "<input>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</input>\n"
+            },
+            output => -> %prm, $tmpl {
+                "<output>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</output>\n"
+            },
+            comment => -> %prm, $tmpl {
+                "<comment>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</comment>\n"
+            },
+            head => -> %prm, $tmpl {
+                "<head>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</head>\n"
+            },
+            numhead => -> %prm, $tmpl {
+                "<numhead>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numhead>\n"
+            },
+            defn => -> %prm, $tmpl {
+                "<defn>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</defn>\n"
+            },
+            item => -> %prm, $tmpl {
+                "<item>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</item>\n"
+            },
+            numitem => -> %prm, $tmpl {
+                "<numitem>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numitem>\n"
+            },
+            nested => -> %prm, $tmpl {
+                "<nested>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</nested>\n"
+            },
+            para => -> %prm, $tmpl {
+                "<para>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</para>\n"
+            },
+            rakudoc => -> %prm, $tmpl {
+                "<rakudoc>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</rakudoc>\n"
+            },
+            section => -> %prm, $tmpl {
+                "<section>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</section>\n"
+            },
+            pod => -> %prm, $tmpl {
+                "<pod>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</pod>\n"
+            },
+            table => -> %prm, $tmpl {
+                "<table>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</table>\n"
+            },
+            semantic => -> %prm, $tmpl {
+                "<semantic>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</semantic>\n"
+            },
+            custom => -> %prm, $tmpl {
+                "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
+            },
+        );
+    }
+    # text helpers adapted from Liz's RakuDoc::To::Text
+    # colorless ANSI constants
+    my constant RESET = "\e[0m";
+    my constant BOLD-ON = "\e[1m";
+    my constant ITALIC-ON = "\e[3m";
+    my constant UNDERLINE-ON = "\e[4m";
+    my constant INVERSE-ON = "\e[7m";
+    my constant BOLD-OFF = "\e[22m";
+    my constant ITALIC-OFF = "\e[23m";
+    my constant UNDERLINE-OFF = "\e[24m";
+    my constant INVERSE-OFF = "\e[27m";
+    
+    my sub bold(str $text) {
+        BOLD-ON ~ $text ~ BOLD-OFF
+    }
+    my sub italic(str $text) {
+        ITALIC-ON ~ $text ~ ITALIC-OFF
+    }
+    my sub underline(str $text) {
+        UNDERLINE-ON ~ $text ~ UNDERLINE-OFF
+    }
+    my sub inverse(str $text) {
+        INVERSE-ON ~ $text ~ INVERSE-OFF
+    }
+    
+    # ANSI formatting allowed
+    my constant %formats =
+    B => &bold,
+    C => &bold,
+    L => &underline,
+    D => &underline,
+    R => &inverse,
+    I => &italic,
+    ;
+    #| returns a set of default text templates
+    multi method text-temps( :test($)! where * eq True ) {
+        %(
+            code => -> %prm, $tmpl {
+                "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
+            },
+            input => -> %prm, $tmpl {
+                "<input>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</input>\n"
+            },
+            output => -> %prm, $tmpl {
+                "<output>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</output>\n"
+            },
+            comment => -> %prm, $tmpl {
+                "<comment>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</comment>\n"
+            },
+            head => -> %prm, $tmpl {
+                my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;
+                qq:to/HEAD/
+                { %prm<contents>.Str.indent($indent) }
+                { ('-' x %prm<contents>.Str.chars).indent($indent) }
+                HEAD
+            },
+            numhead => -> %prm, $tmpl {
+                "<numhead>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numhead>\n"
+            },
+            defn => -> %prm, $tmpl {
+                "<defn>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</defn>\n"
+            },
+            item => -> %prm, $tmpl {
+                "<item>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</item>\n"
+            },
+            numitem => -> %prm, $tmpl {
+                "<numitem>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numitem>\n"
+            },
+            nested => -> %prm, $tmpl {
+                "<nested>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</nested>\n"
+            },
+            para => -> %prm, $tmpl {
+                "<para>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</para>\n"
+            },
+            rakudoc => -> %prm, $tmpl {
+                "<rakudoc>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</rakudoc>\n"
+            },
+            section => -> %prm, $tmpl {
+                "<section>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</section>\n"
+            },
+            pod => -> %prm, $tmpl {
+                "<pod>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</pod>\n"
+            },
+            table => -> %prm, $tmpl {
+                "<table>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</table>\n"
+            },
+            semantic => -> %prm, $tmpl {
+                "<semantic>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</semantic>\n"
+            },
+            custom => -> %prm, $tmpl {
+                "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
+            },
+        );
+    }
 }
 
 #| Strip out formatting code and links from a Title or Link
@@ -258,173 +428,4 @@ multi sub recurse-until-str(Str:D $s) is export {
 }
 multi sub recurse-until-str(RakuAST::Doc::Block $n) is export {
     $n.paragraphs>>.&recurse-until-str().join
-}
-#| name-id takes an ast and an optional array of rejects
-#| returns a Str to be used as an internal target
-#| renderers should sub-class name-id
-sub name-id($ast, :@rejects  --> Str) {
-    my $target = recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
-    if +@rejects {
-        # if plain target is rejected, then start adding a suffix
-        $target ~= '_0';
-        $target += 1 while $target ~~ any(@rejects)
-    }
-    $target
-}
-#| gets the meta data from a block
-sub get-meta($ast --> Hash) {
-    $ast.config.pairs.map(
-            { .key => .value.literalize }
-            ).hash
-}
-
-#| returns hash of test templates
-sub test-text-temps {
-    %(
-        code => -> %prm, $tmpl {
-            "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
-        },
-        input => -> %prm, $tmpl {
-            "<input>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</input>\n"
-        },
-        output => -> %prm, $tmpl {
-            "<output>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</output>\n"
-        },
-        comment => -> %prm, $tmpl {
-            "<comment>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</comment>\n"
-        },
-        head => -> %prm, $tmpl {
-            "<head>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</head>\n"
-        },
-        numhead => -> %prm, $tmpl {
-            "<numhead>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numhead>\n"
-        },
-        defn => -> %prm, $tmpl {
-            "<defn>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</defn>\n"
-        },
-        item => -> %prm, $tmpl {
-            "<item>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</item>\n"
-        },
-        numitem => -> %prm, $tmpl {
-            "<numitem>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numitem>\n"
-        },
-        nested => -> %prm, $tmpl {
-            "<nested>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</nested>\n"
-        },
-        para => -> %prm, $tmpl {
-            "<para>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</para>\n"
-        },
-        rakudoc => -> %prm, $tmpl {
-            "<rakudoc>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</rakudoc>\n"
-        },
-        section => -> %prm, $tmpl {
-            "<section>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</section>\n"
-        },
-        pod => -> %prm, $tmpl {
-            "<pod>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</pod>\n"
-        },
-        table => -> %prm, $tmpl {
-            "<table>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</table>\n"
-        },
-        semantic => -> %prm, $tmpl {
-            "<semantic>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</semantic>\n"
-        },
-        custom => -> %prm, $tmpl {
-            "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
-        },
-    );
-}
-# text helpers adapted from Liz's RakuDoc::To::Text
-# colorless ANSI constants
-my constant RESET = "\e[0m";
-my constant BOLD-ON = "\e[1m";
-my constant ITALIC-ON = "\e[3m";
-my constant UNDERLINE-ON = "\e[4m";
-my constant INVERSE-ON = "\e[7m";
-my constant BOLD-OFF = "\e[22m";
-my constant ITALIC-OFF = "\e[23m";
-my constant UNDERLINE-OFF = "\e[24m";
-my constant INVERSE-OFF = "\e[27m";
-
-my sub bold(str $text) {
-    BOLD-ON ~ $text ~ BOLD-OFF
-}
-my sub italic(str $text) {
-    ITALIC-ON ~ $text ~ ITALIC-OFF
-}
-my sub underline(str $text) {
-    UNDERLINE-ON ~ $text ~ UNDERLINE-OFF
-}
-my sub inverse(str $text) {
-    INVERSE-ON ~ $text ~ INVERSE-OFF
-}
-
-# ANSI formatting allowed
-my constant %formats =
-B => &bold,
-C => &bold,
-L => &underline,
-D => &underline,
-R => &inverse,
-I => &italic,
-;
-#| returns a set of default text templates
-sub text-temps {
-    %(
-        code => -> %prm, $tmpl {
-            "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
-        },
-        input => -> %prm, $tmpl {
-            "<input>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</input>\n"
-        },
-        output => -> %prm, $tmpl {
-            "<output>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</output>\n"
-        },
-        comment => -> %prm, $tmpl {
-            "<comment>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</comment>\n"
-        },
-        head => -> %prm, $tmpl {
-            my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;
-            qq:to/HEAD/
-            { %prm<contents>.Str.indent($indent) }
-            { ('-' x %prm<contents>.Str.chars).indent($indent) }
-            HEAD
-        },
-        numhead => -> %prm, $tmpl {
-            "<numhead>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numhead>\n"
-        },
-        defn => -> %prm, $tmpl {
-            "<defn>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</defn>\n"
-        },
-        item => -> %prm, $tmpl {
-            "<item>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</item>\n"
-        },
-        numitem => -> %prm, $tmpl {
-            "<numitem>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numitem>\n"
-        },
-        nested => -> %prm, $tmpl {
-            "<nested>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</nested>\n"
-        },
-        para => -> %prm, $tmpl {
-            "<para>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</para>\n"
-        },
-        rakudoc => -> %prm, $tmpl {
-            "<rakudoc>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</rakudoc>\n"
-        },
-        section => -> %prm, $tmpl {
-            "<section>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</section>\n"
-        },
-        pod => -> %prm, $tmpl {
-            "<pod>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</pod>\n"
-        },
-        table => -> %prm, $tmpl {
-            "<table>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</table>\n"
-        },
-        semantic => -> %prm, $tmpl {
-            "<semantic>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</semantic>\n"
-        },
-        custom => -> %prm, $tmpl {
-            "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
-        },
-    );
 }

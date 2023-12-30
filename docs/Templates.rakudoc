@@ -12,11 +12,19 @@ within the I<processor>.
 
 The custom data is also added to the I<processor>'s B<Template-directory> object.
 
-Within a template, all the registered templates and custom data of the I<processor>
-can be accessed.
+Helper callables that can be used inside a template can also be added to the
+I<processor>'s B<Template-directory> object.
+
+Within a template, all the registered templates, the custom data of the I<processor>,
+and the helper callables can be accessed. The helper callables, such as C<name-id>
+which is used to name internal links, may be output format sensitive, and so should
+be added after the I<Processor> has been instantiated.
 
 When a template is added to a I<Template-directory> and the template name
 already exists, the old value is pushed onto a stack, and can be accessed.
+
+A generic RakuDoc::Processor will populate the I<Template-directory> with
+text templates that then served as the generic defaults.
 
 =head1 Templates
 
@@ -95,7 +103,19 @@ then some post-processing of the old template is sufficient, eg.,
 This assumes that the return object from both templates I<chapter> and I<table> is a Str, which it could be. But generically,
 it is best not to assume this. A fuller example is given below.
 
-=head2 Calling on a Template object
+=head2 Calling a helper callable
+
+Suppose a template generates objects that need to be added to the Table of Contents (ToC).
+The ToC structure is collected by the Renderer leaf by leaf, and the order of the
+leaf data is constructed because the order of the ToC is important.
+
+So the code in the template block can call
+
+    $tmpl.globals.helper<add-to-toc>(
+        :caption<...>, :target<...>, :level(1)
+    )
+
+=head2 Calling another defined template
 
 The block registered with key C<aaa> can be called inside another template block, with or without parameters.
 

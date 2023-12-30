@@ -1,0 +1,33 @@
+use v6.d;
+use Test;
+use RakuDoc::Templates;
+
+plan 4;
+# All the templates here return Str, so no need to worry about premature stringification.
+
+my @toc = { :caption<First text>, :1level, :target<First-id> }, ;
+my %top-level is Template-directory = %(
+    aaa => -> %prm, $tmpl {
+        $tmpl.globals.helper<add-to-toc>({ :caption<Sub text>, :2level, :target<sub_id> });
+        'orig: ' ~ %prm<contents>;
+    },
+    toc => -> %prm, $tmpl { qq:to/TOC/
+        Table of Contents
+        { %prm<toc>.map({ .<level> ~ ': ' ~ '<a href="' ~ .<target> ~ '">' ~ .<caption> ~ "</a>\n" }) }
+        TOC
+
+     },
+);
+%top-level.helper<add-to-toc> = -> %h { @toc.push: %h }
+
+is @toc.elems, 1, 'ToC structure has 1 element';
+my $rv = %top-level<aaa>({ :contents<Some stuff> });
+is $rv, 'orig: Some stuff', 'got the first template';
+is @toc.elems, 2, 'ToC structure has 2 elements';
+$rv = %top-level<toc>( { :@toc } );
+like $rv, / 'Table of Contents'
+.+ '1:' .+ 'href' .+ 'First-id' +. '>First text</a'
+.+ '2:' .+ 'sub_id' .+ '>Sub text</a'
+/, 'contents seems OK';
+
+done-testing;
