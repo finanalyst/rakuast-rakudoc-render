@@ -5,6 +5,27 @@ use RakuDoc::Templates;
 
 our $RakuDoc::Render::TEST = False;
 
+#| ScopedData objects contain data that is scope limited
+#| a new scope can be created with all the data of previous scope
+#| when scope ends, new data is forgotten, old is retained
+class ScopedData {
+    has @.config = {}, ;
+    has @.aliases = {}, ;
+    has @.definitions = {}, ;
+    method start-scope() {
+        @!config.push: @!config[*-1].clone;
+        @!aliases.push: @!aliases[*-1].clone;
+        @!definitions.push: @!definitions[*-1].clone;
+    }
+    method end-scope() {
+        @!config.pop;
+        @!aliases.pop;
+        @!definitions.pop;
+    }
+    method modify-current-and-prior(:)
+
+}
+
 class RakuDoc::Processor {
     has %.templates is Template-directory;
     has Supplier::Preserving $.com-channel .= new;
@@ -17,7 +38,7 @@ class RakuDoc::Processor {
 
     method render($ast , :%source-data --> RakuDoc::Processed) {
         $!current .= new(:%source-data);
-        #| create the config hash
+        #| scoped-data is a stack of hashes
         my @*scoped-data = [ %( :config({}), :aliases({}), :definitions({}) ), ];
         my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
         $!current += $_ for @prs;

@@ -1,0 +1,10 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+my ScopedData $sc;
+
+plan *;
+lives-ok { $sc .= new }, 'ScopedData instantiates';
+
+done-testing;
