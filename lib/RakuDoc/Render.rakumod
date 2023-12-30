@@ -3,27 +3,53 @@ use experimental :rakuast;
 use RakuDoc::Processed;
 use RakuDoc::Templates;
 
-our $RakuDoc::Render::TEST = False;
-
-#| ScopedData objects contain data that is scope limited
+#| ScopedData objects contain config, aliases, and definitions data that is scope limited
 #| a new scope can be created with all the data of previous scope
-#| when scope ends, new data is forgotten, old is retained
+#| when scope ends, new data is forgotten, old is restored
 class ScopedData {
-    has @.config = {}, ;
-    has @.aliases = {}, ;
-    has @.definitions = {}, ;
-    method start-scope() {
-        @!config.push: @!config[*-1].clone;
-        @!aliases.push: @!aliases[*-1].clone;
-        @!definitions.push: @!definitions[*-1].clone;
+    has @!config = {}, ;
+    has @!aliases = {}, ;
+    has @!definitions = {}, ;
+    has @!callees;
+    #| debug information
+    method debug {
+        qq:to/DEBUG/;
+        Levels: { +@!callees }
+        Callees: { +@!callees ?? @!callees.join(' ') !! 'original level' }
+        DEBUG
     }
+    #| starts a new scope
+    method start-scope(:$callee) {
+        @!callees.push: $callee // 'not given';
+        @!config.push: @!config[*-1].pairs.hash;
+        @!aliases.push: @!aliases[*-1].pairs.hash;
+        @!definitions.push: @!definitions[*-1].pairs.hash;
+    }
+    #| ends the current scope, forgets new data
     method end-scope() {
+        @!callees.pop;
         @!config.pop;
         @!aliases.pop;
         @!definitions.pop;
     }
-    method modify-current-and-prior(:)
-
+    multi method config(%h) {
+        @!config[*-1]{ .key } = .value for %h;
+    }
+    multi method config( --> Hash ) {
+        @!config[*-1]
+    }
+    multi method aliases(%h) {
+        @!aliases[*-1]{ .key } = .value for %h;
+    }
+    multi method aliases( --> Hash ) {
+        @!aliases[*-1]
+    }
+    multi method definitions(%h) {
+        @!definitions[*-1]{ .key } = .value for %h;
+    }
+    multi method definitions( --> Hash ) {
+        @!definitions[*-1]
+    }
 }
 
 class RakuDoc::Processor {
@@ -31,15 +57,14 @@ class RakuDoc::Processor {
     has Supplier::Preserving $.com-channel .= new;
     has RakuDoc::Processed $.current;
     has $.output-format;
+    has ScopedData $!scoped-data .= new;
 
-    submethod BUILD(:$!output-format = 'text') {
-        %!templates = $RakuDoc::Render::TEST ?? test-text-temps() !! text-temps();
+    submethod BUILD(:$!output-format = 'text', :$test = False ) {
+        %!templates = $test ?? test-text-temps() !! text-temps();
     }
 
-    method render($ast , :%source-data --> RakuDoc::Processed) {
+    method render($ast, :%source-data --> RakuDoc::Processed) {
         $!current .= new(:%source-data);
-        #| scoped-data is a stack of hashes
-        my @*scoped-data = [ %( :config({}), :aliases({}), :definitions({}) ), ];
         my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
         $!current += $_ for @prs;
         # statements now created
@@ -64,44 +89,48 @@ class RakuDoc::Processor {
         # When a built in block, other than =item, is started,
         # there may be a list of items or defns, which need to be
         # completed and rendered
-        say "At $?LINE in \<{$?FILE.IO.basename}> callers scoped ", CALLERS::<@*scoped-data>;
-        my %h = CALLERS::<@*scoped-data>[*-1].clone;
-        %h<block-type>.append: $ast.type;
-        say %h;
-        @*scoped-data.push = %h;
-        say "At $?LINE in \<{$?FILE.IO.basename}> scoped ", @*scoped-data;
         $*prs.body ~= $.complete-item-list() unless $ast.type and $ast.type eq 'item';
         $*prs.body ~= $.complete-defn-list() unless $ast.type and $ast.type eq 'defn';
+
+        # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
             when 'alias' { $.gen-alias($ast) }
             when 'code' { $.gen-code($ast) }
             when 'comment' { '' }
             # do nothing
-            when 'config' { $.manage-config($ast);
-            my %options = get-meta($ast);
-        my $name = $ast.paragraphs[0].Str;
-        $name = $name ~ '1' if $name ~~ / ^ 'item' $ | ^ 'head' $ /;
-#        CALLERS::<%*scoped-data><config> = {} unless CALLERS::<%*scoped-data><config>:exists;
-#        CALLERS::<%*scoped-data><config>{$name} = {} unless CALLERS::<%*scoped-data><config>{$name}:exists;
-        for %options.kv -> $k, $v { @*scoped-data[*-2]<config>{$name}{$k} = $v };
-        say "At $?LINE in \<{$?FILE.IO.basename}> scope-type ", @*scoped-data;
+            when 'config' { $.manage-config($ast); }
+            when 'head' {
+                $!scoped-data.start-scope(:callee($_));
+                $.gen-head($ast);
+                $!scoped-data.end-scope
             }
-            when 'head' { $.gen-head($ast) }
             when 'implicit-code' { $.gen-code($ast) }
             when 'item' { $.gen-item($ast) }
-            when 'rakudoc' | 'pod' { $.gen-rakudoc($ast) }
+            when 'rakudoc' | 'pod' {
+                $!scoped-data.start-scope(:callee($_));
+                $.gen-rakudoc($ast);
+                $!scoped-data.end-scope}
             #            when 'pod' { '' } # when rakudoc differs from pod
-            when 'section' { $.gen-section($ast) }
+            when 'section' {
+                $!scoped-data.start-scope(:callee($_));
+                $.gen-section($ast);
+                $!scoped-data.end-scope
+            }
             when 'table' { $.gen-table($ast) }
-            when all($_.uniprops) ~~ / Lu /
-            # in RakuDoc v2 a Semantic block must have all uppercase letters
-            { $.gen-semantics($ast) }
-            when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll /
-            # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
-            { $.gen-custom($ast) }
+            when all($_.uniprops) ~~ / Lu / {
+                # in RakuDoc v2 a Semantic block must have all uppercase letters
+                $!scoped-data.start-scope(:callee($_));
+                $.gen-semantics($ast);
+                $!scoped-data.end-scope
+            }
+            when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
+                # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
+                $!scoped-data.start-scope(:callee($_));
+                $.gen-custom($ast);
+                $!scoped-data.end-scope
+            }
             default { $.gen-unknown-builtin($ast) }
         }
-        say "At $?LINE in \<{$?FILE.IO.basename}> scope-type ", @*scoped-data;
         $*prs
     }
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
@@ -111,7 +140,6 @@ class RakuDoc::Processor {
         $*blocks{'MARKUP / ' ~ $ast.letter}++
     }
     multi method handle(RakuAST::Doc::Paragraph:D $ast) {
-        $*blocks{'PARAGRAPH'}++;
         my ProcessedState @prs = $ast.atoms.map({ $.handle($_) });
         $*prs += $_ for @prs;
         $*prs
@@ -131,7 +159,6 @@ class RakuDoc::Processor {
         ''
     }
     method gen-head($ast) {
-        say "At $?LINE in \<{$?FILE.IO.basename}> scope-type last item ", @*scoped-data[*-1];
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         my $target = name-id($ast);
         my @rejects;
@@ -142,7 +169,8 @@ class RakuDoc::Processor {
         $.register-target($target);
         my $contents = $.contents($ast);
         my %config = get-meta($ast);
-        %config ,= @*scoped-data[*-1]<config>{"head$level"}.hash;
+        my %scoped-head = $!scoped-data.config;
+        %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
         $*prs.body ~= %!templates<head>(
             %( :$level, :$target, :$contents, %config)
         )
@@ -151,17 +179,15 @@ class RakuDoc::Processor {
         ''
     }
     method gen-rakudoc($ast) {
-        say "At $?LINE in \<{$?FILE.IO.basename}> scope-type ", @*scoped-data[*-1]<block-type>;
         my %config = get-meta($ast);
         $!current.source-data<rakudoc-config> = %config;
+        my $contents = $.contents($ast);
+        $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) )
     }
     method gen-section($ast) {
-        say "At $?LINE in \<{$?FILE.IO.basename}> scope-type ", @*scoped-data[*-1]<block-type>;
         my %config = get-meta($ast);
         my $contents = $.contents($ast);
-        $*prs.body ~= %!templates<section>(
-            %( :$contents, %config)
-        )
+        $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
     method gen-table($ast) {
         ''
@@ -177,13 +203,20 @@ class RakuDoc::Processor {
     }
     # directive type methods
     method manage-config($ast) {
-#        say "At $?LINE in \<{$?FILE.IO.basename}> scope-type ", %*scoped-data;
-#        say "At $?LINE in \<{$?FILE.IO.basename}> callers scope-type ", CALLERS::<%*scoped-data>;
-#        say "At $?LINE in \<{$?FILE.IO.basename}> callers scope-type ", DYNAMIC::<%*scoped-data>;
-#        # a config block may only have one name, which is the block name, and multiple meta options
-#
-#        say "At $?LINE in \<{$?FILE.IO.basename}> scope-type ", %*scoped-data;
-#        say "At $?LINE in \<{$?FILE.IO.basename}> callers scope-type ", CALLERS::<%*scoped-data>;
+        my %options = get-meta($ast);
+        my $name = $ast.paragraphs[0].Str;
+        $name = $name ~ '1' if $name ~~ / ^ 'item' $ | ^ 'head' $ /;
+        $!scoped-data.config( { $name => %options } );
+    }
+    method manage-aliases($ast) {
+        my %options = get-meta($ast);
+        my $name = $ast.paragraphs[0].Str;
+        $!scoped-data.aliases( %options );
+    }
+    method manage-definitions($ast) {
+        my %options = get-meta($ast);
+        my $name = $ast.paragraphs[0].Str;
+        $!scoped-data.definitions( %options );
     }
     # completion methods
     #| finalises rendering of the item list in $*prs
@@ -241,11 +274,7 @@ sub name-id($ast, :@rejects  --> Str) {
 #| gets the meta data from a block
 sub get-meta($ast --> Hash) {
     $ast.config.pairs.map(
-            { .key => .value
-#                    .DEPARSE
-#                    .subst(/^ \< | ^ \(\" /, '').subst(/ \> $ | \"\) $ /, '')
-                    .literalize
-            }
+            { .key => .value.literalize }
             ).hash
 }
 

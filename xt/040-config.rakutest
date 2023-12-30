@@ -1,17 +1,18 @@
 use v6.d;
 use Test;
 use RakuDoc::Render;
-$RakuDoc::Render::TEST = True;
 
-plan 7;
+plan 9;
 
 my $ast;
 my $rv;
-my RakuDoc::Processor $rdp .= new;
+my RakuDoc::Processor $rdp .= new( :test );
 
 $ast = Q:to/QAST/.AST;
+    =begin rakudoc
     =config head2 :!toc
     =head2 Third test text
+    =end rakudoc
     QAST
 $rv = $rdp.render( $ast );
 like $rv.body.Str, /'<head>' .+ 'level' .+ 2 .+ '</head>' /, 'plain head has level 2';
@@ -35,4 +36,5 @@ like $parse<hd>[1]<cont>, /'contents' .+ 'Second header' /, 'got 2nd head';
 unlike $parse<hd>[1]<cont>, /'toc' /, '2nd head has not got toc';
 like $parse<hd>[2]<cont>, /'contents' .+ 'Third test text' .+ 'toc' /, '3rd head has toc';
 unlike $parse<hd>[3]<cont>, / 'toc' /, '3rd head has no toc';
+
 done-testing;

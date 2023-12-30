@@ -3,13 +3,12 @@ use Test;
 use Test::Deeply::Relaxed;
 
 use RakuDoc::Render;
-$RakuDoc::Render::TEST = True;
 
 plan 7;
 
 my $ast;
 my $rv;
-my RakuDoc::Processor $rdp .= new;
+my RakuDoc::Processor $rdp .= new(:test);
 
 is $rdp.output-format, 'text', 'defaults to Text';
 $ast = Q:to/QAST/.AST;
