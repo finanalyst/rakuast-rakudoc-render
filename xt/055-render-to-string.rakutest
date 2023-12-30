@@ -1,0 +1,27 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan 4;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new( :test );
+
+$ast = Q:to/QAST/.AST;
+    =head2 First header
+    =begin section
+    =head2 Second header without option
+    =config head2 :!toc
+    =head2 Third test text with option
+    =end section
+    =head2 Fourth without option
+    QAST
+lives-ok {
+    $rv = $rdp.render( $ast, :source-data( %( :name<Test file>, ) ), :stringify )
+}, 'render to string lives';
+isa-ok $rv, Str, 'got a string';
+like $rv, / 'Test file' /, 'name included';
+like $rv, / [ 'First header' .+ ] ** 2 /, 'got heading at least twice';
+
+done-testing;

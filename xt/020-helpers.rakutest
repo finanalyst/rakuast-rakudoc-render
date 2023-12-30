@@ -15,7 +15,6 @@ my %top-level is Template-directory = %(
         Table of Contents
         { %prm<toc>.map({ .<level> ~ ': ' ~ '<a href="' ~ .<target> ~ '">' ~ .<caption> ~ "</a>\n" }) }
         TOC
-
      },
 );
 %top-level.helper<add-to-toc> = -> %h { @toc.push: %h }

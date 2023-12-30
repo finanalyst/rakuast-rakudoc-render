@@ -60,15 +60,17 @@ class RakuDoc::Processor {
     has ScopedData $!scoped-data .= new;
 
     submethod BUILD(:$!output-format = 'text', :$test = False ) {
-        %!templates = text-temps( :$test );
+        %!templates = self.text-temps( :$test );
+        %!templates.helper = self.text-helpers( :$test );
     }
 
-    method render($ast, :%source-data --> RakuDoc::Processed) {
+    #| renders the $ast to a RakuDoc::Processed or String
+    multi method render( $ast, :%source-data, :$stringify = False ) {
         $!current .= new(:%source-data);
         my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
         $!current += $_ for @prs;
-        # statements now created
-        $.current;
+        return $.current unless $stringify;
+        %!templates<source-wrap>( %( :processed( $!current ), )).Str
     }
 
     #| handle methods create a local version of $*prs, which is returned
@@ -167,7 +169,7 @@ class RakuDoc::Processor {
         my %scoped-head = $!scoped-data.config;
         %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
         $*prs.body ~= %!templates<head>(
-            %( :$level, :$target, :$contents, %config)
+            %( :cur-state($*prs), :$level, :$target, :$contents, %config)
         )
     }
     method gen-item($ast) {
@@ -269,9 +271,9 @@ class RakuDoc::Processor {
             { .key => .value.literalize }
         ).hash
     }
-    
+
     #| returns hash of test templates
-    multi sub text-temps( :test($)! where * eq True ) {
+    multi method text-temps( :$test! where * ) {
         %(
             code => -> %prm, $tmpl {
                 "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
@@ -286,6 +288,14 @@ class RakuDoc::Processor {
                 "<comment>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</comment>\n"
             },
             head => -> %prm, $tmpl {
+                my $caption = %prm<caption> // %prm<contents>;
+                my $target = %prm<id> // %prm<target>;
+                my $toc = %prm<toc> // True;
+                my $cur-state = %prm<cur-state>:delete;
+                $tmpl.globals.helper<add-to-toc>(
+                    {:$caption, :$target, :level(%prm<level>), :$cur-state }
+                ) if $toc;
+
                 "<head>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</head>\n"
             },
             numhead => -> %prm, $tmpl {
@@ -324,6 +334,43 @@ class RakuDoc::Processor {
             custom => -> %prm, $tmpl {
                 "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
             },
+            source-wrap => -> %prm, $tmpl {
+                my @toc = %prm<processed>.toc;
+                %prm<processed>.title ~ "\n" ~ '=' x 50 ~ "\n"
+                ~ $tmpl('toc', {
+                    :@toc,
+                    caption => %prm<processed>.source-data<toc-caption>
+                } )
+                ~ $tmpl('index', {
+                    index => %prm<processed>.index,
+                    caption => %prm<processed>.source-data<index-caption>
+                })
+                ~ %prm<processed>.body.Str
+                ~ "\n" ~ '=' x 50 ~ "\n"
+                ~ $tmpl('footnotes', {
+                    index => %prm<processed>.index,
+                })
+                ~ 'Rendered from ｢' ~ %prm<processed>.source-data<name>
+                ~ '｣ at ' ~ %prm<processed>.modified
+                ~ "\n" ~ '=' x 50 ~ "\n"
+            },
+            toc => -> %prm, $tmpl {
+               %prm<caption> ~ "\n"
+               ~ %prm<toc>.map({
+                    ' ' x .<level> ~ .<level>
+                    ~ ': caption ｢'
+                    ~ .<caption>
+                    ~ '｣ target ｢'
+                    ~ .<target>
+                    ~ "｣\n" }).join()
+                ~ '-' x 50 ~ "\n"
+            },
+            index => -> %prm, $tmpl {
+                ''
+            },
+            footnotes => -> %prm, $tmpl {
+                ''
+            },
         );
     }
     # text helpers adapted from Liz's RakuDoc::To::Text
@@ -337,7 +384,7 @@ class RakuDoc::Processor {
     my constant ITALIC-OFF = "\e[23m";
     my constant UNDERLINE-OFF = "\e[24m";
     my constant INVERSE-OFF = "\e[27m";
-    
+
     my sub bold(str $text) {
         BOLD-ON ~ $text ~ BOLD-OFF
     }
@@ -350,7 +397,7 @@ class RakuDoc::Processor {
     my sub inverse(str $text) {
         INVERSE-ON ~ $text ~ INVERSE-OFF
     }
-    
+
     # ANSI formatting allowed
     my constant %formats =
     B => &bold,
@@ -360,8 +407,8 @@ class RakuDoc::Processor {
     R => &inverse,
     I => &italic,
     ;
-    #| returns a set of default text templates
-    multi method text-temps( :test($)! where * eq True ) {
+    #| returns a set of default text templates $test must be False
+    multi method text-temps( :test($)! where ! * ) {
         %(
             code => -> %prm, $tmpl {
                 "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
@@ -419,6 +466,19 @@ class RakuDoc::Processor {
                 "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
             },
         );
+    }
+    #| returns hash of test helper callables
+    multi method text-helpers( :$test! where * ) {
+        %(
+            add-to-toc => -> %h {
+                %h<cur-state>.toc.push:
+                    { :caption(%h<caption>.Str), :target(%h<target>), :level(%h<level>) },
+            }
+        )
+    }
+    #| returns hash of helper callables for Text templates
+    multi method text-helpers( :$test! where ! * ) {
+        %()
     }
 }
 

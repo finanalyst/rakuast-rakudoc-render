@@ -64,12 +64,7 @@ class ProcessedState {
 |# Class object contains the rendered date of a RakuDoc source
 class RakuDoc::Processed is ProcessedState {
     #| Information about the RakuDoc source, eg file name, path, modified, language
-    has %.source-data =
-        name => 'UNNAMED',
-        path => '.',
-        language => 'en',
-        modified => '2020-12-31T00:00:01Z', # before module written
-    ;
+    has %.source-data;
     #| Text between =TITLE and first header, used for X<> place before first header
     has Str $.front-matter is rw = 'preface';
     #| Name to be used in titles and files.
@@ -88,7 +83,15 @@ class RakuDoc::Processed is ProcessedState {
     has SetHash $.targets;
 
     submethod BUILD( :%source-data ) {
-        %!source-data ,= %source-data;
+        %!source-data = %(
+            name => 'Un-named source',
+            path => '.',
+            language => 'en',
+            modified => '2020-12-31T00:00:01Z',
+            toc-caption => 'Table of Contents',
+            index-caption => 'Index',
+        );
+        %!source-data{ .key } = .value for %source-data.pairs;
         $!targets .= new;
     }
     
