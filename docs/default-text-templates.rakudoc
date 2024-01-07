@@ -1,0 +1,10 @@
+=begin rakudoc
+=TITLE Templates in C<default-text-temps>
+=SUBTITLE Auto generated from C<lib/RakuDoc/Render.rakumod>
+=begin table
+    =row :header
+        =cell Name
+        =cell Description
+        =cell Parameters used
+=end table
+=end rakudoc
