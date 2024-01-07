@@ -41,9 +41,14 @@ class ProcessedState {
     #| Hash of SEMANTIC => [ PStr | Str ]
     has Array %.semantics;
 
+    #| An array of warnings is generated and then rendered by the warnings template
+    #| The warning template, by default is called by the wrap-source template
+    #| RakuDoc warnings are generated as specified in the RakuDoc v2 document.
+    has Str @.warnings;
+
     multi method gist(ProcessedState:U: ) { 'Undefined ProcessedState object' }
 
-    multi method gist(ProcessedState:D: Int :$output = 175 ) {
+    multi method gist(ProcessedState:D: Int :$output = 300 ) {
         qq:to/GIST/;
         ProcessedState contains:
             semantics => { pretty-dump( %.semantics, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
@@ -56,6 +61,8 @@ class ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             links => { pretty-dump( %.links, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
+            warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
     }
@@ -97,7 +104,7 @@ class RakuDoc::Processed is ProcessedState {
     
     multi method gist(RakuDoc::Processed:U: ) { 'Undefined RakuDoc::Processed object' }
     
-    multi method gist(RakuDoc::Processed:D: Int :$output = 175 ) {
+    multi method gist(RakuDoc::Processed:D: Int :$output = 300 ) {
         qq:to/GIST/;
         RakuDoc source contains:
             front-matter => Str=｢{ $!front-matter }｣
@@ -117,6 +124,8 @@ class RakuDoc::Processed is ProcessedState {
             links => { pretty-dump( %.links, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             targets => <｢{ $!targets.keys.join('｣, ｢') }｣>
+            warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
     }
@@ -134,5 +143,6 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     for $q.semantics.kv -> $k, $v { # by definition, same key but multiple values
         $p.semantics{$k}.append: $v.Slip
     }
+    $p.warnings.append: $q.warnings;
     $p
 }

@@ -59,9 +59,9 @@ class RakuDoc::Processor {
     has $.output-format;
     has ScopedData $!scoped-data .= new;
 
-    submethod BUILD(:$!output-format = 'text', :$test = False ) {
-        %!templates = self.text-temps( :$test );
-        %!templates.helper = self.text-helpers( :$test );
+    multi submethod TWEAK(:$!output-format = 'text', :$test = False ) {
+        %!templates = $test ?? self.test-text-templates !! self.default-text-templates;
+        %!templates.helper = self.text-helpers;
     }
 
     #| renders the $ast to a RakuDoc::Processed or String
@@ -87,6 +87,46 @@ class RakuDoc::Processor {
         $*prs += $_ for @prs;
         $*prs
     }
+            # =column
+            # Start a new column in a procedural table
+
+            # =row
+            # Start a new row in a procedural table
+
+            # =input
+            # Pre-formatted sample input
+
+            # =output
+            # Pre-formatted sample output
+
+            # =headN
+            # Nth-level heading
+
+            # =numhead
+            # First-level numbered heading
+
+            # =numheadN
+            # Nth-level numbered heading
+
+            # =defn
+            # Definition of a term
+
+            # =itemN
+            # Nth-level list item
+
+            # =numitem
+            # First-level numbered list item
+
+            # =numitemN
+            # Nth-level numbered list item
+
+            # =nested
+            # Nest block contents within the current context
+
+            # =formula
+            # Render content as LaTex formula
+
+
     multi method handle(RakuAST::Doc::Block:D $ast) {
         # When a built in block, other than =item, is started,
         # there may be a list of items or defns, which need to be
@@ -96,35 +136,58 @@ class RakuDoc::Processor {
 
         # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
+            # =alias
+            # Define a Pod macro
             when 'alias' { $.gen-alias($ast) }
+            # =code
+            # Verbatim pre-formatted sample source code
             when 'code' { $.gen-code($ast) }
+            # =comment
+            # Content to be ignored by all renderers
             when 'comment' { '' }
-            # do nothing
+            # =config
+            # Block scope modifications to a block or markup instruction
             when 'config' { $.manage-config($ast); }
+            # =head
+            # First-level heading
             when 'head' {
                 $!scoped-data.start-scope(:callee($_));
                 $.gen-head($ast);
                 $!scoped-data.end-scope
             }
             when 'implicit-code' { $.gen-code($ast) }
+            # =item
+            # First-level list item
             when 'item' { $.gen-item($ast) }
+            # =rakudoc
+            # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
                 $!scoped-data.start-scope(:callee($_));
                 $.gen-rakudoc($ast);
                 $!scoped-data.end-scope}
-            #            when 'pod' { '' } # when rakudoc differs from pod
+            # =pod
+            # Legacy version of rakudoc
+#           when 'pod' { '' } # when rakudoc differs from pod
+            # =section
+            # Defines a section
             when 'section' {
                 $!scoped-data.start-scope(:callee($_));
                 $.gen-section($ast);
                 $!scoped-data.end-scope
             }
+            # =table
+            # Visual or procedural table
             when 'table' { $.gen-table($ast) }
+            # RESERVED
+            # Semantic blocks (SYNOPSIS, TITLE, etc.)
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
                 $!scoped-data.start-scope(:callee($_));
                 $.gen-semantics($ast);
                 $!scoped-data.end-scope
             }
+            # CustomName
+            # User-defined block
             when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
                 $!scoped-data.start-scope(:callee($_));
@@ -135,25 +198,192 @@ class RakuDoc::Processor {
         }
         $*prs
     }
+    # =data
+    # Raku data section
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
         #ignore declarator blocks
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
-        $*blocks{'MARKUP / ' ~ $ast.letter}++
+        given $ast.letter {
+            
+            # A<...|...>
+            # Alias to be replaced by contents of specified V<=alias> directive
+            when 'A' {
+
+            }
+
+            # B<...>
+            # Basis/focus of sentence (typically rendered bold)
+            when 'B' {
+
+            }
+
+            # C<...>
+            # Code (typically rendered fixed-width)
+            when 'C' {
+
+            }
+
+            # D<...>
+            # Definition inline (V<D<term being defined|synonym1; synonym2>>)
+            when 'D' {
+
+            }
+
+            # Δ<...|...;...>>
+            # Delta note (V<Δ<visible text|version; Notification text>>)
+            when 'Δ' {
+
+            }
+            # E<...|...;...>
+            # Entity (HTML or Unicode) description (V<E<entity1;entity2; multi,glyph;...>>)
+            when 'E' {
+
+            }
+
+            # F<...|...>
+            # Inline content for a formula (V<F<ALT|LaTex notation>>)
+            when 'F' {
+
+            }
+
+            # G<...>
+            # (This markup code is not yet defined, but is reserved for future use)
+            when 'G' {
+
+            }
+
+            # H<...>
+            # High text (typically rendered superscript)
+            when 'H' {
+
+            }
+
+            # I<...>
+            # Important (typically rendered in italics)
+            when 'I' {
+
+            }
+
+            # J<...>
+            # Junior text (typically rendered subscript)
+            when 'J' {
+
+            }
+
+            # K<...>
+            # Keyboard input (typically rendered fixed-width)
+            when 'K' {
+
+            }
+
+            # L<...|...>
+            # Link (V<L<display text|destination URI>>)
+            when 'L' {
+
+            }
+
+            # M<...|..,..;...>
+            # Markup extra (V<M<display text|functionality;param,sub-type;...>>)
+            when 'M' {
+
+            }
+
+            # N<...>
+            # Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
+            when 'N' {
+
+            }
+
+            # O<...>
+            # Overstrike or strikethrough
+            when 'O' {
+
+            }
+
+            # P<...|...>
+            # Placement link
+            when 'P' {
+
+            }
+
+            # Q<...>
+            # (This markup code is not yet defined, but is reserved for future use)
+            when 'Q' {
+
+            }
+
+            # R<...>
+            # Replaceable component or metasyntax
+            when 'R' {
+
+            }
+
+            # S<...>
+            # Space characters to be preserved
+            when 'S' {
+
+            }
+
+            # T<...>
+            # Terminal output (typically rendered fixed-width)
+            when 'T' {
+
+            }
+
+            # U<...>
+            # Unusual (typically rendered with underlining)
+            when 'U' {
+
+            }
+
+            # V<...>
+            # Verbatim (internal markup instructions ignored)
+            when 'V' {
+
+            }
+
+            # W<...>
+            # (This markup code is not yet defined, but is reserved for future use)
+#            when 'W' {
+#
+#            }
+
+            # X<...|..,..;...>
+            # Index entry (V<X<display text|entry,subentry;...>>)
+            when 'X' {
+
+            }
+
+            # Y<...>
+            # (This markup code is not yet defined, but is reserved for future use)
+#            when 'Y' {
+#
+#            }
+
+            # Z<...>
+            # Zero-width comment (contents never rendered)
+            when 'Z' {
+                ''
+            }
+        }
+        $*prs
     }
+    # =para
+    # Ordinary paragraph
     multi method handle(RakuAST::Doc::Paragraph:D $ast) {
         my ProcessedState @prs = $ast.atoms.map({ $.handle($_) });
         $*prs += $_ for @prs;
         $*prs
     }
     multi method handle(RakuAST::Doc::Row:D $ast) {
-        self.handle('ROW')
+        self.handle($ast.WHICH.Str)
     }
     multi method handle(Cool:D $ast) {
         self.handle($ast.WHICH.Str)
     }
-    # gen-XX methods take an $ast and adds a string to $*prs.body
-    # based on a template
+    #| gen-XX methods take an $ast and adds a string to $*prs.body
+    #| based on a template
     method gen-alias($ast) {
         ''
     }
@@ -169,7 +399,7 @@ class RakuDoc::Processor {
         my %scoped-head = $!scoped-data.config;
         %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
         $*prs.body ~= %!templates<head>(
-            %( :cur-state($*prs), :$level, :$target, :$contents, %config)
+            %( :state($*prs), :$level, :$target, :$contents, %config)
         )
     }
     method gen-item($ast) {
@@ -273,67 +503,89 @@ class RakuDoc::Processor {
     }
 
     #| returns hash of test templates
-    multi method text-temps( :$test! where * ) {
+    multi method test-text-templates {
         %(
+            #| special key to name template set
+            _name => -> %, $ {
+                'test text templates'
+            },
+            #| renders =code block
             code => -> %prm, $tmpl {
                 "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
             },
+            #| renders =input block
             input => -> %prm, $tmpl {
                 "<input>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</input>\n"
             },
+            #| renders =output block
             output => -> %prm, $tmpl {
                 "<output>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</output>\n"
             },
+            #| renders =comment block
             comment => -> %prm, $tmpl {
                 "<comment>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</comment>\n"
             },
+            #| renders =head block
             head => -> %prm, $tmpl {
                 my $caption = %prm<caption> // %prm<contents>;
                 my $target = %prm<id> // %prm<target>;
                 my $toc = %prm<toc> // True;
-                my $cur-state = %prm<cur-state>:delete;
+                my $state = %prm<state>:delete;
                 $tmpl.globals.helper<add-to-toc>(
-                    {:$caption, :$target, :level(%prm<level>), :$cur-state }
+                    {:$caption, :$target, :level(%prm<level>), :$state }
                 ) if $toc;
 
                 "<head>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</head>\n"
             },
+            #| renders =numhead block
             numhead => -> %prm, $tmpl {
                 "<numhead>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numhead>\n"
             },
+            #| renders =defn block
             defn => -> %prm, $tmpl {
                 "<defn>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</defn>\n"
             },
+            #| renders =item block
             item => -> %prm, $tmpl {
                 "<item>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</item>\n"
             },
+            #| renders =numitem block
             numitem => -> %prm, $tmpl {
                 "<numitem>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numitem>\n"
             },
+            #| renders =nested block
             nested => -> %prm, $tmpl {
                 "<nested>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</nested>\n"
             },
+            #| renders =para block
             para => -> %prm, $tmpl {
                 "<para>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</para>\n"
             },
+            #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl {
                 "<rakudoc>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</rakudoc>\n"
             },
+            #| renders =section block
             section => -> %prm, $tmpl {
                 "<section>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</section>\n"
             },
+            #| renders =pod block
             pod => -> %prm, $tmpl {
                 "<pod>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</pod>\n"
             },
+            #| renders =table block
             table => -> %prm, $tmpl {
                 "<table>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</table>\n"
             },
+            #| renders =semantic block
             semantic => -> %prm, $tmpl {
                 "<semantic>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</semantic>\n"
             },
+            #| renders =custom block
             custom => -> %prm, $tmpl {
                 "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
             },
+            #| special template to encapsulate all the output to save to a file
             source-wrap => -> %prm, $tmpl {
                 my @toc = %prm<processed>.toc;
                 %prm<processed>.title ~ "\n" ~ '=' x 50 ~ "\n"
@@ -354,6 +606,7 @@ class RakuDoc::Processor {
                 ~ '｣ at ' ~ %prm<processed>.modified
                 ~ "\n" ~ '=' x 50 ~ "\n"
             },
+            #| special template to render the toc data structure
             toc => -> %prm, $tmpl {
                %prm<caption> ~ "\n"
                ~ %prm<toc>.map({
@@ -365,12 +618,18 @@ class RakuDoc::Processor {
                     ~ "｣\n" }).join()
                 ~ '-' x 50 ~ "\n"
             },
+            #| special template to render the index data structure
             index => -> %prm, $tmpl {
                 ''
             },
+            #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
                 ''
             },
+            #| special template to render the warnings data structure
+            warnings => -> %prm, $tmpl {
+                ''
+            }
         );
     }
     # text helpers adapted from Liz's RakuDoc::To::Text
@@ -408,20 +667,29 @@ class RakuDoc::Processor {
     I => &italic,
     ;
     #| returns a set of default text templates $test must be False
-    multi method text-temps( :test($)! where ! * ) {
+    multi method default-text-templates {
         %(
+            #| special key to name template set
+            _name => -> %, $ {
+                'default text templates'
+            },
+            #| renders =code blocks
             code => -> %prm, $tmpl {
                 "<code>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</code>\n"
             },
+            #| renders =input block
             input => -> %prm, $tmpl {
                 "<input>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</input>\n"
             },
+            #| renders =output block
             output => -> %prm, $tmpl {
                 "<output>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</output>\n"
             },
+            #| renders =comment block
             comment => -> %prm, $tmpl {
                 "<comment>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</comment>\n"
             },
+            #| renders =head block
             head => -> %prm, $tmpl {
                 my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;
                 qq:to/HEAD/
@@ -429,56 +697,92 @@ class RakuDoc::Processor {
                 { ('-' x %prm<contents>.Str.chars).indent($indent) }
                 HEAD
             },
+            #| renders =numhead block
             numhead => -> %prm, $tmpl {
                 "<numhead>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numhead>\n"
             },
+            #| renders =defn block
             defn => -> %prm, $tmpl {
                 "<defn>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</defn>\n"
             },
+            #| renders =item block
             item => -> %prm, $tmpl {
                 "<item>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</item>\n"
             },
+            #| renders =numitem block
             numitem => -> %prm, $tmpl {
                 "<numitem>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</numitem>\n"
             },
+            #| renders =nested block
             nested => -> %prm, $tmpl {
                 "<nested>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</nested>\n"
             },
+            #| renders =para block
             para => -> %prm, $tmpl {
                 "<para>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</para>\n"
             },
+            #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl {
                 "<rakudoc>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</rakudoc>\n"
             },
+            #| renders =section block
             section => -> %prm, $tmpl {
                 "<section>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</section>\n"
             },
+            #| renders =pod block
             pod => -> %prm, $tmpl {
                 "<pod>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</pod>\n"
             },
+            #| renders =table block
             table => -> %prm, $tmpl {
                 "<table>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</table>\n"
             },
+            #| renders =semantic block
             semantic => -> %prm, $tmpl {
                 "<semantic>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</semantic>\n"
             },
+            #| renders =custom block
             custom => -> %prm, $tmpl {
                 "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
             },
+            #| special template to encapsulate all the output to save to a file
+            source-wrap => -> %prm, $tmpl {
+                "<source-wrap>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</source-wrap>\n"
+            },
+            #| special template to render the toc data structure
+            toc => -> %prm, $tmpl {
+               %prm<caption> ~ "\n"
+               ~ %prm<toc>.map({
+                    ' ' x .<level> ~ .<level>
+                    ~ ': caption ｢'
+                    ~ .<caption>
+                    ~ '｣ target ｢'
+                    ~ .<target>
+                    ~ "｣\n" }).join()
+                ~ '-' x 50 ~ "\n"
+            },
+            #| special template to render the index data structure
+            index => -> %prm, $tmpl {
+                ''
+            },
+            #| special template to render the footnotes data structure
+            footnotes => -> %prm, $tmpl {
+                "<footnotes>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</footnotes>\n"
+            },
+            #| special template to render the warnings data structure
+            warnings => -> %prm, $tmpl {
+                ''
+            }
         );
     }
     #| returns hash of test helper callables
-    multi method text-helpers( :$test! where * ) {
+    multi method text-helpers {
         %(
             add-to-toc => -> %h {
-                %h<cur-state>.toc.push:
+                %h<state>.toc.push:
                     { :caption(%h<caption>.Str), :target(%h<target>), :level(%h<level>) },
             }
         )
-    }
-    #| returns hash of helper callables for Text templates
-    multi method text-helpers( :$test! where ! * ) {
-        %()
     }
 }
 

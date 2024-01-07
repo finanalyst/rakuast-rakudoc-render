@@ -191,4 +191,19 @@ For example, the post-processing should be done as follows:
         else { $rv.subst( / '<table' \s+ 'class="pod-table' /, '<table class="table is-centered') }
     }
 
+=head1 Predefined templates
+
+C<RakuAST::Render> defines a number of templates for Text output. These will be the fall-back templates
+when more specialist renderers add new templates to the Template Directory.
+
+Since it is anticipated that the output Text templates will be modified over time to match changing preferences,
+it is best for another set of minimal templates be used to test the module. Consequently, a different set of
+text templates is used when a C<RakuDoc::Processor> object is instantiated as C< $rpp .= new(:test)>.
+
+The special template C<_name> is used to distinguish between test and default templates, and can be used to
+check that that a new Renderer has loaded its templates.
+
+Information about both sets of templates are listed in the generated files L<default-text-templates|#default-text-templates>
+and L<test-text-templates|#test-text-templates>.
+
 =end rakudoc

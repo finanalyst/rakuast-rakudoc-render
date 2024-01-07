@@ -7,7 +7,7 @@ use Test::Deeply::Relaxed;
 use PrettyDump;
 my $com-channel = Supplier::Preserving.new;
 
-plan 10;
+plan 13;
 
 my RakuDoc::Processed $rp .= new(:source-data(%(:name('test prs'), :extra<extra>)));
 is $rp.source-data<name>, 'test prs', 'source data ammended';
@@ -45,6 +45,8 @@ $ps.body ~= 'start' ~ PCell.new(:$com-channel, :id('XXX')) ~ PCell.new(:$com-cha
 
 $ps.toc.append: %(<one two three> Z=> 1 ..*), %(<four five> Z=> 'a' ..*), ;
 $pt.toc.append: %(<tone ttwo tthree> Z=> 1 ..*), %(<tfour tfive> Z=> 'a' ..*), ;
+$ps.warnings.append: 'warning 1 is about foo', 'warning 2 is about bar';
+$pt.warnings.append: 'Error 1 is third', 'Error 2 is fourth', 'final problem';
 $pu += [+] $ps, $pt;
 subtest {
     my @toc = $pu.toc;
@@ -52,6 +54,13 @@ subtest {
     is-deeply @toc[0].keys.sort, <one three two>, 'first elem as expected';
     is-deeply @toc[3].keys.sort, <tfive tfour>, 'fourth elem as expected';
 }, 'ProcessedState object toc added as expected';
+subtest {
+    my @warns = $pu.warnings;
+    is @warns.elems, 5, 'No. of warnings correct';
+    like @warns.join, /
+       'warning 1' .+ 'warning 2' .+ 'Error 1' .+ 'Error 2' .+ 'final'
+    /, 'sequence of warnings seems right';
+}, 'warnings compiled in correct order';
 
 $ps.index = %( syntax => ['one',], kind => ['two',]);
 $pt.index = %( syntax => ['tone',], xxx => ['yyy',]);
@@ -68,7 +77,7 @@ $pt.semantics = %( syntax => ['tone',], xxx => ['yyy',]);
 $pu += [+] $ps, $pt;
 is-deeply-relaxed $pu.semantics, %expected-ind, 'ProcessedState object semantics added as expected';
 
-$payload = '｢more things｣';
+$payload = '< more things >';
 $com-channel.emit(%(:$payload, :id<XXX>));
 
 like $pu.body.Str, /
@@ -77,6 +86,9 @@ like $pu.body.Str, /
 
 $pu .= new;
 my ProcessedState @a = $ps, $pt;
-$pu = [+] @a;
-say $pu;
+lives-ok { $pu = [+] @a }, 'reduction of + over an array lives';
+like $pu.body.Str, /
+    ^ .+ 'end' ** 4 $
+/, 'content of pu body as expected';
+
 done-testing;
