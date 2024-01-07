@@ -1,10 +1,131 @@
 =begin rakudoc
-=TITLE Templates in C<default-text-temps>
+=TITLE Templates in C<test-text-templates>
 =SUBTITLE Auto generated from C<lib/RakuDoc/Render.rakumod>
 =begin table
     =row :header
         =cell Name
         =cell Description
         =cell Parameters used
+    =row
+        =for cell :label
+		_name
+        =cell V<test text templates>
+        =cell 
+    =row
+        =for cell :label
+		code
+        =cell V<renders =code blocks>
+        =cell no parameters
+    =row
+        =for cell :label
+		comment
+        =cell V<renders =comment block>
+        =cell no parameters
+    =row
+        =for cell :label
+		custom
+        =cell V<renders =custom block>
+        =cell no parameters
+    =row
+        =for cell :label
+		defn
+        =cell V<renders =defn block>
+        =cell no parameters
+    =row
+        =for cell :label
+		footnotes
+        =cell V<special template to render the footnotes data structure>
+        =cell no parameters
+    =row
+        =column
+			=for cell :label :row-span(2)
+			head
+        =column
+			=cell V<renders =head block>
+			=for cell :row-span(1)
+			-
+        =column
+			=cell level
+			=cell contents
+    =row
+        =for cell :label
+		index
+        =cell V<special template to render the index data structure>
+        =cell no parameters
+    =row
+        =for cell :label
+		input
+        =cell V<renders =input block>
+        =cell no parameters
+    =row
+        =for cell :label
+		item
+        =cell V<renders =item block>
+        =cell no parameters
+    =row
+        =for cell :label
+		nested
+        =cell V<renders =nested block>
+        =cell no parameters
+    =row
+        =for cell :label
+		numhead
+        =cell V<renders =numhead block>
+        =cell no parameters
+    =row
+        =for cell :label
+		numitem
+        =cell V<renders =numitem block>
+        =cell no parameters
+    =row
+        =for cell :label
+		output
+        =cell V<renders =output block>
+        =cell no parameters
+    =row
+        =for cell :label
+		para
+        =cell V<renders =para block>
+        =cell no parameters
+    =row
+        =for cell :label
+		pod
+        =cell V<renders =pod block>
+        =cell no parameters
+    =row
+        =for cell :label
+		rakudoc
+        =cell V<renders =rakudoc block>
+        =cell no parameters
+    =row
+        =for cell :label
+		section
+        =cell V<renders =section block>
+        =cell no parameters
+    =row
+        =for cell :label
+		semantic
+        =cell V<renders =semantic block>
+        =cell no parameters
+    =row
+        =for cell :label
+		source-wrap
+        =cell V<special template to encapsulate all the output to save to a file>
+        =cell no parameters
+    =row
+        =for cell :label
+		table
+        =cell V<renders =table block>
+        =cell no parameters
+    =row
+        =for cell :label
+		toc
+        =cell V<special template to render the toc data structure>
+        =cell toc
+    =row
+        =for cell :label
+		warnings
+        =cell V<special template to render the warnings data structure>
+        =cell no parameters
 =end table
 =end rakudoc

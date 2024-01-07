@@ -3,16 +3,14 @@ use v6.d;
 
 sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templates', :$dest="docs") {
     exit note "Could not find $module" unless $module.IO ~~ :e & :f;
-    my $tmpl-method = 'default-text-temps';
     my %data;
     my Bool $code = False;
     my $ln;
     my $start = False;
     my $end = False;
     for $module.IO.lines {
-        my $t = m/ 'method' \s+ $tmpl-method /.so;
-        if $t {
-            $start |= $t;
+        if m/ 'method' \s+ $method / {
+            $start = ! $start;
             next
         }
         next unless $start;
@@ -52,7 +50,7 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
     }
     my $rakudoc = qq:to/HEAD/;
         =begin rakudoc
-        =TITLE Templates in C\<{ $tmpl-method }>
+        =TITLE Templates in C\<{ $method }>
         =SUBTITLE Auto generated from C\<{ $module }>
         =begin table
             =row :header
