@@ -156,7 +156,7 @@ Since it is anticipated that the output Text templates will be modified over tim
 
 The special template `_name` is used to distinguish between test and default templates, and can be used to check that that a new Renderer has loaded its templates.
 
-Information about both sets of templates are listed in the generated files [default-text-templates](default-text-templates) and [test-text-templates](test-text-templates).
+Information about both sets of templates are listed in the generated files [default-text-templates](/default-text-templates.md) and [test-text-templates](/test-text-templates.md).
 
 
 
@@ -165,4 +165,4 @@ Information about both sets of templates are listed in the generated files [defa
 
 
 ----
-Rendered from Templates at 2024-01-07T21:14:09Z
+Rendered from Templates at 2024-01-07T21:41:26Z
