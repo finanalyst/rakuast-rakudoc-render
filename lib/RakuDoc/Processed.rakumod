@@ -72,10 +72,15 @@ class ProcessedState {
 class RakuDoc::Processed is ProcessedState {
     #| Information about the RakuDoc source, eg file name, path, modified, language
     has %.source-data;
+    #| The output format that the source has been rendered into
+    has $!output-format = 'txt';
     #| Text between =TITLE and first header, used for X<> place before first header
     has Str $.front-matter is rw = 'preface';
-    #| Name to be used in titles and files.
-    has Str $.name is rw = 'UNNAMED';
+    #| Name to be used in titles and files
+    #| name can be modified after creation of Object
+    #| name can be set when creating object
+    #| if name is not set, then it is taken from source name + format
+    has Str $.name is rw;
     #| String value of TITLE.
     has Str $.title is rw = 'NO_TITLE';
     #| Target of Title Line
@@ -89,9 +94,9 @@ class RakuDoc::Processed is ProcessedState {
     #| A set of unique targets inside the file, new targets must be unique
     has SetHash $.targets;
 
-    submethod BUILD( :%source-data ) {
+    submethod TWEAK( :%source-data, :$name, :$output-format ) {
         %!source-data = %(
-            name => 'Un-named source',
+            name => 'Un-named-source',
             path => '.',
             language => 'en',
             modified => '2020-12-31T00:00:01Z',
@@ -99,6 +104,9 @@ class RakuDoc::Processed is ProcessedState {
             index-caption => 'Index',
         );
         %!source-data{ .key } = .value for %source-data.pairs;
+        $!output-format = $_ with $output-format;
+        # if name is set on new, then it will be defined by TWEAK, else undefined, so take it from
+        without $!name { $!name = %!source-data<name> ~ '.' ~ $!output-format }
         $!targets .= new;
     }
     

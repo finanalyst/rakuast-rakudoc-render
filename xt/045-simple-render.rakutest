@@ -10,7 +10,7 @@ my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new(:test);
 
-is $rdp.output-format, 'text', 'defaults to Text';
+is $rdp.output-format, 'txt', 'defaults to txt';
 $ast = Q:to/QAST/.AST;
     =head1 Test text
     QAST

@@ -59,14 +59,17 @@ class RakuDoc::Processor {
     has $.output-format;
     has ScopedData $!scoped-data .= new;
 
-    multi submethod TWEAK(:$!output-format = 'text', :$test = False ) {
+    multi submethod TWEAK(:$!output-format = 'txt', :$test = False ) {
         %!templates = $test ?? self.test-text-templates !! self.default-text-templates;
         %!templates.helper = self.text-helpers;
     }
 
     #| renders the $ast to a RakuDoc::Processed or String
     multi method render( $ast, :%source-data, :$stringify = False ) {
-        $!current .= new(:%source-data);
+        $!current .= new(:%source-data, :$!output-format );
+        # for multithreading this does not work
+#        my @prs = $ast.rakudoc.map({ start $.handle($_) });
+#        $!current += $_ for await @prs;
         my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
         $!current += $_ for @prs;
         return $.current unless $stringify;
@@ -201,7 +204,8 @@ class RakuDoc::Processor {
     # =data
     # Raku data section
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
-        #ignore declarator blocks
+        #ignore declarator block
+        $*prs
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         given $ast.letter {
