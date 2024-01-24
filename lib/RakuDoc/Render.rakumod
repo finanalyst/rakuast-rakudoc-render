@@ -52,33 +52,38 @@ class ScopedData {
     }
 }
 
+enum RDProcDebug <None AstBlock BlockType>;
+
 class RakuDoc::Processor {
     has %.templates is Template-directory;
     has Supplier::Preserving $.com-channel .= new;
     has RakuDoc::Processed $.current;
     has $.output-format;
     has ScopedData $!scoped-data .= new;
+    #| debug mode
+    has Set $!debug .= new ;
 
-    multi submethod TWEAK(:$!output-format = 'txt', :$test = False ) {
+    multi submethod TWEAK(:$!output-format = 'txt', :$test = False, :$debug = (None, ) ) {
         %!templates = $test ?? self.test-text-templates !! self.default-text-templates;
         %!templates.helper = self.text-helpers;
+        $!debug = $debug.Set;
     }
 
     #| renders the $ast to a RakuDoc::Processed or String
     multi method render( $ast, :%source-data, :$stringify = False ) {
         $!current .= new(:%source-data, :$!output-format );
-        # for multithreading this does not work
-#        my @prs = $ast.rakudoc.map({ start $.handle($_) });
-#        $!current += $_ for await @prs;
-        my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
-        $!current += $_ for @prs;
+        my ProcessedState $*prs .= new;
+        for $ast.rakudoc {
+            $.handle($_)
+        }
+        $!current += $*prs;
         return $.current unless $stringify;
         %!templates<source-wrap>( %( :processed( $!current ), )).Str
     }
 
     #| handle methods create a local version of $*prs, which is returned
-    proto method handle(|c --> ProcessedState) {
-        my ProcessedState $*prs .= new;
+    proto method handle( $ast --> ProcessedState) {
+        say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $!debug (cont) AstBlock;
         {*}
     }
     multi method handle(Str:D $ast) {
@@ -102,9 +107,6 @@ class RakuDoc::Processor {
             # =output
             # Pre-formatted sample output
 
-            # =headN
-            # Nth-level heading
-
             # =numhead
             # First-level numbered heading
 
@@ -114,8 +116,6 @@ class RakuDoc::Processor {
             # =defn
             # Definition of a term
 
-            # =itemN
-            # Nth-level list item
 
             # =numitem
             # First-level numbered list item
@@ -134,8 +134,9 @@ class RakuDoc::Processor {
         # When a built in block, other than =item, is started,
         # there may be a list of items or defns, which need to be
         # completed and rendered
-        $*prs.body ~= $.complete-item-list() unless $ast.type and $ast.type eq 'item';
-        $*prs.body ~= $.complete-defn-list() unless $ast.type and $ast.type eq 'defn';
+        say "Doc::Block type: " ~ $ast.type if $!debug (cont) BlockType;
+        $*prs.body ~= $.complete-item-list unless $ast.type and $ast.type eq 'item';
+        $*prs.body ~= $.complete-defn-list unless $ast.type and $ast.type eq 'defn';
 
         # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
@@ -153,6 +154,8 @@ class RakuDoc::Processor {
             when 'config' { $.manage-config($ast); }
             # =head
             # First-level heading
+            # =headN
+            # Nth-level heading
             when 'head' {
                 $!scoped-data.start-scope(:callee($_));
                 $.gen-head($ast);
@@ -161,13 +164,18 @@ class RakuDoc::Processor {
             when 'implicit-code' { $.gen-code($ast) }
             # =item
             # First-level list item
-            when 'item' { $.gen-item($ast) }
+            # =itemN
+            # Nth-level list item
+            when 'item' {
+                $.gen-item($ast)
+            }
             # =rakudoc
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
                 $!scoped-data.start-scope(:callee($_));
                 $.gen-rakudoc($ast);
-                $!scoped-data.end-scope}
+                $!scoped-data.end-scope
+            }
             # =pod
             # Legacy version of rakudoc
 #           when 'pod' { '' } # when rakudoc differs from pod
@@ -209,7 +217,7 @@ class RakuDoc::Processor {
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         given $ast.letter {
-            
+
             # A<...|...>
             # Alias to be replaced by contents of specified V<=alias> directive
             when 'A' {
@@ -399,7 +407,7 @@ class RakuDoc::Processor {
         my $target = $.name-id($ast, :make-unique);
         $.register-target($target);
         my $contents = $.contents($ast);
-        my %config = $.get-meta($ast);
+        my %config = $ast.resolved-config;
         my %scoped-head = $!scoped-data.config;
         %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
         $*prs.body ~= %!templates<head>(
@@ -407,17 +415,30 @@ class RakuDoc::Processor {
         )
     }
     method gen-item($ast) {
-        ''
+        my $level = $ast.level > 1 ?? $ast.level !! 1;
+        my $contents = $.contents($ast);
+        my %config = $ast.resolved-config;
+        my %scoped = $!scoped-data.config;
+        %config{ .key } = .value for %scoped{"item$level"}.pairs;
+        $*prs.items.push: %!templates<item>(
+            %( :$level, :$contents, %config)
+        )
     }
     method gen-rakudoc($ast) {
-        my %config = $.get-meta($ast);
+        my %config = $ast.resolved-config;
         $!current.source-data<rakudoc-config> = %config;
         my $contents = $.contents($ast);
+        # render any tailing lists
+        $contents ~= $.complete-item-list;
+        $contents ~= $.complete-defn-list;
         $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) )
     }
     method gen-section($ast) {
-        my %config = $.get-meta($ast);
+        my %config = $ast.resolved-config;
         my $contents = $.contents($ast);
+        # render any tailing lists
+        $contents ~= $.complete-item-list;
+        $contents ~= $.complete-defn-list;
         $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
     method gen-table($ast) {
@@ -434,25 +455,27 @@ class RakuDoc::Processor {
     }
     # directive type methods
     method manage-config($ast) {
-        my %options = $.get-meta($ast);
+        my %options = $ast.resolved-config;
         my $name = $ast.paragraphs[0].Str;
         $name = $name ~ '1' if $name ~~ / ^ 'item' $ | ^ 'head' $ /;
         $!scoped-data.config( { $name => %options } );
     }
     method manage-aliases($ast) {
-        my %options = $.get-meta($ast);
+        my %options = $ast.resolved-config;
         my $name = $ast.paragraphs[0].Str;
         $!scoped-data.aliases( %options );
     }
-    method manage-definitions($ast) {
-        my %options = $.get-meta($ast);
-        my $name = $ast.paragraphs[0].Str;
-        $!scoped-data.definitions( %options );
+    method manage-definitions() { ''
     }
     # completion methods
     #| finalises rendering of the item list in $*prs
     method complete-item-list() {
-        ''
+        return '' unless $*prs.items; # do nothing of no accumulated items
+        my $rv = %!templates<item-list>(
+            %( :item-list($*prs.items), )
+        );
+        $*prs.items = ();
+        $rv
     }
     #| finalises rendering of a defn list in $*prs
     method complete-defn-list() {
@@ -465,20 +488,18 @@ class RakuDoc::Processor {
     method register-target($targ) {
         $!current.targets{$targ}++
     }
-    #| The 'contents' method assumes
-    #|   $*prs is defined and that $ast.paragraphs is sequence.
-    #|   These are true inside a handle for a RakuDoc::Block
+    #| The 'contents' method that $ast.paragraphs is a sequence.
+    #| The $*prs for a set of paragraphs is new to collect all the
+    #| associated data. The body of the contents must then be
+    #| incorporated using the template of the block calling content
     method contents($ast) {
-        my ProcessedState @prs = $ast.paragraphs.map({ $.handle($_) });
-        # if the Block has embedded RakuDoc, then there may be links
-        # and index markup, which need to be added to the main $*prs
-        # but the content text as Pstr should not be added to the $*prs
-        # until it has been rendered in the template
-        my ProcessedState $rv .= new;
-        $rv += $_ for @prs;
-        my PStr $text = $rv.body;
-        $rv.body .= new;
-        $*prs += $rv;
+        my ProcessedState $*prs .= new;
+        for $ast.paragraphs {
+           $.handle($_)
+        };
+        my PStr $text = $*prs.body;
+        $*prs.body .= new;
+        CALLERS::<$*prs> += $*prs;
         $text
     }
     # the following are methods that may be called from within a template
@@ -538,7 +559,6 @@ class RakuDoc::Processor {
                 $tmpl.globals.helper<add-to-toc>(
                     {:$caption, :$target, :level(%prm<level>), :$state }
                 ) if $toc;
-
                 "<head>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</head>\n"
             },
             #| renders =numhead block
@@ -629,6 +649,10 @@ class RakuDoc::Processor {
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
                 ''
+            },
+            #| special template to render an item list data structure
+            item-list => -> %prm, $tmpl {
+                "<item-list>\n" ~ %prm<item-list>.join ~ "</item-list>\n"
             },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
@@ -768,6 +792,10 @@ class RakuDoc::Processor {
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
                 ''
+            },
+            #| special template to render an item list data structure
+            item-list => -> %prm, $tmpl {
+                '<item-list> ' ~ %prm<item-list>.join ~ ' </item-list>'
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {

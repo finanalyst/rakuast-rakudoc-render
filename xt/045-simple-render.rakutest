@@ -17,7 +17,14 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast );
 
 isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
-like $rv.body.Str, / '<head>' .+ 'Test text' .+ '</head>' /, 'head template works';
+like $rv.body.Str, /
+    ^ '<head>'
+    \s+ 'contents: Test text'
+    \s+ 'level: 1'
+    \s+ 'target: Test_text'
+    \s+ '</head>'
+    \s+ $
+    /, 'head template works';
 $ast = Q:to/QAST/.AST;
     =begin rakudoc :kind<sub> :subkind<operator> :category<Language>
     =head This is a header

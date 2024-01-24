@@ -1,8 +1,9 @@
 use v6.d;
 use Test;
+use Test::Output;
 use RakuDoc::Render;
 
-plan 4;
+plan 5;
 my RakuDoc::Processor $rdp1;
 my RakuDoc::Processor $rdp2;
 lives-ok { $rdp1 .= new(:test) }, 'instantiates with test set';
@@ -12,4 +13,11 @@ isnt $rdp1.templates<_name>({}),$rdp2.templates<_name>({}), 'two template hashes
 
 is ( $rdp1.templates.keys.Set (-) $rdp2.templates.keys.Set), (), 'test keys are the same by symmetric set difference';
 
+$rdp1 .= new( :debug( AstBlock, BlockType) );
+my $ast = Q:to/QAST/.AST;
+    =head1 Test text
+    QAST
+output-like { $rdp1.render( $ast ) }, /
+    'Handling:' .+ 'RakuAST::Doc::Block' .+ 'Block type' .+ 'head'
+/, 'shows which blocks are past, and which block types';
 done-testing;

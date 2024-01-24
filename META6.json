@@ -9,7 +9,8 @@
   "auth": "zef:finanalyst",
   "depends": [
     "PrettyDump",
-    "Test::Deeply::Relaxed"
+    "Test::Deeply::Relaxed",
+    "Test::Output"
   ],
   "test-depends": [
     "Test",

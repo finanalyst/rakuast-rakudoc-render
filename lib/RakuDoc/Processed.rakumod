@@ -46,6 +46,12 @@ class ProcessedState {
     #| RakuDoc warnings are generated as specified in the RakuDoc v2 document.
     has Str @.warnings;
 
+    #| An array of accumulated rendered items, added to body when next non-item block encountered
+    has Str @.items;
+
+    #| An array of accumulated rendered definitions, added to body when next non-defn block encountered
+    has Str @.defns;
+
     multi method gist(ProcessedState:U: ) { 'Undefined ProcessedState object' }
 
     multi method gist(ProcessedState:D: Int :$output = 300 ) {
@@ -62,6 +68,10 @@ class ProcessedState {
             links => { pretty-dump( %.links, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
+            items => { pretty-dump( @.items, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
+            defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
@@ -132,6 +142,10 @@ class RakuDoc::Processed is ProcessedState {
             links => { pretty-dump( %.links, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             targets => <｢{ $!targets.keys.join('｣, ｢') }｣>
+            items => { pretty-dump( @.items, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
+            defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
@@ -152,5 +166,7 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
         $p.semantics{$k}.append: $v.Slip
     }
     $p.warnings.append: $q.warnings;
+    $p.items.append: $q.items;
+    $p.defns.append: $q.defns;
     $p
 }
