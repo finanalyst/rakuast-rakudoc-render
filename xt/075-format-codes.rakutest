@@ -1,0 +1,323 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan *;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingB<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<basis>contents: ｢to be said｣</basis>'
+    'inside letters.'
+    /, 'B-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to B<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<basis>contents: ｢say｣</basis>'
+    ' in between words.'
+    /, 'B-markup works with space';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingC<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<code>contents: ｢to be said｣</code>'
+    'inside letters.'
+    /, 'C-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to C<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<code>contents: ｢say｣</code>'
+    ' in between words.'
+    /, 'C-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingH<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<high>contents: ｢to be said｣</high>'
+    'inside letters.'
+    /, 'H-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to H<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<high>contents: ｢say｣</high>'
+    ' in between words.'
+    /, 'H-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingI<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<important>contents: ｢to be said｣</important>'
+    'inside letters.'
+    /, 'I-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to I<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<important>contents: ｢say｣</important>'
+    ' in between words.'
+    /, 'I-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingJ<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<junior>contents: ｢to be said｣</junior>'
+    'inside letters.'
+    /, 'J-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to J<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<junior>contents: ｢say｣</junior>'
+    ' in between words.'
+    /, 'J-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingK<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<keyboard>contents: ｢to be said｣</keyboard>'
+    'inside letters.'
+    /, 'K-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to K<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<keyboard>contents: ｢say｣</keyboard>'
+    ' in between words.'
+    /, 'K-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingN<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<note>contents: ｢to be said｣</note>'
+    'inside letters.'
+    /, 'N-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to N<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<note>contents: ｢say｣</note>'
+    ' in between words.'
+    /, 'N-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingO<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<overstrike>contents: ｢to be said｣</overstrike>'
+    'inside letters.'
+    /, 'O-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to O<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<overstrike>contents: ｢say｣</overstrike>'
+    ' in between words.'
+    /, 'O-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingR<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<replaceable>contents: ｢to be said｣</replaceable>'
+    'inside letters.'
+    /, 'R-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to R<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<replaceable>contents: ｢say｣</replaceable>'
+    ' in between words.'
+    /, 'R-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingS<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<space>contents: ｢to be said｣</space>'
+    'inside letters.'
+    /, 'S-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to S<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<space>contents: ｢say｣</space>'
+    ' in between words.'
+    /, 'S-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingT<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<terminal>contents: ｢to be said｣</terminal>'
+    'inside letters.'
+    /, 'T-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to T<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<terminal>contents: ｢say｣</terminal>'
+    ' in between words.'
+    /, 'T-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingU<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<unusual>contents: ｢to be said｣</unusual>'
+    'inside letters.'
+    /, 'U-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to U<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<unusual>contents: ｢say｣</unusual>'
+    ' in between words.'
+    /, 'U-markup works between words';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingV<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing'
+    '<verbatim>contents: ｢to be said｣</verbatim>'
+    'inside letters.'
+    /, 'V-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to V<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to '
+    '<verbatim>contents: ｢say｣</verbatim>'
+    ' in between words.'
+    /, 'V-markup works between words';
+
+done-testing;

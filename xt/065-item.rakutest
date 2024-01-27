@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan *;
+plan 3;
 
 my $ast;
 my $rv;

@@ -9,123 +9,253 @@
     =row
         =for cell :label
 		_name
-        =cell V<test text templates>
+        =cell V«new test text templates»
         =cell 
     =row
         =for cell :label
 		code
-        =cell V<renders =code blocks>
+        =cell V«renders =code block»
         =cell no parameters
     =row
         =for cell :label
 		comment
-        =cell V<renders =comment block>
+        =cell V«renders =comment block»
         =cell no parameters
     =row
         =for cell :label
 		custom
-        =cell V<renders =custom block>
+        =cell V«renders =custom block»
         =cell no parameters
     =row
         =for cell :label
 		defn
-        =cell V<renders =defn block>
+        =cell V«renders =defn block»
         =cell no parameters
     =row
         =for cell :label
 		footnotes
-        =cell V<special template to render the footnotes data structure>
+        =cell V«special template to render the footnotes data structure»
         =cell no parameters
     =row
         =column
-			=for cell :label :row-span(2)
+			=for cell :label :row-span(7)
 			head
         =column
-			=cell V<renders =head block>
-			=for cell :row-span(1)
+			=cell V«renders =head block»
+			=for cell :row-span(6)
 			-
         =column
-			=cell level
+			=cell caption
 			=cell contents
+			=cell id
+			=cell target
+			=cell toc
+			=cell state
+			=cell level
     =row
         =for cell :label
 		index
-        =cell V<special template to render the index data structure>
+        =cell V«special template to render the index data structure»
         =cell no parameters
     =row
         =for cell :label
 		input
-        =cell V<renders =input block>
+        =cell V«renders =input block»
         =cell no parameters
     =row
         =for cell :label
 		item
-        =cell V<renders =item block>
+        =cell V«renders =item block»
+        =cell no parameters
+    =row
+        =for cell :label
+		item-list
+        =cell V«special template to render an item list data structure»
+        =cell item-list
+    =row
+        =for cell :label
+		markup-A
+        =cell V«A< DISPLAY-TEXT &#124;  METADATA = ALIAS-NAME >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-B
+        =cell V«B< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-C
+        =cell V«C< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-D
+        =cell V«D< DISPLAY-TEXT &#124;  METADATA = SYNONYMS >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-E
+        =cell V«E< DISPLAY-TEXT &#124;  METADATA = HTML/UNICODE-ENTITIES >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-F
+        =cell V«F< DISPLAY-TEXT &#124;  METADATA = LATEX-FORM >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-H
+        =cell V«H< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-I
+        =cell V«I< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-J
+        =cell V«J< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-K
+        =cell V«K< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-L
+        =cell V«L< DISPLAY-TEXT &#124;  METADATA = TARGET-URI >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-M
+        =cell V«M< DISPLAY-TEXT &#124;  METADATA = WHATEVER >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-N
+        =cell V«N< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-O
+        =cell V«O< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-P
+        =cell V«P< DISPLAY-TEXT &#124;  METADATA = REPLACEMENT-URI >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-R
+        =cell V«R< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-S
+        =cell V«S< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-T
+        =cell V«T< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-U
+        =cell V«U< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-V
+        =cell V«V< DISPLAY-TEXT >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-X
+        =cell V«X< DISPLAY-TEXT &#124;  METADATA = INDEX-ENTRY >»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-unknown
+        =cell V«Unknown markup, render minimally»
+        =cell no parameters
+    =row
+        =for cell :label
+		markup-Δ
+        =cell V«Δ< DISPLAY-TEXT &#124;  METADATA = VERSION-ETC >»
         =cell no parameters
     =row
         =for cell :label
 		nested
-        =cell V<renders =nested block>
+        =cell V«renders =nested block»
         =cell no parameters
     =row
         =for cell :label
 		numhead
-        =cell V<renders =numhead block>
+        =cell V«renders =numhead block»
         =cell no parameters
     =row
         =for cell :label
 		numitem
-        =cell V<renders =numitem block>
+        =cell V«renders =numitem block»
         =cell no parameters
     =row
         =for cell :label
 		output
-        =cell V<renders =output block>
+        =cell V«renders =output block»
         =cell no parameters
     =row
         =for cell :label
 		para
-        =cell V<renders =para block>
+        =cell V«renders =para block»
         =cell no parameters
     =row
         =for cell :label
 		pod
-        =cell V<renders =pod block>
+        =cell V«renders =pod block»
         =cell no parameters
     =row
         =for cell :label
 		rakudoc
-        =cell V<renders =rakudoc block>
+        =cell V«renders =rakudoc block»
         =cell no parameters
     =row
         =for cell :label
 		section
-        =cell V<renders =section block>
+        =cell V«renders =section block»
         =cell no parameters
     =row
         =for cell :label
 		semantic
-        =cell V<renders =semantic block>
+        =cell V«renders =semantic block»
         =cell no parameters
     =row
         =for cell :label
 		source-wrap
-        =cell V<special template to encapsulate all the output to save to a file>
-        =cell no parameters
+        =cell V«special template to encapsulate all the output to save to a file»
+        =cell processed
     =row
         =for cell :label
 		table
-        =cell V<renders =table block>
+        =cell V«renders =table block»
         =cell no parameters
     =row
         =for cell :label
 		toc
-        =cell V<special template to render the toc data structure>
+        =cell V«special template to render the toc data structure»
         =cell toc
     =row
         =for cell :label
-		warnings
-        =cell V<special template to render the warnings data structure>
+		unknown
+        =cell V«renders any unknown block minimally»
         =cell no parameters
+    =row
+        =for cell :label
+		warnings
+        =cell V«special template to render the warnings data structure»
+        =cell warnings
 =end table
 =end rakudoc

@@ -1,26 +1,39 @@
 #!/usr/bin/env raku
 use v6.d;
 
-sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templates', :$dest="docs") {
+sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method, :$dest="docs") {
     exit note "Could not find $module" unless $module.IO ~~ :e & :f;
+    exit note "No directory $dest" unless $dest.IO ~~ :e & :d;
+    with $method {
+        process(:$module, :$method, :$dest )
+    }
+    else {
+        for <test-text-templates default-text-templates > {
+            process( :$module, :$dest, :method($_) )
+        }
+    }
+
+}
+sub process(:$module, :$method, :$dest ) {
     my %data;
     my Bool $code = False;
     my $ln;
     my $start = False;
-    my $end = False;
     for $module.IO.lines {
         if m/ 'method' \s+ $method / {
             $start = ! $start;
             next
         }
         next unless $start;
-        next if m/ ^ \h* '%(' \h* $ /;
-        last if m/ ^ \h* ');' \s* '}' /;
+        next if m/ ^ \h* '%(' \h* $ /; # skip start of template hash defn
+        next if m/ ^ \s* $ /; # skip blank line
+        next if m/ ^ \s* '##' /; # skip template comment
+        last if m/ ^ \h* '); # END OF TEMPLATES' /; # stop at end of template hash defn
         if $code and m/ ^ \h+ '},' $ / {
             $code = False;
         }
         else {
-            $ln ~= $_.trim ~ "\n";
+            $ln ~= $_.trim ~ "\n"; # add all valid non-code lines
             $code = True
         }
         next if $code;
@@ -44,8 +57,9 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
         else {
             my $desc = $pre ~~ / ['#|' \h (.+?) \s*]+ $$ / ?? $/>>.Str !! [['no description',],];
             $desc = $desc[0].elems ?? $desc[0] !! ();
+            $desc = ($desc[0].subst(/ '|' /, '&#124;', :g) ,) ;
             my $params = $pst ~~ m/ [.+? '%prm<' (.+?) '>']+ / ?? $/>>.Str>>.unique[0] !! [['no parameters',],];
-            %data{$name} = %( :$desc, :$params)
+            %data{$name} = %( :$desc, :$params);
         }
     }
     my $rakudoc = qq:to/HEAD/;
@@ -58,7 +72,6 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
                 =cell Description
                 =cell Parameters used
         HEAD
-
     for %data.sort(*.key)>>.kv -> ($name, %row) {
         my $descs = +%row<desc>;
         my $params = +%row<params>;
@@ -69,23 +82,23 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
 
         if $span == 1 {
             $name-part = "=for cell \:label\n\t\t$name";
-            $desc-part = "=cell V\<{ %row<desc>[0] }>";
+            $desc-part = "=cell V\«{ %row<desc>[0] }»";
             $param-part = "=cell { %row<params> }";
         }
         elsif $params == $descs {
             $name-part = "=column\n\t\t\t=for cell \:label \:row-span($span)\n\t\t\t$name";
-            $desc-part = "=column\n\t\t\t" ~ (gather for %row<desc>.list { take "=cell V<$_>" }).join("\n\t\t\t");
+            $desc-part = "=column\n\t\t\t" ~ (gather for %row<desc>.list { take "=cell V\«$_»" }).join("\n\t\t\t");
             $param-part = "=column\n\t\t\t" ~ (gather for %row<params>.list { take "=cell $_" }).join("\n\t\t\t");
         }
         elsif $span > $descs {
             $name-part = "=column\n\t\t\t=for cell \:label \:row-span($span)\n\t\t\t$name";
-            $desc-part = "=column\n\t\t\t" ~ (gather for %row<desc>.list { take "=cell V<$_>" }).join("\n\t\t\t")
+            $desc-part = "=column\n\t\t\t" ~ (gather for %row<desc>.list { take "=cell V\«$_»" }).join("\n\t\t\t")
                     ~ "\n\t\t\t=for cell \:row-span({ $span - $descs })\n\t\t\t-";
             $param-part = "=column\n\t\t\t" ~ (gather for %row<params>.list { take "=cell $_" }).join("\n\t\t\t");
         }
         else {
             $name-part = "=column\n\t\t\t=for cell \:label \:row-span($span)\n\t\t\t$name";
-            $desc-part = "=column\n\t\t\t" ~ (gather for %row<desc>.list { take "=cell V<$_>" }).join("\n\t\t\t");
+            $desc-part = "=column\n\t\t\t" ~ (gather for %row<desc>.list { take "=cell V\«$_»" }).join("\n\t\t\t");
             $param-part = "=column\n\t\t\t" ~ (gather for %row<params>.list { take "=cell $_" }).join("\n\t\t\t")
                     ~ "\n\t\t\t=for cell \:row-span({ $span - $params })\n\t\t\t-";
         }

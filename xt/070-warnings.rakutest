@@ -1,0 +1,24 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan 2;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head1 Item testing
+
+    Some text
+    =nonitem first item should be level 1
+    =item second item L1
+    =item third item L1
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :final-wrap );
+like $rv, / '<unknown>' .+ 'block-type: nonitem' .+ '</unknown>' /, 'minimal render of unknown';
+like $rv, / '<warning-list>' .+ '<warning>' .+ 'not a valid builtin' .+ '</warning>' .+ '</warning-list>' /,'warning list';
+
+done-testing;

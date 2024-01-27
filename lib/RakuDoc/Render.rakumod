@@ -19,18 +19,20 @@ class ScopedData {
         DEBUG
     }
     #| starts a new scope
-    method start-scope(:$callee) {
+    method start-scope(:$callee, :$debug = False ) {
         @!callees.push: $callee // 'not given';
         @!config.push: @!config[*-1].pairs.hash;
         @!aliases.push: @!aliases[*-1].pairs.hash;
         @!definitions.push: @!definitions[*-1].pairs.hash;
+        self.debug if $debug
     }
     #| ends the current scope, forgets new data
-    method end-scope() {
+    method end-scope(:$debug = False) {
         @!callees.pop;
         @!config.pop;
         @!aliases.pop;
         @!definitions.pop;
+        self.debug if $debug
     }
     multi method config(%h) {
         @!config[*-1]{ .key } = .value for %h;
@@ -52,7 +54,7 @@ class ScopedData {
     }
 }
 
-enum RDProcDebug <None AstBlock BlockType>;
+enum RDProcDebug <None AstBlock BlockType Scoping>;
 
 class RakuDoc::Processor {
     has %.templates is Template-directory;
@@ -70,30 +72,35 @@ class RakuDoc::Processor {
     }
 
     #| renders the $ast to a RakuDoc::Processed or String
-    multi method render( $ast, :%source-data, :$stringify = False ) {
+    multi method render( $ast, :%source-data, :$final-wrap = False ) {
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
         for $ast.rakudoc {
             $.handle($_)
         }
         $!current += $*prs;
-        return $.current unless $stringify;
+        # all suspended PCells should have been replaced by Str
+        # so calling debug on PStr should not get a PCell waiting for
+        my $suspended = $*prs.body.debug ~~ / [ 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 .*? ]+ $ /;
+        if $suspended {
+            $*prs.warnings.push: 'Still waiting for ' ~ $/<id> ~ ' to be expanded.' for $suspended.list;
+        }
+        return $.current unless $final-wrap;
+        # All of the placing of the footnotes, ToC etc, is left to source-wrap template
         %!templates<source-wrap>( %( :processed( $!current ), )).Str
     }
 
-    #| handle methods create a local version of $*prs, which is returned
-    proto method handle( $ast --> ProcessedState) {
+    #| handle methods return void
+    proto method handle( $ast ) {
         say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $!debug (cont) AstBlock;
         {*}
     }
     multi method handle(Str:D $ast) {
-        $*prs.body ~= $ast.trim;
-        $*prs
+        $*prs.body ~= $ast;
     }
     multi method handle(RakuAST::Node:D $ast) {
         my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
         $*prs += $_ for @prs;
-        $*prs
     }
             # =column
             # Start a new column in a procedural table
@@ -142,10 +149,10 @@ class RakuDoc::Processor {
         given $ast.type {
             # =alias
             # Define a Pod macro
-            when 'alias' { $.gen-alias($ast) }
+#            when 'alias' { $.gen-alias($ast) }
             # =code
             # Verbatim pre-formatted sample source code
-            when 'code' { $.gen-code($ast) }
+#            when 'code' { $.gen-code($ast) }
             # =comment
             # Content to be ignored by all renderers
             when 'comment' { '' }
@@ -157,11 +164,11 @@ class RakuDoc::Processor {
             # =headN
             # Nth-level heading
             when 'head' {
-                $!scoped-data.start-scope(:callee($_));
+                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
                 $.gen-head($ast);
-                $!scoped-data.end-scope
+                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
             }
-            when 'implicit-code' { $.gen-code($ast) }
+#            when 'implicit-code' { $.gen-code($ast) }
             # =item
             # First-level list item
             # =itemN
@@ -169,12 +176,16 @@ class RakuDoc::Processor {
             when 'item' {
                 $.gen-item($ast)
             }
+            # =para block, as opposed to unmarked paragraphs in a block
+            when 'para' {
+
+            }
             # =rakudoc
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
                 $!scoped-data.start-scope(:callee($_));
                 $.gen-rakudoc($ast);
-                $!scoped-data.end-scope
+                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
             }
             # =pod
             # Legacy version of rakudoc
@@ -182,211 +193,141 @@ class RakuDoc::Processor {
             # =section
             # Defines a section
             when 'section' {
-                $!scoped-data.start-scope(:callee($_));
+                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
                 $.gen-section($ast);
-                $!scoped-data.end-scope
+                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
             }
             # =table
             # Visual or procedural table
-            when 'table' { $.gen-table($ast) }
+#            when 'table' { $.gen-table($ast) }
             # RESERVED
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
-                $!scoped-data.start-scope(:callee($_));
+                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
                 $.gen-semantics($ast);
-                $!scoped-data.end-scope
+                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
             }
             # CustomName
             # User-defined block
             when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
-                $!scoped-data.start-scope(:callee($_));
+                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
                 $.gen-custom($ast);
-                $!scoped-data.end-scope
+                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
             }
             default { $.gen-unknown-builtin($ast) }
         }
-        $*prs
     }
     # =data
     # Raku data section
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
         #ignore declarator block
-        $*prs
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         given $ast.letter {
+            ## Markup codes with only display (format codes), no meta data allowed
+            ## meta data via Config is allowed
+            when any( <B C H I J K R S T U V N O> ) {
+                my $letter = $ast.letter;
+                my %config;
+                my $contents = self.markup-contents($ast);
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                $*prs.body ~= %!templates{"markup-$letter"}(
+                    %( :$contents, %config )
+                );
+            }
+            ## Markup codes, optional display and meta data
 
-            # A<...|...>
+            # A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             # Alias to be replaced by contents of specified V<=alias> directive
             when 'A' {
 
             }
-
-            # B<...>
-            # Basis/focus of sentence (typically rendered bold)
-            when 'B' {
-
-            }
-
-            # C<...>
-            # Code (typically rendered fixed-width)
-            when 'C' {
-
-            }
-
-            # D<...>
-            # Definition inline (V<D<term being defined|synonym1; synonym2>>)
-            when 'D' {
-
-            }
-
-            # Δ<...|...;...>>
-            # Delta note (V<Δ<visible text|version; Notification text>>)
-            when 'Δ' {
-
-            }
-            # E<...|...;...>
-            # Entity (HTML or Unicode) description (V<E<entity1;entity2; multi,glyph;...>>)
+            # E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
+            # Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
             when 'E' {
 
             }
-
-            # F<...|...>
-            # Inline content for a formula (V<F<ALT|LaTex notation>>)
+            # F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
+            # Formula inline content ( F<ALT|LaTex notation> )
             when 'F' {
 
             }
-
-            # G<...>
-            # (This markup code is not yet defined, but is reserved for future use)
-            when 'G' {
-
-            }
-
-            # H<...>
-            # High text (typically rendered superscript)
-            when 'H' {
-
-            }
-
-            # I<...>
-            # Important (typically rendered in italics)
-            when 'I' {
-
-            }
-
-            # J<...>
-            # Junior text (typically rendered subscript)
-            when 'J' {
-
-            }
-
-            # K<...>
-            # Keyboard input (typically rendered fixed-width)
-            when 'K' {
-
-            }
-
-            # L<...|...>
-            # Link (V<L<display text|destination URI>>)
+            # L< DISPLAY-TEXT |  METADATA = TARGET-URI >
+            # Link ( L<display text|destination URI> )
             when 'L' {
 
             }
-
-            # M<...|..,..;...>
-            # Markup extra (V<M<display text|functionality;param,sub-type;...>>)
-            when 'M' {
-
-            }
-
-            # N<...>
-            # Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
-            when 'N' {
-
-            }
-
-            # O<...>
-            # Overstrike or strikethrough
-            when 'O' {
-
-            }
-
-            # P<...|...>
+            # P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             # Placement link
             when 'P' {
 
             }
 
-            # Q<...>
-            # (This markup code is not yet defined, but is reserved for future use)
-            when 'Q' {
+            ## Markup codes, mandatory display and meta data
+            # D< DISPLAY-TEXT |  METADATA = SYNONYMS >
+            # Definition inline ( D<term being defined|synonym1; synonym2> )
+            when 'D' {
 
             }
-
-            # R<...>
-            # Replaceable component or metasyntax
-            when 'R' {
-
-            }
-
-            # S<...>
-            # Space characters to be preserved
-            when 'S' {
+            # Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
+            # Delta note ( Δ<visible text|version; Notification text> )
+            when 'Δ' {
 
             }
-
-            # T<...>
-            # Terminal output (typically rendered fixed-width)
-            when 'T' {
-
-            }
-
-            # U<...>
-            # Unusual (typically rendered with underlining)
-            when 'U' {
+            # M< DISPLAY-TEXT |  METADATA = WHATEVER >
+            # Markup extra ( M<display text|functionality;param,sub-type;...>)
+            when 'M' {
 
             }
-
-            # V<...>
-            # Verbatim (internal markup instructions ignored)
-            when 'V' {
-
-            }
-
-            # W<...>
-            # (This markup code is not yet defined, but is reserved for future use)
-#            when 'W' {
-#
-#            }
-
-            # X<...|..,..;...>
-            # Index entry (V<X<display text|entry,subentry;...>>)
+            # X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
+            # Index entry ( X<display text|entry,subentry;...>)
             when 'X' {
 
             }
 
-            # Y<...>
-            # (This markup code is not yet defined, but is reserved for future use)
-#            when 'Y' {
-#
-#            }
+            ## Technically only meta data, but just contents
 
-            # Z<...>
-            # Zero-width comment (contents never rendered)
+            # Z< METADATA = COMMENT >
+            # Comment zero-width  (contents never rendered)
             when 'Z' {
-                ''
+                $*prs.body ~= '';
+            }
+        
+            ## Undefined and reserved, so generate warnings
+            # do not go through templates as these cannot be redefined
+            when any(<G Q W Y>) {
+                $*prs.body ~= ~$ast;
+                $*prs.warnings.push: '｢' ~ $ast.letter ~ '｣' ~ ' is not yet defined, but is reserved for future use.'
+            }
+            default {
+                my $letter = $ast.letter;
+                my %config;
+                my $contents;
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                $*prs.body ~= %!templates<unknown>(
+                    %( :$contents, %config)
+                );
+                $*prs.warnings.push: '｢' ~ $ast.letter ~ '｣' ~ 'is not yet defined, but could be a custom code'
             }
         }
-        $*prs
     }
-    # =para
     # Ordinary paragraph
     multi method handle(RakuAST::Doc::Paragraph:D $ast) {
-        my ProcessedState @prs = $ast.atoms.map({ $.handle($_) });
-        $*prs += $_ for @prs;
-        $*prs
+        my %config;
+        my %scoped-head = $!scoped-data.config;
+        %config{ .key } = .value for %scoped-head<para>.pairs;
+        my ProcessedState $*prs .= new;
+        for $ast.atoms { $.handle($_) }
+        my PStr $contents = $*prs.body;
+        $*prs.body .= new;
+        $*prs.body ~= %!templates<para>(
+            %( :$contents, %config)
+        );
+        CALLERS::<$*prs> += $*prs;
     }
     multi method handle(RakuAST::Doc::Row:D $ast) {
         self.handle($ast.WHICH.Str)
@@ -444,8 +385,19 @@ class RakuDoc::Processor {
     method gen-table($ast) {
         ''
     }
-    method gen-unknown-built-in($ast) {
-        ''
+    method gen-unknown-builtin($ast) {
+        my %config = $ast.resolved-config;
+        my $contents = $.contents($ast);
+        if $ast.type ~~ any(< 
+                cell code input output comment head numhead defn item numitem nested para
+                rakudoc section pod table formula
+            >) { # a known built-in, but to get here the block is unimplemented
+            $*prs.warnings.push: '｢' ~ $ast.type ~ '｣' ~ 'is a valid, but unimplemented builtin block'
+        }
+        else { # not known so create another warning
+            $*prs.warnings.push: '｢' ~ $ast.type ~ '｣' ~ 'is not a valid builtin block, is it a mispelt Custom block?'
+        }
+        $*prs.body ~= %!templates<unknown>( %( :block-type($ast.type), :$contents, %config ) )
     }
     method gen-semantics($ast) {
         ''
@@ -502,6 +454,14 @@ class RakuDoc::Processor {
         CALLERS::<$*prs> += $*prs;
         $text
     }
+    method markup-contents($ast) {
+        my ProcessedState $*prs .= new;
+        for $ast.atoms { $.handle($_) }
+        my PStr $text = $*prs.body;
+        $*prs.body .= new;
+        CALLERS::<$*prs> += $*prs;
+        $text
+    }
     # the following are methods that may be called from within a template
     # templates have a data
 
@@ -532,7 +492,7 @@ class RakuDoc::Processor {
         %(
             #| special key to name template set
             _name => -> %, $ {
-                'test text templates'
+                'new test text templates'
             },
             #| renders =code block
             code => -> %prm, $tmpl {
@@ -609,6 +569,10 @@ class RakuDoc::Processor {
             custom => -> %prm, $tmpl {
                 "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
             },
+            #| renders any unknown block minimally
+            unknown => -> %prm, $tmpl {
+                "<unknown>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</unknown>\n"
+            },
             #| special template to encapsulate all the output to save to a file
             source-wrap => -> %prm, $tmpl {
                 my @toc = %prm<processed>.toc;
@@ -625,6 +589,10 @@ class RakuDoc::Processor {
                 ~ "\n" ~ '=' x 50 ~ "\n"
                 ~ $tmpl('footnotes', {
                     index => %prm<processed>.index,
+                })
+                ~ "\n" ~ '=' x 50 ~ "\n"
+                ~ $tmpl('warnings', {
+                    warnings => %prm<processed>.warnings,
                 })
                 ~ 'Rendered from ｢' ~ %prm<processed>.source-data<name>
                 ~ '｣ at ' ~ %prm<processed>.modified
@@ -656,9 +624,140 @@ class RakuDoc::Processor {
             },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
-                ''
-            }
-        );
+                if %prm<warnings>.elems {
+                    my $n = 1;
+                    "<warning-list>\n"
+                    ~ [~] %prm<warnings>.map({
+                        "<warning>{ $n++ }: $_\</warning>\n"
+                    })
+                    ~ "</warning-list>\n"
+                }
+                else {
+                    ''
+                }
+            },
+            ## Markup codes with only display (format codes), no meta data allowed
+            ## meta data via Config is allowed
+            #| B< DISPLAY-TEXT >
+            #| Basis/focus of sentence (typically rendered bold)
+			markup-B => -> %prm, $tmpl {
+				'<basis>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</basis>'
+			},
+            #| C< DISPLAY-TEXT >
+            #| Code (typically rendered fixed-width)
+			markup-C => -> %prm, $tmpl {
+				'<code>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</code>'
+			},
+            #| H< DISPLAY-TEXT >
+            #| High text (typically rendered superscript)
+			markup-H => -> %prm, $tmpl {
+				'<high>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</high>'
+			},
+            #| I< DISPLAY-TEXT >
+            #| Important (typically rendered in italics)
+			markup-I => -> %prm, $tmpl {
+				'<important>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</important>'
+			},
+            #| J< DISPLAY-TEXT >
+            #| Junior text (typically rendered subscript)
+			markup-J => -> %prm, $tmpl {
+				'<junior>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</junior>'
+			},
+            #| K< DISPLAY-TEXT >
+            #| Keyboard input (typically rendered fixed-width)
+			markup-K => -> %prm, $tmpl {
+				'<keyboard>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</keyboard>'
+			},
+            #| N< DISPLAY-TEXT >
+            #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
+			markup-N => -> %prm, $tmpl {
+				'<note>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</note>'
+			},
+            #| O< DISPLAY-TEXT >
+            #| Overstrike or strikethrough
+			markup-O => -> %prm, $tmpl {
+				'<overstrike>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</overstrike>'
+			},
+            #| R< DISPLAY-TEXT >
+            #| Replaceable component or metasyntax
+			markup-R => -> %prm, $tmpl {
+				'<replaceable>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</replaceable>'
+			},
+            #| S< DISPLAY-TEXT >
+            #| Space characters to be preserved
+			markup-S => -> %prm, $tmpl {
+				'<space>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</space>'
+			},
+            #| T< DISPLAY-TEXT >
+            #| Terminal output (typically rendered fixed-width)
+			markup-T => -> %prm, $tmpl {
+				'<terminal>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</terminal>'
+			},
+            #| U< DISPLAY-TEXT >
+            #| Unusual (typically rendered with underlining)
+			markup-U => -> %prm, $tmpl {
+				'<unusual>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</unusual>'
+			},
+            #| V< DISPLAY-TEXT >
+            #| Verbatim (internal markup instructions ignored)
+			markup-V => -> %prm, $tmpl {
+				'<verbatim>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</verbatim>'
+			},
+
+            ##| Markup codes, optional display and meta data
+
+            #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
+            #| Alias to be replaced by contents of specified V<=alias> directive
+			markup-A => -> %prm, $tmpl {
+				'<alias>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</alias>'
+			},
+            #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
+            #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
+			markup-E => -> %prm, $tmpl {
+				'<entity>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</entity>'
+			},
+            #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
+            #| Formula inline content ( F<ALT|LaTex notation> )
+			markup-F => -> %prm, $tmpl {
+				'<formula>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</formula>'
+			},
+            #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
+            #| Link ( L<display text|destination URI> )
+			markup-L => -> %prm, $tmpl {
+				'<link>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</link>'
+			},
+            #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
+            #| Placement link
+			markup-P => -> %prm, $tmpl {
+				'<placement>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</placement>'
+			},
+
+            ##| Markup codes, mandatory display and meta data
+            #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
+            #| Definition inline ( D<term being defined|synonym1; synonym2> )
+			markup-D => -> %prm, $tmpl {
+				'<definition>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</definition>'
+			},
+            #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
+            #| Delta note ( Δ<visible text|version; Notification text> )
+            markup-Δ => -> %prm, $tmpl {
+				'<delta>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</delta>'
+			},
+            #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
+            #| Markup extra ( M<display text|functionality;param,sub-type;...>)
+			markup-M => -> %prm, $tmpl {
+				'<markup>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</markup>'
+			},
+            #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
+            #| Index entry ( X<display text|entry,subentry;...>)
+			markup-X => -> %prm, $tmpl {
+				'<index>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</index>'
+			},
+            #| Unknown markup, render minimally
+            markup-unknown => -> %prm, $tmpl {
+				'<unknown>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</unknown>'
+			},
+        ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
     # text helpers adapted from Liz's RakuDoc::To::Text
     # colorless ANSI constants
@@ -694,7 +793,7 @@ class RakuDoc::Processor {
     R => &inverse,
     I => &italic,
     ;
-    #| returns a set of default text templates $test must be False
+    #| returns a set of text templates
     multi method default-text-templates {
         %(
             #| special key to name template set
@@ -773,6 +872,10 @@ class RakuDoc::Processor {
             custom => -> %prm, $tmpl {
                 "<custom>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</custom>\n"
             },
+            #| renders any unknown block minimally
+            unknown => -> %prm, $tmpl {
+                "<unknown>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</unknown>\n"
+            },
             #| special template to encapsulate all the output to save to a file
             source-wrap => -> %prm, $tmpl {
                 "<source-wrap>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</source-wrap>\n"
@@ -804,8 +907,129 @@ class RakuDoc::Processor {
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
                 ''
-            }
-        );
+            },
+            ## Markup codes with only display (format codes), no meta data allowed
+            ## meta data via Config is allowed
+            #| B< DISPLAY-TEXT >
+            #| Basis/focus of sentence (typically rendered bold)
+			markup-B => -> %prm, $tmpl {
+				'<basis>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</basis>'
+			},
+            #| C< DISPLAY-TEXT >
+            #| Code (typically rendered fixed-width)
+			markup-C => -> %prm, $tmpl {
+				'<code>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</code>'
+			},
+            #| H< DISPLAY-TEXT >
+            #| High text (typically rendered superscript)
+			markup-H => -> %prm, $tmpl {
+				'<high>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</high>'
+			},
+            #| I< DISPLAY-TEXT >
+            #| Important (typically rendered in italics)
+			markup-I => -> %prm, $tmpl {
+				'<important>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</important>'
+			},
+            #| J< DISPLAY-TEXT >
+            #| Junior text (typically rendered subscript)
+			markup-J => -> %prm, $tmpl {
+				'<junior>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</junior>'
+			},
+            #| K< DISPLAY-TEXT >
+            #| Keyboard input (typically rendered fixed-width)
+			markup-K => -> %prm, $tmpl {
+				'<keyboard>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</keyboard>'
+			},
+            #| N< DISPLAY-TEXT >
+            #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
+			markup-N => -> %prm, $tmpl {
+				'<note>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</note>'
+			},
+            #| O< DISPLAY-TEXT >
+            #| Overstrike or strikethrough
+			markup-O => -> %prm, $tmpl {
+				'<overstrike>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</overstrike>'
+			},
+            #| R< DISPLAY-TEXT >
+            #| Replaceable component or metasyntax
+			markup-R => -> %prm, $tmpl {
+				'<replaceable>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</replaceable>'
+			},
+            #| S< DISPLAY-TEXT >
+            #| Space characters to be preserved
+			markup-S => -> %prm, $tmpl {
+				'<space>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</space>'
+			},
+            #| T< DISPLAY-TEXT >
+            #| Terminal output (typically rendered fixed-width)
+			markup-T => -> %prm, $tmpl {
+				'<terminal>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</terminal>'
+			},
+            #| U< DISPLAY-TEXT >
+            #| Unusual (typically rendered with underlining)
+			markup-U => -> %prm, $tmpl {
+				'<unusual>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</unusual>'
+			},
+            #| V< DISPLAY-TEXT >
+            #| Verbatim (internal markup instructions ignored)
+			markup-V => -> %prm, $tmpl {
+				'<verbatim>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</verbatim>'
+			},
+
+            ##| Markup codes, optional display and meta data
+
+            #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
+            #| Alias to be replaced by contents of specified V<=alias> directive
+			markup-A => -> %prm, $tmpl {
+				'<alias>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</alias>'
+			},
+            #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
+            #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
+			markup-E => -> %prm, $tmpl {
+				'<entity>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</entity>'
+			},
+            #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
+            #| Formula inline content ( F<ALT|LaTex notation> )
+			markup-F => -> %prm, $tmpl {
+				'<formula>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</formula>'
+			},
+            #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
+            #| Link ( L<display text|destination URI> )
+			markup-L => -> %prm, $tmpl {
+				'<link>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</link>'
+			},
+            #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
+            #| Placement link
+			markup-P => -> %prm, $tmpl {
+				'<placement>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</placement>'
+			},
+
+            ##| Markup codes, mandatory display and meta data
+            #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
+            #| Definition inline ( D<term being defined|synonym1; synonym2> )
+			markup-D => -> %prm, $tmpl {
+				'<definition>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</definition>'
+			},
+            #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
+            #| Delta note ( Δ<visible text|version; Notification text> )
+            markup-Δ => -> %prm, $tmpl {
+				'<delta>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</delta>'
+			},
+            #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
+            #| Markup extra ( M<display text|functionality;param,sub-type;...>)
+			markup-M => -> %prm, $tmpl {
+				'<markup>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</markup>'
+			},
+            #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
+            #| Index entry ( X<display text|entry,subentry;...>)
+			markup-X => -> %prm, $tmpl {
+				'<index>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</index>'
+			},
+            #| Unknown markup, render minimally
+            markup-unknown => -> %prm, $tmpl {
+				'<unknown>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</unknown>'
+			},
+        ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
     #| returns hash of test helper callables
     multi method text-helpers {
