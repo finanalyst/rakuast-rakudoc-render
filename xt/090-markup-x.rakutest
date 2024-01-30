@@ -1,0 +1,25 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan *;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing X<to be said|with index content> inside letters.
+    =end rakudoc
+    QAST
+say $ast;
+$rv = $rdp.render( $ast );
+say $rv;
+like $rv.body, /
+    'Some thing '
+    '<index>contents: ｢to be said｣meta: ｢with index content｣</index>'
+    ' inside spaces.'
+    /, 'X-markup works with text and indexed text';
+
+done-testing;

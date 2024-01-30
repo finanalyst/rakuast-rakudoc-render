@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan *;
+plan 26;
 
 my $ast;
 my $rv;
@@ -154,30 +154,6 @@ like $rv.body, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    Some thingN<to be said>inside letters.
-    =end rakudoc
-    QAST
-$rv = $rdp.render( $ast );
-like $rv.body, /
-    'Some thing'
-    '<note>contents: ｢to be said｣</note>'
-    'inside letters.'
-    /, 'N-markup works with text with spaces inside text';
-
-$ast = Q:to/QAST/.AST;
-    =begin rakudoc
-    Some thing to N<say> in between words.
-    =end rakudoc
-    QAST
-$rv = $rdp.render( $ast );
-like $rv.body, /
-    'Some thing to '
-    '<note>contents: ｢say｣</note>'
-    ' in between words.'
-    /, 'N-markup works between words';
-
-$ast = Q:to/QAST/.AST;
-    =begin rakudoc
     Some thingO<to be said>inside letters.
     =end rakudoc
     QAST
@@ -319,5 +295,24 @@ like $rv.body, /
     '<verbatim>contents: ｢say｣</verbatim>'
     ' in between words.'
     /, 'V-markup works between words';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingZ<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thinginside letters.'
+    /, 'Z-markup works with text with spaces inside text';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to Z<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing to  in between words.'
+    /, 'Z-markup works with space';
 
 done-testing;

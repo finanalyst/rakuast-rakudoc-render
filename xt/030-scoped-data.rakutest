@@ -2,10 +2,11 @@ use v6.d;
 use Test;
 use Test::Deeply::Relaxed;
 use RakuDoc::Render;
+use Test::Output;
 
 my ScopedData $sc;
 
-plan *;
+plan 9;
 lives-ok { $sc .= new }, 'ScopedData instantiates';
 $sc.config( { foo => 'bar'} );
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'current scope correct';
@@ -14,21 +15,22 @@ is-deeply-relaxed $sc.config, { :foo('bar')}, 'new current scope correct';
 $sc.config( {:1foo, :2xxx});
 is-deeply-relaxed $sc.config, {:1foo, :2xxx }, 'new current scope updated';
 like $sc.debug, /
-    'Levels' .+ 1
+    'Scope levels' .+ 1
     .+ 'ees:' \s 'not given' \s+ $
 /, 'debug data as expected';
 $sc.start-scope(:callee<testing>);
 like $sc.debug, /
-    'Levels' .+ 2
+    'Scope levels' .+ 2
     .+ 'ees:' \s 'not given' \s+ 'testing'
 /, 'debug data as expected';
 $sc.end-scope;
 like $sc.debug, /
-    'Levels' .+ 1
+    'Scope levels' .+ 1
     .+ 'ees:' \s 'not given' \s+ $
 /, 'debug data as expected';
 $sc.end-scope;
 my %conf = $sc.config;
 is-deeply-relaxed %conf, { :foo('bar')}, 'old scope restored';
 nok %conf<xxx>:exists, 'new attribute not remembered';
+
 done-testing;

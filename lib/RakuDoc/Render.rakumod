@@ -14,25 +14,23 @@ class ScopedData {
     #| debug information
     method debug {
         qq:to/DEBUG/;
-        Levels: { +@!callees }
-        Callees: { +@!callees ?? @!callees.join(' ') !! 'original level' }
+        Scope levels: { +@!callees }
+        Scope callees: { +@!callees ?? @!callees.join(' ') !! 'original level' }
         DEBUG
     }
     #| starts a new scope
-    method start-scope(:$callee, :$debug = False ) {
+    method start-scope(:$callee ) {
         @!callees.push: $callee // 'not given';
         @!config.push: @!config[*-1].pairs.hash;
         @!aliases.push: @!aliases[*-1].pairs.hash;
         @!definitions.push: @!definitions[*-1].pairs.hash;
-        self.debug if $debug
     }
     #| ends the current scope, forgets new data
-    method end-scope(:$debug = False) {
+    method end-scope {
         @!callees.pop;
         @!config.pop;
         @!aliases.pop;
         @!definitions.pop;
-        self.debug if $debug
     }
     multi method config(%h) {
         @!config[*-1]{ .key } = .value for %h;
@@ -52,9 +50,12 @@ class ScopedData {
     multi method definitions( --> Hash ) {
         @!definitions[*-1]
     }
+    method last-callee {
+        @!callees[*-1]
+    }
 }
 
-enum RDProcDebug <None AstBlock BlockType Scoping>;
+enum RDProcDebug <None All AstBlock BlockType Scoping>;
 
 class RakuDoc::Processor {
     has %.templates is Template-directory;
@@ -92,7 +93,7 @@ class RakuDoc::Processor {
 
     #| handle methods return void
     proto method handle( $ast ) {
-        say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $!debug (cont) AstBlock;
+        say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $!debug (cont) any( All, AstBlock );
         {*}
     }
     multi method handle(Str:D $ast) {
@@ -141,7 +142,7 @@ class RakuDoc::Processor {
         # When a built in block, other than =item, is started,
         # there may be a list of items or defns, which need to be
         # completed and rendered
-        say "Doc::Block type: " ~ $ast.type if $!debug (cont) BlockType;
+        say "Doc::Block type: " ~ $ast.type if $!debug (cont) any( All, BlockType );
         $*prs.body ~= $.complete-item-list unless $ast.type and $ast.type eq 'item';
         $*prs.body ~= $.complete-defn-list unless $ast.type and $ast.type eq 'defn';
 
@@ -164,9 +165,11 @@ class RakuDoc::Processor {
             # =headN
             # Nth-level heading
             when 'head' {
-                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
+                $!scoped-data.start-scope(:callee($_));
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
                 $.gen-head($ast);
-                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
+                $!scoped-data.end-scope;
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
             }
 #            when 'implicit-code' { $.gen-code($ast) }
             # =item
@@ -184,8 +187,10 @@ class RakuDoc::Processor {
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
                 $!scoped-data.start-scope(:callee($_));
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping );
                 $.gen-rakudoc($ast);
-                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
+                $!scoped-data.end-scope;
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
             }
             # =pod
             # Legacy version of rakudoc
@@ -193,9 +198,11 @@ class RakuDoc::Processor {
             # =section
             # Defines a section
             when 'section' {
-                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
+                $!scoped-data.start-scope( :callee($_) );
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
                 $.gen-section($ast);
-                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
+                $!scoped-data.end-scope;
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
             }
             # =table
             # Visual or procedural table
@@ -204,17 +211,21 @@ class RakuDoc::Processor {
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
-                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
+                $!scoped-data.start-scope( :callee($_) );
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
                 $.gen-semantics($ast);
-                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
+                $!scoped-data.end-scope;
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
             }
             # CustomName
             # User-defined block
             when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
-                $!scoped-data.start-scope( :debug( $!debug (cont) Scoping), :callee($_));
+                $!scoped-data.start-scope( :callee($_) );
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
                 $.gen-custom($ast);
-                $!scoped-data.end-scope( :debug( $!debug (cont) Scoping) ) 
+                $!scoped-data.end-scope;
+                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
             }
             default { $.gen-unknown-builtin($ast) }
         }
@@ -228,7 +239,7 @@ class RakuDoc::Processor {
         given $ast.letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
-            when any( <B C H I J K R S T U V N O> ) {
+            when any( <B C H I J K R S T U V O> ) {
                 my $letter = $ast.letter;
                 my %config;
                 my $contents = self.markup-contents($ast);
@@ -238,6 +249,29 @@ class RakuDoc::Processor {
                     %( :$contents, %config )
                 );
             }
+            ## Display only, but has side-effects
+            #| Footnotes (from N<> markup)
+            #| Ordered Array of :$text, :$retTarget, :$fnNumber, :$fnTarget
+            #| text is content of footnote, fnNumber is footNote number
+            #| fnTarget is link to rendered footnote
+            #| retTarget is link to where footnote is defined to link back form footnote
+            when 'N' {
+                my $letter = $ast.letter;
+                my $id = self.name-id($ast.Str);
+                my $contents = self.markup-contents($ast);
+                my $retTarget = PCell.new( :$id, :$!com-channel);
+                my $fnNumber = PCell.new( :id("fn_num_$id"), :$!com-channel);
+                my $fnTarget = PCell.new( :id("fn_tar_$id"), :$!com-channel);
+                my $context = $!scoped-data.last-callee;
+                my %config;
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                $*prs.footnotes.push: %( :$contents, :$retTarget, :$fnNumber, :$fnTarget, :$context );
+                $*prs.body ~= %!templates{"markup-$letter"}(
+                    %( %config, :$retTarget, :$fnNumber, :$fnTarget, :$context )
+                );
+            }
+
             ## Markup codes, optional display and meta data
 
             # A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
@@ -616,7 +650,7 @@ class RakuDoc::Processor {
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
-                ''
+                "<footnotes>\n" ~ %prm<footnote-list>.join ~ "</footnotes>\n"
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
@@ -670,8 +704,11 @@ class RakuDoc::Processor {
 			},
             #| N< DISPLAY-TEXT >
             #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
+            #| This is the template for the in-text part, which should have a Number, link, and return anchor
 			markup-N => -> %prm, $tmpl {
-				'<note>' ~ %prm.sort>>.fmt("%s: ｢%s｣") ~ '</note>'
+                my PStr $rv .= new(  '<note>' );
+                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+                $rv ~= '</note>'
 			},
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
@@ -902,7 +939,7 @@ class RakuDoc::Processor {
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
-                "<footnotes>\n" ~ %prm.sort>>.fmt("%s: %s\n") ~ "</footnotes>\n"
+                "<footnotes>\n" ~ %prm<footnote-list>.join ~ "</footnotes>\n"
             },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {

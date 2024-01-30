@@ -26,6 +26,12 @@ already exists, the old value is pushed onto a stack, and can be accessed.
 A generic RakuDoc::Processor will populate the I<Template-directory> with
 text templates that then served as the generic defaults.
 
+When a template is added to the directory, the C<source> attribute on the B<Template-directory>
+is set, and copied into each template. In this way, the origin of a template can be traced.
+
+When the C<debug> attribute on the B<Template-directory> is True, the name and origin of
+each Template is reported whenever a Template is called.
+
 =head1 Templates
 
 A I<Template-directory> object is an extended Hash structure.

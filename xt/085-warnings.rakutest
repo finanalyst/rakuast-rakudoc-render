@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 2;
+plan 4;
 
 my $ast;
 my $rv;
@@ -20,5 +20,18 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :final-wrap );
 like $rv, / '<unknown>' .+ 'block-type: nonitem' .+ '</unknown>' /, 'minimal render of unknown';
 like $rv, / '<warning-list>' .+ '<warning>' .+ 'not a valid builtin' .+ '</warning>' .+ '</warning-list>' /,'warning list';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing Q<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast );
+like $rv.body, /
+    'Some thing '
+    'Q<to be said>'
+    'inside letters.'
+    /, 'Q-markup not rendered';
+like $rv.warnings[0], / '｢Q｣' .+ 'not yet defined' /, 'warning generated';
 
 done-testing;

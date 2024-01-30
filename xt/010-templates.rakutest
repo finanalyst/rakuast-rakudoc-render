@@ -1,8 +1,9 @@
 use v6.d;
 use Test;
+use Test::Output;
 use RakuDoc::Templates;
 
-plan 10;
+plan 20;
 # All the templates here return Str, so no need to worry about premature stringification.
 
 my %globals is Template-directory = %(
@@ -21,26 +22,71 @@ is %globals<bbb>(%(:contents<bold statement>,)), '<bb-aaa-tab>orig: bold stateme
         'call another template with same params';
 is %globals<fff>(%(:contents<bold statement>,)), '<bb-aaa-tab>orig: bold statement</end-tab>', 'calls another template with <> with same parameters';
 is %globals<ccc>(%()), '<cc-aaa-tab>orig: never</end-tab>', 'calls another template with different 0 parameters';
+
+%globals.debug = True;
+my $rv;
+output-like { $rv = %globals<aaa>(%(:contents<hi there>)) },
+        / 'Template' .+ 'aaa' .+ 'source: Initial' /,
+        'debug generates information about the template';
+is $rv, 'orig: hi there', 'debug & simple interpolation';
+output-like { $rv = %globals<bbb>(%(:contents<bold statement>,)) },
+        / 'Template' .+ 'bbb' .+ 'source: Initial' .+
+        'Embedded' .+ 'aaa' .+ 'stored params' .+
+        'Template' .+ 'aaa' .+ 'source: Initial' /,
+        'debug generates information about the template called and those called inside template';
+is $rv, '<bb-aaa-tab>orig: bold statement</end-tab>',
+        'debug & call another template with same params';
+output-like { $rv = %globals<ccc>(%()), '<cc-aaa-tab>orig: never</end-tab>' },
+        /  'Template' .+ 'ccc' .+ 'source: Initial' .+
+        'Embedded' .+ 'aaa' .+ 'new params' .+
+        'Template' .+ 'aaa' .+ 'source: Initial' /,
+        'debug indicates new parameters are used';
+is $rv, '<cc-aaa-tab>orig: never</end-tab>', 'debug & calls another template with different 0 parameters';
+
+%globals.debug = False;
+%globals.source = 'Next test';
+
 %globals<aaa> = -> %prm, $tmpl {
     qq:to/TMP/;
         <layer 1> { $tmpl.prev } </layer 1>
         TMP
 
 };
+
 is %globals<aaa>(%(:contents<now there>)), q:to/TST/, 'calls a previous template';
 <layer 1> orig: now there </layer 1>
 TST
+
+%globals.debug = True;
+output-like { $rv = %globals<aaa>(%(:contents<now there>)) },
+    / 'Template' .+ 'aaa' .+ 'source: Next test' /,
+    'use of previous with debug';
+is $rv, q:to/TST/, 'debug & calls a previous template';
+<layer 1> orig: now there </layer 1>
+TST
+
+%globals.debug = False;
+%globals.source = 'Second level test';
 %globals<aaa> = -> %prm, $tmpl {
     qq:to/TMP/;
         <layer 2> { $tmpl.prev } </layer 2>
         TMP
-
 };
 is %globals<aaa>(%(:contents<let this be now>)), q:to/TST/, 'calls a previous, previous template';
 <layer 2> <layer 1> orig: let this be now </layer 1>
  </layer 2>
 TST
 
+%globals.debug = True;
+output-like { $rv = %globals<aaa>(%(:contents<let this be now>))},
+    / 'Template' .+ 'aaa' .+ 'source: Second level test' /,
+    'two levels of previous templates';
+is $rv, q:to/TST/, 'debug & calls a previous, previous template';
+<layer 2> <layer 1> orig: let this be now </layer 1>
+ </layer 2>
+TST
+
+%globals.debug = False;
 throws-like { %globals<head>(%(:contents<hi there>)) }, X::Unexpected-Template,
         message => / 'Template ｢head｣ is not known' /, 'try to call unregistered template';
 throws-like { %globals<ddd>(%(:contents<hi there>)) }, X::Unexpected-Template,

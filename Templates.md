@@ -31,6 +31,10 @@ When a template is added to a _Template-directory_ and the template name already
 
 A generic RakuDoc::Processor will populate the _Template-directory_ with text templates that then served as the generic defaults.
 
+When a template is added to the directory, the `source` attribute on the **Template-directory** is set, and copied into each template. In this way, the origin of a template can be traced.
+
+When the `debug` attribute on the **Template-directory** is True, the name and origin of each Template is reported whenever a Template is called.
+
 # Templates
 A _Template-directory_ object is an extended Hash structure.
 
@@ -165,4 +169,4 @@ Information about both sets of templates are listed in the generated files [defa
 
 
 ----
-Rendered from Templates at 2024-01-07T21:41:26Z
+Rendered from Templates at 2024-01-30T21:15:28Z
