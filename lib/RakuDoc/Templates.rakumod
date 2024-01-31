@@ -145,10 +145,25 @@ class PStr {
         $.strip;
         @!string[0] ~~ Str ?? @!string[0] !! ''
     }
-    #| Strips PStr and returns last Str or '' if 1st is PCell
+    #| Strips PStr and returns last Str or '' if last is PCell
     method tail( --> Str ) {
         $.strip;
-        @!string[*-1] ~~ Str ?? @!string[*-1] !! ''
+        @!string[*-1] ~~ Str ?? @!string[* - 1] !! ''
+    }
+    #| trims any white space from the end string, if any
+    method trim-leading {
+        $.strip;
+        @!string[0] .= trim-leading if @!string[0] ~~ Str
+    }
+    #| trims any white space from the end string, if any
+    method trim-trailing {
+        $.strip;
+        @!string[* - 1] .= trim-trailing if @!string[* - 1] ~~ Str
+    }
+    #| trims any white space from the end string, if any
+    method trim {
+        $.trim-leading;
+        $.trim-trailing;
     }
     #| replace any PCells that have been expanded with a plain Str
     #| concatenate any adjacent Str elements
@@ -168,6 +183,10 @@ class PStr {
         my Bool $has = False;
         $has ||= ($_ ~~ PCell).so for @!string;
         $has
+    }
+    #| return how many segments (elems of string array)
+    method segments( --> Int ) {
+        @!string.elems
     }
 }
 

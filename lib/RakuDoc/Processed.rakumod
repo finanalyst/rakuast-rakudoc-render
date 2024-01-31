@@ -47,10 +47,10 @@ class ProcessedState {
     has Str @.warnings;
 
     #| An array of accumulated rendered items, added to body when next non-item block encountered
-    has Str @.items;
+    has @.items;
 
     #| An array of accumulated rendered definitions, added to body when next non-defn block encountered
-    has Str @.defns;
+    has @.defns;
 
     multi method gist(ProcessedState:U: ) { 'Undefined ProcessedState object' }
 

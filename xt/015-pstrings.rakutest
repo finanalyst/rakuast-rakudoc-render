@@ -5,7 +5,7 @@ use RakuDoc::Templates;
 my $com-channel = Supplier::Preserving.new;
 my $payload;
 
-plan 28;
+plan 35;
 
 #tests of PCell
 my PCell $pc .= new(:$com-channel, :id<FFF>);
@@ -18,7 +18,7 @@ like $pc.debug, / 'Expanded to:' /,'Expanding changes debug str';
 is $pc.Str, 'some stuff', 'stringifies with payload';
 ok $pc.is-expanded, 'PCell now expanded';
 
-# tests of PStr
+## tests of PStr
 my PStr $s .= new;
 lives-ok { $s ~= PCell.new(:$com-channel, :id<AAA>) }, 'right concatenation of PCell lives';
 is $s.Str, '｢AAA UNAVAILABLE｣', 'PCell stringifies with UNAVAILABLE';
@@ -56,7 +56,21 @@ is $s.lead, 'more at front start', 'concatenated front strings';
 $s ~= ' with stuff at end' ~ ' <end>';
 is $s.tail, ' with stuff at end <end>', 'concatenated final strings';
 
-lives-ok { $s .= new: 'one ', PCell.new(:$com-channel, :id('AAA')), ' two'},
+lives-ok { $s .= new: ' one ', PCell.new(:$com-channel, :id('AAA')), ' two '},
         'creates a new Pstr from a list';
-like $s.Str, / 'one' .+ 'AAA' .+ 'two' /, 'expected PStr';
+$rv = $s;
+like $s.Str, / ' one ' .+ 'AAA' .+ ' two ' /, 'expected PStr';
+$s.trim-trailing;
+like $s.Str, / ' one ' .+ 'AAA' .+ ' two' $ /, 'should trim trailing space';
+$s.trim-leading;
+like $s.Str, / ^ 'one ' .+ 'AAA' .+ ' two' $ /, 'should trim leading space';
+is $s.segments, 3, 'trimming should not change segments';
+$rv.trim;
+$rv.elems.say;
+like $rv.Str, / ^ 'one ' .+ 'AAA' .+ ' two' $ /, 'should trim leading/trailing space';
+is $rv.segments, 3, 'trim should not change segments';
+$s .= new( '  just a single string ');
+is $s.segments, 1, 'simple string is one segment';
+$s.trim;
+like $s.Str, / ^ 'just a single string' $ /, 'trims start/end space without repeating';
 done-testing;

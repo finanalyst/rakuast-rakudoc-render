@@ -4,12 +4,12 @@ use Test::Output;
 
 use RakuDoc::Render;
 
-plan 15;
+plan 28;
 
 my $ast;
 my $rv;
 
-# enum RDProcDebug <None All AstBlock BlockType Scoping>;
+# enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 my RakuDoc::Processor $rdp;
 
 # AstBlock
@@ -24,41 +24,64 @@ $ast = Q:to/QAST/.AST;
 my $output = output-from {
     $rv = $rdp.render( $ast )
     };
-like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
+like $output, / 'Handling: RakuAST::Doc::Block' /, 'didnt get a handling error';
 unlike $output, / 'Doc::Block type: rakudoc' /, 'didnt get block type';
 unlike $output, / 'Scope levels' /, 'didnt get scoping debug';
+unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(BlockType));
 $output = output-from {
     $rv = $rdp.render( $ast )
     };
-unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
-like $output, / 'Doc::Block type: rakudoc' /, 'didnt get block type';
+unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'didnt get a handling error';
+like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
 unlike $output, / 'Scope levels' /, 'didnt get scoping debug';
+unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(Scoping));
 $output = output-from {
     $rv = $rdp.render( $ast )
     };
-unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
+unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'didnt get a handling error';
 unlike $output, / 'Doc::Block type: rakudoc' /, 'didnt get block type';
-like $output, / 'Scope levels' /, 'didnt get scoping debug';
+like $output, / 'Scope levels' /, 'got scoping debug';
+unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(AstBlock, BlockType));
 $output = output-from {
     $rv = $rdp.render( $ast )
     };
 like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
-like $output, / 'Doc::Block type: rakudoc' /, 'didnt get block type';
+like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
 unlike $output, / 'Scope levels' /, 'didnt get scoping debug';
+unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
+
+$rdp  .= new(:test, :debug(Templates));
+$output = output-from {
+    $rv = $rdp.render( $ast )
+    };
+unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
+unlike $output, / 'Doc::Block type: rakudoc' /, 'got block type';
+unlike $output, / 'Scope levels' /, 'didnt get scoping debug';
+like $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(All));
 $output = output-from {
     $rv = $rdp.render( $ast )
     };
 like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
-like $output, / 'Doc::Block type: rakudoc' /, 'didnt get block type';
-like $output, / 'Scope levels' /, 'didnt get scoping debug';
+like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
+like $output, / 'Scope levels' /, 'got scoping debug';
+like $output, / 'Template' .+ 'source:' /, 'got template debug';
 
+$rdp  .= new(:test);
+$rdp.debug(AstBlock, BlockType, Templates);
+$output = output-from {
+    $rv = $rdp.render( $ast )
+    };
+like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
+like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
+unlike $output, / 'Scope levels' /, 'didnt get scoping debug';
+like $output, / 'Template' .+ 'source:' /, 'got template debug';
 
 done-testing;

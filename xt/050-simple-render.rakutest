@@ -19,9 +19,9 @@ $rv = $rdp.render( $ast );
 isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
 like $rv.body.Str, /
     ^ '<head>'
-    \s+ 'contents: Test text'
-    \s+ 'level: 1'
-    \s+ 'target: Test_text'
+    \s+ 'contents: ｢Test text｣'
+    \s+ 'level: ｢1｣'
+    \s+ 'target: ｢Test_text｣'
     \s+ '</head>'
     \s+ $
     /, 'head template works';
