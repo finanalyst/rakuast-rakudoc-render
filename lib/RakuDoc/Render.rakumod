@@ -1,5 +1,4 @@
 use experimental :rakuast;
-
 use RakuDoc::Processed;
 use RakuDoc::Templates;
 
@@ -11,6 +10,7 @@ class ScopedData {
     has @!aliases = {}, ;
     has @!definitions = {}, ;
     has @!callees;
+    has @!titles;
     #| debug information
     method debug {
         qq:to/DEBUG/;
@@ -19,8 +19,9 @@ class ScopedData {
         DEBUG
     }
     #| starts a new scope
-    method start-scope(:$callee ) {
-        @!callees.push: $callee // 'not given';
+    method start-scope(:$callee!, :$title ) {
+        @!callees.push: $callee;
+        @!titles.push: $title // 'Block # ' ~ @!callees.elems;
         @!config.push: @!config[*-1].pairs.hash;
         @!aliases.push: @!aliases[*-1].pairs.hash;
         @!definitions.push: @!definitions[*-1].pairs.hash;
@@ -28,6 +29,7 @@ class ScopedData {
     #| ends the current scope, forgets new data
     method end-scope {
         @!callees.pop;
+        @!titles.pop;
         @!config.pop;
         @!aliases.pop;
         @!definitions.pop;
@@ -53,6 +55,8 @@ class ScopedData {
     method last-callee {
         @!callees[*-1]
     }
+    multi method last-title() {  @!titles[* - 1] }
+    multi method last-title( $s ) {  @!titles[* - 1] = $s }
 }
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
@@ -78,8 +82,10 @@ class RakuDoc::Processor {
         self.debug( $debug.list )
     }
 
-    #| renders the $ast to a RakuDoc::Processed or String
-    multi method render( $ast, :%source-data, :$final-wrap = False ) {
+    #| renders to a String by default,
+    #| but returns ProcessedState object if :process True
+    multi method render( $ast, :%source-data, :$process = False ) {
+    use trace;
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
         for $ast.rakudoc {
@@ -95,7 +101,7 @@ class RakuDoc::Processor {
                 $!current.warnings.push( 'Still waiting for ' ~ $/<id> ~ ' to be expanded.' )
             }
         }
-        return $.current unless $final-wrap;
+        return $.current if $process;
         # All of the placing of the footnotes, ToC etc, is left to source-wrap template
         %!templates<source-wrap>( %( :processed( $!current ), )).Str
     }
@@ -222,6 +228,7 @@ class RakuDoc::Processor {
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
                 $!scoped-data.start-scope( :callee($_) );
+                $!scoped-data.last-title( $_ );
                 say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
                 $.gen-semantics($ast);
                 $!scoped-data.end-scope;
@@ -232,6 +239,7 @@ class RakuDoc::Processor {
             when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
                 $!scoped-data.start-scope( :callee($_) );
+                $!scoped-data.last-title( $_ );
                 say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
                 $.gen-custom($ast);
                 $!scoped-data.end-scope;
@@ -324,12 +332,28 @@ class RakuDoc::Processor {
             # M< DISPLAY-TEXT |  METADATA = WHATEVER >
             # Markup extra ( M<display text|functionality;param,sub-type;...>)
             when 'M' {
-
             }
             # X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             # Index entry ( X<display text|entry,subentry;...>)
+            #| Index (from X<> markup)
+            #| Hash key => Array of :target, :is-header, :place
+            #| key to be displayed, target is for link, place is description of section
+            #| is-header because X<> in headings treated differently to ordinary text
             when 'X' {
-
+                my $letter = $ast.letter;
+                my $contents = self.markup-contents($ast);
+                my $meta = $ast.meta;
+                my $place = $!scoped-data.last-title;
+                my $context = $!scoped-data.last-callee;
+                my $target = self.index-id($ast, :$context, :$contents, :$meta);
+                my %config;
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                $*prs.index{$contents} = %( :$target, :$place );
+                my $rv = %!templates{"markup-$letter"}(
+                    %( :$contents, %config, :$meta )
+                );
+                $*prs.body ~= $rv;
             }
 
             ## Technically only meta data, but just contents
@@ -389,9 +413,9 @@ class RakuDoc::Processor {
     }
     method gen-head($ast) {
         my $level = $ast.level > 1 ?? $ast.level !! 1;
-        my $target = $.name-id($ast, :make-unique);
-        $.register-target($target);
+        my $target = $.name-id($ast);
         my $contents = $.contents($ast).trim;
+        $!scoped-data.last-title( $contents );
         my %config = $ast.resolved-config;
         my %scoped-head = $!scoped-data.config;
         %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
@@ -516,24 +540,56 @@ class RakuDoc::Processor {
         CALLERS::<$*prs> += $*prs;
         $text
     }
-    # the following are methods that may be called from within a template
-    # templates have a data
 
-    #| name-id takes an ast and an optional :make-unique
-    #| returns a Str target to be used as an internal target
-    #| renderers should ensure target is unique if :make-unique True
-    #| renderers should sub-class name-id
+    ## A set of methods to generate anchors / targets
+    ## Output formats, eg. MarkDown and HTML, have different
+    ## criteria. HTML rendering of Raku documentation has its
+    ## own legacy algorithms
+    ## So, different methods are used for
+    ## - names (blocks) to be included in ToC, which needs to target the block
+    ## - footnotes
+    ## - indexed text, where Raku HTML has anchors that depend on context and meta
+    ## - external links to other documents, which do not have to be unique
+
+    #| name-id takes an ast
+    #| returns a unique Str to be used as an anchor / target
+    #| Used by any name (block) that is placed in the ToC
+    #| Also used for the main anchor in the text for a footnote
+    #| Not called if an :id is specified in the source
+    #| This method should be sub-classed by Renderers for different outputs
     #| renderers can use method is-target-unique to test for uniqueness
-    method name-id($ast, :$make-unique = False  --> Str) {
+    method name-id($ast --> Str) {
         my $target = recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
-        return $target unless $make-unique;
         return $target if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
         $target ~= '_0';
         $target += 1 while $target ~~ any(@rejects);
+        self.register-target($target);
         $target
     }
+
+    #| Like name-id, index-id returns a unique Str to be used as a target
+    #| Target should be unique
+    #| Should be sub-classed by Renderers
+    method index-id($ast, :$context, :$content, :$meta ) {
+        my $target = 'index-entry-' ~ $content.Str.trim.subst(/ \s /, '_', :g );
+        return $target if $.is-target-unique($target);
+        my @rejects = $target, ;
+        # if plain target is rejected, then start adding a suffix
+        $target ~= '_0';
+        $target += 1 while $target ~~ any(@rejects);
+        self.register-target($target);
+        $target
+    }
+
+    #| Like name-id, external link returns a Str to be used as a target
+    #| An external target does not need to be checked for uniqueness
+    #| Should be sub-classed by Renderers
+    method external-link($ast) {
+        recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
+    }
+
     #| gets the meta data from a block
     method get-meta($ast --> Hash) {
         $ast.config.pairs.map(

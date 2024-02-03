@@ -18,7 +18,7 @@ $ast = Q:to/QAST/.AST;
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :final-wrap );
-like $rv, / '<unknown>' .+ 'block-type: nonitem' .+ '</unknown>' /, 'minimal render of unknown';
+like $rv, / '<unknown>' .+ 'block-type: ｢nonitem｣' .+ '</unknown>' /, 'minimal render of unknown';
 like $rv, / '<warning-list>' .+ '<warning>' .+ 'not a valid builtin' .+ '</warning>' .+ '</warning-list>' /,'warning list';
 
 $ast = Q:to/QAST/.AST;
@@ -26,7 +26,7 @@ $ast = Q:to/QAST/.AST;
     Some thing Q<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing '
     'Q<to be said>'

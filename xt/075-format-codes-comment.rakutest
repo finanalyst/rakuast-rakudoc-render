@@ -13,7 +13,7 @@ $ast = Q:to/QAST/.AST;
     Some thingB<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<basis>contents: ｢to be said｣</basis>'
@@ -25,7 +25,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to B<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<basis>contents: ｢say｣</basis>'
@@ -37,7 +37,7 @@ $ast = Q:to/QAST/.AST;
     Some thingC<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<code>contents: ｢to be said｣</code>'
@@ -49,7 +49,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to C<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<code>contents: ｢say｣</code>'
@@ -61,7 +61,7 @@ $ast = Q:to/QAST/.AST;
     Some thingH<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<high>contents: ｢to be said｣</high>'
@@ -73,7 +73,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to H<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<high>contents: ｢say｣</high>'
@@ -85,7 +85,7 @@ $ast = Q:to/QAST/.AST;
     Some thingI<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<important>contents: ｢to be said｣</important>'
@@ -97,7 +97,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to I<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<important>contents: ｢say｣</important>'
@@ -109,7 +109,7 @@ $ast = Q:to/QAST/.AST;
     Some thingJ<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<junior>contents: ｢to be said｣</junior>'
@@ -121,7 +121,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to J<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<junior>contents: ｢say｣</junior>'
@@ -133,7 +133,7 @@ $ast = Q:to/QAST/.AST;
     Some thingK<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<keyboard>contents: ｢to be said｣</keyboard>'
@@ -145,7 +145,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to K<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<keyboard>contents: ｢say｣</keyboard>'
@@ -157,7 +157,7 @@ $ast = Q:to/QAST/.AST;
     Some thingO<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<overstrike>contents: ｢to be said｣</overstrike>'
@@ -169,7 +169,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to O<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<overstrike>contents: ｢say｣</overstrike>'
@@ -181,7 +181,7 @@ $ast = Q:to/QAST/.AST;
     Some thingR<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<replaceable>contents: ｢to be said｣</replaceable>'
@@ -193,7 +193,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to R<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<replaceable>contents: ｢say｣</replaceable>'
@@ -205,7 +205,7 @@ $ast = Q:to/QAST/.AST;
     Some thingS<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<space>contents: ｢to be said｣</space>'
@@ -217,7 +217,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to S<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<space>contents: ｢say｣</space>'
@@ -229,7 +229,7 @@ $ast = Q:to/QAST/.AST;
     Some thingT<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<terminal>contents: ｢to be said｣</terminal>'
@@ -241,7 +241,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to T<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<terminal>contents: ｢say｣</terminal>'
@@ -253,7 +253,7 @@ $ast = Q:to/QAST/.AST;
     Some thingU<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<unusual>contents: ｢to be said｣</unusual>'
@@ -265,7 +265,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to U<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<unusual>contents: ｢say｣</unusual>'
@@ -277,7 +277,7 @@ $ast = Q:to/QAST/.AST;
     Some thingV<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<verbatim>contents: ｢to be said｣</verbatim>'
@@ -289,7 +289,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to V<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to '
     '<verbatim>contents: ｢say｣</verbatim>'
@@ -300,7 +300,7 @@ $ast = Q:to/QAST/.AST;
     Some thingZ<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thinginside letters.'
     /, 'Z-markup works with text with spaces inside text';
@@ -310,7 +310,7 @@ $ast = Q:to/QAST/.AST;
     Some thing to Z<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to  in between words.'
     /, 'Z-markup works with space';

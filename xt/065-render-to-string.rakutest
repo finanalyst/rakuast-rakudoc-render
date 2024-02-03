@@ -18,7 +18,7 @@ $ast = Q:to/QAST/.AST;
     =head2 Fourth without option
     QAST
 lives-ok {
-    $rv = $rdp.render( $ast, :source-data( %( :name<Test file>, ) ), :final-wrap )
+    $rv = $rdp.render( $ast, :source-data( %( :name<Test file>, ) ) )
 }, 'render to string lives';
 isa-ok $rv, Str, 'got a string';
 like $rv, / 'Test file' /, 'name included';

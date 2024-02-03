@@ -13,7 +13,7 @@ $ast = Q:to/QAST/.AST;
     Some thingN<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
+$rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing'
     '<note>fnNumber: ｢1｣fnTarget:' .+ 'retTarget:' .+ '</note>'

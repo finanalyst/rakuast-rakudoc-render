@@ -6,27 +6,31 @@ use Test::Output;
 
 my ScopedData $sc;
 
-plan 9;
+plan 13;
 lives-ok { $sc .= new }, 'ScopedData instantiates';
 $sc.config( { foo => 'bar'} );
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'current scope correct';
-$sc.start-scope;
+$sc.start-scope(:callee<foo>);
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'new current scope correct';
 $sc.config( {:1foo, :2xxx});
 is-deeply-relaxed $sc.config, {:1foo, :2xxx }, 'new current scope updated';
 like $sc.debug, /
     'Scope levels' .+ 1
-    .+ 'ees:' \s 'not given' \s+ $
+    .+ 'ees:' \s 'foo' \s+ $
 /, 'debug data as expected';
+is $sc.last-title, 'Block # 1', 'title  of first callee';
 $sc.start-scope(:callee<testing>);
 like $sc.debug, /
     'Scope levels' .+ 2
-    .+ 'ees:' \s 'not given' \s+ 'testing'
+    .+ 'ees:' \s 'foo' \s+ 'testing'
 /, 'debug data as expected';
+is $sc.last-callee, 'testing', 'only last callee context';
+lives-ok { $sc.last-title('Test') }, 'accepts title';
+is $sc.last-title, 'Test', 'title  of last callee';
 $sc.end-scope;
 like $sc.debug, /
     'Scope levels' .+ 1
-    .+ 'ees:' \s 'not given' \s+ $
+    .+ 'ees:' \s 'foo' \s+ $
 /, 'debug data as expected';
 $sc.end-scope;
 my %conf = $sc.config;
