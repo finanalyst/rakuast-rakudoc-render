@@ -11,9 +11,9 @@ plan 16;
 
 my RakuDoc::Processed $rp;
 $rp .= new;
-is $rp.name, 'Un-named-source.txt', 'default name with default format';
+is $rp.name, 'Unnamed-source.txt', 'default name with default format';
 $rp .=new( :output-format<html> );
-is $rp.name, 'Un-named-source.html', 'default name with new format';
+is $rp.name, 'Unnamed-source.html', 'default name with new format';
 
 $rp .= new(:source-data(%(:name('test-prs'), :extra<extra>)));
 is $rp.source-data<name>, 'test-prs', 'source data ammended';

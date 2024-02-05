@@ -18,7 +18,7 @@ class ProcessedState {
     #| Hash key => Array of :target, :is-header, :place
     #| key to be displayed, target is for link, place is description of section
     #| is-header because X<> in headings treated differently to ordinary text
-    has Array %.index;
+    has %.index;
 
     #| Footnotes (from N<> markup)
     #| Ordered Array of :$text, :$retTarget, :$fnNumber, :$fnTarget
@@ -106,12 +106,13 @@ class RakuDoc::Processed is ProcessedState {
 
     submethod TWEAK( :%source-data, :$name, :$output-format ) {
         %!source-data = %(
-            name => 'Un-named-source',
+            name => 'Unnamed-source',
             path => '.',
             language => 'en',
             modified => '2020-12-31T00:00:01Z',
             toc-caption => 'Table of Contents',
             index-caption => 'Index',
+            rakudoc-title => 'Preface', # used to name sections before first title
         );
         %!source-data{ .key } = .value for %source-data.pairs;
         $!output-format = $_ with $output-format;

@@ -17,9 +17,11 @@
     "Test::META"
   ],
   "provides": {
+    "RakuDoc::Markup": "lib/RakuDoc/Markup.rakumod",
     "RakuDoc::Plugin": "lib/RakuDoc/Plugin.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
+    "RakuDoc::ScopedData": "lib/RakuDoc/ScopedData.rakumod",
     "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",
     "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
     "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"

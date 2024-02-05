@@ -1,13 +1,16 @@
 use v6.d;
 use Test;
 use Test::Deeply::Relaxed;
-use RakuDoc::Render;
+use RakuDoc::ScopedData;
 use Test::Output;
 
-my ScopedData $sc;
+my RakuDoc::ScopedData $sc;
 
-plan 13;
+plan 15;
 lives-ok { $sc .= new }, 'ScopedData instantiates';
+is $sc.last-title, 'No callee yet', 'zeroth title';
+is $sc.last-callee, 'original level', 'zeroth callee';
+
 $sc.config( { foo => 'bar'} );
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'current scope correct';
 $sc.start-scope(:callee<foo>);

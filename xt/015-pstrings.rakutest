@@ -17,7 +17,6 @@ $com-channel.emit(%(:$payload, :id<FFF>));
 like $pc.debug, / 'Expanded to:' /,'Expanding changes debug str';
 is $pc.Str, 'some stuff', 'stringifies with payload';
 ok $pc.is-expanded, 'PCell now expanded';
-
 ## tests of PStr
 my PStr $s .= new;
 lives-ok { $s ~= PCell.new(:$com-channel, :id<AAA>) }, 'right concatenation of PCell lives';
@@ -66,7 +65,6 @@ $s.trim-leading;
 like $s.Str, / ^ 'one ' .+ 'AAA' .+ ' two' $ /, 'should trim leading space';
 is $s.segments, 3, 'trimming should not change segments';
 $rv.trim;
-$rv.elems.say;
 like $rv.Str, / ^ 'one ' .+ 'AAA' .+ ' two' $ /, 'should trim leading/trailing space';
 is $rv.segments, 3, 'trim should not change segments';
 $s .= new( '  just a single string ');

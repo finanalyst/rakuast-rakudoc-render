@@ -1,63 +1,7 @@
 use experimental :rakuast;
 use RakuDoc::Processed;
 use RakuDoc::Templates;
-
-#| ScopedData objects contain config, aliases, and definitions data that is scope limited
-#| a new scope can be created with all the data of previous scope
-#| when scope ends, new data is forgotten, old is restored
-class ScopedData {
-    has @!config = {}, ;
-    has @!aliases = {}, ;
-    has @!definitions = {}, ;
-    has @!callees;
-    has @!titles;
-    #| debug information
-    method debug {
-        qq:to/DEBUG/;
-        Scope levels: { +@!callees }
-        Scope callees: { +@!callees ?? @!callees.join(' ') !! 'original level' }
-        DEBUG
-    }
-    #| starts a new scope
-    method start-scope(:$callee!, :$title ) {
-        @!callees.push: $callee;
-        @!titles.push: $title // 'Block # ' ~ @!callees.elems;
-        @!config.push: @!config[*-1].pairs.hash;
-        @!aliases.push: @!aliases[*-1].pairs.hash;
-        @!definitions.push: @!definitions[*-1].pairs.hash;
-    }
-    #| ends the current scope, forgets new data
-    method end-scope {
-        @!callees.pop;
-        @!titles.pop;
-        @!config.pop;
-        @!aliases.pop;
-        @!definitions.pop;
-    }
-    multi method config(%h) {
-        @!config[*-1]{ .key } = .value for %h;
-    }
-    multi method config( --> Hash ) {
-        @!config[*-1]
-    }
-    multi method aliases(%h) {
-        @!aliases[*-1]{ .key } = .value for %h;
-    }
-    multi method aliases( --> Hash ) {
-        @!aliases[*-1]
-    }
-    multi method definitions(%h) {
-        @!definitions[*-1]{ .key } = .value for %h;
-    }
-    multi method definitions( --> Hash ) {
-        @!definitions[*-1]
-    }
-    method last-callee {
-        @!callees[*-1]
-    }
-    multi method last-title() {  @!titles[* - 1] }
-    multi method last-title( $s ) {  @!titles[* - 1] = $s }
-}
+use RakuDoc::ScopedData;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 
@@ -66,7 +10,7 @@ class RakuDoc::Processor {
     has Supplier::Preserving $.com-channel .= new;
     has RakuDoc::Processed $.current;
     has $.output-format;
-    has ScopedData $!scoped-data .= new;
+    has RakuDoc::ScopedData $!scoped-data .= new;
     #| debug mode
     has Set $!debug .= new ;
 
@@ -85,14 +29,18 @@ class RakuDoc::Processor {
     #| renders to a String by default,
     #| but returns ProcessedState object if :process True
     multi method render( $ast, :%source-data, :$process = False ) {
-    use trace;
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
         for $ast.rakudoc {
             $.handle($_)
         }
         $!current += $*prs;
-        self.complete-footnotes;
+        self.complete-footnotes; # before PCell check
+        # P<toc:>, P<index:> will put PCells into body, so collect that data here
+        my $rendered-toc = PCell.new( :$!com-channel, :id<toc-schema> );
+        self.complete-toc;
+        my $rendered-index = PCell.new( :$!com-channel, :id<index-schema> );
+        self.complete-index;
         $!current.body.strip; # remove expanded PCells.
         # all suspended PCells should have been replaced by Str
         # so calling debug on PStr should not get a PCell waiting for
@@ -203,6 +151,7 @@ class RakuDoc::Processor {
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
                 $!scoped-data.start-scope(:callee($_));
+                $!scoped-data.last-title( $!current.source-data<rakudoc-title> );
                 say $!scoped-data.debug if $!debug (cont) any( All, Scoping );
                 $.gen-rakudoc($ast);
                 $!scoped-data.end-scope;
@@ -214,7 +163,9 @@ class RakuDoc::Processor {
             # =section
             # Defines a section
             when 'section' {
+                my $last-title = $!scoped-data.last-title;
                 $!scoped-data.start-scope( :callee($_) );
+                $!scoped-data.last-title( $last-title );
                 say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
                 $.gen-section($ast);
                 $!scoped-data.end-scope;
@@ -351,7 +302,7 @@ class RakuDoc::Processor {
                 %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 $*prs.index{$contents} = %( :$target, :$place );
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, %config, :$meta )
+                    %( :$contents, %config, :$meta, :$target, :$place )
                 );
                 $*prs.body ~= $rv;
             }
@@ -497,6 +448,27 @@ class RakuDoc::Processor {
             $!com-channel.emit(%(:payload($n + 1), :id( 'fn_num_' ~ %data<retTarget> ) ) );
         }
     }
+    #| completes the index by rendering each key
+    #| triggers the 'index-schema' id, which may be placed by a P<>
+    method complete-index {
+        my @index-list = gather for $!current.index.sort( *.key ).kv -> ( $key, @index-entries ) {
+            take %!templates<index-item>( %( :@index-entries , ) )
+        }
+        $!com-channel.emit( %( :payload(
+            %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) )) ) ,
+            :id<index-schema> )
+        )
+    }
+    #| renders the toc and triggers the 'toc-schema' id for P<>
+    method complete-toc {
+        my @toc-list = gather for $!current.toc -> $toc-entry {
+            take %!templates<toc-item>( %( :$toc-entry , ) )
+        }
+        $!com-channel.emit( %( :payload(
+            %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) )) ),
+            :id<toc-schema> )
+        )
+    }
 
     #| finalises rendering of the item list in $*prs
     method complete-item-list() {
@@ -572,8 +544,8 @@ class RakuDoc::Processor {
     #| Like name-id, index-id returns a unique Str to be used as a target
     #| Target should be unique
     #| Should be sub-classed by Renderers
-    method index-id($ast, :$context, :$content, :$meta ) {
-        my $target = 'index-entry-' ~ $content.Str.trim.subst(/ \s /, '_', :g );
+    method index-id($ast, :$context, :$contents, :$meta ) {
+        my $target = 'index-entry-' ~ $contents.Str.trim.subst(/ \s /, '_', :g );
         return $target if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -743,21 +715,33 @@ class RakuDoc::Processor {
                 ~ '｣ at ' ~ %prm<processed>.modified
                 ~ "\n" ~ '=' x 50 ~ "\n"
             },
-            #| special template to render the toc data structure
+            #| renders a single item in the toc
+            toc-item => -> %prm, $tmpl {
+                my PStr $rv .= new("<toc-item>\n");
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				$rv ~= "</toc-item>\n"
+            },
+            #| special template to render the toc list
             toc => -> %prm, $tmpl {
-               %prm<caption> ~ "\n"
-               ~ %prm<toc>.map({
-                    ' ' x .<level> ~ .<level>
-                    ~ ': caption ｢'
-                    ~ .<caption>
-                    ~ '｣ target ｢'
-                    ~ .<target>
-                    ~ "｣\n" }).join()
-                ~ '-' x 50 ~ "\n"
+                my $toc-list = %prm<toc-list>:delete;
+                $toc-list = .elems ?? .join !! 'No items' with $toc-list;
+                my $rv = "<toc>\n";
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				$rv ~= "items:" ~ $toc-list ~"</toc>\n"
+            },
+            #| renders a single item in the index
+            index-item => -> %prm, $tmpl {
+                my PStr $rv .= new("<index-item>\n");
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				$rv ~= "</index-item>\n"
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                ''
+                my $ind-list = %prm<index-list>:delete;
+                $ind-list = .elems ?? .join !! 'No items' with $ind-list;
+                my $rv = "<index>\n";
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				$rv ~= "items:" ~ $ind-list ~"</index>\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
@@ -1108,6 +1092,12 @@ class RakuDoc::Processor {
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
 				$rv ~= "</source-wrap>\n"
             },
+            #| renders a single item in the index
+            toc-item => -> %prm, $tmpl {
+                my PStr $rv .= new("<toc-item>\n");
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				$rv ~= "</toc-item>\n"
+            },
             #| special template to render the toc data structure
             toc => -> %prm, $tmpl {
                %prm<caption> ~ "\n"
@@ -1123,6 +1113,12 @@ class RakuDoc::Processor {
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
                 ''
+            },
+            #| renders a single item in the index
+            index-item => -> %prm, $tmpl {
+                my PStr $rv .= new("<index-item>\n");
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				$rv ~= "</index-item>\n"
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
