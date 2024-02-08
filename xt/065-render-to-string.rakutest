@@ -23,5 +23,4 @@ lives-ok {
 isa-ok $rv, Str, 'got a string';
 like $rv, / 'Test file' /, 'name included';
 like $rv, / [ 'First header' .+ ] ** 2 /, 'got heading at least twice';
-
 done-testing;

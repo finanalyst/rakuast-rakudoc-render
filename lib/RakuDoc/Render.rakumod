@@ -12,7 +12,7 @@ class RakuDoc::Processor {
     has $.output-format;
     has RakuDoc::ScopedData $!scoped-data .= new;
     #| debug mode
-    has Set $!debug .= new ;
+    has Set $!debug;
 
     method debug( +$seq ) {
         $!debug = $seq.Set;
@@ -35,26 +35,30 @@ class RakuDoc::Processor {
             $.handle($_)
         }
         $!current += $*prs;
-        self.complete-footnotes; # before PCell check
-        # P<toc:>, P<index:> will put PCells into body, so collect that data here
+        # Since the footnote order may only be known at the end
+        # footnote numbers are PCells, which need triggering
+        self.complete-footnotes;
+        # P<toc:>, P<index:> may put PCells into body
+        # so ToC and Index need to be rendered and any other PCells triggered
         my $rendered-toc = PCell.new( :$!com-channel, :id<toc-schema> );
         self.complete-toc;
         my $rendered-index = PCell.new( :$!com-channel, :id<index-schema> );
         self.complete-index;
-        $!current.body.strip; # remove expanded PCells.
+        # All PCells should be triggered by this point
+        $!current.body.strip; # replace expanded PCells with Str
         # all suspended PCells should have been replaced by Str
-        # so calling debug on PStr should not get a PCell waiting for
+        # Remaining PCells should trigger warnings
         if $!current.body.has-PCells {
             while $!current.body.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
                 $!current.warnings.push( 'Still waiting for ' ~ $/<id> ~ ' to be expanded.' )
             }
         }
         return $.current if $process;
-        # All of the placing of the footnotes, ToC etc, is left to source-wrap template
-        %!templates<source-wrap>( %( :processed( $!current ), )).Str
+        # Placing of footnotes, ToC etc, is left to source-wrap template
+        %!templates<source-wrap>( %( :processed( $!current ), :$rendered-index, :$rendered-toc ) ).Str
     }
 
-    #| handle methods return void
+    #| All handle methods may generate debug reports
     proto method handle( $ast ) {
         say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $!debug (cont) any( All, AstBlock );
         {*}
@@ -287,9 +291,9 @@ class RakuDoc::Processor {
             # X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             # Index entry ( X<display text|entry,subentry;...>)
             #| Index (from X<> markup)
-            #| Hash key => Array of :target, :is-header, :place
+            #| Hash key => Array of :target, :context, :place
             #| key to be displayed, target is for link, place is description of section
-            #| is-header because X<> in headings treated differently to ordinary text
+            #| context because X<> in headings treated differently to ordinary text
             when 'X' {
                 my $letter = $ast.letter;
                 my $contents = self.markup-contents($ast);
@@ -451,13 +455,11 @@ class RakuDoc::Processor {
     #| completes the index by rendering each key
     #| triggers the 'index-schema' id, which may be placed by a P<>
     method complete-index {
-        my @index-list = gather for $!current.index.sort( *.key ).kv -> ( $key, @index-entries ) {
+        my @index-list = gather for $!current.index.sort( *.key )>>.kv -> ( $key, @index-entries ) {
             take %!templates<index-item>( %( :@index-entries , ) )
         }
-        $!com-channel.emit( %( :payload(
-            %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) )) ) ,
-            :id<index-schema> )
-        )
+        my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ));
+        $!com-channel.emit( %( :$payload, :id('index-schema') ) );
     }
     #| renders the toc and triggers the 'toc-schema' id for P<>
     method complete-toc {
@@ -466,7 +468,7 @@ class RakuDoc::Processor {
         }
         $!com-channel.emit( %( :payload(
             %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) )) ),
-            :id<toc-schema> )
+            :id('toc-schema') )
         )
     }
 
@@ -693,27 +695,18 @@ class RakuDoc::Processor {
             },
             #| special template to encapsulate all the output to save to a file
             source-wrap => -> %prm, $tmpl {
-                %prm<processed>.title ~ "\n" ~ '=' x 50 ~ "\n"
-                ~ $tmpl('toc', {
-                    toc => %prm<processed>.toc,
-                    caption => %prm<processed>.source-data<toc-caption>
-                } )
-                ~ $tmpl('index', {
-                    index => %prm<processed>.index,
-                    caption => %prm<processed>.source-data<index-caption>
-                })
-                ~ %prm<processed>.body.Str
-                ~ "\n" ~ '=' x 50 ~ "\n"
+                %prm<processed>.title ~ "\n"
+                ~ %prm<rendered-toc> ~ "\n"
+                ~ %prm<rendered-index> ~ "\n"
+                ~ %prm<processed>.body.Str ~ "\n"
                 ~ $tmpl('footnotes', {
                     footnotes => %prm<processed>.footnotes,
-                })
-                ~ "\n" ~ '=' x 50 ~ "\n"
+                }) ~ "\n"
                 ~ $tmpl('warnings', {
                     warnings => %prm<processed>.warnings,
-                })
+                }) ~ "\n"
                 ~ 'Rendered from ｢' ~ %prm<processed>.source-data<name>
                 ~ '｣ at ' ~ %prm<processed>.modified
-                ~ "\n" ~ '=' x 50 ~ "\n"
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {
@@ -724,7 +717,7 @@ class RakuDoc::Processor {
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
                 my $toc-list = %prm<toc-list>:delete;
-                $toc-list = .elems ?? .join !! 'No items' with $toc-list;
+                $toc-list = .elems ?? .join !! "No items\n" with $toc-list;
                 my $rv = "<toc>\n";
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
 				$rv ~= "items:" ~ $toc-list ~"</toc>\n"
@@ -738,14 +731,24 @@ class RakuDoc::Processor {
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
                 my $ind-list = %prm<index-list>:delete;
-                $ind-list = .elems ?? .join !! 'No items' with $ind-list;
-                my $rv = "<index>\n";
+                $ind-list = .elems ?? .join !! "No items\n" with $ind-list;
+                my $rv = "\n<index>\n";
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
 				$rv ~= "items:" ~ $ind-list ~"</index>\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
-                "<footnotes>\n" ~ %prm<footnote-list>.join ~ "</footnotes>\n"
+                if %prm<footnotes>.elems {
+                    my $n = 1;
+                    "<footnote-list>\n"
+                    ~ [~] %prm<footnotes>.map({
+                        "<footnote>{ $n++ }: $_\</footnote>\n"
+                    })
+                    ~ "</footnote-list>\n"
+                }
+                else {
+                    ''
+                }
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
@@ -1307,6 +1310,14 @@ class RakuDoc::Processor {
             add-to-toc => -> %h {
                 %h<state>.toc.push:
                     { :caption(%h<caption>.Str), :target(%h<target>), :level(%h<level>) },
+            },
+            add-to-index => -> %h {
+                %h<state>.index.push:
+                    { :contents(%h<contents>.Str), :target(%h<target>), :place(%h<place>) },
+            },
+            add-to-footnotes => -> %h {
+                %h<state>.footnotes.push:
+                    { :retTarget(%h<retTarget>), :fnTarget(%h<fnTarget>), :fnNumber(%h<fnNumber>) },
             }
         )
     }
