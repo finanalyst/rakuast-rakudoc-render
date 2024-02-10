@@ -1,0 +1,24 @@
+use v6.d;
+use Test;
+use RakuDoc::MarkupMeta;
+plan 9;
+my $actions = RMActions.new;
+my $metastr = 'Simple markup string';
+
+my $meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
+ok $meta-obj, 'sane test';
+is $meta-obj.made<type>, 'plain-string', 'simple string';
+is $meta-obj<plain-string>.made, $metastr, 'string no quotes';
+$meta-obj = RakuDoc::MarkupMeta.parse( "'$metastr'", :$actions );
+is $meta-obj<plain-string>.made , $metastr, 'string quotes stripped';
+$metastr = 'one two, "three", four';
+$meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
+is $meta-obj.made<type>, 'plain-string-array', 'array type';
+is $meta-obj.made<value>[2], 'four', 'got third elem';
+$metastr = 'one two, three four; five six seven, eight, nine';
+$meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
+is $meta-obj.made<type>, 'array-of-ps-arrays', 'array of arrays';
+is $meta-obj<array-of-ps-arrays><plain-string-array>[1]<plain-string>[1], 'eight', 'got (1,1)';
+is $meta-obj.made<value>.[1][1], 'eight', 'got (1,1) from value';
+
+done-testing;

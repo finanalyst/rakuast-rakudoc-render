@@ -2,6 +2,7 @@ use experimental :rakuast;
 use RakuDoc::Processed;
 use RakuDoc::Templates;
 use RakuDoc::ScopedData;
+use RakuDoc::MarkupMeta;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 
@@ -297,7 +298,7 @@ class RakuDoc::Processor {
             when 'X' {
                 my $letter = $ast.letter;
                 my $contents = self.markup-contents($ast);
-                my $meta = $ast.meta;
+                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
                 my $place = $!scoped-data.last-title;
                 my $context = $!scoped-data.last-callee;
                 my $target = self.index-id($ast, :$context, :$contents, :$meta);

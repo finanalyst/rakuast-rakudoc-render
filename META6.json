@@ -17,7 +17,7 @@
     "Test::META"
   ],
   "provides": {
-    "RakuDoc::Markup": "lib/RakuDoc/Markup.rakumod",
+    "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
     "RakuDoc::Plugin": "lib/RakuDoc/Plugin.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
