@@ -213,7 +213,8 @@ class RakuDoc::Processor {
         given $ast.letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
-            when any( <B C H I J K R S T U V O> ) {
+            ## E is not format code, but we can ignore display possibility
+            when any( <B C H I J K R S T U V O E> ) {
                 my $letter = $ast.letter;
                 my %config;
                 my $contents = self.markup-contents($ast);
@@ -255,9 +256,8 @@ class RakuDoc::Processor {
             }
             # E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             # Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
-            when 'E' {
+            # included with format codes
 
-            }
             # F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             # Formula inline content ( F<ALT|LaTex notation> )
             when 'F' {
@@ -266,12 +266,138 @@ class RakuDoc::Processor {
             # L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             # Link ( L<display text|destination URI> )
             when 'L' {
-
+                my $letter = $ast.letter;
+                my $link-label = self.markup-contents($ast);
+                my $entry = $ast.meta;
+                $entry = $entry[0] ?? $entry[0] !! '';
+                my $target;
+                my $place;
+                my $type;
+                if $!current.links{$entry}:exists {
+                    ($target, $type, $place) = $!current.links{$entry}<target type place>
+                }
+                else {
+                    given $entry {
+                        # remote links first, if # in link, that will be handled by destination
+                        when / ^ 'http://' | ^ 'https://' / {
+                            $target = $_;
+                            $type = 'external';
+                            $place = '';
+                        }
+                        # next deal with internal links
+                        when / ^ '#' $<tgt> = (.+) $ / {
+                            $target = '';
+                            $type = 'internal';
+                            $place = $.local-heading( ~$<tgt>);
+                        }
+                        when / ^ (.+?) '#' (.+) $ / {
+                            $place = ~$1;
+                            $target = ~$0.subst(/'::'/, '/', :g); # only subst :: in file part
+                            $type = 'local';
+                        }
+                        when / ^ <-[ # ]>+ $ / {
+                            $target = $entry;
+                            $place = '';
+                            $type = 'local'
+                        }
+                        default {
+                            $target =  '';
+                            $type = 'internal';
+                            $place = $.local-heading( $link-label.Str );
+                        }
+                    }
+                }
+                $!current.links{$_} = %(:$target, :$link-label, :$type, :$place);
+                my %config;
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                my $rv = %!templates{"markup-$letter"}(
+                    %( :$target, :$link-label, :$type, :$place, %config)
+                );
+                $*prs.body ~= $rv;
             }
             # P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             # Placement link
             when 'P' {
-
+                my $letter = $ast.letter;
+                my $link-contents = self.markup-contents($ast);
+                my $link = $ast.meta;
+                my %config;
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                my $schema = '';
+                my $uri = '';
+                if $link ~~ / ^ $<sch> = (\w+) ':' \s* $<uri> = (.*) $ / {
+                    $schema = $<sch>.Str;
+                    $uri = $<uri>.Str
+                }
+                my Str $contents;
+                my Bool $as-pre = True;
+                my Bool $html = False;
+                my $target;
+                given $schema {
+                    when 'toc' {
+                        $contents = "See: $link-contents"
+                    }
+                    when 'index' {
+                        $contents = "See: $link-contents"
+                    }
+                    when 'semantic' {
+                        $as-pre = False;
+                        my $caption;
+                        my $level;
+                        $.pod-file.raw-metadata
+                                .grep({ .<name> ~~ $uri })
+                                .map({
+                                    $contents ~= .<value> ;
+                                    $caption = .<caption> without $caption;
+                                    $level = .<level> without $level;
+                                });
+                        without $contents {
+                            $contents = "See: $link-contents";
+                            $as-pre = True;
+                        }
+                        $caption = $uri without $caption;
+                        $level = 1 without $level;
+                        $target = $.register-toc(:$level, :text($caption), :toc, :unique );
+                    }
+                    when 'http' | 'https' {
+                        my LibCurl::Easy $curl;
+                        $curl .= new(:URL($link), :followlocation, :failonerror );
+                        try {
+                            $curl.perform;
+                            $contents = $curl.perform.content;
+                            CATCH {
+                                when X::LibCurl {
+                                    $contents = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣"
+                                    }
+                                default {
+                                    $contents = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣"
+                                }
+                            }
+                        }
+                    }
+                    when 'file' | '' {
+                        my URI $uri .= new($link);
+                        if $uri.path.Str.IO ~~ :e & :f {
+                            $contents = $uri.path.Str.IO.slurp;
+                        }
+                        else {
+                            $contents = "See: $link-contents";
+                            note "No file found at ｢$link｣" if $.debug;
+                        }
+                    }
+                    default {
+                        $contents = "See: $link-contents"
+                    }
+                }
+                $html = so $contents ~~ / '<html' .+ '</html>'/;
+                $contents = ~$/ if $html;
+                # eliminate any chars outside the <html> container if there is one
+                my $rv = %!templates{"markup-$letter"}(
+                    %( :$contents, :$html, :$as-pre, $target, %config)
+                );
+                $*prs.body ~= $rv;
             }
 
             ## Markup codes, mandatory display and meta data
@@ -283,7 +409,16 @@ class RakuDoc::Processor {
             # Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             # Delta note ( Δ<visible text|version; Notification text> )
             when 'Δ' {
-
+                my $letter = $ast.letter;
+                my $contents = self.markup-contents($ast);
+                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
+                my %config;
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                my $rv = %!templates{"markup-$letter"}(
+                    %( :$contents, :$meta, %config)
+                );
+                $*prs.body ~= $rv;
             }
             # M< DISPLAY-TEXT |  METADATA = WHATEVER >
             # Markup extra ( M<display text|functionality;param,sub-type;...>)
@@ -307,7 +442,7 @@ class RakuDoc::Processor {
                 %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 $*prs.index{$contents} = %( :$target, :$place );
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, %config, :$meta, :$target, :$place )
+                    %( :$contents, :$meta, :$target, :$place, %config )
                 );
                 $*prs.body ~= $rv;
             }
@@ -558,18 +693,11 @@ class RakuDoc::Processor {
         $target
     }
 
-    #| Like name-id, external link returns a Str to be used as a target
-    #| An external target does not need to be checked for uniqueness
+    #| Like name-id, local-heading returns a Str to be used as a target
+    #| A local-heading is assumed to exist because specified by document author
     #| Should be sub-classed by Renderers
-    method external-link($ast) {
+    method local-heading($ast) {
         recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
-    }
-
-    #| gets the meta data from a block
-    method get-meta($ast --> Hash) {
-        $ast.config.pairs.map(
-            { .key => .value.literalize }
-        ).hash
     }
 
     #| returns hash of test templates

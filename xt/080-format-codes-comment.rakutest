@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 26;
+plan 27;
 
 my $ast;
 my $rv;
@@ -314,5 +314,15 @@ $rv = $rdp.render( $ast, :process );
 like $rv.body, /
     'Some thing to  in between words.'
     /, 'Z-markup works with space';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Raku makes considerable use of the E<0xAB;0xBB> characters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :process );
+like $rv.body, /
+    'Raku makes considerable use of the <entity>contents: ｢«»｣</entity> characters'
+    /, 'E-markup ';
 
 done-testing;

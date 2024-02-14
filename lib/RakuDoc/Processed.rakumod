@@ -27,16 +27,6 @@ class ProcessedState {
     #| retTarget is link to where footnote is defined to link back form footnote
     has @.footnotes;
 
-    #| Links (from L<link-label|destination> markup)
-    #| Hash of destination => :target, :type, :place, :link-label
-    #| target = computed URL (for local files), place = anchor inside file
-    #| type has following values
-    #| Internal are of the form '#this is a heading' and refer to anchors inside the file
-    #| Local are of the form 'some-type#a heading there', where 'some-type' is a file name in the same directory
-    #| External is a fully qualified URL
-    #|
-    has Hash %.links;
-
     #| Semantic blocks (which includes TITLE & SUBTITLE) can be hidden
     #| Hash of SEMANTIC => [ PStr | Str ]
     has Array %.semantics;
@@ -64,8 +54,6 @@ class ProcessedState {
             index => { pretty-dump( %.index, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ") )  }
             footnotes => { pretty-dump( @.footnotes, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") )  }
-            links => { pretty-dump( %.links, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
@@ -103,6 +91,15 @@ class RakuDoc::Processed is ProcessedState {
     #| target data generated from block names and :id metadata
     #| A set of unique targets inside the file, new targets must be unique
     has SetHash $.targets;
+    #| Links (from L<link-label|destination> markup)
+    #| Hash of destination => :target, :type, :place, :link-label
+    #| target = computed URL (for local files), place = anchor inside file
+    #| type has following values
+    #| Internal are of the form '#this is a heading' and refer to anchors inside the file
+    #| Local are of the form 'some-type#a heading there', where 'some-type' is a file name in the same directory
+    #| External is a fully qualified URL
+    #|
+    has Hash %.links;
 
     submethod TWEAK( :%source-data, :$name, :$output-format ) {
         %!source-data = %(
@@ -162,7 +159,6 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
         $p.index{ $k }.append: $v.Slip
     }
     $p.footnotes.append: $q.footnotes;
-    $p.links ,= $q.links; # allow rewriting because keys refer to unique places but may be duplicated in source
     for $q.semantics.kv -> $k, $v { # by definition, same key but multiple values
         $p.semantics{$k}.append: $v.Slip
     }

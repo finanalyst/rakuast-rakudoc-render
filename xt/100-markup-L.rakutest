@@ -1,0 +1,84 @@
+use v6.d;
+use Test;use RakuDoc::Render;
+
+plan *;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    We can L<Link to a place|https://docs.raku.org> with no problem.
+    Linking inside the file is L<like this|#Here is a header>.
+    No link meta L<Some title> is here.
+    Blank link meta L<Forgot to put link|> in here.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :process );
+like $rv.body, /
+    'We can'
+    \s* '<link>'
+    \s* 'link-label' .+? 'Link to a place'
+    .+? 'place: ｢｣target' .+? 'https://docs.raku.org'
+    .+? 'type' .+? 'external'
+    .+? '</link>'
+    .+? 'with no problem.'
+    /, 'External L<> works';
+like $rv.body, /
+    'Linking inside'
+    .+? '<link>'
+    \s* 'link-label' .+? 'like this'
+    .+? 'place: ｢Here_is_a_header｣target: ｢｣'
+    \s* 'type' .+? 'internal'
+    /, 'Internal L standard works';
+like $rv.body, /
+    'No link'
+    .+? '<link>'
+    \s* 'link-label' .+? 'Some title'
+    .+? 'place' .+? 'Some_title'
+    .+? 'target' .+? '｢｣'
+    \s* 'type' .+? 'internal'
+    .+? 'Blank link'
+    .+? '<link>'
+    \s* 'link-label' .+? 'Forgot to put link'
+    .+? 'place' .+? 'Forgot_to_put_link'
+    .+? 'target' .+? '｢｣'
+    \s* 'type' .+? 'internal'
+    /, 'L format with blank urls';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+
+    We also can L<link to an index test code|format-code-index-test-pod-file_2#an item> with more text.
+    Otherwise it constructs a L<Block|/type/Block>.
+    To force construction of a L<Block|/type/Block>, follow the opening brace with a semicolon.
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :process );
+like $rv.body, /
+    'We also'
+    .+? '<link>'
+    \s* 'link-label' .+? 'link to an index test code'
+    .+? 'place' .+? 'an item'
+    .+? 'target' .+? 'format-code-index-test-pod-file_2'
+    .+? 'type' .+? 'local'
+
+/, 'Link to another file';
+like $rv.body, /
+    'Otherwise'
+    .+? '<link>'
+    \s* 'link-label' .+? 'Block'
+    .+? 'place' .+? '｢｣'
+    \s* 'target' .+? '/type/Block'
+#    .+? 'type' .+? 'local'
+#    .+? 'force construction'
+#    .+? '<link>'
+#    \s* 'link-label' .+? 'Block'
+#    .+? 'place' .+? '｢｣'
+#    \s* 'target' .+? '/type/Block'
+#    .+? 'type' .+? 'local'
+    /, 'double link points to same place';
+
+done-testing;
