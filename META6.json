@@ -10,7 +10,10 @@
   "depends": [
     "PrettyDump",
     "Test::Deeply::Relaxed",
-    "Test::Output"
+    "Test::Output",
+    "Temp::Path",
+    "LibCurl",
+    "URI"
   ],
   "test-depends": [
     "Test",

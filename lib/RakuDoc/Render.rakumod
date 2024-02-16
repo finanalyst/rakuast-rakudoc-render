@@ -3,6 +3,8 @@ use RakuDoc::Processed;
 use RakuDoc::Templates;
 use RakuDoc::ScopedData;
 use RakuDoc::MarkupMeta;
+use LibCurl::Easy;
+use URI;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 
@@ -320,42 +322,48 @@ class RakuDoc::Processor {
             # Placement link
             when 'P' {
                 my $letter = $ast.letter;
-                my $link-contents = self.markup-contents($ast);
-                my $link = $ast.meta;
+                my $link = self.markup-contents($ast).Str;
                 my %config;
                 my %scoped-head = $!scoped-data.config;
                 %config{ .key } = .value for %scoped-head{$letter}.pairs;
+
+                my $error-text;
+                my $contents = '';
+                my $target = '';
                 my $schema = '';
                 my $uri = '';
+                # check to see if there is a text to over-ride automatic failure message
+                if $link ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
+                    $error-text = ~$0;
+                    $link = ~$1
+                }
                 if $link ~~ / ^ $<sch> = (\w+) ':' \s* $<uri> = (.*) $ / {
                     $schema = $<sch>.Str;
                     $uri = $<uri>.Str
                 }
-                my Str $contents;
-                my Bool $as-pre = True;
+                my Bool $as-formatted = True;
                 my Bool $html = False;
-                my $target;
                 given $schema {
                     when 'toc' {
-                        $contents = "See: $link-contents"
+                        $contents = 'NYI ' ~ $link;
                     }
                     when 'index' {
-                        $contents = "See: $link-contents"
+                        $contents = 'NYI ' ~ $link
                     }
                     when 'semantic' {
-                        $as-pre = False;
+                        $as-formatted = False;
                         my $caption;
                         my $level;
-                        $.pod-file.raw-metadata
+                        $*prs.semantics
                                 .grep({ .<name> ~~ $uri })
                                 .map({
-                                    $contents ~= .<value> ;
+                                    $link ~= .<value> ;
                                     $caption = .<caption> without $caption;
                                     $level = .<level> without $level;
                                 });
                         without $contents {
-                            $contents = "See: $link-contents";
-                            $as-pre = True;
+                            $contents =  'NYI ' ~ $link;
+                            $as-formatted = True;
                         }
                         $caption = $uri without $caption;
                         $level = 1 without $level;
@@ -368,11 +376,10 @@ class RakuDoc::Processor {
                             $curl.perform;
                             $contents = $curl.perform.content;
                             CATCH {
-                                when X::LibCurl {
-                                    $contents = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣"
-                                    }
                                 default {
-                                    $contents = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣"
+                                    my $error = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
+                                    $contents = $error-text // $error;
+                                    $*prs.warnings.push: $error
                                 }
                             }
                         }
@@ -383,19 +390,22 @@ class RakuDoc::Processor {
                             $contents = $uri.path.Str.IO.slurp;
                         }
                         else {
-                            $contents = "See: $link-contents";
-                            note "No file found at ｢$link｣" if $.debug;
+                            my $error = "No file found at ｢$link｣";
+                            $contents = $error-text // $error;
+                            $*prs.warnings.push: $error
                         }
                     }
                     default {
-                        $contents = "See: $link-contents"
+                            my $error = "An unexpected fault occurred with ｢$link｣";
+                            $contents = $error-text // $error;
+                            $*prs.warnings.push: $error
                     }
                 }
                 $html = so $contents ~~ / '<html' .+ '</html>'/;
                 $contents = ~$/ if $html;
-                # eliminate any chars outside the <html> container if there is one
+                # strip off any chars before & after the <html> container if there is one
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, :$html, :$as-pre, $target, %config)
+                    %( :$contents, :$html, :$as-formatted, $target, %config)
                 );
                 $*prs.body ~= $rv;
             }

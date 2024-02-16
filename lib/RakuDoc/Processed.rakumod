@@ -34,7 +34,7 @@ class ProcessedState {
     #| An array of warnings is generated and then rendered by the warnings template
     #| The warning template, by default is called by the wrap-source template
     #| RakuDoc warnings are generated as specified in the RakuDoc v2 document.
-    has Str @.warnings;
+    has @.warnings;
 
     #| An array of accumulated rendered items, added to body when next non-item block encountered
     has @.items;
