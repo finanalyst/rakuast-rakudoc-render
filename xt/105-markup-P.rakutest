@@ -7,34 +7,34 @@ plan *;
 my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new(:test);
-#my $temp-dir = 'xt/test-files';
-#$ast = Q:scalar:to/QAST/.AST;
-#    =begin rakudoc
-#    P<https://raw.githubusercontent.com/rakudo/rakudo/master/LICENSE>
-#    P<file:$temp-dir/disclaimer.txt>
-#    =end rakudoc
-#    QAST
-#$rv = $rdp.render( $ast, :process );
-#like $rv.body, /
-#    'Artistic License 2.0'
-#    /,'Got external link';
-#like $rv.body, /
-#    'ABSOLUTELY NO WARRANTY IS IMPLIED'
-#    /,'File contents slurped';
-#
-#$ast = Q:scalar:to/QAST/.AST;
-#    =begin rakudoc
-#    P<Cannot connect|https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE>
-#    P<Bad file|file:$temp-dir/xxdisclaimer.txt>
-#    =end rakudoc
-#    QAST
-#$rv = $rdp.render( $ast, :process );
-#like $rv.body, /
-#    'Cannot connect'
-#    /,'Failed external link';
-#like $rv.body, /
-#    'Bad file'
-#    /,'Failed file';
+my $temp-dir = 'xt/test-files';
+$ast = Q:scalar:to/QAST/.AST;
+    =begin rakudoc
+    P<https://raw.githubusercontent.com/rakudo/rakudo/master/LICENSE>
+    P<file:$temp-dir/disclaimer.txt>
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :process );
+like $rv.body, /
+    'Artistic License 2.0'
+    /,'Got external link';
+like $rv.body, /
+    'ABSOLUTELY NO WARRANTY IS IMPLIED'
+    /,'File contents slurped';
+
+$ast = Q:scalar:to/QAST/.AST;
+    =begin rakudoc
+    P<Cannot connect|https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE>
+    P<Bad file|file:$temp-dir/xxdisclaimer.txt>
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :process );
+like $rv.body, /
+    'Cannot connect'
+    /,'Failed external link';
+like $rv.body, /
+    'Bad file'
+    /,'Failed file';
 
 $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
@@ -57,7 +57,17 @@ $ast = Q:scalar:to/QAST/.AST;
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast );
-say $rv;
-
+like $rv, /
+    '<toc>' .+? '</toc>'
+    .+ '<index>' .+? '</index>'
+    .+ '<rakudoc>'
+/, 'got a toc, an index, then a rakudoc';
+like $rv, /
+    '<rakudoc>'
+    .+ '<placement>'
+    .+ '<toc>' .+ '</toc>'
+    .+ '</placement>'
+    .+ '</rakudoc>'
+/, 'got a toc inside a placement, inside a rakudoc';
 
 done-testing;

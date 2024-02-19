@@ -34,9 +34,15 @@ class RakuDoc::Processor {
     multi method render( $ast, :%source-data, :$process = False ) {
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
-        for $ast.rakudoc {
-            $.handle($_)
-        }
+        $ast.rakudoc.map( { $.handle( $_ ) });
+## following doesnt work
+#        # to get multithreading
+#        my @leaves;
+#        for $ast.rakudoc {
+#            $.handle($_)
+#            @leaves.push: start { $.handle($_) }
+#        }
+#        await.allof( @leaves );
         $!current += $*prs;
         # Since the footnote order may only be known at the end
         # footnote numbers are PCells, which need triggering
