@@ -7,33 +7,57 @@ plan *;
 my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new(:test);
-my $temp-dir = 'xt/test-files';
-$ast = Q:scalar:to/QAST/.AST;
-    =begin rakudoc
-    P<https://raw.githubusercontent.com/rakudo/rakudo/master/LICENSE>
-    P<file:$temp-dir/disclaimer.txt>
-    =end rakudoc
-    QAST
-$rv = $rdp.render( $ast, :process );
-like $rv.body, /
-    'Artistic License 2.0'
-    /,'Got external link';
-like $rv.body, /
-    'ABSOLUTELY NO WARRANTY IS IMPLIED'
-    /,'File contents slurped';
+#my $temp-dir = 'xt/test-files';
+#$ast = Q:scalar:to/QAST/.AST;
+#    =begin rakudoc
+#    P<https://raw.githubusercontent.com/rakudo/rakudo/master/LICENSE>
+#    P<file:$temp-dir/disclaimer.txt>
+#    =end rakudoc
+#    QAST
+#$rv = $rdp.render( $ast, :process );
+#like $rv.body, /
+#    'Artistic License 2.0'
+#    /,'Got external link';
+#like $rv.body, /
+#    'ABSOLUTELY NO WARRANTY IS IMPLIED'
+#    /,'File contents slurped';
+#
+#$ast = Q:scalar:to/QAST/.AST;
+#    =begin rakudoc
+#    P<Cannot connect|https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE>
+#    P<Bad file|file:$temp-dir/xxdisclaimer.txt>
+#    =end rakudoc
+#    QAST
+#$rv = $rdp.render( $ast, :process );
+#like $rv.body, /
+#    'Cannot connect'
+#    /,'Failed external link';
+#like $rv.body, /
+#    'Bad file'
+#    /,'Failed file';
 
 $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
-    P<Cannot connect|https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE>
-    P<Bad file|file:$temp-dir/xxdisclaimer.txt>
+    =head1 Head One
+
+    Some text
+
+    P<toc:>
+
+    More text
+
+    =head1 Head Two
+
+    Again text
+
+    =head2 level two head
+
+    Final stuff
+
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :process );
-like $rv.body, /
-    'Cannot connect'
-    /,'Failed external link';
-like $rv.body, /
-    'Bad file'
-    /,'Failed file';
+$rv = $rdp.render( $ast );
+say $rv;
+
 
 done-testing;

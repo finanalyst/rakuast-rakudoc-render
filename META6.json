@@ -13,7 +13,8 @@
     "Test::Output",
     "Temp::Path",
     "LibCurl",
-    "URI"
+    "URI",
+    "OO::Monitors"
   ],
   "test-depends": [
     "Test",

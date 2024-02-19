@@ -5,7 +5,7 @@ use RakuDoc::Templates;
 use Test::Deeply::Relaxed;
 
 use PrettyDump;
-my $com-channel = Supplier::Preserving.new;
+my $register = CompletedCells.new;
 
 plan 16;
 
@@ -23,9 +23,9 @@ is $rp.source-data<extra>, 'extra', 'source data has extra';
 my ProcessedState $ps .= new;
 my ProcessedState $pt .= new;
 my ProcessedState $pu .= new;
-$ps.body ~= 'start' ~ PCell.new(:$com-channel, :id('AAA')) ~ PCell.new(:$com-channel, :id('BBB'));
+$ps.body ~= 'start' ~ PCell.new(:$register, :id('AAA')) ~ PCell.new(:$register, :id('BBB'));
 my $payload = '｢some stuff｣';
-$com-channel.emit(%(:$payload, :id<AAA>));
+$register.add-payload( :$payload, :id<AAA> );
 like $ps.body.Str, /
     'start'
     .* { $payload }
@@ -40,7 +40,7 @@ like $pu.body.Str, /
     .+ 'end'
     /, 'ProcessedState object body added as expected';
 $payload = '｢more things｣';
-$com-channel.emit(%(:$payload, :id<BBB>));
+$register.add-payload( :$payload, :id<BBB> );
 
 like $pu.body.Str, /
     { $payload }
@@ -48,7 +48,7 @@ like $pu.body.Str, /
 
 # renew ps
 $ps .= new;
-$ps.body ~= 'start' ~ PCell.new(:$com-channel, :id('XXX')) ~ PCell.new(:$com-channel, :id('YYY'));
+$ps.body ~= 'start' ~ PCell.new(:$register, :id('XXX')) ~ PCell.new(:$register, :id('YYY'));
 
 $ps.toc.append: %(<one two three> Z=> 1 ..*), %(<four five> Z=> 'a' ..*), ;
 $pt.toc.append: %(<tone ttwo tthree> Z=> 1 ..*), %(<tfour tfive> Z=> 'a' ..*), ;
@@ -85,7 +85,7 @@ $pu += [+] $ps, $pt;
 is-deeply-relaxed $pu.semantics, %expected-ind, 'ProcessedState object semantics added as expected';
 
 $payload = '< more things >';
-$com-channel.emit(%(:$payload, :id<XXX>));
+$register.add-payload( :$payload, :id<XXX> );
 
 like $pu.body.Str, /
     [ { $payload } .+? ] ** 3

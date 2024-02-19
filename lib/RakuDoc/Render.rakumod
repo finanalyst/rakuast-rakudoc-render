@@ -10,7 +10,7 @@ enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 
 class RakuDoc::Processor {
     has %.templates is Template-directory;
-    has Supplier::Preserving $.com-channel .= new;
+    has CompletedCells $.register .= new;
     has RakuDoc::Processed $.current;
     has $.output-format;
     has RakuDoc::ScopedData $!scoped-data .= new;
@@ -43,9 +43,9 @@ class RakuDoc::Processor {
         self.complete-footnotes;
         # P<toc:>, P<index:> may put PCells into body
         # so ToC and Index need to be rendered and any other PCells triggered
-        my $rendered-toc = PCell.new( :$!com-channel, :id<toc-schema> );
+        my $rendered-toc = PCell.new( :$!register, :id<toc-schema> );
         self.complete-toc;
-        my $rendered-index = PCell.new( :$!com-channel, :id<index-schema> );
+        my $rendered-index = PCell.new( :$!register, :id<index-schema> );
         self.complete-index;
         # All PCells should be triggered by this point
         $!current.body.strip; # replace expanded PCells with Str
@@ -237,7 +237,7 @@ class RakuDoc::Processor {
                 my $id = self.name-id($ast.Str);
                 my $contents = self.markup-contents($ast);
                 my $retTarget = $id;
-                my $fnNumber = PCell.new( :id("fn_num_$id"), :$!com-channel);
+                my $fnNumber = PCell.new( :id("fn_num_$id"), :$!register);
                 my $fnTarget = "fn_target_$id";
                 my %config;
                 my %scoped-head = $!scoped-data.config;
@@ -322,6 +322,7 @@ class RakuDoc::Processor {
             # Placement link
             when 'P' {
                 my $letter = $ast.letter;
+                # The contents of P<> markup must be a Str.
                 my $link = self.markup-contents($ast).Str;
                 my %config;
                 my %scoped-head = $!scoped-data.config;
@@ -341,29 +342,31 @@ class RakuDoc::Processor {
                     $schema = $<sch>.Str;
                     $uri = $<uri>.Str
                 }
-                my Bool $as-formatted = True;
+                my Bool $keep-format = False;
                 my Bool $html = False;
                 given $schema {
                     when 'toc' {
-                        $contents = 'NYI ' ~ $link;
+                        # TODO add the constraints for toc: in RakuDoc v2.
+                        $contents = PCell.new( :$!register, :id<toc-schema> );
+                        $keep-format = True;
                     }
                     when 'index' {
-                        $contents = 'NYI ' ~ $link
+                        $contents = PCell.new( :$!register, :id<index-schema> );
+                        $keep-format = True;
                     }
                     when 'semantic' {
-                        $as-formatted = False;
+                        $keep-format = True;
                         my $caption;
                         my $level;
                         $*prs.semantics
                                 .grep({ .<name> ~~ $uri })
                                 .map({
-                                    $link ~= .<value> ;
+                                    $contents ~= .<value> ;
                                     $caption = .<caption> without $caption;
                                     $level = .<level> without $level;
                                 });
                         without $contents {
-                            $contents =  'NYI ' ~ $link;
-                            $as-formatted = True;
+                            $contents =  PCell.new( :$!register, $uri );
                         }
                         $caption = $uri without $caption;
                         $level = 1 without $level;
@@ -396,16 +399,15 @@ class RakuDoc::Processor {
                         }
                     }
                     default {
-                            my $error = "An unexpected fault occurred with ｢$link｣";
-                            $contents = $error-text // $error;
-                            $*prs.warnings.push: $error
+                            $contents = $error-text // "See $link";
+                            $*prs.warnings.push: "The schema ｢$schema｣ is not implemented. Full link was ｢$link｣."
                     }
                 }
                 $html = so $contents ~~ / '<html' .+ '</html>'/;
                 $contents = ~$/ if $html;
                 # strip off any chars before & after the <html> container if there is one
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, :$html, :$as-formatted, $target, %config)
+                    %( :$contents, :$html, :$keep-format, $target, %config)
                 );
                 $*prs.body ~= $rv;
             }
@@ -595,7 +597,7 @@ class RakuDoc::Processor {
     method complete-footnotes {
         for $!current.footnotes.kv -> $n, %data {
             %data<fnNumber> = $n + 1;
-            $!com-channel.emit(%(:payload($n + 1), :id( 'fn_num_' ~ %data<retTarget> ) ) );
+            $!register.add-payload( :payload($n + 1), :id( 'fn_num_' ~ %data<retTarget> ) );
         }
     }
     #| completes the index by rendering each key
@@ -605,16 +607,16 @@ class RakuDoc::Processor {
             take %!templates<index-item>( %( :@index-entries , ) )
         }
         my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ));
-        $!com-channel.emit( %( :$payload, :id('index-schema') ) );
+        $!register.add-payload( :$payload, :id('index-schema') );
     }
     #| renders the toc and triggers the 'toc-schema' id for P<>
     method complete-toc {
         my @toc-list = gather for $!current.toc -> $toc-entry {
             take %!templates<toc-item>( %( :$toc-entry , ) )
         }
-        $!com-channel.emit( %( :payload(
+        $!register.add-payload( :payload(
             %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) )) ),
-            :id('toc-schema') )
+            :id('toc-schema')
         )
     }
 

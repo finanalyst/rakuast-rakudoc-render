@@ -3,7 +3,7 @@ use Test;
 use RakuDoc::Templates;
 plan *;
 
-my $com-channel = Supplier::Preserving.new;
+my $register = CompletedCells.new;
 
 my %td is Template-directory = %(
         aaa => -> %prm, $tmpl {
@@ -13,7 +13,7 @@ my %td is Template-directory = %(
 );
 my %custom = <one two three> Z=> 1..* ;
 %td.data<custom> = %custom;
-my %params = :contents(PStr.new ~ PCell.new(:$com-channel, :id<ID1>) ), ;
+my %params = :contents(PStr.new ~ PCell.new(:$register, :id<ID1>) ), ;
 my $rv = %td<aaa>( %params );
 isa-ok $rv, PStr, 'if a parameter is passed as PStr, the return value is a PStr' ;
 like $rv.tail, / { %custom.gist } /, 'custom data is accessed inside template';

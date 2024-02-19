@@ -1,4 +1,6 @@
 use v6.d;
+use OO::Monitors;
+
 class Template {
     has &.block;
     has $.globals is rw;
@@ -80,26 +82,40 @@ class Template-directory does Associative {
     }
 }
 
+monitor CompletedCells {
+    has %.cell-list;
+    method add-payload( :$payload, :$id ) {
+        %!cell-list{ $id } = $payload;
+    }
+    method is-present( $id --> Bool ) {
+        %!cell-list{ $id }:exists
+    }
+    method get( $id ) {
+        if %!cell-list{ $id }:exists { %!cell-list{ $id } }
+        else { '' }
+    }
+}
+
 class PCell {
-    has Supply $.s;
+    has CompletedCells $.archive;
     has Str $!text;
     has Str $.id;
     method Str {
-        $!s.tap: {
-            $!text = .<payload>.Str.join if .<id> eq $!id;
+        if $!archive.is-present( $!id ) {
+            $!text = ~$!archive.get( $!id )
         }
         $!text // "｢$!id UNAVAILABLE｣"
     }
-    submethod BUILD(Supplier::Preserving :$com-channel, :$!id) {
-        $!s = $com-channel.Supply
+    submethod BUILD(:$register, :$!id) {
+        $!archive := $register
     }
     method debug {
-        $.Str; # trigger tap if need be
+        $.Str;
         "\x3018 PCell, "
                 ~ ($!text.defined ?? "Expanded to: $!text \x3019" !! "Waiting for: $.id \x3019")
     }
     method is-expanded( --> Bool ) {
-        $.Str; # trigger tap
+        $.Str;
         $!text.defined
     }
 }
