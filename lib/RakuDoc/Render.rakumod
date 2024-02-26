@@ -35,15 +35,20 @@ class RakuDoc::Processor {
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
         $ast.rakudoc.map( { $.handle( $_ ) });
-## following doesnt work
+        $!current += $*prs;
+## yields error with Numeric(ProcessedState:D) cant be resolved
+#        $ast.rakudoc.map( {
+#            $.handle( $_ );
+#            $!current += $*prs;
+#        }).hyper;
+## following yields a different set of errors to .hyper and is MUCH slower!
 #        # to get multithreading
 #        my @leaves;
 #        for $ast.rakudoc {
-#            $.handle($_)
-#            @leaves.push: start { $.handle($_) }
+#            @leaves.push: start { $.handle($_) };
 #        }
 #        await.allof( @leaves );
-        $!current += $*prs;
+#        $!current += $*prs;
         # Since the footnote order may only be known at the end
         # footnote numbers are PCells, which need triggering
         self.complete-footnotes;
@@ -186,7 +191,7 @@ class RakuDoc::Processor {
             }
             # =table
             # Visual or procedural table
-#            when 'table' { $.gen-table($ast) }
+            when 'table' { $.gen-table($ast) }
             # RESERVED
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
             when all($_.uniprops) ~~ / Lu / {
@@ -560,7 +565,7 @@ class RakuDoc::Processor {
         $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
     method gen-table($ast) {
-        ''
+        $*prs.body ~= ''
     }
     method gen-unknown-builtin($ast) {
         my %config = $ast.resolved-config;
