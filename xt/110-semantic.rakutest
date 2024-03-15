@@ -11,7 +11,7 @@ $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, pre-processed );
+$rv = $rdp.render( $ast, :pre-processed );
 like $rv.body, /
     'Artistic License 2.0'
     /,'Got external link';

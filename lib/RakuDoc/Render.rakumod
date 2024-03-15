@@ -31,7 +31,7 @@ class RakuDoc::Processor {
 
     #| renders to a String by default,
     #| but returns ProcessedState object if :process True
-    multi method render( $ast, :%source-data, :$process = False ) {
+    multi method render( $ast, :%source-data, :$pre-processed = False ) {
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
         $ast.rakudoc.map( { $.handle( $_ ) });
@@ -67,7 +67,7 @@ class RakuDoc::Processor {
                 $!current.warnings.push( 'Still waiting for ' ~ $/<id> ~ ' to be expanded.' )
             }
         }
-        return $.current if $process;
+        return $.current if $pre-processed;
         # Placing of footnotes, ToC etc, is left to source-wrap template
         %!templates<source-wrap>( %( :processed( $!current ), :$rendered-index, :$rendered-toc ) ).Str
     }

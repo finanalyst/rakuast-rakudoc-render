@@ -6,7 +6,7 @@ plan 1;
 
 my $ast;
 my $rv;
-my RakuDoc::Processor $rdp .= new( :test, :process );
+my RakuDoc::Processor $rdp .= new( :test, :pre-processed );
 
 $ast = Q:to/QAST/.AST;
     =head2 First header
@@ -17,7 +17,7 @@ $ast = Q:to/QAST/.AST;
     =end section
     =head2 Fourth without option
     QAST
-$rv = $rdp.render( $ast, :process );
+$rv = $rdp.render( $ast, :pre-processed );
 is $rv.toc.elems, 3, 'got correct number of contents';
 
 done-testing;

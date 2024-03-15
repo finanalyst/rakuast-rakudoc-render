@@ -14,7 +14,7 @@ $ast = Q:to/QAST/.AST;
     =head2 Third test text
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :process );
+$rv = $rdp.render( $ast, :pre-processed );
 like $rv.body.Str, /'<head>' .+ 'level' .+ 2 .+ '</head>' /, 'plain head has level 2';
 like $rv.body.Str, / '<head>' .+ 'toc' .+ 'False' .+ '</head>' /, 'head got toc data';
 $ast = Q:to/QAST/.AST;
@@ -26,7 +26,7 @@ $ast = Q:to/QAST/.AST;
     =end section
     =head2 Fourth without option
     QAST
-$rv = $rdp.render( $ast, :process );
+$rv = $rdp.render( $ast, :pre-processed );
 my regex hd { '<head>' $<cont> = (.+?) '</head>' }
 my $parse = $rv.body.Str ~~ / [<hd> .*? ]+ $/;
 is $parse<hd>.elems, 4, 'got 4 heads';

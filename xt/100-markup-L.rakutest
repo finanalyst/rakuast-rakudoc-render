@@ -16,7 +16,7 @@ $ast = Q:to/QAST/.AST;
     Blank link meta L<Forgot to put link|> in here.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :process );
+$rv = $rdp.render( $ast, :pre-processed );
 like $rv.body, /
     'We can'
     \s* '<link>'
@@ -57,7 +57,7 @@ $ast = Q:to/QAST/.AST;
 
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :process );
+$rv = $rdp.render( $ast, :pre-processed );
 like $rv.body, /
     'We also'
     .+? '<link>'

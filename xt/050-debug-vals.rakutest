@@ -24,7 +24,7 @@ $ast = Q:to/QAST/.AST;
     =end rakudoc
     QAST
 my $output = output-from {
-    $rv = $rdp.render( $ast, :process )
+    $rv = $rdp.render( $ast, :pre-processed )
     };
 like $output, / 'Handling: RakuAST::Doc::Block' /, 'didnt get a handling error';
 unlike $output, / 'Doc::Block type: rakudoc' /, 'didnt get block type';
@@ -33,7 +33,7 @@ unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(BlockType));
 $output = output-from {
-    $rv = $rdp.render( $ast, :process )
+    $rv = $rdp.render( $ast, :pre-processed )
     };
 unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'didnt get a handling error';
 like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
@@ -42,7 +42,7 @@ unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(Scoping));
 $output = output-from {
-    $rv = $rdp.render( $ast, :process )
+    $rv = $rdp.render( $ast, :pre-processed )
     };
 unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'didnt get a handling error';
 unlike $output, / 'Doc::Block type: rakudoc' /, 'didnt get block type';
@@ -51,7 +51,7 @@ unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(AstBlock, BlockType));
 $output = output-from {
-    $rv = $rdp.render( $ast, :process )
+    $rv = $rdp.render( $ast, :pre-processed )
     };
 like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
 like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
@@ -60,7 +60,7 @@ unlike $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(Templates));
 $output = output-from {
-    $rv = $rdp.render( $ast, :process )
+    $rv = $rdp.render( $ast, :pre-processed )
     };
 unlike $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
 unlike $output, / 'Doc::Block type: rakudoc' /, 'got block type';
@@ -69,7 +69,7 @@ like $output, / 'Template' .+ 'source:' /, 'didnt get template debug';
 
 $rdp  .= new(:test, :debug(All));
 $output = output-from {
-    $rv = $rdp.render( $ast, :process )
+    $rv = $rdp.render( $ast, :pre-processed )
     };
 like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
 like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
@@ -79,7 +79,7 @@ like $output, / 'Template' .+ 'source:' /, 'got template debug';
 $rdp  .= new(:test);
 $rdp.debug(AstBlock, BlockType, Templates);
 $output = output-from {
-    $rv = $rdp.render( $ast, :process )
+    $rv = $rdp.render( $ast, :pre-processed )
     };
 like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling error';
 like $output, / 'Doc::Block type: rakudoc' /, 'got block type';
