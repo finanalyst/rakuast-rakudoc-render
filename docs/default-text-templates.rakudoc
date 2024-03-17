@@ -33,9 +33,14 @@
         =cell no parameters
     =row
         =for cell :label
+		final
+        =cell V«special template to encapsulate all the output to save to a file»
+        =cell no parameters
+    =row
+        =for cell :label
 		footnotes
         =cell V«special template to render the footnotes data structure»
-        =cell no parameters
+        =cell footnote-list
     =row
         =column
 			=for cell :label :row-span(2)
@@ -51,6 +56,11 @@
         =for cell :label
 		index
         =cell V«special template to render the index data structure»
+        =cell no parameters
+    =row
+        =for cell :label
+		index-item
+        =cell V«renders a single item in the index»
         =cell no parameters
     =row
         =for cell :label
@@ -224,16 +234,6 @@
         =cell no parameters
     =row
         =for cell :label
-		semantic
-        =cell V«renders =semantic block»
-        =cell no parameters
-    =row
-        =for cell :label
-		source-wrap
-        =cell V«special template to encapsulate all the output to save to a file»
-        =cell no parameters
-    =row
-        =for cell :label
 		table
         =cell V«renders =table block»
         =cell no parameters
@@ -242,6 +242,11 @@
 		toc
         =cell V«special template to render the toc data structure»
         =cell toc
+    =row
+        =for cell :label
+		toc-item
+        =cell V«renders a single item in the index»
+        =cell no parameters
     =row
         =for cell :label
 		unknown

@@ -169,6 +169,10 @@ class RakuDoc::Processor {
 
         say "@ $?LINE debug " ,$*prs.body.debug;
             }
+            # =place block, mostly mimics P<>, but allows for TOC and caption
+            when 'place' {
+                 $.gen-place($ast);
+            }
             # =rakudoc
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
@@ -344,14 +348,14 @@ class RakuDoc::Processor {
                 %config{ .key } = .value for %scoped-head{$letter}.pairs;
 
                 my $error-text;
-                my $contents = '';
-                my $schema = '';
-                my $uri = '';
                 # check to see if there is a text to over-ride automatic failure message
                 if $link ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
                     $error-text = ~$0;
                     $link = ~$1
                 }
+                my $contents = '';
+                my $schema = '';
+                my $uri = '';
                 if $link ~~ / ^ $<sch> = (\w+) ':' \s* $<uri> = (.*) $ / {
                     $schema = $<sch>.Str;
                     $uri = $<uri>.Str
@@ -528,8 +532,7 @@ class RakuDoc::Processor {
         my $id = '';
         with %config<id> {
             if self.is-target-unique( $_ ) {
-                self.register-target( $_ );
-                $id = $_
+                $id = self.register-target( $_ )
             }
             else {
                 $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣";
@@ -554,6 +557,93 @@ class RakuDoc::Processor {
         %config{ .key } = .value for %scoped{"item$level"}.pairs;
         $*prs.items.push: %!templates<item>(
             %( :$level, :$contents, %config )
+        )
+    }
+    method gen-place($ast) {
+        my %config = $ast.resolved-config;
+        my %scoped-head = $!scoped-data.config;
+        %config{ .key } = .value for %scoped-head<place>.pairs;
+        my $caption = %config<caption> // 'Placement';
+        my $error-text;
+        $error-text = %config<error-text> if %config<error-test>:exists;
+        my $level = %config<headlevel> // 1;
+        $!scoped-data.last-title( $caption );
+        my $target = $.name-id($caption);
+        my $id = '';
+        with %config<id> {
+            if self.is-target-unique( $_ ) {
+                $id = self.register-target( $_ );
+            }
+            else {
+                $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣";
+            }
+        }
+        my $toc = %config<toc> // True;
+        $*prs.toc.push(
+            { :$caption, :$target, :$level }
+        ) if $toc;
+        my $link = $ast.Str;
+        # the following is a copy from P-markup, so should be abstracted
+        my $contents = '';
+        my $schema = '';
+        my $uri = '';
+        if $link ~~ / ^ $<sch> = (\w+) ':' \s* $<uri> = (.*) $ / {
+            $schema = $<sch>.Str;
+            $uri = $<uri>.Str
+        }
+        my Bool $keep-format = False;
+        my Bool $html = False;
+        given $schema {
+            when 'toc' {
+                # TODO add the constraints for toc: in RakuDoc v2.
+                $contents = PCell.new( :$!register, :id<toc-schema> );
+                $keep-format = True;
+            }
+            when 'index' {
+                $contents = PCell.new( :$!register, :id<index-schema> );
+                $keep-format = True;
+            }
+            when 'semantic' {
+                $keep-format = True;
+                $contents =  PCell.new( :$!register, :id( "semantic-schema_$uri" ) );
+            }
+            when 'http' | 'https' {
+                my LibCurl::Easy $curl;
+                $curl .= new(:URL($link), :followlocation, :failonerror );
+                try {
+                    $curl.perform;
+                    $contents = $curl.perform.content;
+                    CATCH {
+                        default {
+                            my $error = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
+                            $contents = $error-text // $error;
+                            $*prs.warnings.push: $error
+                        }
+                    }
+                }
+            }
+            when 'file' | '' {
+                my URI $uri .= new($link);
+                if $uri.path.Str.IO ~~ :e & :f {
+                    $contents = $uri.path.Str.IO.slurp;
+                }
+                else {
+                    my $error = "No file found at ｢$link｣";
+                    $contents = $error-text // $error;
+                    $*prs.warnings.push: $error
+                }
+            }
+            default {
+                    $contents = $error-text // "See $link";
+                    $*prs.warnings.push: "The schema ｢$schema｣ is not implemented. Full link was ｢$link｣."
+            }
+        }
+        $html = so $contents ~~ / '<html' .+ '</html>'/;
+        $contents = ~$/ if $html;
+        # strip off any chars before & after the <html> container if there is one
+
+        $*prs.body ~= %!templates<place>(
+            %( :$contents, :$caption, :$target, :$id, :$html, :$keep-format, %config )
         )
     }
     method gen-rakudoc($ast) {
@@ -866,6 +956,12 @@ class RakuDoc::Processor {
                 my PStr $rv .= new("<para>\n");
                 for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
                 $rv ~= "</para>\n"
+            },
+            #| renders =place block
+            place => -> %prm, $tmpl {
+                my PStr $rv .= new("<place>\n");
+                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+                $rv ~= "</place>\n"
             },
             #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl {
@@ -1258,6 +1354,12 @@ class RakuDoc::Processor {
                 my PStr $rv .= new("<para>\n");
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
 				$rv ~= "</para>\n"
+            },
+            #| renders =place block
+            place => -> %prm, $tmpl {
+                my PStr $rv .= new("<place>\n");
+                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+                $rv ~= "</place>\n"
             },
             #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl {

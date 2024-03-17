@@ -1,8 +1,8 @@
 # list of things to do
 
-- [ ] Semantic blocks / :hidden
+- [x] Semantic blocks / :hidden
 - [ ] Custom blocks ( undefined only )
-- [ ] =place directive
+- [x] =place directive
 - [ ] inline delta
 - [ ] alias directive
 - [ ] =A<> markup

@@ -32,30 +32,36 @@
         =cell V«renders =defn block»
         =cell no parameters
     =row
+        =column
+			=for cell :label :row-span(3)
+			final
+        =column
+			=cell V«special template to encapsulate all the output to save to a file»
+			=for cell :row-span(2)
+			-
+        =column
+			=cell processed
+			=cell rendered-toc
+			=cell rendered-index
+    =row
         =for cell :label
 		footnotes
         =cell V«special template to render the footnotes data structure»
-        =cell no parameters
+        =cell footnotes
     =row
-        =column
-			=for cell :label :row-span(7)
-			head
-        =column
-			=cell V«renders =head block»
-			=for cell :row-span(6)
-			-
-        =column
-			=cell caption
-			=cell contents
-			=cell id
-			=cell target
-			=cell toc
-			=cell state
-			=cell level
+        =for cell :label
+		head
+        =cell V«renders =head block»
+        =cell no parameters
     =row
         =for cell :label
 		index
         =cell V«special template to render the index data structure»
+        =cell index-list
+    =row
+        =for cell :label
+		index-item
+        =cell V«renders a single item in the index»
         =cell no parameters
     =row
         =for cell :label
@@ -229,24 +235,19 @@
         =cell no parameters
     =row
         =for cell :label
-		semantic
-        =cell V«renders =semantic block»
-        =cell no parameters
-    =row
-        =for cell :label
-		source-wrap
-        =cell V«special template to encapsulate all the output to save to a file»
-        =cell processed
-    =row
-        =for cell :label
 		table
         =cell V«renders =table block»
         =cell no parameters
     =row
         =for cell :label
 		toc
-        =cell V«special template to render the toc data structure»
-        =cell toc
+        =cell V«special template to render the toc list»
+        =cell toc-list
+    =row
+        =for cell :label
+		toc-item
+        =cell V«renders a single item in the toc»
+        =cell no parameters
     =row
         =for cell :label
 		unknown
