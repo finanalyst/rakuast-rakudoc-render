@@ -14,14 +14,17 @@ is $rdp.output-format, 'txt', 'defaults to txt';
 $ast = Q:to/QAST/.AST;
     =head1 Test text
     QAST
-$rv = $rdp.render( $ast, :pre-processed );
+$rv = $rdp.render( $ast, :pre-finalised );
 
 isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
 like $rv.body.Str, /
     ^ '<head>'
+    \s+ 'caption: ｢Test text｣'
     \s+ 'contents: ｢Test text｣'
+    \s+ 'id: ｢｣'
     \s+ 'level: ｢1｣'
     \s+ 'target: ｢Test_text｣'
+    \s+ 'toc: ｢True｣'
     \s+ '</head>'
     \s+ $
     /, 'head template works';
@@ -32,14 +35,14 @@ $ast = Q:to/QAST/.AST;
     Some text in a paragraph
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-processed );
+$rv = $rdp.render( $ast, :pre-finalised );
 is-deeply-relaxed $rv.source-data<rakudoc-config>, %(:kind<sub>, :subkind<operator>, :category<Language>),
         'places rakudoc metadata correctly';
 $ast = Q:to/QAST/.AST;
     =for head :!toc :id<Quick id>
     Second test text
     QAST
-$rv = $rdp.render( $ast, :pre-processed );
+$rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, / '<head>' .+ 'level' .+ 1 .+ '</head>' /, 'plain head has level 1';
 like $rv.body.Str, / '<head>' .+ 'toc' .+ 'False' .+ '</head>' /, 'head got toc data';
 like $rv.body.Str, / '<head>' .+ 'id' .+ 'Quick id' .+ '</head>' /, 'head got id data';

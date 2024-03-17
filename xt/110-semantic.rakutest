@@ -2,18 +2,122 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 6;
+plan *;
 
 my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new(:test);
 $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
+    =TITLE This is a new one
+    =SUBTITLE A page of tests
+    =NAME tester-file
+
+    this is text
+
+    =AUTHOR A.N. Writer
+    =SUMMARY Some summarised remarks
+
+    =SYNOPSIS Here is some text in a synopsis
+
+    =begin TEST
+    This is multiline in a SEMANTIC node
+
+    more
+    =end TEST
+
+    stuff
+
+    =TEST another test
+
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-processed );
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.title, 'This is a new one', 'Title processed';
+is  $rv.subtitle, 'A page of tests', 'Subtitle processed';
+is $rv.name, 'tester-file.txt', 'file name set with default txt';
+cmp-ok $rv.semantics.keys, '(==)', <TITLE SUBTITLE NAME AUTHOR SUMMARY SYNOPSIS TEST>, 'got all Semantics in structure';
+is $rv.semantics<TEST>.elems, 2, 'Two Tests generate two elements';
+is-deeply $rv.toc.map( *.<caption> ), <AUTHOR SUMMARY SYNOPSIS TEST TEST>, 'Raw toc correct';
 like $rv.body, /
-    'Artistic License 2.0'
-    /,'Got external link';
+    'This is a new one'
+    .+ 'this is text'
+    .+ '<head' .+ 'AUTHOR'
+    .+ '<head' .+ 'SUMMARY'
+    .+ '<head' .+ 'SYNOPSIS'
+    .+ '<head' .+ 'TEST'
+/, 'semantic blocks rendered as expected';
+
+$rdp .= new(:test);
+$ast = Q:scalar:to/QAST/.AST;
+    =begin rakudoc
+    =TITLE This is a new one
+    =SUBTITLE A page of tests
+    =NAME tester-file
+
+    this is text
+
+    =AUTHOR A.N. Writer
+    =for SUMMARY :hidden
+    Some summarised remarks
+
+    =for SYNOPSIS :hidden
+    Here is some text in a synopsis
+
+    =begin TEST :hidden
+    This is multiline in a SEMANTIC node
+
+    more
+    =end TEST
+
+    stuff
+
+    =TEST another test
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is-deeply $rv.toc.map( *.<caption> ), <AUTHOR TEST>, 'Toc doesnt contain hidden blocks';
+like $rv.body, /
+    'This is a new one'
+    .+ 'this is text'
+    .+ '<head' .+ 'AUTHOR'
+    .+ '<head' .+ 'TEST'
+/, 'semantic blocks hidden';
+unlike $rv.body, /
+    .+ '<head' .+ 'SUMMARY'
+    /, 'no SUMMARY';
+
+$rv = $rdp.render( $ast, :pre-finalised );
+$ast = Q:scalar:to/QAST/.AST;
+    =begin rakudoc
+    this is text
+
+    =AUTHOR A.N. Writer
+    =for SUMMARY :hidden
+    Some summarised remarks
+
+    =for SYNOPSIS :hidden
+    Here is some text in a synopsis
+
+    more stuff
+
+    =TEST another test
+
+    P<semantic: SYNOPSIS>
+
+    P<semantic: SUMMARY>
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is-deeply $rv.toc.map( *.<caption> ), <AUTHOR TEST>, 'Toc doesnt contain hidden blocks';
+like $rv.body, /
+    'this is text'
+    .+ '<head' .+ 'AUTHOR'
+    .+ '<head' .+ 'TEST'
+    .+ '<head' .+ 'SYNOPSIS'
+    .+ '<head' .+ 'SUMMARY'
+/, 'semantic blocks rendered in placement order';
 
 done-testing;

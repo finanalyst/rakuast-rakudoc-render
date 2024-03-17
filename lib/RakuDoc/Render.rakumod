@@ -31,7 +31,7 @@ class RakuDoc::Processor {
 
     #| renders to a String by default,
     #| but returns ProcessedState object if :process True
-    multi method render( $ast, :%source-data, :$pre-processed = False ) {
+    multi method render( $ast, :%source-data, :pre-finalize(:$pre-finalised) = False ) {
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
         $ast.rakudoc.map( { $.handle( $_ ) });
@@ -58,6 +58,10 @@ class RakuDoc::Processor {
         self.complete-toc;
         my $rendered-index = PCell.new( :$!register, :id<index-schema> );
         self.complete-index;
+        # placed semantic blocks now need triggering
+        for $!current.semantics.kv -> $block, @vals {
+            $!register.add-payload( :payload( @vals.join ), :id("semantic-schema_$block") )
+        }
         # All PCells should be triggered by this point
         $!current.body.strip; # replace expanded PCells with Str
         # all suspended PCells should have been replaced by Str
@@ -67,9 +71,9 @@ class RakuDoc::Processor {
                 $!current.warnings.push( 'Still waiting for ' ~ $/<id> ~ ' to be expanded.' )
             }
         }
-        return $.current if $pre-processed;
-        # Placing of footnotes, ToC etc, is left to source-wrap template
-        %!templates<source-wrap>( %( :processed( $!current ), :$rendered-index, :$rendered-toc ) ).Str
+        return $.current if $pre-finalised;
+        # Placing of footnotes, ToC etc, is left to final template
+        %!templates<final>( %( :processed( $!current ), :$rendered-index, :$rendered-toc ) ).Str
     }
 
     #| All handle methods may generate debug reports
@@ -341,7 +345,6 @@ class RakuDoc::Processor {
 
                 my $error-text;
                 my $contents = '';
-                my $target = '';
                 my $schema = '';
                 my $uri = '';
                 # check to see if there is a text to over-ride automatic failure message
@@ -367,21 +370,7 @@ class RakuDoc::Processor {
                     }
                     when 'semantic' {
                         $keep-format = True;
-                        my $caption;
-                        my $level;
-                        $*prs.semantics
-                                .grep({ .<name> ~~ $uri })
-                                .map({
-                                    $contents ~= .<value> ;
-                                    $caption = .<caption> without $caption;
-                                    $level = .<level> without $level;
-                                });
-                        without $contents {
-                            $contents =  PCell.new( :$!register, $uri );
-                        }
-                        $caption = $uri without $caption;
-                        $level = 1 without $level;
-                        $target = $.register-toc(:$level, :text($caption), :toc, :unique );
+                        $contents =  PCell.new( :$!register, :id( "semantic-schema_$uri" ) );
                     }
                     when 'http' | 'https' {
                         my LibCurl::Easy $curl;
@@ -418,7 +407,7 @@ class RakuDoc::Processor {
                 $contents = ~$/ if $html;
                 # strip off any chars before & after the <html> container if there is one
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, :$html, :$keep-format, $target, %config)
+                    %( :$contents, :$html, :$keep-format, %config)
                 );
                 $*prs.body ~= $rv;
             }
@@ -517,26 +506,46 @@ class RakuDoc::Processor {
     multi method handle(Cool:D $ast) {
         self.handle($ast.WHICH.Str)
     }
-    #| gen-XX methods take an $ast and adds a string to $*prs.body
-    #| based on a template
+    # gen-XX methods take an $ast, process the contents, based on a template,
+    # and add the string to a structure, typically, not always, to $*prs.body
+
     method gen-alias($ast) {
         ''
     }
     method gen-code($ast) {
         ''
     }
+    #| generates a heading and uses template 'head'
     method gen-head($ast) {
-        my $level = $ast.level > 1 ?? $ast.level !! 1;
-        my $target = $.name-id($ast);
         my $contents = $.contents($ast).trim;
+        # headlevel is ignored in head if set, eg =for head2 :headlevel(3)
+        my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
         my %config = $ast.resolved-config;
         my %scoped-head = $!scoped-data.config;
         %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
+        my $target = $.name-id($ast);
+        my $id = '';
+        with %config<id> {
+            if self.is-target-unique( $_ ) {
+                self.register-target( $_ );
+                $id = $_
+            }
+            else {
+                $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣";
+            }
+        }
+        my $caption = %config<caption> // $contents;
+        my $toc = %config<toc> // True;
+        $*prs.toc.push(
+            { :$caption, :$target, :$level }
+        ) if $toc;
         $*prs.body ~= %!templates<head>(
-            %( :state($*prs), :$level, :$target, :$contents, %config)
+            %( :$level, :$target, :$contents, :$toc, :$caption, :$id, %config)
         )
     }
+    #| generates a single item and adds it to the item structure
+    #| nothing is added to the .body string
     method gen-item($ast) {
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         my $contents = $.contents($ast);
@@ -581,8 +590,71 @@ class RakuDoc::Processor {
         }
         $*prs.body ~= %!templates<unknown>( %( :block-type($ast.type), :$contents, %config ) )
     }
+    #| All Semantic blocks are processed into strings, and the contents added to the semantic structure
+    #| If :hidden is True, then the string is not added to .body
+    #| TITLE SUBTITLE NAME are by default :hidden and added to $*prs separately
+    #| All other SEMANTIC blocks are :!hidden by default
     method gen-semantics($ast) {
-        ''
+        my $block-name = $ast.type;
+        my %config = $ast.resolved-config;
+        my %scoped-head = $!scoped-data.config;
+        %config{ .key } = .value for %scoped-head{$block-name}.pairs;
+        # treat all semantic blocks as a heading level 1 unless otherwise specified
+        my $caption = %config<caption> // $block-name;
+        my $level = %config<headlevel> // 1;
+        my $hidden;
+        my $contents = $.contents($ast).trim;
+        $!scoped-data.last-title( $block-name );
+        my $rv;
+        given $ast.type {
+            when 'TITLE' {
+                $hidden = %config<hidden>.so // True;
+                $!current.title = $contents;
+                # allows for TITLE to have its own template
+                if %!templates<TITLE>:exists {
+                    $rv = %!templates<TITLE>( %( :$contents, %config ) )
+                }
+                else {
+                    $rv = $contents
+                }
+            }
+            when 'SUBTITLE' {
+                $hidden = %config<hidden>.so // True;
+                $!current.subtitle = $contents;
+                if %!templates<SUBTITLE>:exists {
+                    $rv = %!templates<SUBTITLE>( %( :$contents, %config ) )
+                }
+                else {
+                    $rv = $contents
+                }
+            }
+            when 'NAME' {
+                $hidden = %config<hidden>.so // True;
+                # name probably should not be anything but a bare string
+                $!current.name = $rv = $contents ~ '.' ~ $!output-format;
+            }
+            default {
+                $hidden = %config<hidden>.so // False;
+                my $template = %!templates{ $block-name }:exists ?? $block-name !! 'head';
+                my $target = $.name-id($block-name);
+                my $id = '';
+                with %config<id> {
+                    if self.is-target-unique( $_ ) {
+                        self.register-target( $_ );
+                        $id = $_
+                    }
+                    else {
+                        $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣";
+                    }
+                }
+                $rv = %!templates{$template}(
+                    %( :$level, :$target, :$contents, :toc($hidden), :$caption, :$id, %config )
+                );
+                $*prs.toc.push(  %( :$caption, :$target, :$level ) ) unless $hidden;
+            }
+        }
+        $*prs.semantics{ $block-name }.push: $rv;
+        $*prs.body ~= $rv unless $hidden;
     }
     method gen-custom($ast) {
         ''
@@ -649,7 +721,8 @@ class RakuDoc::Processor {
         !$!current.targets{$targ}
     }
     method register-target($targ) {
-        $!current.targets{$targ}++
+        $!current.targets{$targ}++;
+        $targ
     }
     #| The 'contents' method that $ast.paragraphs is a sequence.
     #| The $*prs for a set of paragraphs is new to collect all the
@@ -693,13 +766,12 @@ class RakuDoc::Processor {
     #| renderers can use method is-target-unique to test for uniqueness
     method name-id($ast --> Str) {
         my $target = recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
-        return $target if $.is-target-unique($target);
+        return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
         $target ~= '_0';
         $target += 1 while $target ~~ any(@rejects);
         self.register-target($target);
-        $target
     }
 
     #| Like name-id, index-id returns a unique Str to be used as a target
@@ -707,13 +779,12 @@ class RakuDoc::Processor {
     #| Should be sub-classed by Renderers
     method index-id($ast, :$context, :$contents, :$meta ) {
         my $target = 'index-entry-' ~ $contents.Str.trim.subst(/ \s /, '_', :g );
-        return $target if $.is-target-unique($target);
+        return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
         $target ~= '_0';
         $target += 1 while $target ~~ any(@rejects);
         self.register-target($target);
-        $target
     }
 
     #| Like name-id, local-heading returns a Str to be used as a target
@@ -756,13 +827,6 @@ class RakuDoc::Processor {
             },
             #| renders =head block
             head => -> %prm, $tmpl {
-                my $caption = %prm<caption> // %prm<contents>;
-                my $target = %prm<id> // %prm<target>;
-                my $toc = %prm<toc> // True;
-                my $state = %prm<state>:delete;
-                $tmpl.globals.helper<add-to-toc>(
-                    {:$caption, :$target, :level(%prm<level>), :$state }
-                ) if $toc;
                 my PStr $rv .= new("<head>\n");
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
 				$rv ~= "</head>\n"
@@ -827,12 +891,6 @@ class RakuDoc::Processor {
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
 				$rv ~= "</table>\n"
             },
-            #| renders =semantic block
-            semantic => -> %prm, $tmpl {
-                my PStr $rv .= new("<semantic>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
-				$rv ~= "</semantic>\n"
-            },
             #| renders =custom block
             custom => -> %prm, $tmpl {
                 my PStr $rv .= new("<custom>\n");
@@ -846,8 +904,9 @@ class RakuDoc::Processor {
 				$rv ~= "</unknown>\n"
             },
             #| special template to encapsulate all the output to save to a file
-            source-wrap => -> %prm, $tmpl {
+            final => -> %prm, $tmpl {
                 %prm<processed>.title ~ "\n"
+                ~ %prm<processed>.subtitle ~ "\n"
                 ~ %prm<rendered-toc> ~ "\n"
                 ~ %prm<rendered-index> ~ "\n"
                 ~ %prm<processed>.body.Str ~ "\n"
@@ -857,8 +916,9 @@ class RakuDoc::Processor {
                 ~ $tmpl('warnings', {
                     warnings => %prm<processed>.warnings,
                 }) ~ "\n"
-                ~ 'Rendered from ｢' ~ %prm<processed>.source-data<name>
-                ~ '｣ at ' ~ %prm<processed>.modified
+                ~ 'Rendered from ｢' ~ %prm<processed>.source-data<name> ~ "｣\n"
+                ~ 'at ' ~ %prm<processed>.modified ~ "\n"
+                ~ 'into ｢' ~ %prm<processed>.name ~ "｣\n"
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {
@@ -1223,12 +1283,6 @@ class RakuDoc::Processor {
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
 				$rv ~= "</table>\n"
             },
-            #| renders =semantic block
-            semantic => -> %prm, $tmpl {
-                my PStr $rv .= new("<semantic>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
-				$rv ~= "</semantic>\n"
-            },
             #| renders =custom block
             custom => -> %prm, $tmpl {
                 my PStr $rv .= new("<custom>\n");
@@ -1242,10 +1296,10 @@ class RakuDoc::Processor {
 				$rv ~= "</unknown>\n"
             },
             #| special template to encapsulate all the output to save to a file
-            source-wrap => -> %prm, $tmpl {
-                my PStr $rv .= new("<source-wrap>\n");
+            final => -> %prm, $tmpl {
+                my PStr $rv .= new("<final>\n");
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
-				$rv ~= "</source-wrap>\n"
+				$rv ~= "</final>\n"
             },
             #| renders a single item in the index
             toc-item => -> %prm, $tmpl {

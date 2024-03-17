@@ -14,7 +14,7 @@ $ast = Q:scalar:to/QAST/.AST;
     P<file:$temp-dir/disclaimer.txt>
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-processed );
+$rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Artistic License 2.0'
     /,'Got external link';
@@ -28,7 +28,7 @@ $ast = Q:scalar:to/QAST/.AST;
     P<Bad file|file:$temp-dir/xxdisclaimer.txt>
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-processed );
+$rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Cannot connect'
     /,'Failed external link';
