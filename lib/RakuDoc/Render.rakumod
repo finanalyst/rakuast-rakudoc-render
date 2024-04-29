@@ -14,19 +14,42 @@ class RakuDoc::Processor {
     has RakuDoc::Processed $.current;
     has $.output-format;
     has RakuDoc::ScopedData $!scoped-data .= new;
-    #| debug mode
-    has Set $!debug;
-
-    method debug( +$seq ) {
-        $!debug = $seq.Set;
-        %!templates.debug = ?( $seq (cont) any( All, Templates ) )
+    #| debug modes that are checked
+    has SetHash $!debug-modes .= new;
+    multi method debug(RDProcDebug $type --> Nil ) {
+        given $type {
+            when None {
+                $!debug-modes = Nil;
+                %!templates.debug = False;
+            }
+            when All {
+                $!debug-modes .= new( RDProcDebug::.values.grep( none( All, None )) );
+                %!templates.debug = True;
+            }
+            when Templates {
+                %!templates.debug = True;
+                proceed
+            }
+            default {
+                $!debug-modes{ $type }++
+            }
+        }
+    }
+    multi method debug( *@types --> Nil ) {
+        for @types {
+            $.debug( $_ )
+        }
+    }
+    multi method debug {
+        $!debug-modes
     }
 
-    multi submethod TWEAK(:$!output-format = 'txt', :$test = False, :$debug = (None, ) ) {
+    multi submethod TWEAK(:$!output-format = 'txt', :$test = False, :$debug = None ) {
         %!templates.source = $test ?? 'test templates' !! 'default templates' ;
         %!templates = $test ?? self.test-text-templates !! self.default-text-templates;
         %!templates.helper = self.text-helpers;
-        self.debug( $debug.list )
+        if $debug ~~ List { self.debug($debug.list) }
+        else { self.debug( $debug ) }
     }
 
     #| renders to a String by default,
@@ -78,7 +101,7 @@ class RakuDoc::Processor {
 
     #| All handle methods may generate debug reports
     proto method handle( $ast ) {
-        say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $!debug (cont) any( All, AstBlock );
+        say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $.debug (cont) AstBlock;
         {*}
     }
     multi method handle(Str:D $ast) {
@@ -127,15 +150,20 @@ class RakuDoc::Processor {
         # When a built in block, other than =item, is started,
         # there may be a list of items or defns, which need to be
         # completed and rendered
-        say "Doc::Block type: " ~ $ast.type if $!debug (cont) any( All, BlockType );
+        say "Doc::Block type: " ~ $ast.type if $.debug (cont) BlockType;
         $*prs.body ~= $.complete-item-list unless $ast.type and $ast.type eq 'item';
         $*prs.body ~= $.complete-defn-list unless $ast.type and $ast.type eq 'defn';
 
         # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
             # =alias
-            # Define a Pod macro
-#            when 'alias' { $.gen-alias($ast) }
+            # Define a RakuDoc macro, scoped to the current block
+            when 'alias' {
+                my $term = $ast.paragraphs[0].trim; # it should be a string
+                my $expansion = $ast.paragraphs[1];
+                $expansion = $.contents($ast) unless $expansion.isa(Str);
+                $!scoped-data.aliases{ $term } = $expansion;
+             }
             # =code
             # Verbatim pre-formatted sample source code
 #            when 'code' { $.gen-code($ast) }
@@ -151,10 +179,10 @@ class RakuDoc::Processor {
             # Nth-level heading
             when 'head' {
                 $!scoped-data.start-scope(:callee($_));
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-head($ast);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
 #            when 'implicit-code' { $.gen-code($ast) }
             # =item
@@ -178,10 +206,10 @@ class RakuDoc::Processor {
             when 'rakudoc' | 'pod' {
                 $!scoped-data.start-scope(:callee($_));
                 $!scoped-data.last-title( $!current.source-data<rakudoc-title> );
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping );
+                say $!scoped-data.debug if $.debug (cont) Scoping;
                 $.gen-rakudoc($ast);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # =pod
             # Legacy version of rakudoc
@@ -192,10 +220,10 @@ class RakuDoc::Processor {
                 my $last-title = $!scoped-data.last-title;
                 $!scoped-data.start-scope( :callee($_) );
                 $!scoped-data.last-title( $last-title );
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-section($ast);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # =table
             # Visual or procedural table
@@ -206,10 +234,10 @@ class RakuDoc::Processor {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
                 $!scoped-data.start-scope( :callee($_) );
                 $!scoped-data.last-title( $_ );
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-semantics($ast);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # CustomName
             # User-defined block
@@ -217,10 +245,10 @@ class RakuDoc::Processor {
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
                 $!scoped-data.start-scope( :callee($_) );
                 $!scoped-data.last-title( $_ );
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-custom($ast);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $!debug (cont) any( All, Scoping ) ;
+                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             default { $.gen-unknown-builtin($ast) }
         }
@@ -273,7 +301,28 @@ class RakuDoc::Processor {
             # A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             # Alias to be replaced by contents of specified V<=alias> directive
             when 'A' {
-
+                my $letter = $ast.letter;
+                my $term = self.markup-contents($ast).Str;
+                my %config;
+                my %scoped-head = $!scoped-data.config;
+                %config{ .key } = .value for %scoped-head{$letter}.pairs;
+                my Bool $error = False;
+                my $error-text;
+                # check to see if there is a text to over-ride automatic failure message
+                if $term ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
+                    $error-text = ~$0;
+                    $term = ~$1
+                }
+                my $contents;
+                if $!scoped-data.aliases{ $term }:exists {
+                    $contents = $!scoped-data.aliases{ $term }
+                }
+                else {
+                    $error = True;
+                    $*prs.warnings.push: "unknown alias ｢$term｣" ~ { " over-riden by ｢$_｣" with $error-text }
+                }
+                $error-text = $term without $error-text;
+                $*prs.body ~ %!templates<markup-A>( %( :$contents, :$error, :$error-text, %config ) )
             }
             # E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             # Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
@@ -513,9 +562,6 @@ class RakuDoc::Processor {
     # gen-XX methods take an $ast, process the contents, based on a template,
     # and add the string to a structure, typically, not always, to $*prs.body
 
-    method gen-alias($ast) {
-        ''
-    }
     method gen-code($ast) {
         ''
     }

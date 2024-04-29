@@ -3,7 +3,7 @@
 - [x] Semantic blocks / :hidden
 - [ ] Custom blocks ( undefined only )
 - [x] =place directive
-- [ ] inline delta
+- [x] inline delta
 - [ ] alias directive
 - [ ] =A<> markup
 - [ ] definition list

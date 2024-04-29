@@ -1,0 +1,84 @@
+use v6.d;
+use Test;
+
+use RakuDoc::Render;
+
+plan 7;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new( :test, :debug<all> );
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    some text
+    =alias XXX stuff and nonsense
+    =head First heading
+    A<XXX>
+    =end rakudoc
+    QAST
+$ast.say;
+$rv = $rdp.render( $ast, :pre-finalised );
+unlike $rv.body, /
+    'XXX'
+    /, 'the alias name should not be in the body';
+like $rv.body, /
+    'some text'
+    .+ '<head>' .+ 'content' .+ 'First heading'
+    .+ '<markup-A>' .+ 'stuff and nonsense'
+/, 'simple alias is inserted in appropriate place';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    some text
+    =alias XXX stuff and nonsense
+    =head First heading
+    A<YYY>
+    intervening text
+    A<over ride error|YYY>
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'some text'
+    .+ '<head>' .+ 'content' .+ 'First heading'
+    .+ '<markup-A>' .+ 'error: True' .+ 'error-text: ｢YYY｣'
+    .+ 'intervening text'
+    .+ '<markup-A>' .+ 'error: True' .+ 'error-text: ｢over ride error'
+/, 'default unknown alias in first A, over ride text as content in second';
+is $rv.warnings.elems, 2, 'got two errors';
+like $rv.warnings[0], /'unknown alias' .+ 'YYY' /, 'first error ok';
+like $rv.warnings[1], /'unknown alias' .+ 'YYY' .+ 'over ride text'/, 'second error generates warning plus over ride';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =alias XXX first definition
+    =head2 First header
+
+    text1 A<XXX>
+
+    =head2 Second header
+
+    =begin section
+
+    =alias XXX second dfn
+
+    text2 A<XXX>
+    =end section
+    =head Third header
+
+    text3 A<XXX>
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    '<head' .+ 'First header'
+    .+ 'text1' .+ 'first definition'
+    .+ '<head' .+ 'Second header'
+    .+ 'text2' .+ 'second dfn'
+    .+ '<head' .+ 'Third header'
+    .+ 'text3' .+ 'first definition'
+/, 'aliases scope to sections';
+
+done-testing;
