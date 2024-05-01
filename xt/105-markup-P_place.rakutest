@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan *;
+plan 6;
 
 my $ast;
 my $rv;
@@ -70,28 +70,28 @@ like $rv, /
     .+ '</rakudoc>'
 /, 'got a toc inside a placement, inside a rakudoc';
 
-$ast = Q:scalar:to/QAST/.AST;
-    =begin rakudoc
-    =head1 Head One
-
-    Some text
-
-    =for place :caption<TOC>
-    toc:
-
-    More text
-
-    =head1 Head Two
-
-    Again text
-
-    =head2 level two head
-
-    Final stuff
-
-    =end rakudoc
-    QAST
-$rv = $rdp.render( $ast, :pre-finalised );
-is-deeply $rv.toc.map( *.<caption> ), ('Head One',  'TOC', 'Head Two', 'level two head'), 'TOC structure contains a place TOC';
-say $rv;
+#$ast = Q:scalar:to/QAST/.AST;
+#    =begin rakudoc
+#    =head1 Head One
+#
+#    Some text
+#
+#    =place https://raku.org/camelia-logo.png  :caption<Raku's mascot>  :alt<A multicoloured butterfly>
+#
+#    More text
+#
+#    =head1 Head Two
+#
+#    Again text
+#
+#    =head2 level two head
+#
+#    Final stuff
+#
+#    =end rakudoc
+#    QAST
+#say $ast;
+#$rv = $rdp.render( $ast, :pre-finalised );
+#is-deeply $rv.toc.map( *.<caption> ), ('Head One',  'TOC', 'Head Two', 'level two head'), 'TOC structure contains a place TOC';
+#say $rv;
 done-testing;

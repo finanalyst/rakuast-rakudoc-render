@@ -5,6 +5,7 @@ use RakuDoc::ScopedData;
 use RakuDoc::MarkupMeta;
 use LibCurl::Easy;
 use URI;
+#no precompilation; note "@ $?LINE no precomp";
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 
@@ -44,7 +45,9 @@ class RakuDoc::Processor {
         $!debug-modes
     }
 
-    multi submethod TWEAK(:$!output-format = 'txt', :$test = False, :$debug = None ) {
+    multi submethod TWEAK(:$!output-format = 'txt',
+     :$test = False,
+     :$debug = None ) {
         %!templates.source = $test ?? 'test templates' !! 'default templates' ;
         %!templates = $test ?? self.test-text-templates !! self.default-text-templates;
         %!templates.helper = self.text-helpers;
@@ -101,7 +104,7 @@ class RakuDoc::Processor {
 
     #| All handle methods may generate debug reports
     proto method handle( $ast ) {
-        say "Handling: " , $ast.WHICH.Str.subst(/ \| .+ $/, '') if $.debug (cont) AstBlock;
+        say "Handling: { $ast.WHICH.Str.subst(/ \| .+ $/, '') }" if $.debug (cont) AstBlock;
         {*}
     }
     multi method handle(Str:D $ast) {
@@ -307,7 +310,7 @@ class RakuDoc::Processor {
                 my %scoped-head = $!scoped-data.config;
                 %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 my Bool $error = False;
-                my $error-text;
+                my $error-text = '';
                 # check to see if there is a text to over-ride automatic failure message
                 if $term ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
                     $error-text = ~$0;
@@ -319,9 +322,9 @@ class RakuDoc::Processor {
                 }
                 else {
                     $error = True;
-                    $*prs.warnings.push: "unknown alias ｢$term｣" ~ { " over-riden by ｢$_｣" with $error-text }
+                    $error-text = $term unless $error-text;
+                    $*prs.warnings.push: "unknown alias ｢$term｣"  ~ ( $error-text ?? " over-riden by ｢$error-text｣" !! ''  )
                 }
-                $error-text = $term without $error-text;
                 $*prs.body ~ %!templates<markup-A>( %( :$contents, :$error, :$error-text, %config ) )
             }
             # E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
@@ -551,7 +554,7 @@ class RakuDoc::Processor {
         $*prs.body ~= %!templates<para>(
             %( :$contents, %config)
         );
-        CALLERS::<$*prs> += $*prs;
+       CALLERS::<$*prs> += $*prs;
     }
     multi method handle(RakuAST::Doc::Row:D $ast) {
         self.handle($ast.WHICH.Str)
@@ -695,11 +698,11 @@ class RakuDoc::Processor {
     method gen-rakudoc($ast) {
         my %config = $ast.resolved-config;
         $!current.source-data<rakudoc-config> = %config;
-        my $contents = $.contents($ast);
+        my $contents = self.contents($ast);
         # render any tailing lists
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
-        $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) )
+        $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) );
     }
     method gen-section($ast) {
         my %config = $ast.resolved-config;
@@ -901,7 +904,7 @@ class RakuDoc::Processor {
     #| This method should be sub-classed by Renderers for different outputs
     #| renderers can use method is-target-unique to test for uniqueness
     method name-id($ast --> Str) {
-        my $target = recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
+        my $target = $ast.Str.trim.subst(/ \s /, '_', :g);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -927,7 +930,7 @@ class RakuDoc::Processor {
     #| A local-heading is assumed to exist because specified by document author
     #| Should be sub-classed by Renderers
     method local-heading($ast) {
-        recurse-until-str($ast).join.trim.subst(/ \s /, '_', :g);
+        $ast.Str.trim.subst(/ \s /, '_', :g);
     }
 
     #| returns hash of test templates
@@ -940,109 +943,109 @@ class RakuDoc::Processor {
             #| renders =code block
             code => -> %prm, $tmpl {
                 my PStr $rv .= new("<code>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</code>\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my PStr $rv .= new("<input>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</input>\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
                 my PStr $rv .= new("<output>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</output>\n"
             },
             #| renders =comment block
             comment => -> %prm, $tmpl {
                 my PStr $rv .= new("<comment>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</comment>\n"
             },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my PStr $rv .= new("<head>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</head>\n"
             },
             #| renders =numhead block
             numhead => -> %prm, $tmpl {
                 my PStr $rv .= new("<numhead>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</numhead>\n"
             },
             #| renders =defn block
             defn => -> %prm, $tmpl {
                 my PStr $rv .= new("<defn>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</defn>\n"
             },
             #| renders =item block
             item => -> %prm, $tmpl {
                 my PStr $rv .= new("<item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</item>\n"
             },
             #| renders =numitem block
             numitem => -> %prm, $tmpl {
                 my PStr $rv .= new("<numitem>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</numitem>\n"
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
                 my PStr $rv .= new("<nested>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</nested>\n"
             },
             #| renders =para block
             para => -> %prm, $tmpl {
                 my PStr $rv .= new("<para>\n");
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
                 $rv ~= "</para>\n"
             },
             #| renders =place block
             place => -> %prm, $tmpl {
                 my PStr $rv .= new("<place>\n");
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
                 $rv ~= "</place>\n"
             },
             #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl {
                 my PStr $rv .= new("<rakudoc>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</rakudoc>\n"
             },
             #| renders =section block
             section => -> %prm, $tmpl {
                 my PStr $rv .= new("<section>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</section>\n"
             },
             #| renders =pod block
             pod => -> %prm, $tmpl {
                 my PStr $rv .= new("<pod>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</pod>\n"
             },
             #| renders =table block
             table => -> %prm, $tmpl {
                 my PStr $rv .= new("<table>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</table>\n"
             },
             #| renders =custom block
             custom => -> %prm, $tmpl {
                 my PStr $rv .= new("<custom>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</custom>\n"
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
                 my PStr $rv .= new("<unknown>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</unknown>\n"
             },
             #| special template to encapsulate all the output to save to a file
@@ -1065,7 +1068,7 @@ class RakuDoc::Processor {
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {
                 my PStr $rv .= new("<toc-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</toc-item>\n"
             },
             #| special template to render the toc list
@@ -1073,13 +1076,13 @@ class RakuDoc::Processor {
                 my $toc-list = %prm<toc-list>:delete;
                 $toc-list = .elems ?? .join !! "No items\n" with $toc-list;
                 my $rv = "<toc>\n";
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "items:" ~ $toc-list ~"</toc>\n"
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
                 my PStr $rv .= new("<index-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</index-item>\n"
             },
             #| special template to render the index data structure
@@ -1087,7 +1090,7 @@ class RakuDoc::Processor {
                 my $ind-list = %prm<index-list>:delete;
                 $ind-list = .elems ?? .join !! "No items\n" with $ind-list;
                 my $rv = "\n<index>\n";
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "items:" ~ $ind-list ~"</index>\n"
             },
             #| special template to render the footnotes data structure
@@ -1128,42 +1131,42 @@ class RakuDoc::Processor {
             #| Basis/focus of sentence (typically rendered bold)
 			markup-B => -> %prm, $tmpl {
 				my PStr $rv .= new('<basis>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</basis>'
 			},
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
 			markup-C => -> %prm, $tmpl {
 				my PStr $rv .= new('<code>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</code>'
 			},
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
 			markup-H => -> %prm, $tmpl {
 				my PStr $rv .= new('<high>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</high>'
 			},
             #| I< DISPLAY-TEXT >
             #| Important (typically rendered in italics)
 			markup-I => -> %prm, $tmpl {
 				my PStr $rv .= new('<important>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</important>'
 			},
             #| J< DISPLAY-TEXT >
             #| Junior text (typically rendered subscript)
 			markup-J => -> %prm, $tmpl {
 				my PStr $rv .= new('<junior>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</junior>'
 			},
             #| K< DISPLAY-TEXT >
             #| Keyboard input (typically rendered fixed-width)
 			markup-K => -> %prm, $tmpl {
 				my PStr $rv .= new('<keyboard>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</keyboard>'
 			},
             #| N< DISPLAY-TEXT >
@@ -1171,49 +1174,49 @@ class RakuDoc::Processor {
             #| This is the template for the in-text part, which should have a Number, link, and return anchor
 			markup-N => -> %prm, $tmpl {
                 my PStr $rv .= new(  '<note>' );
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
                 $rv ~= '</note>'
 			},
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
 			markup-O => -> %prm, $tmpl {
 				my PStr $rv .= new('<overstrike>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</overstrike>'
 			},
             #| R< DISPLAY-TEXT >
             #| Replaceable component or metasyntax
 			markup-R => -> %prm, $tmpl {
 				my PStr $rv .= new('<replaceable>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</replaceable>'
 			},
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
 			markup-S => -> %prm, $tmpl {
 				my PStr $rv .= new('<space>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</space>'
 			},
             #| T< DISPLAY-TEXT >
             #| Terminal output (typically rendered fixed-width)
 			markup-T => -> %prm, $tmpl {
 				my PStr $rv .= new('<terminal>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</terminal>'
 			},
             #| U< DISPLAY-TEXT >
             #| Unusual (typically rendered with underlining)
 			markup-U => -> %prm, $tmpl {
 				my PStr $rv .= new('<unusual>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</unusual>'
 			},
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
 			markup-V => -> %prm, $tmpl {
 				my PStr $rv .= new('<verbatim>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</verbatim>'
 			},
 
@@ -1223,35 +1226,35 @@ class RakuDoc::Processor {
             #| Alias to be replaced by contents of specified V<=alias> directive
 			markup-A => -> %prm, $tmpl {
 				my PStr $rv .= new('<alias>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' )~ '｣' }
 				$rv ~= '</alias>'
 			},
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
 			markup-E => -> %prm, $tmpl {
 				my PStr $rv .= new('<entity>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</entity>'
 			},
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
 			markup-F => -> %prm, $tmpl {
 				my PStr $rv .= new('<formula>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</formula>'
 			},
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
 			markup-L => -> %prm, $tmpl {
 				my PStr $rv .= new('<link>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</link>'
 			},
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             #| Placement link
 			markup-P => -> %prm, $tmpl {
 				my PStr $rv .= new('<placement>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</placement>'
 			},
 
@@ -1260,34 +1263,34 @@ class RakuDoc::Processor {
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
 			markup-D => -> %prm, $tmpl {
 				my PStr $rv .= new('<definition>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</definition>'
 			},
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
             markup-Δ => -> %prm, $tmpl {
 				my PStr $rv .= new('<delta>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</delta>'
 			},
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
 			markup-M => -> %prm, $tmpl {
 				my PStr $rv .= new('<markup>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</markup>'
 			},
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
 			markup-X => -> %prm, $tmpl {
 				my PStr $rv .= new('<index>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</index>'
 			},
             #| Unknown markup, render minimally
             markup-unknown => -> %prm, $tmpl {
 				my PStr $rv .= new('<unknown>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</unknown>'
 			},
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
@@ -1336,25 +1339,25 @@ class RakuDoc::Processor {
             #| renders =code blocks
             code => -> %prm, $tmpl {
                 my PStr $rv .= new("<code>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</code>\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my PStr $rv .= new("<input>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</input>\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
                 my PStr $rv .= new("<output>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</output>\n"
             },
             #| renders =comment block
             comment => -> %prm, $tmpl {
                 my PStr $rv .= new("<comment>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</comment>\n"
             },
             #| renders =head block
@@ -1368,91 +1371,91 @@ class RakuDoc::Processor {
             #| renders =numhead block
             numhead => -> %prm, $tmpl {
                 my PStr $rv .= new("<numhead>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</numhead>\n"
             },
             #| renders =defn block
             defn => -> %prm, $tmpl {
                 my PStr $rv .= new("<defn>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</defn>\n"
             },
             #| renders =item block
             item => -> %prm, $tmpl {
                 my PStr $rv .= new("<item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</item>\n"
             },
             #| renders =numitem block
             numitem => -> %prm, $tmpl {
                 my PStr $rv .= new("<numitem>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</numitem>\n"
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
                 my PStr $rv .= new("<nested>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</nested>\n"
             },
             #| renders =para block
             para => -> %prm, $tmpl {
                 my PStr $rv .= new("<para>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</para>\n"
             },
             #| renders =place block
             place => -> %prm, $tmpl {
                 my PStr $rv .= new("<place>\n");
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
                 $rv ~= "</place>\n"
             },
             #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl {
                 my PStr $rv .= new("<rakudoc>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</rakudoc>\n"
             },
             #| renders =section block
             section => -> %prm, $tmpl {
                 my PStr $rv .= new("<section>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</section>\n"
             },
             #| renders =pod block
             pod => -> %prm, $tmpl {
                 my PStr $rv .= new("<pod>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</pod>\n"
             },
             #| renders =table block
             table => -> %prm, $tmpl {
                 my PStr $rv .= new("<table>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</table>\n"
             },
             #| renders =custom block
             custom => -> %prm, $tmpl {
                 my PStr $rv .= new("<custom>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</custom>\n"
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
                 my PStr $rv .= new("<unknown>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</unknown>\n"
             },
             #| special template to encapsulate all the output to save to a file
             final => -> %prm, $tmpl {
                 my PStr $rv .= new("<final>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</final>\n"
             },
             #| renders a single item in the index
             toc-item => -> %prm, $tmpl {
                 my PStr $rv .= new("<toc-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</toc-item>\n"
             },
             #| special template to render the toc data structure
@@ -1474,7 +1477,7 @@ class RakuDoc::Processor {
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
                 my PStr $rv .= new("<index-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n" }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</index-item>\n"
             },
             #| special template to render an item list data structure
@@ -1495,91 +1498,91 @@ class RakuDoc::Processor {
             #| Basis/focus of sentence (typically rendered bold)
 			markup-B => -> %prm, $tmpl {
 				my PStr $rv .= new('<basis>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</basis>'
 			},
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
 			markup-C => -> %prm, $tmpl {
 				my PStr $rv .= new('<code>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</code>'
 			},
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
 			markup-H => -> %prm, $tmpl {
 				my PStr $rv .= new('<high>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</high>'
 			},
             #| I< DISPLAY-TEXT >
             #| Important (typically rendered in italics)
 			markup-I => -> %prm, $tmpl {
 				my PStr $rv .= new('<important>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</important>'
 			},
             #| J< DISPLAY-TEXT >
             #| Junior text (typically rendered subscript)
 			markup-J => -> %prm, $tmpl {
 				my PStr $rv .= new('<junior>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</junior>'
 			},
             #| K< DISPLAY-TEXT >
             #| Keyboard input (typically rendered fixed-width)
 			markup-K => -> %prm, $tmpl {
 				my PStr $rv .= new('<keyboard>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</keyboard>'
 			},
             #| N< DISPLAY-TEXT >
             #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
 			markup-N => -> %prm, $tmpl {
 				my PStr $rv .= new('<note>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</note>'
 			},
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
 			markup-O => -> %prm, $tmpl {
 				my PStr $rv .= new('<overstrike>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</overstrike>'
 			},
             #| R< DISPLAY-TEXT >
             #| Replaceable component or metasyntax
 			markup-R => -> %prm, $tmpl {
 				my PStr $rv .= new('<replaceable>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</replaceable>'
 			},
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
 			markup-S => -> %prm, $tmpl {
 				my PStr $rv .= new('<space>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</space>'
 			},
             #| T< DISPLAY-TEXT >
             #| Terminal output (typically rendered fixed-width)
 			markup-T => -> %prm, $tmpl {
 				my PStr $rv .= new('<terminal>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</terminal>'
 			},
             #| U< DISPLAY-TEXT >
             #| Unusual (typically rendered with underlining)
 			markup-U => -> %prm, $tmpl {
 				my PStr $rv .= new('<unusual>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</unusual>'
 			},
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
 			markup-V => -> %prm, $tmpl {
 				my PStr $rv .= new('<verbatim>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</verbatim>'
 			},
 
@@ -1589,35 +1592,35 @@ class RakuDoc::Processor {
             #| Alias to be replaced by contents of specified V<=alias> directive
 			markup-A => -> %prm, $tmpl {
 				my PStr $rv .= new('<alias>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</alias>'
 			},
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
 			markup-E => -> %prm, $tmpl {
 				my PStr $rv .= new('<entity>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</entity>'
 			},
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
 			markup-F => -> %prm, $tmpl {
 				my PStr $rv .= new('<formula>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</formula>'
 			},
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
 			markup-L => -> %prm, $tmpl {
 				my PStr $rv .= new('<link>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</link>'
 			},
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             #| Placement link
 			markup-P => -> %prm, $tmpl {
 				my PStr $rv .= new('<placement>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</placement>'
 			},
 
@@ -1626,34 +1629,34 @@ class RakuDoc::Processor {
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
 			markup-D => -> %prm, $tmpl {
 				my PStr $rv .= new('<definition>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</definition>'
 			},
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
             markup-Δ => -> %prm, $tmpl {
 				my PStr $rv .= new('<delta>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</delta>'
 			},
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
 			markup-M => -> %prm, $tmpl {
 				my PStr $rv .= new('<markup>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</markup>'
 			},
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
 			markup-X => -> %prm, $tmpl {
 				my PStr $rv .= new('<index>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</index>'
 			},
             #| Unknown markup, render minimally
             markup-unknown => -> %prm, $tmpl {
 				my PStr $rv .= new('<unknown>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ $v ~ '｣' }
+				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
 				$rv ~= '</unknown>'
 			},
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
@@ -1675,12 +1678,4 @@ class RakuDoc::Processor {
             }
         )
     }
-}
-
-#| Strip out formatting code and links from a Title or Link
-multi sub recurse-until-str(Str:D $s) is export {
-    $s
-}
-multi sub recurse-until-str(RakuAST::Doc::Block $n) is export {
-    $n.paragraphs>>.&recurse-until-str().join
 }

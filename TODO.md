@@ -4,8 +4,8 @@
 - [ ] Custom blocks ( undefined only )
 - [x] =place directive
 - [x] inline delta
-- [ ] alias directive
-- [ ] =A<> markup
+- [x] alias directive
+- [x] =A<> markup
 - [ ] definition list
 - [ ] inline definition
 - [ ] =code
