@@ -24,6 +24,7 @@
     "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
     "RakuDoc::Plugin": "lib/RakuDoc/Plugin.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
+    "RakuDoc::PromiseStrings": "lib/RakuDoc/PromiseStrings.rakumod",
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
     "RakuDoc::ScopedData": "lib/RakuDoc/ScopedData.rakumod",
     "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",

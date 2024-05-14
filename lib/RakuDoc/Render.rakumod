@@ -3,9 +3,9 @@ use RakuDoc::Processed;
 use RakuDoc::Templates;
 use RakuDoc::ScopedData;
 use RakuDoc::MarkupMeta;
+use RakuDoc::PromiseStrings;
 use LibCurl::Easy;
 use URI;
-#no precompilation; note "@ $?LINE no precomp";
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 
@@ -132,10 +132,6 @@ class RakuDoc::Processor {
             # =numheadN
             # Nth-level numbered heading
 
-            # =defn
-            # Definition of a term
-
-
             # =numitem
             # First-level numbered list item
 
@@ -148,14 +144,13 @@ class RakuDoc::Processor {
             # =formula
             # Render content as LaTex formula
 
-
     multi method handle(RakuAST::Doc::Block:D $ast) {
         # When a built in block, other than =item, is started,
         # there may be a list of items or defns, which need to be
         # completed and rendered
         say "Doc::Block type: " ~ $ast.type if $.debug (cont) BlockType;
-        $*prs.body ~= $.complete-item-list unless $ast.type and $ast.type eq 'item';
-        $*prs.body ~= $.complete-defn-list unless $ast.type and $ast.type eq 'defn';
+        $*prs.body ~= $.complete-item-list unless $ast.type eq 'item';
+        $*prs.body ~= $.complete-defn-list unless $ast.type eq 'defn';
 
         # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
@@ -194,6 +189,11 @@ class RakuDoc::Processor {
             # Nth-level list item
             when 'item' {
                 $.gen-item($ast)
+            }
+            # =defn
+            # Definition of a term
+            when 'defn' {
+                $.gen-defn($ast)
             }
             # =para block, as opposed to unmarked paragraphs in a block
             when 'para' {
@@ -608,6 +608,26 @@ class RakuDoc::Processor {
             %( :$level, :$contents, %config )
         )
     }
+    #| generates a single definition and adds it to the defn structure
+    #| unlike an item list, a definition list has a flat hierarchy
+    #| unlike items, definitions can be created by a markup code
+    #| definitions also need a target for links or popups
+    #| nothing is added to the .body string
+    method gen-defn($ast) {
+        my $term = $ast.paragraphs[0];
+        my $target = "defn_$term";
+        my ProcessedState $*prs .= new;
+        $.handle( $ast.paragraphs[1] );
+        my PStr $contents = $*prs.body;
+        $*prs.body .= new;
+        my %config = $ast.resolved-config;
+        my %scoped = $!scoped-data.config;
+        %config{ .key } = .value for %scoped{"defn"}.pairs;
+        $*prs.defns.push: %!templates<defn>(
+            %( :$term, :$target, :$contents, %config )
+        );
+        CALLERS::<$*prs> += $*prs;
+    }
     method gen-place($ast) {
         my %config = $ast.resolved-config;
         my %scoped-head = $!scoped-data.config;
@@ -853,7 +873,12 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of a defn list in $*prs
     method complete-defn-list() {
-        ''
+        return '' unless $*prs.defns; # do nothing of no accumulated items
+        my $rv = %!templates<defn-list>(
+            %( :defn-list($*prs.defns), )
+        );
+        $*prs.defns = ();
+        $rv
     }
     # helper methods
     method is-target-unique($targ --> Bool) {
@@ -1110,6 +1135,10 @@ class RakuDoc::Processor {
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
                 "<item-list>\n" ~ %prm<item-list>.join ~ "</item-list>\n"
+            },
+            #| special template to render an item list data structure
+            defn-list => -> %prm, $tmpl {
+                "<defn-list>\n" ~ %prm<defn-list>.join ~ "</defn-list>\n"
             },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
@@ -1479,6 +1508,10 @@ class RakuDoc::Processor {
                 my PStr $rv .= new("<index-item>\n");
 				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
 				$rv ~= "</index-item>\n"
+            },
+            #| special template to render an item list data structure
+            defn-list => -> %prm, $tmpl {
+                "<defn-list>\n" ~ %prm<defn-list>.join ~ "</defn-list>\n"
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {

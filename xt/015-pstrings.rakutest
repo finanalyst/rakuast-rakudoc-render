@@ -1,6 +1,6 @@
 use v6.d;
 use Test;
-use RakuDoc::Templates;
+use RakuDoc::PromiseStrings;
 
 plan 38;
 

@@ -1,5 +1,5 @@
 use v6.d;
-use RakuDoc::Templates;
+use RakuDoc::PromiseStrings;
 use PrettyDump;
 
 #| Instances of ProcessedState are created to contain the rendered form and collected data

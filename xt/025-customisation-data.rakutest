@@ -1,7 +1,9 @@
 use v6.d;
 use Test;
 use RakuDoc::Templates;
-plan *;
+use RakuDoc::PromiseStrings;
+
+plan 2;
 
 my $register = CompletedCells.new;
 

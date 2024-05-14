@@ -1,7 +1,7 @@
 use v6.d;
 use Test;
 use RakuDoc::Processed;
-use RakuDoc::Templates;
+use RakuDoc::PromiseStrings;
 use Test::Deeply::Relaxed;
 
 use PrettyDump;
