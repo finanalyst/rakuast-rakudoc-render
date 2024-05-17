@@ -21,7 +21,8 @@ like $rv.body, /
     'We can'
     \s* '<link>'
     \s* 'link-label' .+? 'Link to a place'
-    .+? 'place: ｢｣target' .+? 'https://docs.raku.org'
+    .+? 'place: ｢｣' .*?
+    'target' .+? 'https://docs.raku.org'
     .+? 'type' .+? 'external'
     .+? '</link>'
     .+? 'with no problem.'
@@ -30,7 +31,8 @@ like $rv.body, /
     'Linking inside'
     .+? '<link>'
     \s* 'link-label' .+? 'like this'
-    .+? 'place: ｢Here_is_a_header｣target: ｢｣'
+    .+? 'place: ｢Here_is_a_header｣' .*?
+    'target: ｢｣'
     \s* 'type' .+? 'internal'
     /, 'Internal L standard works';
 like $rv.body, /
@@ -73,13 +75,13 @@ like $rv.body, /
     \s* 'link-label' .+? 'Block'
     .+? 'place' .+? '｢｣'
     \s* 'target' .+? '/type/Block'
-#    .+? 'type' .+? 'local'
-#    .+? 'force construction'
-#    .+? '<link>'
-#    \s* 'link-label' .+? 'Block'
-#    .+? 'place' .+? '｢｣'
-#    \s* 'target' .+? '/type/Block'
-#    .+? 'type' .+? 'local'
+    .+? 'type' .+? 'local'
+    .+? 'force construction'
+    .+? '<link>'
+    \s* 'link-label' .+? 'Block'
+    .+? 'place' .+? '｢｣'
+    \s* 'target' .+? '/type/Block'
+    .+? 'type' .+? 'local'
     /, 'double link points to same place';
 
 done-testing;

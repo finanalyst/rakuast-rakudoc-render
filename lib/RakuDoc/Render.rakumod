@@ -56,11 +56,11 @@ class RakuDoc::Processor {
     }
 
     #| renders to a String by default,
-    #| but returns ProcessedState object if :process True
+    #| but returns ProcessedState object if pre-finalised = True
     multi method render( $ast, :%source-data, :pre-finalize(:$pre-finalised) = False ) {
         $!current .= new(:%source-data, :$!output-format );
         my ProcessedState $*prs .= new;
-        $ast.rakudoc.map( { $.handle( $_ ) });
+        $ast.rakudoc.map( { $.handle( $_ ) } );
         $!current += $*prs;
 ## yields error with Numeric(ProcessedState:D) cant be resolved
 #        $ast.rakudoc.map( {
@@ -145,10 +145,16 @@ class RakuDoc::Processor {
             # Render content as LaTex formula
 
     multi method handle(RakuAST::Doc::Block:D $ast) {
-        # When a built in block, other than =item, is started,
+        # When a block is extended, then bare Str should be considered paragraphs
+        my Bool $parify = ! ($ast.for or $ast.abbreviated);
+        say 'Doc::Block type: ' ~ $ast.type
+            ~ ( ' [for]' if $ast.for )
+            ~ ( ' [abbreviated]' if $ast.abbreviated )
+            ~ ( ' [extended]' if $parify )
+            if $.debug (cont) BlockType;
+        # When a built in block, other than =item or =defn, is started,
         # there may be a list of items or defns, which need to be
         # completed and rendered
-        say "Doc::Block type: " ~ $ast.type if $.debug (cont) BlockType;
         $*prs.body ~= $.complete-item-list unless $ast.type eq 'item';
         $*prs.body ~= $.complete-defn-list unless $ast.type eq 'defn';
 
@@ -159,7 +165,7 @@ class RakuDoc::Processor {
             when 'alias' {
                 my $term = $ast.paragraphs[0].trim; # it should be a string
                 my $expansion = $ast.paragraphs[1];
-                $expansion = $.contents($ast) unless $expansion.isa(Str);
+                $expansion = $.contents($ast, False) unless $expansion.isa(Str);
                 $!scoped-data.aliases{ $term } = $expansion;
              }
             # =code
@@ -188,7 +194,7 @@ class RakuDoc::Processor {
             # =itemN
             # Nth-level list item
             when 'item' {
-                $.gen-item($ast)
+                $.gen-item($ast, $parify)
             }
             # =defn
             # Definition of a term
@@ -210,7 +216,7 @@ class RakuDoc::Processor {
                 $!scoped-data.start-scope(:callee($_));
                 $!scoped-data.last-title( $!current.source-data<rakudoc-title> );
                 say $!scoped-data.debug if $.debug (cont) Scoping;
-                $.gen-rakudoc($ast);
+                $.gen-rakudoc($ast, $parify);
                 $!scoped-data.end-scope;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
@@ -224,7 +230,7 @@ class RakuDoc::Processor {
                 $!scoped-data.start-scope( :callee($_) );
                 $!scoped-data.last-title( $last-title );
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
-                $.gen-section($ast);
+                $.gen-section($ast, $parify);
                 $!scoped-data.end-scope;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
@@ -238,7 +244,7 @@ class RakuDoc::Processor {
                 $!scoped-data.start-scope( :callee($_) );
                 $!scoped-data.last-title( $_ );
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
-                $.gen-semantics($ast);
+                $.gen-semantics($ast, $parify);
                 $!scoped-data.end-scope;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
@@ -249,14 +255,13 @@ class RakuDoc::Processor {
                 $!scoped-data.start-scope( :callee($_) );
                 $!scoped-data.last-title( $_ );
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
-                $.gen-custom($ast);
+                $.gen-custom($ast, $parify);
                 $!scoped-data.end-scope;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             default { $.gen-unknown-builtin($ast) }
         }
     }
-    # =data
     # Raku data section
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
         #ignore declarator block
@@ -342,7 +347,7 @@ class RakuDoc::Processor {
                 my $letter = $ast.letter;
                 my $link-label = self.markup-contents($ast);
                 my $entry = $ast.meta;
-                $entry = $entry[0] ?? $entry[0] !! '';
+                $entry = ($entry[0] ?? $entry[0] !! $link-label).Str;
                 my $target;
                 my $place;
                 my $type;
@@ -368,10 +373,18 @@ class RakuDoc::Processor {
                             $target = ~$0.subst(/'::'/, '/', :g); # only subst :: in file part
                             $type = 'local';
                         }
-                        when / ^ <-[ # ]>+ $ / {
-                            $target = $entry;
-                            $place = '';
-                            $type = 'local'
+                        when / ^ 'defn:' $<term> = (.+) $ / {
+                            $type = 'defn';
+                            $link-label = ~$<term>;
+                            $target = $type ~ '_' ~ $link-label;
+                            # get definition 1. scoped-data, 2. Store a PCell
+                            my %scoped = $!scoped-data.definitions();
+                            if %scoped{ $link-label }:exists {
+                                $place = %scoped{ $link-label }
+                            }
+                            else {
+                                $place = PCell.new( :$!register, :id($target))
+                            }
                         }
                         default {
                             $target =  '';
@@ -545,12 +558,14 @@ class RakuDoc::Processor {
     # Ordinary paragraph
     multi method handle(RakuAST::Doc::Paragraph:D $ast) {
         my %config;
-        my %scoped-head = $!scoped-data.config;
-        %config{ .key } = .value for %scoped-head<para>.pairs;
-        my ProcessedState $*prs .= new;
+        my %scoped = $!scoped-data.config;
+        %config{ .key } = .value for %scoped<para>.pairs;
+        my ProcessedState $*prs = CALLERS::<$*prs>;
+        my $rem = $.complete-item-list ~ $.complete-defn-list;
+        $*prs .= new;
         for $ast.atoms { $.handle($_) }
         my PStr $contents = $*prs.body;
-        $*prs.body .= new;
+        $*prs.body .= new( $rem );
         $*prs.body ~= %!templates<para>(
             %( :$contents, %config)
         );
@@ -570,7 +585,7 @@ class RakuDoc::Processor {
     }
     #| generates a heading and uses template 'head'
     method gen-head($ast) {
-        my $contents = $.contents($ast).trim;
+        my $contents = $.contents($ast, False).trim;
         # headlevel is ignored in head if set, eg =for head2 :headlevel(3)
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
@@ -598,9 +613,9 @@ class RakuDoc::Processor {
     }
     #| generates a single item and adds it to the item structure
     #| nothing is added to the .body string
-    method gen-item($ast) {
+    method gen-item($ast, $parify) {
         my $level = $ast.level > 1 ?? $ast.level !! 1;
-        my $contents = $.contents($ast);
+        my $contents = $.contents($ast, $parify);
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
         %config{ .key } = .value for %scoped{"item$level"}.pairs;
@@ -609,24 +624,34 @@ class RakuDoc::Processor {
         )
     }
     #| generates a single definition and adds it to the defn structure
-    #| unlike an item list, a definition list has a flat hierarchy
-    #| unlike items, definitions can be created by a markup code
-    #| definitions also need a target for links or popups
-    #| nothing is added to the .body string
+    #| unlike item, a defn:
+    #| - list has a flat hierarchy
+    #| - can be created by a markup code
+    #| - needs a target for links, or text for popup
+    #| - is scope-stored allowing re-definition in block scope
+    #| - is PCell-stored allowing for links to once-only future definition in any scope
+    #| like items nothing is added to the .body string until next non-defn
     method gen-defn($ast) {
         my $term = $ast.paragraphs[0];
         my $target = "defn_$term";
+        # generate contents from second str/paragraph
         my ProcessedState $*prs .= new;
         $.handle( $ast.paragraphs[1] );
-        my PStr $contents = $*prs.body;
+        my PStr $contents .= new( $*prs.body.trim );
+        # keep most of state, initialise body
         $*prs.body .= new;
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
         %config{ .key } = .value for %scoped{"defn"}.pairs;
-        $*prs.defns.push: %!templates<defn>(
+        my $payload = %!templates<defn>(
             %( :$term, :$target, :$contents, %config )
-        );
+        ).Str;
+        $*prs.defns.push: $payload;
         CALLERS::<$*prs> += $*prs;
+        $!scoped-data.definitions( %( $term => $payload, ));
+        if $!register.is-present( $target ) {
+            $!register.add-payload(:$payload, :id($target))
+        }
     }
     method gen-place($ast) {
         my %config = $ast.resolved-config;
@@ -715,18 +740,18 @@ class RakuDoc::Processor {
             %( :$contents, :$caption, :$target, :$id, :$html, :$keep-format, %config )
         )
     }
-    method gen-rakudoc($ast) {
+    method gen-rakudoc($ast, $parify) {
         my %config = $ast.resolved-config;
         $!current.source-data<rakudoc-config> = %config;
-        my $contents = self.contents($ast);
+        my $contents = self.contents($ast, $parify);
         # render any tailing lists
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
         $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) );
     }
-    method gen-section($ast) {
+    method gen-section($ast, $parify) {
         my %config = $ast.resolved-config;
-        my $contents = $.contents($ast);
+        my $contents = $.contents($ast, $parify);
         # render any tailing lists
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
@@ -737,7 +762,7 @@ class RakuDoc::Processor {
     }
     method gen-unknown-builtin($ast) {
         my %config = $ast.resolved-config;
-        my $contents = $.contents($ast);
+        my $contents = $.contents($ast, False);
         if $ast.type ~~ any(< 
                 cell code input output comment head numhead defn item numitem nested para
                 rakudoc section pod table formula
@@ -753,7 +778,7 @@ class RakuDoc::Processor {
     #| If :hidden is True, then the string is not added to .body
     #| TITLE SUBTITLE NAME are by default :hidden and added to $*prs separately
     #| All other SEMANTIC blocks are :!hidden by default
-    method gen-semantics($ast) {
+    method gen-semantics($ast, $parify) {
         my $block-name = $ast.type;
         my %config = $ast.resolved-config;
         my %scoped-head = $!scoped-data.config;
@@ -762,7 +787,7 @@ class RakuDoc::Processor {
         my $caption = %config<caption> // $block-name;
         my $level = %config<headlevel> // 1;
         my $hidden;
-        my $contents = $.contents($ast).trim;
+        my $contents = $.contents($ast, $parify).trim;
         $!scoped-data.last-title( $block-name );
         my $rv;
         given $ast.type {
@@ -815,7 +840,7 @@ class RakuDoc::Processor {
         $*prs.semantics{ $block-name }.push: $rv;
         $*prs.body ~= $rv unless $hidden;
     }
-    method gen-custom($ast) {
+    method gen-custom($ast, $parify) {
         ''
     }
     # directive type methods
@@ -888,16 +913,21 @@ class RakuDoc::Processor {
         $!current.targets{$targ}++;
         $targ
     }
-    #| The 'contents' method that $ast.paragraphs is a sequence.
+    #| The 'contents' method is called when $ast.paragraphs is a sequence.
     #| The $*prs for a set of paragraphs is new to collect all the
     #| associated data. The body of the contents must then be
     #| incorporated using the template of the block calling content
-    method contents($ast) {
+    #| when parify, strings are considered paragraphs
+    method contents($ast, Bool $parify ) {
         my ProcessedState $*prs .= new;
-        for $ast.paragraphs {
-           $.handle($_)
-        };
-        my PStr $text = $*prs.body;
+        if $parify {
+            $.handle( $_ ~~ Str ?? RakuAST::Doc::Paragraph.new($_ ) !! $_ )
+                for $ast.paragraphs
+        }
+        else {
+            $.handle( $_ ) for $ast.paragraphs
+        }
+        my PStr $text .= new( $*prs.body.trim );
         $*prs.body .= new;
         CALLERS::<$*prs> += $*prs;
         $text
@@ -958,6 +988,13 @@ class RakuDoc::Processor {
         $ast.Str.trim.subst(/ \s /, '_', :g);
     }
 
+    #| utility for test templates
+    my &express-params = -> %h, $t, $c {
+        my PStr $rv .= new("<{ $c }>\n");
+        for %h.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
+        $rv ~= "</{ $c }>\n"
+    }
+
     #| returns hash of test templates
     multi method test-text-templates {
         %(
@@ -966,113 +1003,41 @@ class RakuDoc::Processor {
                 'new test text templates'
             },
             #| renders =code block
-            code => -> %prm, $tmpl {
-                my PStr $rv .= new("<code>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</code>\n"
-            },
+            code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
             #| renders =input block
-            input => -> %prm, $tmpl {
-                my PStr $rv .= new("<input>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</input>\n"
-            },
+            input => -> %prm, $tmpl { express-params( %prm, $tmpl, 'input' ) },
             #| renders =output block
-            output => -> %prm, $tmpl {
-                my PStr $rv .= new("<output>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</output>\n"
-            },
+            output => -> %prm, $tmpl { express-params( %prm, $tmpl, 'output' ) },
             #| renders =comment block
-            comment => -> %prm, $tmpl {
-                my PStr $rv .= new("<comment>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</comment>\n"
-            },
+            comment => -> %prm, $tmpl { express-params( %prm, $tmpl, 'comment' ) },
             #| renders =head block
-            head => -> %prm, $tmpl {
-                my PStr $rv .= new("<head>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</head>\n"
-            },
+            head => -> %prm, $tmpl { express-params( %prm, $tmpl, 'head' ) },
             #| renders =numhead block
-            numhead => -> %prm, $tmpl {
-                my PStr $rv .= new("<numhead>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</numhead>\n"
-            },
+            numhead => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numhead' ) },
             #| renders =defn block
-            defn => -> %prm, $tmpl {
-                my PStr $rv .= new("<defn>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</defn>\n"
-            },
+            defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
             #| renders =item block
-            item => -> %prm, $tmpl {
-                my PStr $rv .= new("<item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</item>\n"
-            },
+            item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item' ) },
             #| renders =numitem block
-            numitem => -> %prm, $tmpl {
-                my PStr $rv .= new("<numitem>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</numitem>\n"
-            },
+            numitem => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem' ) },
             #| renders =nested block
-            nested => -> %prm, $tmpl {
-                my PStr $rv .= new("<nested>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</nested>\n"
-            },
+            nested => -> %prm, $tmpl { express-params( %prm, $tmpl, 'nested' ) },
             #| renders =para block
-            para => -> %prm, $tmpl {
-                my PStr $rv .= new("<para>\n");
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-                $rv ~= "</para>\n"
-            },
+            para => -> %prm, $tmpl { express-params( %prm, $tmpl, 'para' ) },
             #| renders =place block
-            place => -> %prm, $tmpl {
-                my PStr $rv .= new("<place>\n");
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-                $rv ~= "</place>\n"
-            },
+            place => -> %prm, $tmpl { express-params( %prm, $tmpl, 'place' ) },
             #| renders =rakudoc block
-            rakudoc => -> %prm, $tmpl {
-                my PStr $rv .= new("<rakudoc>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</rakudoc>\n"
-            },
+            rakudoc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'rakudoc' ) },
             #| renders =section block
-            section => -> %prm, $tmpl {
-                my PStr $rv .= new("<section>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</section>\n"
-            },
+            section => -> %prm, $tmpl { express-params( %prm, $tmpl, 'section' ) },
             #| renders =pod block
-            pod => -> %prm, $tmpl {
-                my PStr $rv .= new("<pod>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</pod>\n"
-            },
+            pod => -> %prm, $tmpl { express-params( %prm, $tmpl, 'pod' ) },
             #| renders =table block
-            table => -> %prm, $tmpl {
-                my PStr $rv .= new("<table>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</table>\n"
-            },
+            table => -> %prm, $tmpl { express-params( %prm, $tmpl, 'table' ) },
             #| renders =custom block
-            custom => -> %prm, $tmpl {
-                my PStr $rv .= new("<custom>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</custom>\n"
-            },
+            custom => -> %prm, $tmpl { express-params( %prm, $tmpl, 'custom' ) },
             #| renders any unknown block minimally
-            unknown => -> %prm, $tmpl {
-                my PStr $rv .= new("<unknown>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</unknown>\n"
-            },
+            unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
             #| special template to encapsulate all the output to save to a file
             final => -> %prm, $tmpl {
                 %prm<processed>.title ~ "\n"
@@ -1091,11 +1056,7 @@ class RakuDoc::Processor {
                 ~ 'into ｢' ~ %prm<processed>.name ~ "｣\n"
             },
             #| renders a single item in the toc
-            toc-item => -> %prm, $tmpl {
-                my PStr $rv .= new("<toc-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</toc-item>\n"
-            },
+            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
                 my $toc-list = %prm<toc-list>:delete;
@@ -1105,11 +1066,7 @@ class RakuDoc::Processor {
 				$rv ~= "items:" ~ $toc-list ~"</toc>\n"
             },
             #| renders a single item in the index
-            index-item => -> %prm, $tmpl {
-                my PStr $rv .= new("<index-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</index-item>\n"
-            },
+            index-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
                 my $ind-list = %prm<index-list>:delete;
@@ -1158,170 +1115,78 @@ class RakuDoc::Processor {
             ## meta data via Config is allowed
             #| B< DISPLAY-TEXT >
             #| Basis/focus of sentence (typically rendered bold)
-			markup-B => -> %prm, $tmpl {
-				my PStr $rv .= new('<basis>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</basis>'
-			},
+			markup-B => -> %prm, $tmpl { express-params( %prm, $tmpl, 'basis' ) },
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
-			markup-C => -> %prm, $tmpl {
-				my PStr $rv .= new('<code>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</code>'
-			},
+			markup-C => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
-			markup-H => -> %prm, $tmpl {
-				my PStr $rv .= new('<high>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</high>'
-			},
+			markup-H => -> %prm, $tmpl { express-params( %prm, $tmpl, 'high' ) },
             #| I< DISPLAY-TEXT >
             #| Important (typically rendered in italics)
-			markup-I => -> %prm, $tmpl {
-				my PStr $rv .= new('<important>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</important>'
-			},
+			markup-I => -> %prm, $tmpl { express-params( %prm, $tmpl, 'important' ) },
             #| J< DISPLAY-TEXT >
             #| Junior text (typically rendered subscript)
-			markup-J => -> %prm, $tmpl {
-				my PStr $rv .= new('<junior>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</junior>'
-			},
+			markup-J => -> %prm, $tmpl { express-params( %prm, $tmpl, 'junior' ) },
             #| K< DISPLAY-TEXT >
             #| Keyboard input (typically rendered fixed-width)
-			markup-K => -> %prm, $tmpl {
-				my PStr $rv .= new('<keyboard>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</keyboard>'
-			},
+			markup-K => -> %prm, $tmpl { express-params( %prm, $tmpl, 'keyboard' ) },
             #| N< DISPLAY-TEXT >
             #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
             #| This is the template for the in-text part, which should have a Number, link, and return anchor
-			markup-N => -> %prm, $tmpl {
-                my PStr $rv .= new(  '<note>' );
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-                $rv ~= '</note>'
-			},
+			markup-N => -> %prm, $tmpl { express-params( %prm, $tmpl, 'note' ) },
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
-			markup-O => -> %prm, $tmpl {
-				my PStr $rv .= new('<overstrike>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</overstrike>'
-			},
+			markup-O => -> %prm, $tmpl { express-params( %prm, $tmpl, 'overstrike' ) },
             #| R< DISPLAY-TEXT >
             #| Replaceable component or metasyntax
-			markup-R => -> %prm, $tmpl {
-				my PStr $rv .= new('<replaceable>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</replaceable>'
-			},
+			markup-R => -> %prm, $tmpl { express-params( %prm, $tmpl, 'replaceable' ) },
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
-			markup-S => -> %prm, $tmpl {
-				my PStr $rv .= new('<space>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</space>'
-			},
+			markup-S => -> %prm, $tmpl { express-params( %prm, $tmpl, 'space' ) },
             #| T< DISPLAY-TEXT >
             #| Terminal output (typically rendered fixed-width)
-			markup-T => -> %prm, $tmpl {
-				my PStr $rv .= new('<terminal>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</terminal>'
-			},
+			markup-T => -> %prm, $tmpl { express-params( %prm, $tmpl, 'terminal' ) },
             #| U< DISPLAY-TEXT >
             #| Unusual (typically rendered with underlining)
-			markup-U => -> %prm, $tmpl {
-				my PStr $rv .= new('<unusual>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</unusual>'
-			},
+			markup-U => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unusual' ) },
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
-			markup-V => -> %prm, $tmpl {
-				my PStr $rv .= new('<verbatim>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</verbatim>'
-			},
+			markup-V => -> %prm, $tmpl { express-params( %prm, $tmpl, 'verbatim' ) },
 
             ##| Markup codes, optional display and meta data
 
             #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             #| Alias to be replaced by contents of specified V<=alias> directive
-			markup-A => -> %prm, $tmpl {
-				my PStr $rv .= new('<alias>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' )~ '｣' }
-				$rv ~= '</alias>'
-			},
+			markup-A => -> %prm, $tmpl { express-params( %prm, $tmpl, 'alias' ) },
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
-			markup-E => -> %prm, $tmpl {
-				my PStr $rv .= new('<entity>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</entity>'
-			},
+			markup-E => -> %prm, $tmpl { express-params( %prm, $tmpl, 'entity' ) },
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
-			markup-F => -> %prm, $tmpl {
-				my PStr $rv .= new('<formula>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</formula>'
-			},
+			markup-F => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula' ) },
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
-			markup-L => -> %prm, $tmpl {
-				my PStr $rv .= new('<link>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</link>'
-			},
+			markup-L => -> %prm, $tmpl { express-params( %prm, $tmpl, 'link' ) },
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             #| Placement link
-			markup-P => -> %prm, $tmpl {
-				my PStr $rv .= new('<placement>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</placement>'
-			},
+			markup-P => -> %prm, $tmpl { express-params( %prm, $tmpl, 'placement' ) },
 
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
-			markup-D => -> %prm, $tmpl {
-				my PStr $rv .= new('<definition>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</definition>'
-			},
+			markup-D => -> %prm, $tmpl { express-params( %prm, $tmpl, 'definition' ) },
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
-            markup-Δ => -> %prm, $tmpl {
-				my PStr $rv .= new('<delta>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</delta>'
-			},
+            markup-Δ => -> %prm, $tmpl { express-params( %prm, $tmpl, 'delta' ) },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
-			markup-M => -> %prm, $tmpl {
-				my PStr $rv .= new('<markup>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</markup>'
-			},
+			markup-M => -> %prm, $tmpl { express-params( %prm, $tmpl, 'markup' ) },
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
-			markup-X => -> %prm, $tmpl {
-				my PStr $rv .= new('<index>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</index>'
-			},
+			markup-X => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
             #| Unknown markup, render minimally
-            markup-unknown => -> %prm, $tmpl {
-				my PStr $rv .= new('<unknown>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</unknown>'
-			},
+            markup-unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
     # text helpers adapted from Liz's RakuDoc::To::Text
@@ -1366,29 +1231,13 @@ class RakuDoc::Processor {
                 'default text templates'
             },
             #| renders =code blocks
-            code => -> %prm, $tmpl {
-                my PStr $rv .= new("<code>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</code>\n"
-            },
+            code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
             #| renders =input block
-            input => -> %prm, $tmpl {
-                my PStr $rv .= new("<input>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</input>\n"
-            },
+            input => -> %prm, $tmpl { express-params( %prm, $tmpl, 'input' ) },
             #| renders =output block
-            output => -> %prm, $tmpl {
-                my PStr $rv .= new("<output>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</output>\n"
-            },
+            output => -> %prm, $tmpl { express-params( %prm, $tmpl, 'output' ) },
             #| renders =comment block
-            comment => -> %prm, $tmpl {
-                my PStr $rv .= new("<comment>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</comment>\n"
-            },
+            comment => -> %prm, $tmpl { express-params( %prm, $tmpl, 'comment' ) },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;
@@ -1398,95 +1247,35 @@ class RakuDoc::Processor {
                 HEAD
             },
             #| renders =numhead block
-            numhead => -> %prm, $tmpl {
-                my PStr $rv .= new("<numhead>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</numhead>\n"
-            },
+            numhead => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numhead' ) },
             #| renders =defn block
-            defn => -> %prm, $tmpl {
-                my PStr $rv .= new("<defn>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</defn>\n"
-            },
+            defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
             #| renders =item block
-            item => -> %prm, $tmpl {
-                my PStr $rv .= new("<item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</item>\n"
-            },
+            item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item' ) },
             #| renders =numitem block
-            numitem => -> %prm, $tmpl {
-                my PStr $rv .= new("<numitem>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</numitem>\n"
-            },
+            numitem => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem' ) },
             #| renders =nested block
-            nested => -> %prm, $tmpl {
-                my PStr $rv .= new("<nested>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</nested>\n"
-            },
+            nested => -> %prm, $tmpl { express-params( %prm, $tmpl, 'nested' ) },
             #| renders =para block
-            para => -> %prm, $tmpl {
-                my PStr $rv .= new("<para>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</para>\n"
-            },
+            para => -> %prm, $tmpl { express-params( %prm, $tmpl, 'para' ) },
             #| renders =place block
-            place => -> %prm, $tmpl {
-                my PStr $rv .= new("<place>\n");
-                for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-                $rv ~= "</place>\n"
-            },
+            place => -> %prm, $tmpl { express-params( %prm, $tmpl, 'place' ) },
             #| renders =rakudoc block
-            rakudoc => -> %prm, $tmpl {
-                my PStr $rv .= new("<rakudoc>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</rakudoc>\n"
-            },
+            rakudoc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'rakudoc' ) },
             #| renders =section block
-            section => -> %prm, $tmpl {
-                my PStr $rv .= new("<section>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</section>\n"
-            },
+            section => -> %prm, $tmpl { express-params( %prm, $tmpl, 'section' ) },
             #| renders =pod block
-            pod => -> %prm, $tmpl {
-                my PStr $rv .= new("<pod>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</pod>\n"
-            },
+            pod => -> %prm, $tmpl { express-params( %prm, $tmpl, 'pod' ) },
             #| renders =table block
-            table => -> %prm, $tmpl {
-                my PStr $rv .= new("<table>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</table>\n"
-            },
+            table => -> %prm, $tmpl { express-params( %prm, $tmpl, 'table' ) },
             #| renders =custom block
-            custom => -> %prm, $tmpl {
-                my PStr $rv .= new("<custom>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</custom>\n"
-            },
+            custom => -> %prm, $tmpl { express-params( %prm, $tmpl, 'custom' ) },
             #| renders any unknown block minimally
-            unknown => -> %prm, $tmpl {
-                my PStr $rv .= new("<unknown>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</unknown>\n"
-            },
+            unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
             #| special template to encapsulate all the output to save to a file
-            final => -> %prm, $tmpl {
-                my PStr $rv .= new("<final>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</final>\n"
-            },
+            final => -> %prm, $tmpl { express-params( %prm, $tmpl, 'final' ) },
             #| renders a single item in the index
-            toc-item => -> %prm, $tmpl {
-                my PStr $rv .= new("<toc-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</toc-item>\n"
-            },
+            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
             #| special template to render the toc data structure
             toc => -> %prm, $tmpl {
                %prm<caption> ~ "\n"
@@ -1504,11 +1293,7 @@ class RakuDoc::Processor {
                 ''
             },
             #| renders a single item in the index
-            index-item => -> %prm, $tmpl {
-                my PStr $rv .= new("<index-item>\n");
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "</index-item>\n"
-            },
+            index-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
             #| special template to render an item list data structure
             defn-list => -> %prm, $tmpl {
                 "<defn-list>\n" ~ %prm<defn-list>.join ~ "</defn-list>\n"
@@ -1529,169 +1314,77 @@ class RakuDoc::Processor {
             ## meta data via Config is allowed
             #| B< DISPLAY-TEXT >
             #| Basis/focus of sentence (typically rendered bold)
-			markup-B => -> %prm, $tmpl {
-				my PStr $rv .= new('<basis>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</basis>'
-			},
+			markup-B => -> %prm, $tmpl { express-params( %prm, $tmpl, 'basis' ) },
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
-			markup-C => -> %prm, $tmpl {
-				my PStr $rv .= new('<code>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</code>'
-			},
+			markup-C => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
-			markup-H => -> %prm, $tmpl {
-				my PStr $rv .= new('<high>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</high>'
-			},
+			markup-H => -> %prm, $tmpl { express-params( %prm, $tmpl, 'high' ) },
             #| I< DISPLAY-TEXT >
             #| Important (typically rendered in italics)
-			markup-I => -> %prm, $tmpl {
-				my PStr $rv .= new('<important>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</important>'
-			},
+			markup-I => -> %prm, $tmpl { express-params( %prm, $tmpl, 'important' ) },
             #| J< DISPLAY-TEXT >
             #| Junior text (typically rendered subscript)
-			markup-J => -> %prm, $tmpl {
-				my PStr $rv .= new('<junior>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</junior>'
-			},
+			markup-J => -> %prm, $tmpl { express-params( %prm, $tmpl, 'junior' ) },
             #| K< DISPLAY-TEXT >
             #| Keyboard input (typically rendered fixed-width)
-			markup-K => -> %prm, $tmpl {
-				my PStr $rv .= new('<keyboard>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</keyboard>'
-			},
+			markup-K => -> %prm, $tmpl { express-params( %prm, $tmpl, 'keyboard' ) },
             #| N< DISPLAY-TEXT >
             #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
-			markup-N => -> %prm, $tmpl {
-				my PStr $rv .= new('<note>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</note>'
-			},
+			markup-N => -> %prm, $tmpl { express-params( %prm, $tmpl, 'note' ) },
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
-			markup-O => -> %prm, $tmpl {
-				my PStr $rv .= new('<overstrike>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</overstrike>'
-			},
+			markup-O => -> %prm, $tmpl { express-params( %prm, $tmpl, 'overstrike' ) },
             #| R< DISPLAY-TEXT >
             #| Replaceable component or metasyntax
-			markup-R => -> %prm, $tmpl {
-				my PStr $rv .= new('<replaceable>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</replaceable>'
-			},
+			markup-R => -> %prm, $tmpl { express-params( %prm, $tmpl, 'replaceable' ) },
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
-			markup-S => -> %prm, $tmpl {
-				my PStr $rv .= new('<space>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</space>'
-			},
+			markup-S => -> %prm, $tmpl { express-params( %prm, $tmpl, 'space' ) },
             #| T< DISPLAY-TEXT >
             #| Terminal output (typically rendered fixed-width)
-			markup-T => -> %prm, $tmpl {
-				my PStr $rv .= new('<terminal>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</terminal>'
-			},
+			markup-T => -> %prm, $tmpl { express-params( %prm, $tmpl, 'terminal' ) },
             #| U< DISPLAY-TEXT >
             #| Unusual (typically rendered with underlining)
-			markup-U => -> %prm, $tmpl {
-				my PStr $rv .= new('<unusual>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</unusual>'
-			},
+			markup-U => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unusual' ) },
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
-			markup-V => -> %prm, $tmpl {
-				my PStr $rv .= new('<verbatim>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</verbatim>'
-			},
+			markup-V => -> %prm, $tmpl { express-params( %prm, $tmpl, 'verbatim' ) },
 
             ##| Markup codes, optional display and meta data
 
             #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             #| Alias to be replaced by contents of specified V<=alias> directive
-			markup-A => -> %prm, $tmpl {
-				my PStr $rv .= new('<alias>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</alias>'
-			},
+			markup-A => -> %prm, $tmpl { express-params( %prm, $tmpl, 'alias' ) },
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
-			markup-E => -> %prm, $tmpl {
-				my PStr $rv .= new('<entity>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</entity>'
-			},
+			markup-E => -> %prm, $tmpl { express-params( %prm, $tmpl, 'entity' ) },
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
-			markup-F => -> %prm, $tmpl {
-				my PStr $rv .= new('<formula>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</formula>'
-			},
+			markup-F => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula' ) },
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
-			markup-L => -> %prm, $tmpl {
-				my PStr $rv .= new('<link>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</link>'
-			},
+			markup-L => -> %prm, $tmpl { express-params( %prm, $tmpl, 'link' ) },
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             #| Placement link
-			markup-P => -> %prm, $tmpl {
-				my PStr $rv .= new('<placement>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</placement>'
-			},
+			markup-P => -> %prm, $tmpl { express-params( %prm, $tmpl, 'placement' ) },
 
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
-			markup-D => -> %prm, $tmpl {
-				my PStr $rv .= new('<definition>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</definition>'
-			},
+			markup-D => -> %prm, $tmpl { express-params( %prm, $tmpl, 'definition' ) },
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
-            markup-Δ => -> %prm, $tmpl {
-				my PStr $rv .= new('<delta>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</delta>'
-			},
+            markup-Δ => -> %prm, $tmpl { express-params( %prm, $tmpl, 'delta' ) },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
-			markup-M => -> %prm, $tmpl {
-				my PStr $rv .= new('<markup>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</markup>'
-			},
+			markup-M => -> %prm, $tmpl { express-params( %prm, $tmpl, 'markup' ) },
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
-			markup-X => -> %prm, $tmpl {
-				my PStr $rv .= new('<index>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</index>'
-			},
+			markup-X => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
             #| Unknown markup, render minimally
-            markup-unknown => -> %prm, $tmpl {
-				my PStr $rv .= new('<unknown>');
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  '｣' }
-				$rv ~= '</unknown>'
-			},
+            markup-unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
     #| returns hash of test helper callables

@@ -1,0 +1,38 @@
+use v6.d;
+use RakuDoc::Templates;
+use Test;
+use Test::Output;
+
+#test-output-verbosity(:on);
+
+my %globals is Template-directory = %(
+    aaa => -> %prm, $tmpl {
+        'orig: ' ~ %prm<contents>;
+    },
+    bbb => -> %prm, $tmpl { '<bb-aaa-tab>' ~ $tmpl('aaa') ~ '</end-tab>' },
+    ccc => -> %prm, $tmpl { '<cc-aaa-tab>' ~ $tmpl('aaa', %(:contents('never'),)) ~ '</end-tab>' },
+    ggg => -> %prm, $tmpl { '<start>' ~ %prm<contents> ~ '<end>' }
+);
+
+%globals.verbose = 'aaa';
+
+my $rv;
+output-like { $rv = %globals<aaa>(%(:contents<hi there>)) },
+        / 'orig: hi there' /,
+        'verbose outputs template results';
+is $rv, 'orig: hi there', 'also returns the same';
+output-like { $rv = %globals<bbb>(%(:contents<bold statement>,)) },
+        / 'orig: bold statement' /,
+        'verbose only returns the result of the embedded template';
+is $rv, '<bb-aaa-tab>orig: bold statement</end-tab>',
+        'the returned result contain the extra';
+output-like { $rv = %globals<ccc>(%()), '<cc-aaa-tab>orig: never</end-tab>' },
+        /  'orig: never' /,
+        'verbose is called with new parameters';
+is $rv, '<cc-aaa-tab>orig: never</end-tab>', 'returns with different 0 parameters';
+output-is { $rv = %globals<ggg>(%(:contents<hi there>)) },
+        '',
+        'verbose only outputs for the aaa template';
+is $rv, '<start>hi there<end>', 'but returns the called ggg template';
+
+done-testing;

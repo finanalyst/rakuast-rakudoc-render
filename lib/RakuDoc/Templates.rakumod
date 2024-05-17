@@ -8,26 +8,33 @@ class Template {
     has %.call-params;
     has $.source;
     has Bool $.debug is rw = False;
+    has Bool $.verbose is rw = False;
     multi method AT-KEY(Str:D $key) {
         self.CALL-ME($key)
     }
     multi method CALL-ME(%params) {
         say "Template used: ｢$!name｣, source: {$!source}" if $!debug;
         %!call-params = %params;
-        &!block(%params, self)
+        my $rv = &!block(%params, self);
+        say "Template output: ｢$rv｣" if $.verbose;
+        $rv
     }
     multi method CALL-ME(Str:D $key) {
         say "Embedded ｢$key｣ called with stored params" if $!debug;
-        ($.globals{$key})(%!call-params)
+        my $rv = ($.globals{$key})(%!call-params);
+        say "Template output: ｢$rv｣" if $.verbose;
+        $rv
     }
     multi method CALL-ME(Str:D $key, %params) {
         say "Embedded ｢$key｣ called with new params" if $!debug;
-        ($.globals{$key})(%params)
+        my $rv = ($.globals{$key})(%params);
+        say "Template output: ｢$rv｣" if $.verbose;
+        $rv
     }
     multi method prev {
         return '' unless $!depth - 1 >= 0;
         say "Previous template used: ｢$!name｣, source: {$!source}, with stored params" if $!debug;
-        ($.globals.prior($!name, $!depth))(%!call-params);
+        my $rv = ($.globals.prior($!name, $!depth))(%!call-params);
     }
     multi method prev(%params) {
         return '' unless $!depth - 1 >= 0;
@@ -50,10 +57,12 @@ class Template-directory does Associative {
     has %.helper;
     has $.source is rw = 'Initial';
     has Bool $.debug is rw = False;
+    has Str $.verbose is rw = '';
     multi method AT-KEY ($key) is rw {
         with %!fields{$key} {
             .[* - 1].globals = self;
             .[* - 1].debug = $!debug;
+            .[* - 1].verbose = $.verbose eq $key;
             .[* - 1]
         }
         else {
