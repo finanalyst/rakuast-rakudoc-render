@@ -1,0 +1,74 @@
+=begin rakudoc
+=TITLE PromiseStrings for templates
+=SUBTITLE How RakuAsT-RakuDoc-Render handles forward references or placement
+material that has not yet been rendered
+
+When C<=place toc:*> is given in a RakuDoc source (eg at the top of a source),
+typically the source has not yet been completely rendered.
+
+The renderer actually renders a source into C<PStr> or B<PromiseStrings> rather
+than C<Str>. As forward references become known, they are included in the
+text.
+
+=head1 PStr class and concatenation
+
+RakuDoc statements that make references to structures or data that have not
+been completely rendered embed the references in B<PCells>, which
+will interpolate the rendering once known.
+
+Consequently, parameters to a template may contain a mixture of Raku I<Str> and I<PCells>, in
+an object of type called B<PStr>.
+
+I<PCells> should not be visible to the template user.
+
+If a I<PStr> or I<PCell> is stringified before the data has been rendered, its internal I<id> and
+I<UNAVAILABLE> will be the rendered result.
+
+Since the embedded content of a I<PStr> may ony be available after a template has rendered, care must be taken
+not be stringify any of the parameters prematurely.
+
+Consequently, the return object from a template should be built from the parameter values
+using the concatenation operator C<~>.
+
+=head2 Concatenation to PStr
+
+A PStr is built up by concatenating using the infix operator C<~>. Assignment does not add to a PStr.
+Concatenation can be on the left or the right of the PStr and the result will depend on the type.
+=item A PCell on the left or right is added to the start or end, respectively, of the PStr
+=item Concatentating two PStr adds the right hand one to the left hand one, and returns the left hand one
+=item Any other type on the left or right is coerced to a Str and added to the start/end of the PStr
+
+Since left concatenation has an effect on the PStr on the right, use C<sink> to discard the return value,
+unless of course the return value is the last line of a block, in which case it is returned as the
+value of the block, eg.,
+
+    my PStr $p;
+    $p ~= PCell.new( :s($a-supplier.Supply), :id<AAA> );
+    sink '<bold>' ~ $p
+
+=head2 Template methods B<lead> and B<tail>
+
+These two methods of a I<PStr> object return any of the B<leading> or B<tailing> (respectively)
+I<Str> elements of the I<PStr>. The elements are removed, and so should be concatenated
+back on after processing.
+
+For simplicity above, examples were given of pre- and post-processing templates, and treating the
+contents of C<%prm> as I<Str>. Since some parameters may contain I<PStr>, more care is needed.
+For example, the post-processing should be done as follows:
+
+    table => -> %prm, $tmpl {
+        my $rv = $tmpl.prev;
+        if $rv ~~ PStr {
+            # get leading text
+            my $lead = $rv.lead;
+            # process the string, if it exists
+            $lead.subst( / '<table' \s+ 'class="pod-table' /, '<table class="table is-centered');
+            # left concatenate onto the PStr
+            $lead ~ $rv
+            # concatenating to a PStr results in a PStr, which is the return object
+        }
+        else { $rv.subst( / '<table' \s+ 'class="pod-table' /, '<table class="table is-centered') }
+    }
+
+
+=end rakudoc
