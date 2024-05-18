@@ -5,6 +5,8 @@ use Test::Output;
 
 #test-output-verbosity(:on);
 
+plan 9;
+
 my %globals is Template-directory = %(
     aaa => -> %prm, $tmpl {
         'orig: ' ~ %prm<contents>;
@@ -17,10 +19,15 @@ my %globals is Template-directory = %(
 %globals.verbose = 'aaa';
 
 my $rv;
-output-like { $rv = %globals<aaa>(%(:contents<hi there>)) },
+my $out = output-from { $rv = %globals<aaa>(%(:contents<hi there>, :extra<not used>)) };
+like $out,
         / 'orig: hi there' /,
         'verbose outputs template results';
-is $rv, 'orig: hi there', 'also returns the same';
+like $out, /
+    'contents' \s+ 'hi there' .+
+    'extra' \s+ 'not used'
+    /, 'also outputs the params given to template';
+is $rv, 'orig: hi there', 'only returns the template value';
 output-like { $rv = %globals<bbb>(%(:contents<bold statement>,)) },
         / 'orig: bold statement' /,
         'verbose only returns the result of the embedded template';

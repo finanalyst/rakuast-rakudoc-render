@@ -14,27 +14,30 @@ class Template {
     }
     multi method CALL-ME(%params) {
         say "Template used: ｢$!name｣, source: {$!source}" if $!debug;
+        say("Template params:\n" ~ %params ) if $!verbose;
         %!call-params = %params;
         my $rv = &!block(%params, self);
-        say "Template output: ｢$rv｣" if $.verbose;
+        say "Template output: ｢$rv｣" if $!verbose;
         $rv
     }
     multi method CALL-ME(Str:D $key) {
         say "Embedded ｢$key｣ called with stored params" if $!debug;
+        say("Template params:\n" ~ %!call-params ) if $!verbose;
         my $rv = ($.globals{$key})(%!call-params);
-        say "Template output: ｢$rv｣" if $.verbose;
+        say "Template output: ｢$rv｣" if $!verbose;
         $rv
     }
     multi method CALL-ME(Str:D $key, %params) {
         say "Embedded ｢$key｣ called with new params" if $!debug;
+        say("Template params:\n" ~ %params ) if $!verbose;
         my $rv = ($.globals{$key})(%params);
-        say "Template output: ｢$rv｣" if $.verbose;
+        say "Template output: ｢$rv｣" if $!verbose;
         $rv
     }
     multi method prev {
         return '' unless $!depth - 1 >= 0;
         say "Previous template used: ｢$!name｣, source: {$!source}, with stored params" if $!debug;
-        my $rv = ($.globals.prior($!name, $!depth))(%!call-params);
+        ($.globals.prior($!name, $!depth))(%!call-params);
     }
     multi method prev(%params) {
         return '' unless $!depth - 1 >= 0;
