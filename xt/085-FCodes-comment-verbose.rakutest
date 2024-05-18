@@ -1,8 +1,9 @@
 use v6.d;
 use Test;
+use Test::Output;
 use RakuDoc::Render;
 
-plan 5;
+plan 8;
 
 my $ast;
 my $rv;
@@ -62,5 +63,26 @@ like $rv.body, /
     'Raku makes' .+
     '<entity>' .*? 'contents: ｢«»｣' .*? '</entity>' .*? 'characters'
     /, 'E-markup ';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thingB<to be said>inside letters.
+    And also I<in italics>.
+    =end rakudoc
+    QAST
+$rdp.verbose('markup-I');
+my $out = output-from {
+    $rv = $rdp.render( $ast, :pre-finalised );
+};
+like $out, / '<important>' .*? 'in italics' .+ '</important>'
+    /, 'the template result for I is output';
+unlike $out, /
+    '<basis>' .*? 'contents:' .*? '｢to be said｣' .*? '</basis>' .*?
+    /, 'template result for B is not output';
+like $rv.body, /
+    'Some thing' .*?
+    '<basis>' .*? 'contents:' .*? '｢to be said｣' .*? '</basis>' .*?
+    'inside letters.' \s*
+    'And also' .+? '<important>' .*? 'in italics'
+    /, 'B & I works with text with spaces inside text';
 
 done-testing;

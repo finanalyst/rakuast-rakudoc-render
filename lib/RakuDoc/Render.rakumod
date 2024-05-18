@@ -7,7 +7,7 @@ use RakuDoc::PromiseStrings;
 use LibCurl::Easy;
 use URI;
 
-enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
+enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
 
 class RakuDoc::Processor {
     has %.templates is Template-directory;
@@ -43,6 +43,9 @@ class RakuDoc::Processor {
     }
     multi method debug {
         $!debug-modes
+    }
+    method verbose( Str $template ){ # hook onto $!templates
+        %!templates.verbose = $template
     }
 
     multi submethod TWEAK(:$!output-format = 'txt',
@@ -111,8 +114,7 @@ class RakuDoc::Processor {
         $*prs.body ~= $ast;
     }
     multi method handle(RakuAST::Node:D $ast) {
-        my ProcessedState @prs = $ast.rakudoc.map({ $.handle($_) });
-        $*prs += $_ for @prs;
+        $ast.rakudoc.map({ $.handle($_) })
     }
             # =column
             # Start a new column in a procedural table
@@ -267,6 +269,7 @@ class RakuDoc::Processor {
         #ignore declarator block
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
+        say "Doc::Markup letter: " ~ $ast.letter if $.debug (cont) MarkUp;
         given $ast.letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
@@ -345,9 +348,14 @@ class RakuDoc::Processor {
             # Link ( L<display text|destination URI> )
             when 'L' {
                 my $letter = $ast.letter;
-                my $link-label = self.markup-contents($ast);
+                my $link-label = self.markup-contents($ast).Str;
                 my $entry = $ast.meta;
-                $entry = ($entry[0] ?? $entry[0] !! $link-label).Str;
+                with $entry[0] {
+                    $entry = $entry[0].Str
+                }
+                else {
+                    $entry = $.local-heading( $link-label )
+                }
                 my $target;
                 my $place;
                 my $type;
@@ -386,10 +394,15 @@ class RakuDoc::Processor {
                                 $place = PCell.new( :$!register, :id($target))
                             }
                         }
-                        default {
-                            $target =  '';
+                        when '' { # this is an error condition
+                            $target = '';
                             $type = 'internal';
-                            $place = $.local-heading( $link-label.Str );
+                            $place = '';
+                        }
+                        default {
+                            $target = $entry;
+                            $type = 'local';
+                            $place = '';
                         }
                     }
                 }
@@ -560,16 +573,17 @@ class RakuDoc::Processor {
         my %config;
         my %scoped = $!scoped-data.config;
         %config{ .key } = .value for %scoped<para>.pairs;
-        my ProcessedState $*prs = CALLERS::<$*prs>;
         my $rem = $.complete-item-list ~ $.complete-defn-list;
-        $*prs .= new;
-        for $ast.atoms { $.handle($_) }
-        my PStr $contents = $*prs.body;
-        $*prs.body .= new( $rem );
-        $*prs.body ~= %!templates<para>(
-            %( :$contents, %config)
-        );
-       CALLERS::<$*prs> += $*prs;
+        do {
+            my ProcessedState $*prs .= new;
+            for $ast.atoms { $.handle($_) }
+            my PStr $contents = $*prs.body;
+            $*prs.body .= new( $rem );
+            $*prs.body ~= %!templates<para>(
+                %( :$contents, %config)
+            );
+           CALLERS::<$*prs> += $*prs;
+       }
     }
     multi method handle(RakuAST::Doc::Row:D $ast) {
         self.handle($ast.WHICH.Str)
@@ -649,9 +663,7 @@ class RakuDoc::Processor {
         $*prs.defns.push: $payload;
         CALLERS::<$*prs> += $*prs;
         $!scoped-data.definitions( %( $term => $payload, ));
-        if $!register.is-present( $target ) {
-            $!register.add-payload(:$payload, :id($target))
-        }
+        $!register.add-payload(:$payload, :id($target))
     }
     method gen-place($ast) {
         my %config = $ast.resolved-config;
@@ -927,7 +939,7 @@ class RakuDoc::Processor {
         else {
             $.handle( $_ ) for $ast.paragraphs
         }
-        my PStr $text .= new( $*prs.body.trim );
+        my $text = $*prs.body;
         $*prs.body .= new;
         CALLERS::<$*prs> += $*prs;
         $text
@@ -935,7 +947,7 @@ class RakuDoc::Processor {
     method markup-contents($ast) {
         my ProcessedState $*prs .= new;
         for $ast.atoms { $.handle($_) }
-        my PStr $text = $*prs.body;
+        my $text = $*prs.body;
         $*prs.body .= new;
         CALLERS::<$*prs> += $*prs;
         $text

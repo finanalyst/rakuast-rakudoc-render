@@ -6,7 +6,7 @@
 - [x] inline delta
 - [x] alias directive
 - [x] =A<> markup
-- [ ] definition list
+- [x] definition list
 - [ ] inline definition
 - [ ] =code
 - [ ] =input

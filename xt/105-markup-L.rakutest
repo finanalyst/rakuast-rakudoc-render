@@ -12,8 +12,8 @@ $ast = Q:to/QAST/.AST;
     =begin rakudoc
     We can L<Link to a place|https://docs.raku.org> with no problem.
     Linking inside the file is L<like this|#Here is a header>.
-    No link meta L<Some title> is here.
-    Blank link meta L<Forgot to put link|> in here.
+    No link meta L<path/to/file> is treated as a link to a local file.
+    Blank link meta L<Forgot to put link|> is an error condition.
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
@@ -38,14 +38,14 @@ like $rv.body, /
 like $rv.body, /
     'No link'
     .+? '<link>'
-    \s* 'link-label' .+? 'Some title'
-    .+? 'place' .+? 'Some_title'
-    .+? 'target' .+? '｢｣'
-    \s* 'type' .+? 'internal'
+    \s* 'link-label' .+? 'path/to/file'
+    .+? 'place' .+? '｢｣'
+    .+? 'target' .+? '｢path/to/file｣'
+    \s* 'type' .+? 'local'
     .+? 'Blank link'
     .+? '<link>'
     \s* 'link-label' .+? 'Forgot to put link'
-    .+? 'place' .+? 'Forgot_to_put_link'
+    .+? 'place' .+? '｢｣'
     .+? 'target' .+? '｢｣'
     \s* 'type' .+? 'internal'
     /, 'L format with blank urls';

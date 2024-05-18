@@ -19,7 +19,7 @@ like $rv.body, /
     '<index>' .*? 'contents: ｢to be said｣' .*?
     'meta: ｢with index content｣' .*?
     'target: ｢index-entry-to_be_said｣' .*?
-    '</index>'
+    '</index>' .*?
     ' inside spaces.'
     /, 'X-markup works with text and indexed text';
 done-testing;
