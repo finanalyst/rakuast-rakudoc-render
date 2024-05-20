@@ -3,7 +3,7 @@ use Test;
 use Test::Output;
 use RakuDoc::Render;
 
-plan 8;
+plan *;
 
 my $ast;
 my $rv;
@@ -63,6 +63,8 @@ like $rv.body, /
     'Raku makes' .+
     '<entity>' .*? 'contents: ｢«»｣' .*? '</entity>' .*? 'characters'
     /, 'E-markup ';
+
+# test verbose functionality for markup
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     Some thingB<to be said>inside letters.
@@ -84,5 +86,67 @@ like $rv.body, /
     'inside letters.' \s*
     'And also' .+? '<important>' .*? 'in italics'
     /, 'B & I works with text with spaces inside text';
+
+# test undefined ASCII
+$rdp.debug( MarkUp, BlockType );
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to G<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    'G<say>'
+    ' in between words.'
+    /, 'G code without change';
+like $rv.warnings[0], / 'is reserved' /, 'got reserved warning';
+
+# test possible but not defined
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to Ɵ<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    'Ɵ<say>'
+    ' in between words.'
+    /, 'Ɵ without change';
+like $rv.warnings[0], / 'could be a custom code' /, 'got possible warning';
+
+# test impossible
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to ɤ<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    'ɤ<say>'
+    ' in between words.'
+    /, 'ɤ code without change';
+
+## test possible and defined
+$rdp.templates<markup-Ɵ> = sub ( %prm, $ ) {
+    RakuDoc::Processor::express-params( %prm, $, 'theta')
+}
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to Ɵ<say> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    '<theta>' .*? 'contents:' .*? '｢say｣' .+? '</theta>' .*?
+    ' in between words.'
+    /, 'Ɵ-markup works with space';
+is $rv.warnings.elems, 0, 'no warning';
 
 done-testing;

@@ -111,7 +111,9 @@ class RakuDoc::Processor {
         {*}
     }
     multi method handle(Str:D $ast) {
-        $*prs.body ~= $ast;
+        $*prs.body ~= $ast.subst(/ \v+ /,'',:g )
+                        .subst(/ <?after \S\s> \s+ /, '', :g)
+                        .subst(/ \s+ <?before \s\S> /, '', :g)
     }
     multi method handle(RakuAST::Node:D $ast) {
         $ast.rakudoc.map({ $.handle($_) })
@@ -172,7 +174,7 @@ class RakuDoc::Processor {
              }
             # =code
             # Verbatim pre-formatted sample source code
-#            when 'code' { $.gen-code($ast) }
+            when 'code' { $.gen-code($ast) }
             # =comment
             # Content to be ignored by all renderers
             when 'comment' { '' }
@@ -186,7 +188,7 @@ class RakuDoc::Processor {
             when 'head' {
                 $!scoped-data.start-scope(:callee($_));
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
-                $.gen-head($ast);
+                $.gen-headish($ast, $parify);
                 $!scoped-data.end-scope;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
@@ -269,17 +271,17 @@ class RakuDoc::Processor {
         #ignore declarator block
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
-        say "Doc::Markup letter: " ~ $ast.letter if $.debug (cont) MarkUp;
-        given $ast.letter {
+        my $letter = $ast.letter;
+        say "Doc::Markup letter: $letter" if $.debug (cont) MarkUp;
+        my %config;
+        my %scoped-head = $!scoped-data.config;
+        %config{ .key } = .value for %scoped-head{$letter}.pairs;
+        given $letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
             ## E is not format code, but we can ignore display possibility
             when any( <B C H I J K R S T U V O E> ) {
-                my $letter = $ast.letter;
-                my %config;
                 my $contents = self.markup-contents($ast);
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 $*prs.body ~= %!templates{"markup-$letter"}(
                     %( :$contents, %config )
                 );
@@ -291,15 +293,11 @@ class RakuDoc::Processor {
             #| fnTarget is link to rendered footnote
             #| retTarget is link to where footnote is defined to link back form footnote
             when 'N' {
-                my $letter = $ast.letter;
                 my $id = self.name-id($ast.Str);
                 my $contents = self.markup-contents($ast);
                 my $retTarget = $id;
                 my $fnNumber = PCell.new( :id("fn_num_$id"), :$!register);
                 my $fnTarget = "fn_target_$id";
-                my %config;
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 $*prs.footnotes.push: %( :$contents, :$retTarget, :0fnNumber, :$fnTarget );
                 my $rv = %!templates<markup-N>(
                     %( %config, :$retTarget, :$fnNumber, :$fnTarget )
@@ -312,11 +310,7 @@ class RakuDoc::Processor {
             # A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             # Alias to be replaced by contents of specified V<=alias> directive
             when 'A' {
-                my $letter = $ast.letter;
                 my $term = self.markup-contents($ast).Str;
-                my %config;
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 my Bool $error = False;
                 my $error-text = '';
                 # check to see if there is a text to over-ride automatic failure message
@@ -347,7 +341,6 @@ class RakuDoc::Processor {
             # L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             # Link ( L<display text|destination URI> )
             when 'L' {
-                my $letter = $ast.letter;
                 my $link-label = self.markup-contents($ast).Str;
                 my $entry = $ast.meta;
                 with $entry[0] {
@@ -407,9 +400,6 @@ class RakuDoc::Processor {
                     }
                 }
                 $!current.links{$_} = %(:$target, :$link-label, :$type, :$place);
-                my %config;
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 my $rv = %!templates{"markup-$letter"}(
                     %( :$target, :$link-label, :$type, :$place, %config)
                 );
@@ -418,80 +408,16 @@ class RakuDoc::Processor {
             # P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             # Placement link
             when 'P' {
-                my $letter = $ast.letter;
                 # The contents of P<> markup must be a Str.
-                my $link = self.markup-contents($ast).Str;
-                my %config;
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
-
-                my $error-text;
+                my $contents = self.markup-contents($ast).Str;
+                my $uri;
                 # check to see if there is a text to over-ride automatic failure message
-                if $link ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
-                    $error-text = ~$0;
-                    $link = ~$1
+                if $contents ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
+                    %config<fallback> = ~$0;
+                    $uri = ~$1
                 }
-                my $contents = '';
-                my $schema = '';
-                my $uri = '';
-                if $link ~~ / ^ $<sch> = (\w+) ':' \s* $<uri> = (.*) $ / {
-                    $schema = $<sch>.Str;
-                    $uri = $<uri>.Str
-                }
-                my Bool $keep-format = False;
-                my Bool $html = False;
-                given $schema {
-                    when 'toc' {
-                        # TODO add the constraints for toc: in RakuDoc v2.
-                        $contents = PCell.new( :$!register, :id<toc-schema> );
-                        $keep-format = True;
-                    }
-                    when 'index' {
-                        $contents = PCell.new( :$!register, :id<index-schema> );
-                        $keep-format = True;
-                    }
-                    when 'semantic' {
-                        $keep-format = True;
-                        $contents =  PCell.new( :$!register, :id( "semantic-schema_$uri" ) );
-                    }
-                    when 'http' | 'https' {
-                        my LibCurl::Easy $curl;
-                        $curl .= new(:URL($link), :followlocation, :failonerror );
-                        try {
-                            $curl.perform;
-                            $contents = $curl.perform.content;
-                            CATCH {
-                                default {
-                                    my $error = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
-                                    $contents = $error-text // $error;
-                                    $*prs.warnings.push: $error
-                                }
-                            }
-                        }
-                    }
-                    when 'file' | '' {
-                        my URI $uri .= new($link);
-                        if $uri.path.Str.IO ~~ :e & :f {
-                            $contents = $uri.path.Str.IO.slurp;
-                        }
-                        else {
-                            my $error = "No file found at ｢$link｣";
-                            $contents = $error-text // $error;
-                            $*prs.warnings.push: $error
-                        }
-                    }
-                    default {
-                            $contents = $error-text // "See $link";
-                            $*prs.warnings.push: "The schema ｢$schema｣ is not implemented. Full link was ｢$link｣."
-                    }
-                }
-                $html = so $contents ~~ / '<html' .+ '</html>'/;
-                $contents = ~$/ if $html;
-                # strip off any chars before & after the <html> container if there is one
-                my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, :$html, :$keep-format, %config)
-                );
-                $*prs.body ~= $rv;
+                else { $uri = $contents }
+                $.make-placement(:$uri, :%config, :template<markup-P>);
             }
 
             ## Markup codes, mandatory display and meta data
@@ -503,12 +429,8 @@ class RakuDoc::Processor {
             # Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             # Delta note ( Δ<visible text|version; Notification text> )
             when 'Δ' {
-                my $letter = $ast.letter;
                 my $contents = self.markup-contents($ast);
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
-                my %config;
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 my $rv = %!templates{"markup-$letter"}(
                     %( :$contents, :$meta, %config)
                 );
@@ -525,15 +447,11 @@ class RakuDoc::Processor {
             #| key to be displayed, target is for link, place is description of section
             #| context because X<> in headings treated differently to ordinary text
             when 'X' {
-                my $letter = $ast.letter;
                 my $contents = self.markup-contents($ast);
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
                 my $place = $!scoped-data.last-title;
                 my $context = $!scoped-data.last-callee;
                 my $target = self.index-id($ast, :$context, :$contents, :$meta);
-                my %config;
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
                 $*prs.index{$contents} = %( :$target, :$place );
                 my $rv = %!templates{"markup-$letter"}(
                     %( :$contents, :$meta, :$target, :$place, %config )
@@ -548,23 +466,26 @@ class RakuDoc::Processor {
             when 'Z' {
                 $*prs.body ~= '';
             }
-        
+
             ## Undefined and reserved, so generate warnings
             # do not go through templates as these cannot be redefined
             when any(<G Q W Y>) {
                 $*prs.body ~= ~$ast;
-                $*prs.warnings.push: '｢' ~ $ast.letter ~ '｣' ~ ' is not yet defined, but is reserved for future use.'
+                $*prs.warnings.push: "｢$letter｣ is not defined, but is reserved for future use."
+            }
+            when (.uniprop ~~ / Lu / and %!templates{ "markup-$letter" }:exists) {
+                my $contents = self.markup-contents($ast);
+                $*prs.body ~= %!templates{ "markup-$letter" }(
+                    %( :$contents, %config )
+                );
+            }
+            when (.uniprop ~~ / Lu /) {
+                $*prs.body ~= ~$ast;
+                $*prs.warnings.push: "｢$letter｣ does not have a template, but could be a custom code"
             }
             default {
-                my $letter = $ast.letter;
-                my %config;
-                my $contents;
-                my %scoped-head = $!scoped-data.config;
-                %config{ .key } = .value for %scoped-head{$letter}.pairs;
-                $*prs.body ~= %!templates<unknown>(
-                    %( :$contents, %config)
-                );
-                $*prs.warnings.push: '｢' ~ $ast.letter ~ '｣' ~ 'is not yet defined, but could be a custom code'
+                $*prs.body ~= ~$ast;
+                $*prs.warnings.push: "｢$letter｣ may not be a markup code"
             }
         }
     }
@@ -598,14 +519,14 @@ class RakuDoc::Processor {
         ''
     }
     #| generates a heading and uses template 'head'
-    method gen-head($ast) {
-        my $contents = $.contents($ast, False).trim;
-        # headlevel is ignored in head if set, eg =for head2 :headlevel(3)
+    method gen-headish($ast, $parify, :$template = 'head') {
+        my $contents = $.contents($ast, $parify).trim;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
         my %config = $ast.resolved-config;
         my %scoped-head = $!scoped-data.config;
-        %config{ .key } = .value for %scoped-head{"head$level"}.pairs;
+        my $scoping = $template eq 'head' ?? "head$level" !! $template;
+        %config{ .key } = .value for %scoped-head{ $scoping }.pairs;
         my $target = $.name-id($ast);
         my $id = '';
         with %config<id> {
@@ -618,10 +539,12 @@ class RakuDoc::Processor {
         }
         my $caption = %config<caption> // $contents;
         my $toc = %config<toc> // True;
+        # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
+        $level = %config<headlevel> if %config<headlevel>:exists;
         $*prs.toc.push(
             { :$caption, :$target, :$level }
         ) if $toc;
-        $*prs.body ~= %!templates<head>(
+        $*prs.body ~= %!templates{ $template }(
             %( :$level, :$target, :$contents, :$toc, :$caption, :$id, %config)
         )
     }
@@ -667,13 +590,13 @@ class RakuDoc::Processor {
     }
     method gen-place($ast) {
         my %config = $ast.resolved-config;
+        my $uri = %config<uri>:delete;
         my %scoped-head = $!scoped-data.config;
         %config{ .key } = .value for %scoped-head<place>.pairs;
-        my $caption = %config<caption> // 'Placement';
-        my $error-text;
-        $error-text = %config<error-text> if %config<error-test>:exists;
+        %config<caption> = 'Placement' unless %config<caption>:exists;
+        my $caption = %config<caption>;
         my $level = %config<headlevel> // 1;
-        $!scoped-data.last-title( $caption );
+        $!scoped-data.last-title($caption);
         my $target = $.name-id($caption);
         my $id = '';
         with %config<id> {
@@ -688,17 +611,18 @@ class RakuDoc::Processor {
         $*prs.toc.push(
             { :$caption, :$target, :$level }
         ) if $toc;
-        my $link = $ast.Str;
-        # the following is a copy from P-markup, so should be abstracted
-        my $contents = '';
-        my $schema = '';
-        my $uri = '';
-        if $link ~~ / ^ $<sch> = (\w+) ':' \s* $<uri> = (.*) $ / {
-            $schema = $<sch>.Str;
-            $uri = $<uri>.Str
-        }
+        $.make-placement(:$uri, :%config, :template<place>);
+    }
+    method make-placement( :$uri, :%config, :$template ) {
         my Bool $keep-format = False;
-        my Bool $html = False;
+        # defaults when no schema is explicit
+        my $schema = 'file';
+        my $body = $uri;
+        my $contents;
+        if $uri ~~ / ^ $<sch> = (\w+) ':' $<body> = (.+) $ / {
+            $schema = $/<sch>.Str;
+            $body = $/<body>.Str
+        }
         given $schema {
             when 'toc' {
                 # TODO add the constraints for toc: in RakuDoc v2.
@@ -711,45 +635,58 @@ class RakuDoc::Processor {
             }
             when 'semantic' {
                 $keep-format = True;
-                $contents =  PCell.new( :$!register, :id( "semantic-schema_$uri" ) );
+                $contents =  PCell.new( :$!register, :id( "semantic-schema_$body" ) );
             }
             when 'http' | 'https' {
                 my LibCurl::Easy $curl;
-                $curl .= new(:URL($link), :followlocation, :failonerror );
+                $curl .= new(:URL($uri), :followlocation, :failonerror );
                 try {
                     $curl.perform;
                     $contents = $curl.perform.content;
                     CATCH {
                         default {
-                            my $error = "Link ｢$link｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
-                            $contents = $error-text // $error;
+                            my $error = "Link ｢$uri｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
+                            $contents = %config<fallback> // $error;
                             $*prs.warnings.push: $error
                         }
                     }
                 }
             }
-            when 'file' | '' {
-                my URI $uri .= new($link);
-                if $uri.path.Str.IO ~~ :e & :f {
-                    $contents = $uri.path.Str.IO.slurp;
+            when 'file' {
+                my URI $f-uri .= new($uri);
+                if $f-uri.path.Str.IO ~~ :e & :f {
+                    $contents = $f-uri.path.Str.IO.slurp;
                 }
                 else {
-                    my $error = "No file found at ｢$link｣";
-                    $contents = $error-text // $error;
+                    my $error = "No file found at ｢$f-uri｣";
+                    $contents = %config<fallback> // $error;
                     $*prs.warnings.push: $error
                 }
             }
+            when 'defn' {
+                # get definition from scoped-data, or make a PCell
+                my %scoped = $!scoped-data.definitions();
+                $contents = $body;
+                my $id = "defn_$body";
+                %config<target> = $id;
+                if %scoped{ $body }:exists {
+                    %config<rendered-defn> = %scoped{ $body }
+                }
+                else {
+                    %config<rendered-defn> = PCell.new( :$!register, :$id)
+                }
+            }
             default {
-                    $contents = $error-text // "See $link";
-                    $*prs.warnings.push: "The schema ｢$schema｣ is not implemented. Full link was ｢$link｣."
+                    $contents = %config<fallback> // "See $uri";
+                    $*prs.warnings.push: "The schema ｢$schema｣ is not implemented. Full link was ｢$uri｣."
             }
         }
-        $html = so $contents ~~ / '<html' .+ '</html>'/;
-        $contents = ~$/ if $html;
+        %config<html> = so $contents ~~ / '<html' .+ '</html>'/;
+        $contents = ~$/ if %config<html>;
         # strip off any chars before & after the <html> container if there is one
 
-        $*prs.body ~= %!templates<place>(
-            %( :$contents, :$caption, :$target, :$id, :$html, :$keep-format, %config )
+        $*prs.body ~= %!templates{ $template }(
+            %( :$contents, :$keep-format, :$schema, %config )
         )
     }
     method gen-rakudoc($ast, $parify) {
@@ -853,7 +790,25 @@ class RakuDoc::Processor {
         $*prs.body ~= $rv unless $hidden;
     }
     method gen-custom($ast, $parify) {
-        ''
+        # Custom blocks are defined by their spelling
+        my $template = $ast.type;
+        # A customiser must provide a template with the same name & spelling as the block name
+        if %!templates{ $template }:exists {
+            $.gen-headish( $ast, $parify, :$template)
+        }
+        else {
+            # by spec, the name of an unrecognised Custom is treated like =head1
+            # the contents are treated like =code
+            $.gen-headish( RakuAST::Doc::Block.new(
+                :type<head>,
+                :paragraphs( $template, ),
+                :config( $ast.resolved-config )
+            ), False );
+            $.gen-code( RakuAST::Doc::Block.new(
+                :type<code>,
+                :paragraphs( $ast.paragraphs )
+            ))
+        }
     }
     # directive type methods
     method manage-config($ast) {
@@ -1001,7 +956,7 @@ class RakuDoc::Processor {
     }
 
     #| utility for test templates
-    my &express-params = -> %h, $t, $c {
+    our &express-params is export = -> %h, $t, $c {
         my PStr $rv .= new("<{ $c }>\n");
         for %h.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
         $rv ~= "</{ $c }>\n"

@@ -1,7 +1,8 @@
 # list of things to do
 
 - [x] Semantic blocks / :hidden
-- [ ] Custom blocks ( undefined only )
+- [?] Custom blocks ( undefined only )
+- [x] Handle custom Markup if template exists
 - [x] =place directive
 - [x] inline delta
 - [x] alias directive

@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 6;
+plan 9;
 
 my $ast;
 my $rv;
@@ -42,7 +42,7 @@ $ast = Q:scalar:to/QAST/.AST;
 
     Some text
 
-    P<toc:>
+    P<toc:*>
 
     More text
 
@@ -70,28 +70,93 @@ like $rv, /
     .+ '</rakudoc>'
 /, 'got a toc inside a placement, inside a rakudoc';
 
-#$ast = Q:scalar:to/QAST/.AST;
-#    =begin rakudoc
-#    =head1 Head One
-#
-#    Some text
-#
-#    =place https://raku.org/camelia-logo.png  :caption<Raku's mascot>  :alt<A multicoloured butterfly>
-#
-#    More text
-#
-#    =head1 Head Two
-#
-#    Again text
-#
-#    =head2 level two head
-#
-#    Final stuff
-#
-#    =end rakudoc
-#    QAST
-#say $ast;
-#$rv = $rdp.render( $ast, :pre-finalised );
-#is-deeply $rv.toc.map( *.<caption> ), ('Head One',  'TOC', 'Head Two', 'level two head'), 'TOC structure contains a place TOC';
-#say $rv;
+$ast = Q:scalar:to/QAST/.AST;
+    =begin rakudoc
+    =head1 Head One
+
+    Some text
+
+    =place https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE  :caption<Raku's license>  :alt<A multicoloured butterfly>
+
+    More text
+
+    =head1 Head Two
+
+    Again text
+
+    =head2 level two head
+
+    Final stuff
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is-deeply $rv.toc.map( *.<caption>.Str ), ('Head One',  'Raku\'s license', 'Head Two', 'level two head'), 'TOC structure contains a place TOC';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =defn lexiphania
+    An unfortunate proclivity for
+    employing grandiloquisms (for example, words such as "proclivity", "grandiloquism", and indeed "lexiphania").
+
+    =defn glossoligation
+    Restraint of the tongue (voluntary or otherwise)
+
+    To treat his chronic P<defn:lexiphania> the doctor prescribed an immediate P<defn:glossoligation>
+    or, if that proved ineffective, a complete cephalectomy.
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
+    '<defn>' .+? 'target:' .+? 'defn_glossoligation' .+
+    'To treat his' .+?
+    '<placement>' .*?
+        'contents:' .+? 'lexiphania' .+
+        'rendered-defn:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania").｣' .+
+        'schema:' .+? 'defn' .+
+        'target:' .+? 'defn_lexiphania' .+
+    '</placement>' .*?
+    '<placement>' .*?
+        'contents:' .+? 'glossoligation' .+
+        'rendered-defn:' .+? '｢Restraint of' .+? 'otherwise)｣' .+
+        'schema:' .+? 'defn' .+
+        'target:' .+? 'defn_glossoligation' .+
+    '</placement>'
+    /, 'placements to scoped defns work';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+
+    To treat his chronic P<defn:lexiphania> the doctor prescribed an immediate P<defn:glossoligation>
+    or, if that proved ineffective, a complete cephalectomy.
+
+    =defn lexiphania
+    An unfortunate proclivity for
+    employing grandiloquisms (for example, words such as "proclivity", "grandiloquism", and indeed "lexiphania").
+
+    =defn glossoligation
+    Restraint of the tongue (voluntary or otherwise)
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    'To treat his' .+?
+    '<placement>' .*?
+        'contents:' .+? 'lexiphania' .+
+        'rendered-defn:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania").｣' .+
+        'schema:' .+? 'defn' .+
+        'target:' .+? 'defn_lexiphania' .+
+    '</placement>' .*?
+    '<placement>' .*?
+        'contents:' .+? 'glossoligation' .+
+        'rendered-defn:' .+? '｢Restraint of' .+? 'otherwise)｣' .+
+        'schema:' .+? 'defn' .+
+        'target:' .+? 'defn_glossoligation' .+
+    '</placement>' .+
+    '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
+    '<defn>' .+? 'target:' .+? 'defn_glossoligation'
+    /, 'placements to forward defns work';
+
 done-testing;

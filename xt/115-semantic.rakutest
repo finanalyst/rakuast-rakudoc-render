@@ -104,9 +104,9 @@ $ast = Q:scalar:to/QAST/.AST;
 
     =TEST another test
 
-    P<semantic: SYNOPSIS>
+    P<semantic:SYNOPSIS>
 
-    P<semantic: SUMMARY>
+    P<semantic:SUMMARY>
 
     =end rakudoc
     QAST
