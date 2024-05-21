@@ -42,6 +42,12 @@ class ProcessedState {
     #| An array of accumulated rendered definitions, added to body when next non-defn block encountered
     has @.defns;
 
+    #| Hash of definition => rendered value for definitions
+    has %.definitions;
+
+    #| Array to signal when one or more inline defn are made in a Paragraph
+    has @.inline-defns;
+
     multi method gist(ProcessedState:U: ) { 'Undefined ProcessedState object' }
 
     multi method gist(ProcessedState:D: Int :$output = 300 ) {
@@ -60,6 +66,8 @@ class ProcessedState {
             items => { pretty-dump( @.items, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
+            inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
@@ -144,6 +152,8 @@ class RakuDoc::Processed is ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
+            inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") ) }
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
@@ -165,5 +175,9 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     $p.warnings.append: $q.warnings;
     $p.items.append: $q.items;
     $p.defns.append: $q.defns;
+    $p.inline-defns.append: $q.inline-defns;
+    for $q.definitions.kv -> $k, $v { # no multiple values
+        $p.definitions{$k} = $v # redefinition possible
+    }
     $p
 }

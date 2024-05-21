@@ -385,14 +385,15 @@ class RakuDoc::Processor {
                         when / ^ 'defn:' $<term> = (.+) $ / {
                             $type = 'defn';
                             $link-label = ~$<term>;
-                            $target = $type ~ '_' ~ $link-label;
-                            # get definition 1. scoped-data, 2. Store a PCell
-                            my %scoped = $!scoped-data.definitions();
-                            if %scoped{ $link-label }:exists {
-                                $place = %scoped{ $link-label }
+                            # get definition from Processed state, or make a PCell
+                            my %definitions = $*prs.definitions;
+                            if %definitions{ $link-label }:exists {
+                                $place = %definitions{ $link-label }[0];
+                                $target = %definitions{ $link-label }[1]
                             }
                             else {
-                                $place = PCell.new( :$!register, :id($target))
+                                $place = PCell.new( :$!register, :id('defn_' ~ $link-label));
+                                $target = PCell.new( :$!register, :id('defn_' ~ $link-label ~ '_target' ))
                             }
                         }
                         when '' { # this is an error condition
@@ -508,10 +509,20 @@ class RakuDoc::Processor {
             for $ast.atoms { $.handle($_) }
             my PStr $contents = $*prs.body;
             $*prs.body .= new( $rem );
-            $*prs.body ~= %!templates<para>(
+            my $rv = %!templates<para>(
                 %( :$contents, %config)
             );
-           CALLERS::<$*prs> += $*prs;
+            # deal with possible inline definitions
+            if $*prs.inline-defns.elems {
+                for $*prs.inline-defns -> ($term, $target) {
+                    $*prs.warnings.push: "Definition ｢$term｣ has been redefined as an inline."
+                        if $*prs.definitions{ $term }:exists;
+                    $*prs.definitions{ $term } = $rv, $target;
+                }
+                $*prs.inline-defns = ()
+            }
+            $*prs.body ~= $rv;
+            CALLERS::<$*prs> += $*prs;
        }
     }
     multi method handle(RakuAST::Doc::Row:D $ast) {
@@ -603,9 +614,8 @@ class RakuDoc::Processor {
     #| unlike item, a defn:
     #| - list has a flat hierarchy
     #| - can be created by a markup code
-    #| - needs a target for links, or text for popup
-    #| - is scope-stored allowing re-definition in block scope
-    #| - is PCell-stored allowing for links to once-only future definition in any scope
+    #| - needs a target for links, and text for popup
+    #| - is PCell-stored allowing for defn to be redefined
     #| like items nothing is added to the .body string until next non-defn
     method gen-defn($ast) {
         unless $ast.paragraphs.elems == 2 {
@@ -624,13 +634,16 @@ class RakuDoc::Processor {
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
         %config{ .key } = .value for %scoped{"defn"}.pairs;
-        my $payload = %!templates<defn>(
+        my $defn-expansion = %!templates<defn>(
             %( :$term, :$target, :$contents, %config )
         );
-        $*prs.defns.push: $payload; # for the defn list to be rendered
+        $*prs.defns.push: $defn-expansion; # for the defn list to be rendered
+        $*prs.warnings.push: "Definition ｢$term｣ has been redefined."
+            if $*prs.definitions{ $term }:exists;
+        $*prs.definitions{ $term } = $defn-expansion, $target;
         CALLERS::<$*prs> += $*prs;
-        $!scoped-data.definitions( %( $term => $payload, )); # scoping for later
-        $!register.add-payload(:$payload, :id($target)) # define for previously referenced
+        $!register.add-payload(:payload($defn-expansion), :id($target)); # define for previously reference
+        $!register.add-payload(:payload($target), :id($target ~ '_target' ))
     }
     method gen-place($ast) {
         my %config = $ast.resolved-config;
@@ -708,16 +721,18 @@ class RakuDoc::Processor {
                 }
             }
             when 'defn' {
-                # get definition from scoped-data, or make a PCell
-                my %scoped = $!scoped-data.definitions();
+                # get definition from Processed state, or make a PCell
+                my %definitions = $*prs.definitions;
                 $contents = $body;
                 my $id = "defn_$body";
                 %config<target> = $id;
-                if %scoped{ $body }:exists {
-                    %config<rendered-defn> = %scoped{ $body }
+                if %definitions{ $body }:exists {
+                    %config<defn-expansion> = %definitions{ $body }[0];
+                    %config<defn-target> = %definitions{ $body }[1]
                 }
                 else {
-                    %config<rendered-defn> = PCell.new( :$!register, :$id)
+                    %config<defn-expansion> = PCell.new( :$!register, :$id);
+                    %config<defn-target> = PCell.new( :$!register, :id( $id ~ '_target' ));
                 }
             }
             default {

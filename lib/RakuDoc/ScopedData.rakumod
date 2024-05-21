@@ -1,13 +1,12 @@
 use v6.d;
 
-#| ScopedData objects contain config, aliases, and definitions data that is scope limited
+#| ScopedData objects contain config, and aliases data that is scope limited
 #| a new scope can be created with all the data of previous scope
 #| when scope ends, new data is forgotten, old is restored
 unit class RakuDoc::ScopedData;
 
-has @!config = {}, ;
+has @!config = {}, ; #an array of hashes, with empty hash at start
 has @!aliases = {}, ;
-has @!definitions = {}, ;
 has @!callees;
 has @!titles;
 #| debug information
@@ -23,7 +22,6 @@ method start-scope(:$callee!, :$title ) {
     @!titles.push: $title // 'Block # ' ~ @!callees.elems;
     @!config.push: @!config[*-1].pairs.hash;
     @!aliases.push: @!aliases[*-1].pairs.hash;
-    @!definitions.push: @!definitions[*-1].pairs.hash;
 }
 #| ends the current scope, forgets new data
 method end-scope {
@@ -31,7 +29,6 @@ method end-scope {
     @!titles.pop;
     @!config.pop;
     @!aliases.pop;
-    @!definitions.pop;
 }
 multi method config(%h) {
     @!config[*-1]{ .key } = .value for %h;
@@ -44,12 +41,6 @@ multi method aliases(%h) {
 }
 multi method aliases( --> Hash ) {
     @!aliases[*-1]
-}
-multi method definitions(%h) {
-    @!definitions[*-1]{ .key } = .value for %h;
-}
-multi method definitions( --> Hash ) {
-    @!definitions[*-1]
 }
 method last-callee {
     if +@!callees { @!callees[*-1] }

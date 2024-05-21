@@ -116,41 +116,30 @@ like $rv.body.Str, /
     '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
     '<defn>' .+? 'target:' .+? 'defn_glossoligation' .+
 /, 'links to forward defns work';
-#$ast = Q:to/QAST/.AST;
-#    =begin rakudoc
-#    There ensued a terrible moment of D<coyotus interruptus>: a brief
-#    suspension of the effects of gravity.
-#
-#    As the canyon edge loomed, a memory of L<defn:coyotus interruptus> passed him by.
-#    =end rakudoc
-#    QAST
-#
-#say $ast;
-#$rv = $rdp.render( $ast, :pre-finalised );
-#like $rv.body.Str, /
-#
-#/, 'inline definitions and links work';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    There ensued a terrible moment of D<coyotus interruptus>: a brief
+    suspension of the effects of gravity.
 
-#$ast = Q:to/QAST/.AST;
-#    =begin rakudoc
-#    To treat his chronic L<defn:lexiphania> the doctor prescribed an immediate L<defn:glossoligation>
-#    or, if that proved ineffective, a complete cephalectomy.
-#
-#    =defn lexiphania
-#    An unfortunate proclivity for
-#    employing grandiloquisms (for example, words such as "proclivity", "grandiloquism", and indeed "lexiphania").
-#
-#    =defn glossoligation
-#    Restraint of the tongue (voluntary or otherwise)
-#
-#    To treat his chronic L<defn:lexiphania> the doctor prescribed an immediate L<defn:glossoligation>
-#    or, if that proved ineffective, a complete cephalectomy.
-#    =end rakudoc
-#    QAST
-#
-#say $ast;
-#$rv = $rdp.render( $ast, :pre-finalised );
-#like $rv.body.Str, /
-#
-#/, 'links to forward defns work';
+    As the canyon edge loomed, a memory of L<defn:coyotus interruptus> passed him by.
+    =end rakudoc
+    QAST
+
+say $ast;
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    'There ensued a terrible moment of ' .*?
+    '<markup-D>' .+?
+    'contents' .+? 'coyotus interruptus' .+?
+    'target' .+? 'inline_defn_coyotus_interuptus' .+?
+    '</markup-D>'
+/, 'inline definition rendered';
+like $rv.body.Str, /
+    '<link>' .+?
+    'contents' .+? 'coyotus interuptus' .+?
+    'target' .+? 'inline_defn_coyotus_interruptus' .?
+    'rendered-value' .+? 'There ensued' .+? '</markup-D' .+?
+    '</link>'
+/, 'link picks up the inline-definition';
+
 done-testing;

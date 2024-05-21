@@ -114,13 +114,13 @@ like $rv.body.Str, /
     'To treat his' .+?
     '<placement>' .*?
         'contents:' .+? 'lexiphania' .+
-        'rendered-defn:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
+        'defn-expansion:' .+? '<defn>' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'schema:' .+? 'defn' .+
         'target:' .+? 'defn_lexiphania' .+
     '</placement>' .*?
     '<placement>' .*?
         'contents:' .+? 'glossoligation' .+
-        'rendered-defn:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
+        'defn-expansion:' .+? '<defn>' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'schema:' .+? 'defn' .+
         'target:' .+? 'defn_glossoligation' .+
     '</placement>'
@@ -145,13 +145,13 @@ like $rv.body.Str, /
     'To treat his' .+?
     '<placement>' .*?
         'contents:' .+? 'lexiphania' .+
-        'rendered-defn:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
+        'defn-expansion:' .+? '<defn>' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'schema:' .+? 'defn' .+
         'target:' .+? 'defn_lexiphania' .+
     '</placement>' .*?
     '<placement>' .*?
         'contents:' .+? 'glossoligation' .+
-        'rendered-defn:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
+        'defn-expansion:' .+? '<defn>' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'schema:' .+? 'defn' .+
         'target:' .+? 'defn_glossoligation' .+
     '</placement>' .+
