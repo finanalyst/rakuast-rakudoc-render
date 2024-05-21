@@ -75,12 +75,12 @@ like $rv.body.Str, /
     '<defn>' .+? 'target:' .+? 'defn_glossoligation' .+
     '<link>' .*?
         'link-label:' .+? 'lexiphania' .+
-        'place:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania").｣' .+
+        'place:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
     '<link>' .*?
         'link-label:' .+? 'glossoligation' .+
-        'place:' .+? '｢Restraint of' .+? 'otherwise)｣' .+
+        'place:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'target:' .+? 'defn_glossoligation' .+
         'type:' .+? 'defn'
 /, 'links to defns work';
@@ -103,13 +103,13 @@ like $rv.body.Str, /
     'To treat his' .+?
     '<link>' .*?
         'link-label:' .+? 'lexiphania' .+
-        'place:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania").｣' .+
+        'place:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
     '</link>' .*?
     '<link>' .*?
         'link-label:' .+? 'glossoligation' .+
-        'place:' .+? '｢Restraint of' .+? 'otherwise)｣' .+
+        'place:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'target:' .+? 'defn_glossoligation' .+
         'type:' .+? 'defn' .+
     '</link>' .+

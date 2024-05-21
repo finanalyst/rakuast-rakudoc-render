@@ -14,6 +14,7 @@ is $rdp.output-format, 'txt', 'defaults to txt';
 $ast = Q:to/QAST/.AST;
     =head1 Test text
     QAST
+
 $rv = $rdp.render( $ast, :pre-finalised );
 
 isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
@@ -21,7 +22,7 @@ like $rv.body.Str, /
     ^ '<head>'
     \s+ 'caption: ｢Test text｣'
     \s+ 'contents: ｢Test text｣'
-    \s+ 'id: ｢｣'
+    \s+ 'id: ｢UNINITIALISED｣'
     \s+ 'level: ｢1｣'
     \s+ 'target: ｢Test_text｣'
     \s+ 'toc: ｢True｣'

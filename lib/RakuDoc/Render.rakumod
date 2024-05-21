@@ -105,15 +105,19 @@ class RakuDoc::Processor {
         %!templates<final>( %( :processed( $!current ), :$rendered-index, :$rendered-toc ) ).Str
     }
 
+    method compactify( Str:D $s ) {
+        $s .subst(/ \v+ /,' ',:g )
+        .subst(/ <?after \S\s> \s+ /, '', :g)
+    }
+
     #| All handle methods may generate debug reports
-    proto method handle( $ast ) {
-        say "Handling: { $ast.WHICH.Str.subst(/ \| .+ $/, '') }" if $.debug (cont) AstBlock;
+    proto method handle( $ast, |c ) {
+        say "Handling: { $ast.WHICH.Str.subst(/ \| .+ $/, '') } [{ |c }]"
+            if $.debug (cont) AstBlock;
         {*}
     }
     multi method handle(Str:D $ast) {
-        $*prs.body ~= $ast.subst(/ \v+ /,'',:g )
-                        .subst(/ <?after \S\s> \s+ /, '', :g)
-                        .subst(/ \s+ <?before \s\S> /, '', :g)
+        $*prs.body ~= $.compactify( $ast )
     }
     multi method handle(RakuAST::Node:D $ast) {
         $ast.rakudoc.map({ $.handle($_) })
@@ -123,12 +127,6 @@ class RakuDoc::Processor {
 
             # =row
             # Start a new row in a procedural table
-
-            # =input
-            # Pre-formatted sample input
-
-            # =output
-            # Pre-formatted sample output
 
             # =numhead
             # First-level numbered heading
@@ -151,7 +149,8 @@ class RakuDoc::Processor {
     multi method handle(RakuAST::Doc::Block:D $ast) {
         # When a block is extended, then bare Str should be considered paragraphs
         my Bool $parify = ! ($ast.for or $ast.abbreviated);
-        say 'Doc::Block type: ' ~ $ast.type
+        my $type = $ast.type;
+        say "Doc::Block type: $type"
             ~ ( ' [for]' if $ast.for )
             ~ ( ' [abbreviated]' if $ast.abbreviated )
             ~ ( ' [extended]' if $parify )
@@ -159,22 +158,27 @@ class RakuDoc::Processor {
         # When a built in block, other than =item or =defn, is started,
         # there may be a list of items or defns, which need to be
         # completed and rendered
-        $*prs.body ~= $.complete-item-list unless $ast.type eq 'item';
-        $*prs.body ~= $.complete-defn-list unless $ast.type eq 'defn';
+        $*prs.body ~= $.complete-item-list unless $type eq 'item';
+        $*prs.body ~= $.complete-defn-list unless $type eq 'defn';
 
         # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
             # =alias
             # Define a RakuDoc macro, scoped to the current block
             when 'alias' {
-                my $term = $ast.paragraphs[0].trim; # it should be a string
-                my $expansion = $ast.paragraphs[1];
-                $expansion = $.contents($ast, False) unless $expansion.isa(Str);
-                $!scoped-data.aliases{ $term } = $expansion;
-             }
+                if $ast.paragraphs.elems >= 2 {
+                    my $term = $ast.paragraphs[0].Str; # it should be a string without embedded codes
+                    my $expansion = $ast.paragraphs[1 .. *-1 ].map({ $.handle( $_ ) });
+                    $!scoped-data.aliases{ $term } = $expansion;
+                }
+                else {
+                    $*prs.warnings.push: "Invalid alias ｢{ $ast.Str }｣"
+                }
+            }
             # =code
+            # implicit code created by indenting
             # Verbatim pre-formatted sample source code
-            when 'code' { $.gen-code($ast) }
+            when 'code' or 'implicit-code' { $.gen-code($ast) }
             # =comment
             # Content to be ignored by all renderers
             when 'comment' { '' }
@@ -192,7 +196,6 @@ class RakuDoc::Processor {
                 $!scoped-data.end-scope;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
-#            when 'implicit-code' { $.gen-code($ast) }
             # =item
             # First-level list item
             # =itemN
@@ -206,9 +209,14 @@ class RakuDoc::Processor {
                 $.gen-defn($ast)
             }
             # =para block, as opposed to unmarked paragraphs in a block
-            when 'para' {
-
-        say "@ $?LINE debug " ,$*prs.body.debug;
+            # not the same as a logical Doc::Paragraph, which has atoms, not paragraphs
+            # unlike =section, does not create block scope
+            # =input
+            # Pre-formatted sample input
+            # =output
+            # Pre-formatted sample output
+            when any(<para next input output>) {
+                $.gen-paraish( $ast, $type, :allow() )
             }
             # =place block, mostly mimics P<>, but allows for TOC and caption
             when 'place' {
@@ -515,12 +523,41 @@ class RakuDoc::Processor {
     # gen-XX methods take an $ast, process the contents, based on a template,
     # and add the string to a structure, typically, not always, to $*prs.body
 
-    method gen-code($ast) {
-        ''
+    method gen-code( $ast ) {
+        $.gen-paraish( $ast, 'code', :allow( $ast.resolved-config.{ 'allow' }.list ) )
     }
-    #| generates a heading and uses template 'head'
+    #| generic code for next, para, code, input, output blocks
+    method gen-paraish( $ast, $template, :@allow ) {
+        my %config = $ast.resolved-config;
+        my %scoped = $!scoped-data.config;
+        %config{ .key } = .value for %scoped{ $template }.pairs;
+        my $rem = $.complete-item-list ~ $.complete-defn-list;
+        do {
+            my ProcessedState $*prs .= new;
+            for $ast.paragraphs {
+                when Str and $template ~~ any(<para next>) { $.handle($_) }
+                when Str and $template ~~ any(<code input output>) { $.handle($_, :save-space ) }
+                when RakuAST::Doc::Markup and $template eq 'code' {
+                    if $_.letter ~~ any(@allow) {
+                        $.handle($_)
+                    }
+                    else {
+                        $.handle( $_.Str, :save-space )
+                    }
+                }
+                default { $.handle($_) }
+            }
+            my PStr $contents = $*prs.body;
+            $*prs.body .= new( $rem );
+            $*prs.body ~= %!templates{ $template }(
+                %( :$contents, %config)
+            );
+           CALLERS::<$*prs> += $*prs;
+       }
+    }
+    #| handles blocks that are like headings
     method gen-headish($ast, $parify, :$template = 'head') {
-        my $contents = $.contents($ast, $parify).trim;
+        my $contents = $.contents($ast, $parify).strip.trim;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
         my %config = $ast.resolved-config;
@@ -528,24 +565,26 @@ class RakuDoc::Processor {
         my $scoping = $template eq 'head' ?? "head$level" !! $template;
         %config{ .key } = .value for %scoped-head{ $scoping }.pairs;
         my $target = $.name-id($ast);
-        my $id = '';
-        with %config<id> {
+        my $id = %config<id>:delete;
+        with $id {
             if self.is-target-unique( $_ ) {
-                $id = self.register-target( $_ )
+                $id = self.register-target( $_ );
             }
             else {
                 $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣";
             }
         }
-        my $caption = %config<caption> // $contents;
-        my $toc = %config<toc> // True;
+        my $caption = %config<caption>:delete;
+        $caption = ($template eq 'head' ?? $contents !! $template) without $caption;
+        my $toc = %config<toc>:delete // True;
         # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
         $level = %config<headlevel> if %config<headlevel>:exists;
+        $level = 1 if $level < 1;
         $*prs.toc.push(
             { :$caption, :$target, :$level }
         ) if $toc;
         $*prs.body ~= %!templates{ $template }(
-            %( :$level, :$target, :$contents, :$toc, :$caption, :$id, %config)
+            %( :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
         )
     }
     #| generates a single item and adds it to the item structure
@@ -569,12 +608,17 @@ class RakuDoc::Processor {
     #| - is PCell-stored allowing for links to once-only future definition in any scope
     #| like items nothing is added to the .body string until next non-defn
     method gen-defn($ast) {
-        my $term = $ast.paragraphs[0];
+        unless $ast.paragraphs.elems == 2 {
+            my $string = $ast.Str;
+            $*prs.body ~= $string;
+            $*prs.warnings.push: "Invalid definition: ｢$string｣"
+        }
+        my $term = $ast.paragraphs[0].Str; # the term may not contain embedded code
         my $target = "defn_$term";
         # generate contents from second str/paragraph
         my ProcessedState $*prs .= new;
         $.handle( $ast.paragraphs[1] );
-        my PStr $contents .= new( $*prs.body.trim );
+        my $contents = $*prs.body;
         # keep most of state, initialise body
         $*prs.body .= new;
         my %config = $ast.resolved-config;
@@ -582,11 +626,11 @@ class RakuDoc::Processor {
         %config{ .key } = .value for %scoped{"defn"}.pairs;
         my $payload = %!templates<defn>(
             %( :$term, :$target, :$contents, %config )
-        ).Str;
-        $*prs.defns.push: $payload;
+        );
+        $*prs.defns.push: $payload; # for the defn list to be rendered
         CALLERS::<$*prs> += $*prs;
-        $!scoped-data.definitions( %( $term => $payload, ));
-        $!register.add-payload(:$payload, :id($target))
+        $!scoped-data.definitions( %( $term => $payload, )); # scoping for later
+        $!register.add-payload(:$payload, :id($target)) # define for previously referenced
     }
     method gen-place($ast) {
         my %config = $ast.resolved-config;
@@ -712,7 +756,7 @@ class RakuDoc::Processor {
     method gen-unknown-builtin($ast) {
         my %config = $ast.resolved-config;
         my $contents = $.contents($ast, False);
-        if $ast.type ~~ any(< 
+        if $ast.type ~~ any(<
                 cell code input output comment head numhead defn item numitem nested para
                 rakudoc section pod table formula
             >) { # a known built-in, but to get here the block is unimplemented
@@ -720,7 +764,7 @@ class RakuDoc::Processor {
         }
         else { # not known so create another warning
             $*prs.warnings.push: '｢' ~ $ast.type ~ '｣' ~ 'is not a valid builtin block, is it a mispelt Custom block?'
-        }
+        } # TODO make like unknown Custom
         $*prs.body ~= %!templates<unknown>( %( :block-type($ast.type), :$contents, %config ) )
     }
     #| All Semantic blocks are processed into strings, and the contents added to the semantic structure
@@ -741,7 +785,7 @@ class RakuDoc::Processor {
         my $rv;
         given $ast.type {
             when 'TITLE' {
-                $hidden = %config<hidden>.so // True;
+                $hidden = %config<hidden>.so // True; # hide by default
                 $!current.title = $contents;
                 # allows for TITLE to have its own template
                 if %!templates<TITLE>:exists {
@@ -767,7 +811,7 @@ class RakuDoc::Processor {
                 $!current.name = $rv = $contents ~ '.' ~ $!output-format;
             }
             default {
-                $hidden = %config<hidden>.so // False;
+                $hidden = %config<hidden>.so // False; # other SEMANTIC by default rendered in place
                 my $template = %!templates{ $block-name }:exists ?? $block-name !! 'head';
                 my $target = $.name-id($block-name);
                 my $id = '';
@@ -781,11 +825,12 @@ class RakuDoc::Processor {
                     }
                 }
                 $rv = %!templates{$template}(
-                    %( :$level, :$target, :$contents, :toc($hidden), :$caption, :$id, %config )
+                    %( :$level, :$target, :$contents, :$id, %config )
                 );
                 $*prs.toc.push(  %( :$caption, :$target, :$level ) ) unless $hidden;
             }
         }
+        $*prs.semantics{ $block-name } = [] unless $*prs.semantics{ $block-name }:exists;
         $*prs.semantics{ $block-name }.push: $rv;
         $*prs.body ~= $rv unless $hidden;
     }
@@ -802,12 +847,16 @@ class RakuDoc::Processor {
             $.gen-headish( RakuAST::Doc::Block.new(
                 :type<head>,
                 :paragraphs( $template, ),
-                :config( $ast.resolved-config )
+                :config( $ast.resolved-config ),
+                :abbreviated
             ), False );
             $.gen-code( RakuAST::Doc::Block.new(
                 :type<code>,
-                :paragraphs( $ast.paragraphs )
-            ))
+                :paragraphs( $ast.paragraphs ),
+                :config( $ast.resolved-config ),
+                :for( $ast.for ),
+                :abbreviated( $ast.abbreviated )
+            ), 'code', :allow() )
         }
     }
     # directive type methods
@@ -816,13 +865,6 @@ class RakuDoc::Processor {
         my $name = $ast.paragraphs[0].Str;
         $name = $name ~ '1' if $name ~~ / ^ 'item' $ | ^ 'head' $ /;
         $!scoped-data.config( { $name => %options } );
-    }
-    method manage-aliases($ast) {
-        my %options = $ast.resolved-config;
-        my $name = $ast.paragraphs[0].Str;
-        $!scoped-data.aliases( %options );
-    }
-    method manage-definitions() { ''
     }
     ## completion methods
     #| finalise the rendering of footnotes

@@ -3,7 +3,7 @@ use Test;
 use Test::Output;
 use RakuDoc::Render;
 
-plan *;
+plan 15;
 
 my $ast;
 my $rv;
@@ -88,7 +88,6 @@ like $rv.body, /
     /, 'B & I works with text with spaces inside text';
 
 # test undefined ASCII
-$rdp.debug( MarkUp, BlockType );
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     Some thing to G<say> in between words.

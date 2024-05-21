@@ -32,6 +32,6 @@ like $rv.body, /
     'Q<to be said>'
     'inside letters.'
     /, 'Q-markup not rendered';
-like $rv.warnings[0], / '｢Q｣' .+ 'not yet defined' /, 'warning generated';
+like $rv.warnings[0], / '｢Q｣' .+ 'is reserved for future' /, 'warning generated';
 
 done-testing;
