@@ -5,6 +5,7 @@ use RakuDoc::ScopedData;
 use RakuDoc::MarkupMeta;
 use RakuDoc::PromiseStrings;
 use LibCurl::Easy;
+use Digest::SHA1::Native;
 use URI;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
@@ -97,7 +98,7 @@ class RakuDoc::Processor {
         # Remaining PCells should trigger warnings
         if $!current.body.has-PCells {
             while $!current.body.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
-                $!current.warnings.push( 'Still waiting for ' ~ $/<id> ~ ' to be expanded.' )
+                $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded." )
             }
         }
         return $.current if $pre-finalised;
@@ -178,7 +179,9 @@ class RakuDoc::Processor {
             # =code
             # implicit code created by indenting
             # Verbatim pre-formatted sample source code
-            when 'code' or 'implicit-code' { $.gen-code($ast) }
+            when 'code' or 'implicit-code' {
+                $.gen-paraish( $ast, 'code' )
+            }
             # =comment
             # Content to be ignored by all renderers
             when 'comment' { '' }
@@ -216,7 +219,7 @@ class RakuDoc::Processor {
             # =output
             # Pre-formatted sample output
             when any(<para next input output>) {
-                $.gen-paraish( $ast, $type, :allow() )
+                $.gen-paraish( $ast, $type )
             }
             # =place block, mostly mimics P<>, but allows for TOC and caption
             when 'place' {
@@ -282,12 +285,18 @@ class RakuDoc::Processor {
         my $letter = $ast.letter;
         say "Doc::Markup letter: $letter" if $.debug (cont) MarkUp;
         my %config;
-        my %scoped-head = $!scoped-data.config;
-        %config{ .key } = .value for %scoped-head{$letter}.pairs;
+        my %scoped = $!scoped-data.config;
+        %scoped{ $letter }.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
+        # for X<> and to help with warnings
+        my $place = $!scoped-data.last-title;
+        my $context = $!scoped-data.last-callee;
         given $letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
             ## E is not format code, but we can ignore display possibility
+            # TODO add :allow to C & V
             when any( <B C H I J K R S T U V O E> ) {
                 my $contents = self.markup-contents($ast);
                 $*prs.body ~= %!templates{"markup-$letter"}(
@@ -333,7 +342,10 @@ class RakuDoc::Processor {
                 else {
                     $error = True;
                     $error-text = $term unless $error-text;
-                    $*prs.warnings.push: "unknown alias ｢$term｣"  ~ ( $error-text ?? " over-riden by ｢$error-text｣" !! ''  )
+                    $*prs.warnings.push:
+                        "unknown alias ｢$term｣"
+                        ~ " in block ｢$context｣ with heading ｢$place｣"
+                        ~ ( $error-text ?? " over-riden by ｢$error-text｣" !! ''  )
                 }
                 $*prs.body ~ %!templates<markup-A>( %( :$contents, :$error, :$error-text, %config ) )
             }
@@ -355,13 +367,13 @@ class RakuDoc::Processor {
                     $entry = $entry[0].Str
                 }
                 else {
-                    $entry = $.local-heading( $link-label )
+                    $entry = $link-label
                 }
                 my $target;
-                my $place;
+                my $extra = '';
                 my $type;
                 if $!current.links{$entry}:exists {
-                    ($target, $type, $place) = $!current.links{$entry}<target type place>
+                    ($target, $type, $extra) = $!current.links{$entry}<target type extra>
                 }
                 else {
                     given $entry {
@@ -369,16 +381,14 @@ class RakuDoc::Processor {
                         when / ^ 'http://' | ^ 'https://' / {
                             $target = $_;
                             $type = 'external';
-                            $place = '';
                         }
                         # next deal with internal links
                         when / ^ '#' $<tgt> = (.+) $ / {
-                            $target = '';
+                            $target = $.local-heading( ~$<tgt>);
                             $type = 'internal';
-                            $place = $.local-heading( ~$<tgt>);
                         }
                         when / ^ (.+?) '#' (.+) $ / {
-                            $place = ~$1;
+                            $extra = ~$1;
                             $target = ~$0.subst(/'::'/, '/', :g); # only subst :: in file part
                             $type = 'local';
                         }
@@ -388,29 +398,29 @@ class RakuDoc::Processor {
                             # get definition from Processed state, or make a PCell
                             my %definitions = $*prs.definitions;
                             if %definitions{ $link-label }:exists {
-                                $place = %definitions{ $link-label }[0];
+                                $extra = %definitions{ $link-label }[0];
                                 $target = %definitions{ $link-label }[1]
                             }
                             else {
-                                $place = PCell.new( :$!register, :id('defn_' ~ $link-label));
-                                $target = PCell.new( :$!register, :id('defn_' ~ $link-label ~ '_target' ))
+                                $extra = PCell.new( :$!register, :id($link-label));
+                                $target = PCell.new( :$!register, :id($link-label ~ '_target' ))
                             }
                         }
                         when '' { # this is an error condition
                             $target = '';
                             $type = 'internal';
-                            $place = '';
+                            $extra = '';
                         }
                         default {
                             $target = $entry;
                             $type = 'local';
-                            $place = '';
+                            $extra = '';
                         }
                     }
                 }
-                $!current.links{$_} = %(:$target, :$link-label, :$type, :$place);
+                $!current.links{$_} = %(:$target, :$link-label, :$type, :$extra);
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$target, :$link-label, :$type, :$place, %config)
+                    %( :$target, :$link-label, :$type, :$extra, %config)
                 );
                 $*prs.body ~= $rv;
             }
@@ -433,7 +443,28 @@ class RakuDoc::Processor {
             # D< DISPLAY-TEXT |  METADATA = SYNONYMS >
             # Definition inline ( D<term being defined|synonym1; synonym2> )
             when 'D' {
-
+                my $contents = self.markup-contents($ast).Str; # is the term, may not have embedded markup
+                my $meta = RakuDoc::MarkupMeta.parse( ~$ast.meta.trim, actions => RMActions.new );
+                my @terms = $contents, ;
+                if $meta.so {
+                    given $meta.made<type> {
+                        when 'plain-string' or 'plain-string-array' { # treat as verbatim
+                            @terms.push: ~$/
+                        }
+                        when 'array-of-ps-arrays' { # add back ,
+                            @terms.append: $meta.made<value>>>.join(', ')
+                        }
+                   }
+                }
+                else {
+                    $*prs.warnings.push: "Ignored unparsable definition synonyms ｢{ ~$ast.meta }｣"
+                        ~ " in block ｢$context｣ with heading ｢$place｣."
+                }
+                my $rv = %!templates{"markup-$letter"}(
+                    %( :$contents, %config )
+                );
+                $*prs.inline-defns.append: @terms;
+                $*prs.body ~= $rv
             }
             # Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             # Delta note ( Δ<visible text|version; Notification text> )
@@ -458,8 +489,6 @@ class RakuDoc::Processor {
             when 'X' {
                 my $contents = self.markup-contents($ast);
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
-                my $place = $!scoped-data.last-title;
-                my $context = $!scoped-data.last-callee;
                 my $target = self.index-id($ast, :$context, :$contents, :$meta);
                 $*prs.index{$contents} = %( :$target, :$place );
                 my $rv = %!templates{"markup-$letter"}(
@@ -480,7 +509,9 @@ class RakuDoc::Processor {
             # do not go through templates as these cannot be redefined
             when any(<G Q W Y>) {
                 $*prs.body ~= ~$ast;
-                $*prs.warnings.push: "｢$letter｣ is not defined, but is reserved for future use."
+                $*prs.warnings.push:
+                    "｢$letter｣ is not defined, but is reserved for future use"
+                        ~ " in block ｢$context｣ with heading ｢$place｣."
             }
             when (.uniprop ~~ / Lu / and %!templates{ "markup-$letter" }:exists) {
                 my $contents = self.markup-contents($ast);
@@ -490,15 +521,19 @@ class RakuDoc::Processor {
             }
             when (.uniprop ~~ / Lu /) {
                 $*prs.body ~= ~$ast;
-                $*prs.warnings.push: "｢$letter｣ does not have a template, but could be a custom code"
+                $*prs.warnings.push:
+                    "｢$letter｣ does not have a template, but could be a custom code"
+                        ~ " in block ｢$context｣ with heading ｢$place｣."
             }
             default {
                 $*prs.body ~= ~$ast;
                 $*prs.warnings.push: "｢$letter｣ may not be a markup code"
+                        ~ " in block ｢$context｣ with heading ｢$place｣."
             }
         }
     }
-    # Ordinary paragraph
+    # This block is created by the parser when a text has embedded markup
+    # Also ordinary strings in an extended block are coerced into one
     multi method handle(RakuAST::Doc::Paragraph:D $ast) {
         my %config;
         my %scoped = $!scoped-data.config;
@@ -508,16 +543,22 @@ class RakuDoc::Processor {
             my ProcessedState $*prs .= new;
             for $ast.atoms { $.handle($_) }
             my PStr $contents = $*prs.body;
+            # each para should have a target, generate a SHA if no id given
+            my $target = %config<id> // sha1-hex($contents.Str);
             $*prs.body .= new( $rem );
             my $rv = %!templates<para>(
-                %( :$contents, %config)
+                %( :$contents, :$target, %config)
             );
             # deal with possible inline definitions
             if $*prs.inline-defns.elems {
-                for $*prs.inline-defns -> ($term, $target) {
-                    $*prs.warnings.push: "Definition ｢$term｣ has been redefined as an inline."
+                for $*prs.inline-defns.list -> $term {
+                    $*prs.warnings.push:
+                        "Definition ｢$term｣ has been redefined as an inline"
+                        ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
                         if $*prs.definitions{ $term }:exists;
                     $*prs.definitions{ $term } = $rv, $target;
+                    $!register.add-payload(:payload($rv), :id($term));
+                    $!register.add-payload(:payload($target), :id($term ~ '_target'))
                 }
                 $*prs.inline-defns = ()
             }
@@ -534,14 +575,13 @@ class RakuDoc::Processor {
     # gen-XX methods take an $ast, process the contents, based on a template,
     # and add the string to a structure, typically, not always, to $*prs.body
 
-    method gen-code( $ast ) {
-        $.gen-paraish( $ast, 'code', :allow( $ast.resolved-config.{ 'allow' }.list ) )
-    }
     #| generic code for next, para, code, input, output blocks
-    method gen-paraish( $ast, $template, :@allow ) {
+    method gen-paraish( $ast, $template ) {
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
-        %config{ .key } = .value for %scoped{ $template }.pairs;
+        %scoped{ $template }.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
         my $rem = $.complete-item-list ~ $.complete-defn-list;
         do {
             my ProcessedState $*prs .= new;
@@ -549,7 +589,7 @@ class RakuDoc::Processor {
                 when Str and $template ~~ any(<para next>) { $.handle($_) }
                 when Str and $template ~~ any(<code input output>) { $.handle($_, :save-space ) }
                 when RakuAST::Doc::Markup and $template eq 'code' {
-                    if $_.letter ~~ any(@allow) {
+                    if $_.letter ~~ any(%config<allow>.list) {
                         $.handle($_)
                     }
                     else {
@@ -572,9 +612,11 @@ class RakuDoc::Processor {
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
         my %config = $ast.resolved-config;
-        my %scoped-head = $!scoped-data.config;
+        my %scoped = $!scoped-data.config;
         my $scoping = $template eq 'head' ?? "head$level" !! $template;
-        %config{ .key } = .value for %scoped-head{ $scoping }.pairs;
+        %scoped{ $scoping }.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
         my $target = $.name-id($ast);
         my $id = %config<id>:delete;
         with $id {
@@ -605,7 +647,9 @@ class RakuDoc::Processor {
         my $contents = $.contents($ast, $parify);
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
-        %config{ .key } = .value for %scoped{"item$level"}.pairs;
+        %scoped{ "item$level" }.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
         $*prs.items.push: %!templates<item>(
             %( :$level, :$contents, %config )
         )
@@ -621,10 +665,12 @@ class RakuDoc::Processor {
         unless $ast.paragraphs.elems == 2 {
             my $string = $ast.Str;
             $*prs.body ~= $string;
-            $*prs.warnings.push: "Invalid definition: ｢$string｣"
+            $*prs.warnings.push:
+                "Invalid definition: ｢$string｣"
+                ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
         }
         my $term = $ast.paragraphs[0].Str; # the term may not contain embedded code
-        my $target = "defn_$term";
+        my $target = $.name-id("defn_$term");
         # generate contents from second str/paragraph
         my ProcessedState $*prs .= new;
         $.handle( $ast.paragraphs[1] );
@@ -633,23 +679,30 @@ class RakuDoc::Processor {
         $*prs.body .= new;
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
-        %config{ .key } = .value for %scoped{"defn"}.pairs;
+        %scoped<defn>.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
         my $defn-expansion = %!templates<defn>(
             %( :$term, :$target, :$contents, %config )
         );
         $*prs.defns.push: $defn-expansion; # for the defn list to be rendered
-        $*prs.warnings.push: "Definition ｢$term｣ has been redefined."
+        $*prs.warnings.push:
+            "Definition ｢$term｣ has been redefined"
+            ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
             if $*prs.definitions{ $term }:exists;
         $*prs.definitions{ $term } = $defn-expansion, $target;
         CALLERS::<$*prs> += $*prs;
-        $!register.add-payload(:payload($defn-expansion), :id($target)); # define for previously reference
-        $!register.add-payload(:payload($target), :id($target ~ '_target' ))
+        # define for previously referenced
+        $!register.add-payload(:payload($defn-expansion), :id($term));
+        $!register.add-payload(:payload($target), :id($term ~ '_target'))
     }
     method gen-place($ast) {
         my %config = $ast.resolved-config;
         my $uri = %config<uri>:delete;
-        my %scoped-head = $!scoped-data.config;
-        %config{ .key } = .value for %scoped-head<place>.pairs;
+        my %scoped = $!scoped-data.config;
+        %scoped<place>.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
         %config<caption> = 'Placement' unless %config<caption>:exists;
         my $caption = %config<caption>;
         my $level = %config<headlevel> // 1;
@@ -724,20 +777,20 @@ class RakuDoc::Processor {
                 # get definition from Processed state, or make a PCell
                 my %definitions = $*prs.definitions;
                 $contents = $body;
-                my $id = "defn_$body";
-                %config<target> = $id;
                 if %definitions{ $body }:exists {
                     %config<defn-expansion> = %definitions{ $body }[0];
                     %config<defn-target> = %definitions{ $body }[1]
                 }
                 else {
-                    %config<defn-expansion> = PCell.new( :$!register, :$id);
-                    %config<defn-target> = PCell.new( :$!register, :id( $id ~ '_target' ));
+                    %config<defn-expansion> = PCell.new( :$!register, :id( $body ));
+                    %config<defn-target> = PCell.new( :$!register, :id( $body ~ '_target' ));
                 }
             }
             default {
                     $contents = %config<fallback> // "See $uri";
-                    $*prs.warnings.push: "The schema ｢$schema｣ is not implemented. Full link was ｢$uri｣."
+                    $*prs.warnings.push:
+                        "The schema ｢$schema｣ is not implemented. Full link was ｢$uri｣"
+                        ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
             }
         }
         %config<html> = so $contents ~~ / '<html' .+ '</html>'/;
@@ -775,10 +828,15 @@ class RakuDoc::Processor {
                 cell code input output comment head numhead defn item numitem nested para
                 rakudoc section pod table formula
             >) { # a known built-in, but to get here the block is unimplemented
-            $*prs.warnings.push: '｢' ~ $ast.type ~ '｣' ~ 'is a valid, but unimplemented builtin block'
+            $*prs.warnings.push:
+                '｢' ~ $ast.type ~ '｣'
+                ~ 'is a valid, but unimplemented builtin block'
+                ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
         }
         else { # not known so create another warning
-            $*prs.warnings.push: '｢' ~ $ast.type ~ '｣' ~ 'is not a valid builtin block, is it a mispelt Custom block?'
+            $*prs.warnings.push:
+                '｢' ~ $ast.type ~ '｣' ~ 'is not a valid builtin block, is it a misspelt Custom block?'
+                ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
         } # TODO make like unknown Custom
         $*prs.body ~= %!templates<unknown>( %( :block-type($ast.type), :$contents, %config ) )
     }
@@ -789,8 +847,10 @@ class RakuDoc::Processor {
     method gen-semantics($ast, $parify) {
         my $block-name = $ast.type;
         my %config = $ast.resolved-config;
-        my %scoped-head = $!scoped-data.config;
-        %config{ .key } = .value for %scoped-head{$block-name}.pairs;
+        my %scoped = $!scoped-data.config;
+        %scoped{ $block-name }.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
         # treat all semantic blocks as a heading level 1 unless otherwise specified
         my $caption = %config<caption> // $block-name;
         my $level = %config<headlevel> // 1;
@@ -836,7 +896,9 @@ class RakuDoc::Processor {
                         $id = $_
                     }
                     else {
-                        $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣";
+                        $*prs.warnings.push:
+                            "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣"
+                            ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
                     }
                 }
                 $rv = %!templates{$template}(
@@ -865,13 +927,13 @@ class RakuDoc::Processor {
                 :config( $ast.resolved-config ),
                 :abbreviated
             ), False );
-            $.gen-code( RakuAST::Doc::Block.new(
+            $.gen-paraish( RakuAST::Doc::Block.new(
                 :type<code>,
                 :paragraphs( $ast.paragraphs ),
                 :config( $ast.resolved-config ),
                 :for( $ast.for ),
                 :abbreviated( $ast.abbreviated )
-            ), 'code', :allow() )
+            ), 'code' )
         }
     }
     # directive type methods
@@ -1199,7 +1261,7 @@ class RakuDoc::Processor {
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
-			markup-D => -> %prm, $tmpl { express-params( %prm, $tmpl, 'definition' ) },
+			markup-D => -> %prm, $tmpl { express-params( %prm, $tmpl, 'inline-defn' ) },
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
             markup-Δ => -> %prm, $tmpl { express-params( %prm, $tmpl, 'delta' ) },

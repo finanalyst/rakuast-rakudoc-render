@@ -11,7 +11,7 @@ grammar RakuDoc::MarkupMeta {
         | <plain-string-array>
         | <array-of-ps-arrays>
     }
-#
+
     token plain-string-word { <-[' " , ; \h]>+ }
     token plain-string {
         <plain-string-word>+ % \h+
@@ -25,7 +25,7 @@ grammar RakuDoc::MarkupMeta {
     token inside-quotes { <-[ ' " ]>+ }
 
     token plain-string-array { <plain-string>* % [\s* ',' \s*] }
-#    # Comma-separated 0-or-more substr
+    # Comma-separated 0-or-more substr
     token array-of-ps-arrays { <plain-string-array>* % [\s* ';' \s*] }
 }
 class RMActions {

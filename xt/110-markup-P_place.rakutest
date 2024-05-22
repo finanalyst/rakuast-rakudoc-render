@@ -115,14 +115,14 @@ like $rv.body.Str, /
     '<placement>' .*?
         'contents:' .+? 'lexiphania' .+
         'defn-expansion:' .+? '<defn>' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
+        'defn-target:' .+? 'defn_lexiphania' .+
         'schema:' .+? 'defn' .+
-        'target:' .+? 'defn_lexiphania' .+
     '</placement>' .*?
     '<placement>' .*?
         'contents:' .+? 'glossoligation' .+
         'defn-expansion:' .+? '<defn>' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
+        'defn-target:' .+? 'defn_glossoligation' .+
         'schema:' .+? 'defn' .+
-        'target:' .+? 'defn_glossoligation' .+
     '</placement>'
     /, 'placements to scoped defns work';
 
@@ -146,14 +146,14 @@ like $rv.body.Str, /
     '<placement>' .*?
         'contents:' .+? 'lexiphania' .+
         'defn-expansion:' .+? '<defn>' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
+        'defn-target:' .+? 'defn_lexiphania' .+
         'schema:' .+? 'defn' .+
-        'target:' .+? 'defn_lexiphania' .+
     '</placement>' .*?
     '<placement>' .*?
         'contents:' .+? 'glossoligation' .+
         'defn-expansion:' .+? '<defn>' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
+        'defn-target:' .+? 'defn_glossoligation' .+
         'schema:' .+? 'defn' .+
-        'target:' .+? 'defn_glossoligation' .+
     '</placement>' .+
     '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
     '<defn>' .+? 'target:' .+? 'defn_glossoligation'

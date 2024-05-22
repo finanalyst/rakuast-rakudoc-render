@@ -74,13 +74,13 @@ like $rv.body.Str, /
     '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
     '<defn>' .+? 'target:' .+? 'defn_glossoligation' .+
     '<link>' .*?
+        'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'link-label:' .+? 'lexiphania' .+
-        'place:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
     '<link>' .*?
+        'extra:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'link-label:' .+? 'glossoligation' .+
-        'place:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'target:' .+? 'defn_glossoligation' .+
         'type:' .+? 'defn'
 /, 'links to defns work';
@@ -102,14 +102,14 @@ $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'To treat his' .+?
     '<link>' .*?
+        'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'link-label:' .+? 'lexiphania' .+
-        'place:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
     '</link>' .*?
     '<link>' .*?
+        'extra:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'link-label:' .+? 'glossoligation' .+
-        'place:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'target:' .+? 'defn_glossoligation' .+
         'type:' .+? 'defn' .+
     '</link>' .+
@@ -124,22 +124,84 @@ $ast = Q:to/QAST/.AST;
     As the canyon edge loomed, a memory of L<defn:coyotus interruptus> passed him by.
     =end rakudoc
     QAST
-
-say $ast;
 $rv = $rdp.render( $ast, :pre-finalised );
+
 like $rv.body.Str, /
-    'There ensued a terrible moment of ' .*?
-    '<markup-D>' .+?
+    'There ensued' .+?
+    'of <inline-defn>' .+?
     'contents' .+? 'coyotus interruptus' .+?
-    'target' .+? 'inline_defn_coyotus_interuptus' .+?
-    '</markup-D>'
+    '</inline-defn>'
 /, 'inline definition rendered';
 like $rv.body.Str, /
     '<link>' .+?
-    'contents' .+? 'coyotus interuptus' .+?
-    'target' .+? 'inline_defn_coyotus_interruptus' .?
-    'rendered-value' .+? 'There ensued' .+? '</markup-D' .+?
+    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'link-label' .+? '｢coyotus interruptus｣' .+?
+    'target' .+? '｢' <xdigit>+ '｣' .+
     '</link>'
 /, 'link picks up the inline-definition';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    There ensued a terrible moment of D<coyotus interruptus|crazy coyote;speed runner revenge>: a brief
+    suspension of the effects of gravity.
 
+    As the canyon edge loomed, a memory of L<defn:crazy coyote> passed him by.
+
+    He grinned at L<defn:speed runner revenge>
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+
+like $rv.body.Str, /
+    'There ensued' .+?
+    'of <inline-defn>' .+?
+    'contents' .+? 'coyotus interruptus' .+?
+    '</inline-defn>'
+/, 'inline definition rendered';
+like $rv.body.Str, /
+    '<link>' .+?
+    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'link-label' .+? '｢crazy coyote｣' .+?
+    'target' .+? '｢' <xdigit>+ '｣' .+
+    '</link>' .+?
+    '<link>' .+?
+    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'link-label' .+? '｢speed runner revenge｣' .+?
+    'target' .+? '｢' <xdigit>+ '｣' .+
+    '</link>'
+/, 'links picks out synonyms';
+#
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    There ensued a terrible moment of D<coyotus interruptus>: a brief
+    suspension of the effects of gravity. For Speed Runner, it was an
+    example of D<hubris>.
+
+    As the canyon edge loomed, a memory of L<defn:coyotus interruptus> passed him by.
+
+    Later his wife asked about L<defn:hubris>.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+
+like $rv.body.Str, /
+    'There ensued' .+?
+    'of <inline-defn>' .+?
+    'contents' .+? 'coyotus interruptus' .+?
+    '</inline-defn>' .+
+    '<inline-defn>' .+?
+    'contents' .+? 'hubris' .+?
+    '</inline-defn>'
+/, 'inline definition rendered';
+like $rv.body.Str, /
+    '<link>' .+?
+    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'link-label' .+? '｢coyotus interruptus｣' .+?
+    'target' .+? '｢' <xdigit>+ '｣' .+
+    '</link>' .+?
+    '<link>' .+?
+    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'link-label' .+? '｢hubris｣' .+?
+    'target' .+? '｢' <xdigit>+ '｣' .+
+    '</link>'
+/, 'link picks one of synonyms';
 done-testing;

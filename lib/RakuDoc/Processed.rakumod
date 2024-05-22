@@ -65,6 +65,8 @@ class ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             items => { pretty-dump( @.items, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
+            definitions => { pretty-dump( %.definitions, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+               :indent('  '), :post-separator-spacing("\n  ") )  }
             defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
@@ -150,6 +152,8 @@ class RakuDoc::Processed is ProcessedState {
             targets => <｢{ $!targets.keys.join('｣, ｢') }｣>
             items => { pretty-dump( @.items, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
+            definitions => { pretty-dump( %.definitions, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+               :indent('  '), :post-separator-spacing("\n  ") )  }
             defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),

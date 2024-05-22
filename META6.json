@@ -14,7 +14,8 @@
     "Temp::Path",
     "LibCurl",
     "URI",
-    "OO::Monitors"
+    "OO::Monitors",
+    "Digest::SHA1::Native"
   ],
   "test-depends": [
     "Test",
