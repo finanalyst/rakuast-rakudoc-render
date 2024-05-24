@@ -7,28 +7,36 @@ unit class RakuDoc::ScopedData;
 
 has @!config = {}, ; #an array of hashes, with empty hash at start
 has @!aliases = {}, ;
-has @!callees;
+has @!starters;
 has @!titles;
+has @!save-space = '';
 #| debug information
 method debug {
     qq:to/DEBUG/;
-    Scope levels: { +@!callees }
-    Scope callees: { +@!callees ?? @!callees.join(' ') !! 'original level' }
+    Scope levels: { +@!starters }
+    Scope starters: { +@!starters ?? @!starters.join(' ') !! 'original level' }
     DEBUG
 }
 #| starts a new scope
-method start-scope(:$callee!, :$title ) {
-    @!callees.push: $callee;
-    @!titles.push: $title // 'Block # ' ~ @!callees.elems;
+method start-scope(:$starter!, :$title, :$save-space ) {
+    @!starters.push: $starter;
+    @!titles.push: $title // 'Block # ' ~ @!starters.elems;
     @!config.push: @!config[*-1].pairs.hash;
     @!aliases.push: @!aliases[*-1].pairs.hash;
+    with $save-space and @!save-space[*-1].not {
+        @!save-space.push: $starter
+    }
+    else {
+        @!save-space.push: @!save-space[*-1]
+    }
 }
 #| ends the current scope, forgets new data
 method end-scope {
-    @!callees.pop;
+    @!starters.pop;
     @!titles.pop;
     @!config.pop;
     @!aliases.pop;
+    @!save-space.pop;
 }
 multi method config(%h) {
     @!config[*-1]{ .key } = .value for %h;
@@ -42,15 +50,21 @@ multi method aliases(%h) {
 multi method aliases( --> Hash ) {
     @!aliases[*-1]
 }
-method last-callee {
-    if +@!callees { @!callees[*-1] }
+method last-starter {
+    if +@!starters { @!starters[*-1] }
     else { 'original level' }
 }
 multi method last-title() {
     if +@!titles { @!titles[* - 1] }
-    else { 'No callee yet' }
+    else { 'No starter yet' }
 }
 multi method last-title( $s ) {
     if +@!titles { @!titles[* - 1] = $s }
+}
+multi method verbatim() {
+    @!save-space[ * - 1 ].so
+}
+multi method verbatim( :called-by($)! ) {
+    @!save-space[ * - 1 ]
 }
 

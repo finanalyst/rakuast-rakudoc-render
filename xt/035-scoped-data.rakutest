@@ -6,38 +6,48 @@ use Test::Output;
 
 my RakuDoc::ScopedData $sc;
 
-plan 15;
+plan 22;
 lives-ok { $sc .= new }, 'ScopedData instantiates';
-is $sc.last-title, 'No callee yet', 'zeroth title';
-is $sc.last-callee, 'original level', 'zeroth callee';
+is $sc.last-title, 'No starter yet', 'zeroth title';
+is $sc.last-starter, 'original level', 'zeroth starter';
+nok $sc.verbatim, 'not verbatim at start';
+is $sc.verbatim(:called-by), '', 'starter is empty string';
 
 $sc.config( { foo => 'bar'} );
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'current scope correct';
-$sc.start-scope(:callee<foo>);
+$sc.start-scope(:starter<foo>);
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'new current scope correct';
 $sc.config( {:1foo, :2xxx});
 is-deeply-relaxed $sc.config, {:1foo, :2xxx }, 'new current scope updated';
 like $sc.debug, /
     'Scope levels' .+ 1
-    .+ 'ees:' \s 'foo' \s+ $
+    .+ 'ters:' \s 'foo' \s+ $
 /, 'debug data as expected';
-is $sc.last-title, 'Block # 1', 'title  of first callee';
-$sc.start-scope(:callee<testing>);
+is $sc.last-title, 'Block # 1', 'title  of first starter';
+$sc.start-scope(:starter<testing>);
 like $sc.debug, /
     'Scope levels' .+ 2
-    .+ 'ees:' \s 'foo' \s+ 'testing'
+    .+ 'ters:' \s 'foo' \s+ 'testing'
 /, 'debug data as expected';
-is $sc.last-callee, 'testing', 'only last callee context';
+is $sc.last-starter, 'testing', 'only last starter context';
 lives-ok { $sc.last-title('Test') }, 'accepts title';
-is $sc.last-title, 'Test', 'title  of last callee';
+is $sc.last-title, 'Test', 'title  of last starter';
 $sc.end-scope;
 like $sc.debug, /
     'Scope levels' .+ 1
-    .+ 'ees:' \s 'foo' \s+ $
+    .+ 'ters:' \s 'foo' \s+ $
 /, 'debug data as expected';
 $sc.end-scope;
 my %conf = $sc.config;
 is-deeply-relaxed %conf, { :foo('bar')}, 'old scope restored';
 nok %conf<xxx>:exists, 'new attribute not remembered';
-
+$sc.start-scope(:starter<input>, :save-space);
+ok $sc.verbatim, 'verbatim is now true';
+is $sc.verbatim(:called-by), 'input', 'got caller';
+$sc.start-scope(:starter<para>);
+ok $sc.verbatim, 'changing scope does not change verbatim';
+is $sc.verbatim(:called-by), 'input', 'verbatim caller stays the same';
+$sc.end-scope;
+$sc.end-scope;
+nok $sc.verbatim, 'back to not space-saving';
 done-testing;

@@ -112,13 +112,14 @@ class RakuDoc::Processor {
     }
 
     #| All handle methods may generate debug reports
-    proto method handle( $ast, |c ) {
-        say "Handling: { $ast.WHICH.Str.subst(/ \| .+ $/, '') } [{ |c }]"
+    proto method handle( $ast ) {
+        say "Handling: { $ast.WHICH.Str.subst(/ \| .+ $/, '') }"
             if $.debug (cont) AstBlock;
         {*}
     }
     multi method handle(Str:D $ast) {
-        $*prs.body ~= $.compactify( $ast )
+        $*prs.body ~= $!scoped-data.verbatim
+            ?? ~$ast !! $.compactify( $ast )
     }
     multi method handle(RakuAST::Node:D $ast) {
         $ast.rakudoc.map({ $.handle($_) })
@@ -148,6 +149,9 @@ class RakuDoc::Processor {
             # Render content as LaTex formula
 
     multi method handle(RakuAST::Doc::Block:D $ast) {
+        if $!scoped-data.verbatim {
+            note 'got verbatim';
+        }
         # When a block is extended, then bare Str should be considered paragraphs
         my Bool $parify = ! ($ast.for or $ast.abbreviated);
         my $type = $ast.type;
@@ -193,7 +197,7 @@ class RakuDoc::Processor {
             # =headN
             # Nth-level heading
             when 'head' {
-                $!scoped-data.start-scope(:callee($_));
+                $!scoped-data.start-scope(:starter($_));
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-headish($ast, $parify);
                 $!scoped-data.end-scope;
@@ -228,7 +232,7 @@ class RakuDoc::Processor {
             # =rakudoc
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
-                $!scoped-data.start-scope(:callee($_));
+                $!scoped-data.start-scope(:starter($_));
                 $!scoped-data.last-title( $!current.source-data<rakudoc-title> );
                 say $!scoped-data.debug if $.debug (cont) Scoping;
                 $.gen-rakudoc($ast, $parify);
@@ -242,7 +246,7 @@ class RakuDoc::Processor {
             # Defines a section
             when 'section' {
                 my $last-title = $!scoped-data.last-title;
-                $!scoped-data.start-scope( :callee($_) );
+                $!scoped-data.start-scope( :starter($_) );
                 $!scoped-data.last-title( $last-title );
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-section($ast, $parify);
@@ -256,7 +260,7 @@ class RakuDoc::Processor {
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
-                $!scoped-data.start-scope( :callee($_) );
+                $!scoped-data.start-scope( :starter($_) );
                 $!scoped-data.last-title( $_ );
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-semantics($ast, $parify);
@@ -267,7 +271,7 @@ class RakuDoc::Processor {
             # User-defined block
             when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
-                $!scoped-data.start-scope( :callee($_) );
+                $!scoped-data.start-scope( :starter($_) );
                 $!scoped-data.last-title( $_ );
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-custom($ast, $parify);
@@ -291,7 +295,7 @@ class RakuDoc::Processor {
         });
         # for X<> and to help with warnings
         my $place = $!scoped-data.last-title;
-        my $context = $!scoped-data.last-callee;
+        my $context = $!scoped-data.last-starter;
         given $letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
@@ -554,7 +558,7 @@ class RakuDoc::Processor {
                 for $*prs.inline-defns.list -> $term {
                     $*prs.warnings.push:
                         "Definition ｢$term｣ has been redefined as an inline"
-                        ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
                         if $*prs.definitions{ $term }:exists;
                     $*prs.definitions{ $term } = $rv, $target;
                     $!register.add-payload(:payload($rv), :id($term));
@@ -583,13 +587,16 @@ class RakuDoc::Processor {
             %config{ .key } = .value unless %config{ .key }:exists
         });
         my $rem = $.complete-item-list ~ $.complete-defn-list;
+        #TODO call scoped for space-saver
         do {
             my ProcessedState $*prs .= new;
             for $ast.paragraphs {
-                when Str and $template ~~ any(<para next>) { $.handle($_) }
-                when Str and $template ~~ any(<code input output>) { $.handle($_, :save-space ) }
-                when RakuAST::Doc::Markup and $template eq 'code' {
-                    if $_.letter ~~ any(%config<allow>.list) {
+                when Str {
+                    if $template ~~ any(<para next>) { $.handle($_) }
+                    else { $.handle($_, :save-space ) }
+                }
+                when RakuAST::Doc::Markup {
+                    if $template eq 'code' and $_.letter ~~ any(%config<allow>.list) {
                         $.handle($_)
                     }
                     else {
@@ -603,7 +610,7 @@ class RakuDoc::Processor {
             $*prs.body ~= %!templates{ $template }(
                 %( :$contents, %config)
             );
-           CALLERS::<$*prs> += $*prs;
+           CALLERS::<$*prs> += $*prs ;
        }
     }
     #| handles blocks that are like headings
@@ -667,7 +674,7 @@ class RakuDoc::Processor {
             $*prs.body ~= $string;
             $*prs.warnings.push:
                 "Invalid definition: ｢$string｣"
-                ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
         }
         my $term = $ast.paragraphs[0].Str; # the term may not contain embedded code
         my $target = $.name-id("defn_$term");
@@ -688,7 +695,7 @@ class RakuDoc::Processor {
         $*prs.defns.push: $defn-expansion; # for the defn list to be rendered
         $*prs.warnings.push:
             "Definition ｢$term｣ has been redefined"
-            ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
+            ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
             if $*prs.definitions{ $term }:exists;
         $*prs.definitions{ $term } = $defn-expansion, $target;
         CALLERS::<$*prs> += $*prs;
@@ -790,7 +797,7 @@ class RakuDoc::Processor {
                     $contents = %config<fallback> // "See $uri";
                     $*prs.warnings.push:
                         "The schema ｢$schema｣ is not implemented. Full link was ｢$uri｣"
-                        ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
             }
         }
         %config<html> = so $contents ~~ / '<html' .+ '</html>'/;
@@ -831,12 +838,12 @@ class RakuDoc::Processor {
             $*prs.warnings.push:
                 '｢' ~ $ast.type ~ '｣'
                 ~ 'is a valid, but unimplemented builtin block'
-                ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
         }
         else { # not known so create another warning
             $*prs.warnings.push:
                 '｢' ~ $ast.type ~ '｣' ~ 'is not a valid builtin block, is it a misspelt Custom block?'
-                ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
         } # TODO make like unknown Custom
         $*prs.body ~= %!templates<unknown>( %( :block-type($ast.type), :$contents, %config ) )
     }
@@ -898,7 +905,7 @@ class RakuDoc::Processor {
                     else {
                         $*prs.warnings.push:
                             "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣"
-                            ~ " in block ｢{ $!scoped-data.last-callee }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                            ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
                     }
                 }
                 $rv = %!templates{$template}(
