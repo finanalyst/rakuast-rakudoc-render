@@ -11,7 +11,7 @@ lives-ok { $sc .= new }, 'ScopedData instantiates';
 is $sc.last-title, 'No starter yet', 'zeroth title';
 is $sc.last-starter, 'original level', 'zeroth starter';
 nok $sc.verbatim, 'not verbatim at start';
-is $sc.verbatim(:called-by), '', 'starter is empty string';
+is $sc.verbatim(:called-by), 'None', 'starter is initial string';
 
 $sc.config( { foo => 'bar'} );
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'current scope correct';
@@ -41,7 +41,7 @@ $sc.end-scope;
 my %conf = $sc.config;
 is-deeply-relaxed %conf, { :foo('bar')}, 'old scope restored';
 nok %conf<xxx>:exists, 'new attribute not remembered';
-$sc.start-scope(:starter<input>, :save-space);
+$sc.start-scope(:starter<input>, :verbatim);
 ok $sc.verbatim, 'verbatim is now true';
 is $sc.verbatim(:called-by), 'input', 'got caller';
 $sc.start-scope(:starter<para>);

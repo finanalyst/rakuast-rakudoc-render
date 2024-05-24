@@ -9,7 +9,7 @@ has @!config = {}, ; #an array of hashes, with empty hash at start
 has @!aliases = {}, ;
 has @!starters;
 has @!titles;
-has @!save-space = '';
+has @!save-spacer = 'None' but False, ;
 #| debug information
 method debug {
     qq:to/DEBUG/;
@@ -18,16 +18,16 @@ method debug {
     DEBUG
 }
 #| starts a new scope
-method start-scope(:$starter!, :$title, :$save-space ) {
+method start-scope(:$starter!, :$title, :$verbatim ) {
     @!starters.push: $starter;
     @!titles.push: $title // 'Block # ' ~ @!starters.elems;
     @!config.push: @!config[*-1].pairs.hash;
     @!aliases.push: @!aliases[*-1].pairs.hash;
-    with $save-space and @!save-space[*-1].not {
-        @!save-space.push: $starter
+    with $verbatim and @!save-spacer[*-1].not {
+        @!save-spacer.push: $starter
     }
     else {
-        @!save-space.push: @!save-space[*-1]
+        @!save-spacer.push: @!save-spacer[*-1]
     }
 }
 #| ends the current scope, forgets new data
@@ -36,7 +36,7 @@ method end-scope {
     @!titles.pop;
     @!config.pop;
     @!aliases.pop;
-    @!save-space.pop;
+    @!save-spacer.pop;
 }
 multi method config(%h) {
     @!config[*-1]{ .key } = .value for %h;
@@ -62,9 +62,9 @@ multi method last-title( $s ) {
     if +@!titles { @!titles[* - 1] = $s }
 }
 multi method verbatim() {
-    @!save-space[ * - 1 ].so
+    @!save-spacer[ * - 1 ].so
 }
 multi method verbatim( :called-by($)! ) {
-    @!save-space[ * - 1 ]
+    @!save-spacer[ * - 1 ]
 }
 

@@ -1,0 +1,174 @@
+use v6.d;
+use Test;
+
+use RakuDoc::Render;
+
+plan 19;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new( :test );
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+
+    plain string
+    =para    Ordinary       para
+    =for comment
+    1234567890123456789012345678901234567890
+
+    =begin input
+       This  is   a preformatted
+       piece of   text in three colummns
+       with  no   markup
+
+    =end input
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+my @posn;
+my $strt;
+my $n = -1;
+$rv.body.Str ~~ /
+    'para' .+? 'contents: ｢' (.+?) '｣' .+
+    'para' .+? 'contents: ｢' (.+?) '｣' .+
+    'input' .+? 'contents: ｢'
+    [
+    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
+     \h+: [
+        { @posn[$n].push: $/.pos - $strt } \S+
+        \h*:
+        ]+:
+     \v*
+    ]+
+     '｣'
+/;
+is $/[0], 'plain string ', 'String as 1st level of block is a para';
+is $/[1], 'Ordinary para ', 'para works as expected';
+is @posn.elems, 4, 'got four input content lines';
+is @posn[*-1][0], 0 , 'last line blank';
+is-deeply @posn[0][^4], @posn[1][^4], 'input first two rows start' ;
+is-deeply @posn[0][^4], @posn[2][^4], 'input first & third starts match' ;
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin code
+       This  is   a preformatted
+       piece of   text in B<three> colummns
+       with  BB   markup but no markup expansion
+    =end code
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+@posn = ();
+$n = -1;
+$rv.body.Str ~~ /
+    'code' .+? 'contents: ｢'
+    [
+    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
+     \h+: [
+        { @posn[$n].push: $/.pos - $strt } \S+ \h*
+        ]+:
+     \v*
+    ]+
+     '｣'
+/;
+
+is @posn.elems, 4, 'got four input content lines';
+is @posn[*-1][0], 0 , 'last line blank';
+is-deeply @posn[0][^4], @posn[1][^4], 'code first two rows start' ;
+is-deeply @posn[0][^4], @posn[2][^4], 'code first & third starts match' ;
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin input
+       This  is   a preformatted
+       piece of   text in B<three> colummns
+       with  BB   markup expanded
+    =end input
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+@posn = ();
+$n = -1;
+my regex tag { '<' $<tag> = [\w+?] '>' .+? '</' $<tag> '>' \v }
+
+$rv.body.Str ~~ /
+    'input' .+? 'contents: ｢'
+    [
+    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
+     \h+: [
+        { @posn[$n].push: $/.pos - $strt }
+        [
+            <tag>
+            |
+            \S+
+        ] \h*
+        ]+:
+     \v*
+    ]+
+     '｣'
+/;
+is @posn.elems, 4, 'got three input content lines';
+is @posn[*-1][0], 0 , 'last line blank';
+is-deeply @posn[0][^4], @posn[1][^4], 'input expanded first two rows start' ;
+is-deeply @posn[0][^4], @posn[2][^4], 'input expanded first & third starts match' ;
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin code :allow< B C i Ɵ>
+       This  is   a preformatted
+       piece of   text in B<three> colummns
+       with  BB   markup expanded
+    =end code
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+@posn = ();
+$n = -1;
+
+$rv.body.Str ~~ /
+    'code' .+? 'contents: ｢'
+    [
+    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
+     \h+: [
+        { @posn[$n].push: $/.pos - $strt }
+        [
+            <tag>
+            |
+            \S+
+        ] \h*
+        ]+:
+     \v*
+    ]+
+     '｣'
+/;
+is @posn.elems, 4, 'got three code expanded content lines';
+is @posn[*-1][0], 0 , 'last line blank';
+is-deeply @posn[0][^4], @posn[1][^4], 'code expanded first two rows start' ;
+is-deeply @posn[0][^4], @posn[2][^4], 'code expanded first & third starts match' ;
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin output
+       =for head :caption<Hi there> :anoption
+       Has a header
+
+       =begin para :optionality
+       This is an ordinary C<paragraph>
+       in extended form
+       =end para
+       This  is   a preformatted
+       piece of   text in B<three> colummns
+       with  BB   markup expanded
+    =end output
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    '<output' .+ 'contents' .+ '｢' .+?
+    '=for head' .+ 'Has a header' .+
+    'code' .+ 'paragraph' .+ '</code>' .+
+    'markup exp' .+ '｣' .+
+    '</output>'
+/, 'output stringifies blocks but applies markup';
+done-testing;

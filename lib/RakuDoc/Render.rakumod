@@ -149,9 +149,7 @@ class RakuDoc::Processor {
             # Render content as LaTex formula
 
     multi method handle(RakuAST::Doc::Block:D $ast) {
-        if $!scoped-data.verbatim {
-            note 'got verbatim';
-        }
+        return $.gen-verbatim($ast) if $!scoped-data.verbatim;
         # When a block is extended, then bare Str should be considered paragraphs
         my Bool $parify = ! ($ast.for or $ast.abbreviated);
         my $type = $ast.type;
@@ -182,9 +180,16 @@ class RakuDoc::Processor {
             }
             # =code
             # implicit code created by indenting
-            # Verbatim pre-formatted sample source code
-            when 'code' or 'implicit-code' {
-                $.gen-paraish( $ast, 'code' )
+            # =para block, as opposed to unmarked paragraphs in a block
+            # not the same as a logical Doc::Paragraph, which has atoms, not paragraphs
+            # unlike =section, does not create block scope
+            # =input
+            # Pre-formatted sample input
+            # =output
+            # Pre-formatted sample output
+            when any(<code implicit-code para next input output>)
+            {
+                $.gen-paraish( $ast, $ast.type, $parify )
             }
             # =comment
             # Content to be ignored by all renderers
@@ -214,16 +219,6 @@ class RakuDoc::Processor {
             # Definition of a term
             when 'defn' {
                 $.gen-defn($ast)
-            }
-            # =para block, as opposed to unmarked paragraphs in a block
-            # not the same as a logical Doc::Paragraph, which has atoms, not paragraphs
-            # unlike =section, does not create block scope
-            # =input
-            # Pre-formatted sample input
-            # =output
-            # Pre-formatted sample output
-            when any(<para next input output>) {
-                $.gen-paraish( $ast, $type )
             }
             # =place block, mostly mimics P<>, but allows for TOC and caption
             when 'place' {
@@ -287,6 +282,10 @@ class RakuDoc::Processor {
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         my $letter = $ast.letter;
+        if ($!scoped-data.verbatim(:called-by) eq 'code') and !%*ALLOW{ $letter } {
+            $*prs.body ~= $ast.DEPARSE;
+            return
+        }
         say "Doc::Markup letter: $letter" if $.debug (cont) MarkUp;
         my %config;
         my %scoped = $!scoped-data.config;
@@ -512,7 +511,7 @@ class RakuDoc::Processor {
             ## Undefined and reserved, so generate warnings
             # do not go through templates as these cannot be redefined
             when any(<G Q W Y>) {
-                $*prs.body ~= ~$ast;
+                $*prs.body ~= $ast.DEPARSE;
                 $*prs.warnings.push:
                     "｢$letter｣ is not defined, but is reserved for future use"
                         ~ " in block ｢$context｣ with heading ｢$place｣."
@@ -524,13 +523,13 @@ class RakuDoc::Processor {
                 );
             }
             when (.uniprop ~~ / Lu /) {
-                $*prs.body ~= ~$ast;
+                $*prs.body ~= $ast.DEPARSE;
                 $*prs.warnings.push:
                     "｢$letter｣ does not have a template, but could be a custom code"
                         ~ " in block ｢$context｣ with heading ｢$place｣."
             }
             default {
-                $*prs.body ~= ~$ast;
+                $*prs.body ~= $ast.DEPARSE;
                 $*prs.warnings.push: "｢$letter｣ may not be a markup code"
                         ~ " in block ｢$context｣ with heading ｢$place｣."
             }
@@ -539,6 +538,10 @@ class RakuDoc::Processor {
     # This block is created by the parser when a text has embedded markup
     # Also ordinary strings in an extended block are coerced into one
     multi method handle(RakuAST::Doc::Paragraph:D $ast) {
+        if $!scoped-data.verbatim {
+            $ast.atoms.map({ $.handle($_) });
+            return
+        }
         my %config;
         my %scoped = $!scoped-data.config;
         %config{ .key } = .value for %scoped<para>.pairs;
@@ -580,38 +583,32 @@ class RakuDoc::Processor {
     # and add the string to a structure, typically, not always, to $*prs.body
 
     #| generic code for next, para, code, input, output blocks
-    method gen-paraish( $ast, $template ) {
+    method gen-paraish( $ast, $template, $parify ) {
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
         %scoped{ $template }.pairs.map({
             %config{ .key } = .value unless %config{ .key }:exists
         });
-        my $rem = $.complete-item-list ~ $.complete-defn-list;
-        #TODO call scoped for space-saver
-        do {
-            my ProcessedState $*prs .= new;
-            for $ast.paragraphs {
-                when Str {
-                    if $template ~~ any(<para next>) { $.handle($_) }
-                    else { $.handle($_, :save-space ) }
-                }
-                when RakuAST::Doc::Markup {
-                    if $template eq 'code' and $_.letter ~~ any(%config<allow>.list) {
-                        $.handle($_)
-                    }
-                    else {
-                        $.handle( $_.Str, :save-space )
-                    }
-                }
-                default { $.handle($_) }
-            }
-            my PStr $contents = $*prs.body;
-            $*prs.body .= new( $rem );
-            $*prs.body ~= %!templates{ $template }(
-                %( :$contents, %config)
-            );
-           CALLERS::<$*prs> += $*prs ;
-       }
+        my %*ALLOW;
+        $!scoped-data.start-scope(:starter($template), :verbatim )
+            if $template ~~ any(<code input output>);
+        if $template eq 'code' {
+            %*ALLOW = %config<allow>:exists
+                ?? %config<allow>.map({ $_ => True }).hash
+                !! {}
+        }
+
+        my PStr $contents = $.contents($ast, $parify);
+        $*prs.body ~= %!templates{ $template }(
+            %( :$contents, %config)
+        );
+        $!scoped-data.end-scope if $template ~~ any( <code input output> )
+    }
+    #| handles all contents inside input, output, code blocks
+    #| contents of block treated as space-preserving text
+    #| markup codes are all (input/output) or partially (code) respected
+    method gen-verbatim($ast) {
+        my $*prs.body ~= $ast.set-paragraphs( $ast.paragraphs.map({ $.handle($_) }) ).DEPARSE;
     }
     #| handles blocks that are like headings
     method gen-headish($ast, $parify, :$template = 'head') {
@@ -1025,6 +1022,7 @@ class RakuDoc::Processor {
         CALLERS::<$*prs> += $*prs;
         $text
     }
+    #| similar to contents but expects atoms structure
     method markup-contents($ast) {
         my ProcessedState $*prs .= new;
         for $ast.atoms { $.handle($_) }
