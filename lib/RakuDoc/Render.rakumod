@@ -149,7 +149,10 @@ class RakuDoc::Processor {
             # Render content as LaTex formula
 
     multi method handle(RakuAST::Doc::Block:D $ast) {
-        return $.gen-verbatim($ast) if $!scoped-data.verbatim;
+        if $!scoped-data.verbatim {
+            $*prs.body ~= $ast.set-paragraphs( $ast.paragraphs.map({ $.handle($_) }) ).DEPARSE;
+            return
+        }
         # When a block is extended, then bare Str should be considered paragraphs
         my Bool $parify = ! ($ast.for or $ast.abbreviated);
         my $type = $ast.type;
@@ -603,12 +606,6 @@ class RakuDoc::Processor {
             %( :$contents, %config)
         );
         $!scoped-data.end-scope if $template ~~ any( <code input output> )
-    }
-    #| handles all contents inside input, output, code blocks
-    #| contents of block treated as space-preserving text
-    #| markup codes are all (input/output) or partially (code) respected
-    method gen-verbatim($ast) {
-        my $*prs.body ~= $ast.set-paragraphs( $ast.paragraphs.map({ $.handle($_) }) ).DEPARSE;
     }
     #| handles blocks that are like headings
     method gen-headish($ast, $parify, :$template = 'head') {

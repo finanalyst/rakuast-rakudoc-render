@@ -8,10 +8,10 @@
 - [x] alias directive
 - [x] =A<> markup
 - [x] definition list
-- [ ] inline definition
-- [ ] =code
-- [ ] =input
-- [ ] =output
+- [x] inline definition
+- [x] =code
+- [x] =input
+- [x] =output
 - [ ] =table
 - [ ] =row / =column outside =table
 - [ ] =numitem
@@ -22,8 +22,8 @@
 - [ ] :toc / :!toc
 - [ ] :headerlevel
 - [ ] :bullet
-- [ ] =para
-- [ ] =nested
+- [x] =para
+- [x] =nested
 - [ ] add plugins
   - Custom block
   - M<>
