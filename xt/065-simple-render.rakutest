@@ -19,15 +19,14 @@ $rv = $rdp.render( $ast, :pre-finalised );
 
 isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
 like $rv.body.Str, /
-    ^ '<head>'
-    \s+ 'caption: ｢Test text｣'
-    \s+ 'contents: ｢Test text｣'
-    \s+ 'id: ｢UNINITIALISED｣'
-    \s+ 'level: ｢1｣'
-    \s+ 'target: ｢Test_text｣'
-    \s+ 'toc: ｢True｣'
-    \s+ '</head>'
-    \s+ $
+    ^ '<head>' .+?
+    'caption: ｢Test text｣' .+
+    'contents: ｢Test text｣' .+
+    'id: ｢UNINITIALISED｣' .+
+    'level: ｢1｣' .+
+    'target: ｢Test_text｣' .+
+    'toc: ｢True｣' .+
+    '</head>'
     /, 'head template works';
 $ast = Q:to/QAST/.AST;
     =begin rakudoc :kind<sub> :subkind<operator> :category<Language>

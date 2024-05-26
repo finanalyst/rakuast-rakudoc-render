@@ -10,6 +10,25 @@ use URI;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
 
+#| Class for setting numeration of headings and items
+class Numeration {
+    has Int @!counters is default(0);
+    method Str () { @!counters>>.Str.join('.') ~ '.' }
+    method inc ($level) {
+        @!counters[$level - 1]++;
+        @!counters.splice($level);
+        self
+    }
+    method reset () {
+        @!counters = Nil;
+        self
+    }
+    method set ( $level, $value ) {
+        @!counters[ $level - 1 ] = $value;
+        self
+    }
+}
+
 class RakuDoc::Processor {
     has %.templates is Template-directory;
     has CompletedCells $.register .= new;
@@ -84,6 +103,8 @@ class RakuDoc::Processor {
         self.complete-footnotes;
         # P<toc:>, P<index:> may put PCells into body
         # so ToC and Index need to be rendered and any other PCells triggered
+        # toc may contain numbered captions, so the heading-numbers need to be calculated
+        self.complete-heading-numerations;
         my $rendered-toc = PCell.new( :$!register, :id<toc-schema> );
         self.complete-toc;
         my $rendered-index = PCell.new( :$!register, :id<index-schema> );
@@ -130,21 +151,6 @@ class RakuDoc::Processor {
             # =row
             # Start a new row in a procedural table
 
-            # =numhead
-            # First-level numbered heading
-
-            # =numheadN
-            # Nth-level numbered heading
-
-            # =numitem
-            # First-level numbered list item
-
-            # =numitemN
-            # Nth-level numbered list item
-
-            # =nested
-            # Nest block contents within the current context
-
             # =formula
             # Render content as LaTex formula
 
@@ -161,8 +167,8 @@ class RakuDoc::Processor {
             ~ ( ' [abbreviated]' if $ast.abbreviated )
             ~ ( ' [extended]' if $parify )
             if $.debug (cont) BlockType;
-        # When a built in block, other than =item or =defn, is started,
-        # there may be a list of items or defns, which need to be
+        # When any block, other than =item or =defn, is started,
+        # there may be a list of preceeding items or defns, which need to be
         # completed and rendered
         $*prs.body ~= $.complete-item-list unless $type eq 'item';
         $*prs.body ~= $.complete-defn-list unless $type eq 'defn';
@@ -185,12 +191,14 @@ class RakuDoc::Processor {
             # implicit code created by indenting
             # =para block, as opposed to unmarked paragraphs in a block
             # not the same as a logical Doc::Paragraph, which has atoms, not paragraphs
+            # =nested
+            # Nest block contents within the current context
             # unlike =section, does not create block scope
             # =input
             # Pre-formatted sample input
             # =output
             # Pre-formatted sample output
-            when any(<code implicit-code para next input output>)
+            when any(<code implicit-code para nested input output>)
             {
                 $.gen-paraish( $ast, $ast.type, $parify )
             }
@@ -205,10 +213,10 @@ class RakuDoc::Processor {
             # =headN
             # Nth-level heading
             when 'head' {
-                $!scoped-data.start-scope(:starter($_));
+                $!scoped-data.start-scope(:starter($_)) if $parify;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-headish($ast, $parify);
-                $!scoped-data.end-scope;
+                $!scoped-data.end-scope if $parify;
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # =item
@@ -222,6 +230,25 @@ class RakuDoc::Processor {
             # Definition of a term
             when 'defn' {
                 $.gen-defn($ast)
+            }
+            # =numhead
+            # First-level numbered heading
+            # =numheadN
+            # Nth-level numbered heading
+            # heading numeration is fixed when TOC is generated and all headers are known
+            when 'numhead' {
+                $.gen-headish( $ast, $parify, :template<numhead>, :numerate)
+            }
+            # =numitem
+            # First-level numbered list item
+            # =numitemN
+            # Nth-level numbered list item
+            when 'numitem' {
+
+            }
+            # =numdefn
+            when 'numdefn' {
+
             }
             # =place block, mostly mimics P<>, but allows for TOC and caption
             when 'place' {
@@ -608,17 +635,17 @@ class RakuDoc::Processor {
         $!scoped-data.end-scope if $template ~~ any( <code input output> )
     }
     #| handles blocks that are like headings
-    method gen-headish($ast, $parify, :$template = 'head') {
+    method gen-headish($ast, $parify, :$template = 'head', :$numerate = False ) {
         my $contents = $.contents($ast, $parify).strip.trim;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
         my %config = $ast.resolved-config;
         my %scoped = $!scoped-data.config;
-        my $scoping = $template eq 'head' ?? "head$level" !! $template;
+        my $scoping = $template eq <head numhead>.any ?? ($template ~ $level) !! $template;
         %scoped{ $scoping }.pairs.map({
             %config{ .key } = .value unless %config{ .key }:exists
         });
-        my $target = $.name-id($ast);
+        my $target = $.name-id($contents);
         my $id = %config<id>:delete;
         with $id {
             if self.is-target-unique( $_ ) {
@@ -628,17 +655,26 @@ class RakuDoc::Processor {
                 $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣";
             }
         }
-        my $caption = %config<caption>:delete;
-        $caption = ($template eq 'head' ?? $contents !! $template) without $caption;
-        my $toc = %config<toc>:delete // True;
         # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
         $level = %config<headlevel> if %config<headlevel>:exists;
         $level = 1 if $level < 1;
+        # numeration is attached to contents first
+        my $numeration = '';
+        if $numerate {
+            $numeration = PCell( :$!register, :id('num_' ~ $target ) );
+            $*prs.head-numbering.push: ['num_' ~ $target, $level ];
+        }
+        my $caption = %config<caption>:delete;
+        $caption = ($template eq <head numhead>.any ?? $contents !! $template) without $caption;
+        my $toc = %config<toc>:delete // True;
+        # attach numeration to caption and contents separately, allowing template
+        # user to add to caption if wanted by changing the template
+        $caption = %!templates<toc-numeration>(:$numeration, :$caption) if $numerate;
         $*prs.toc.push(
             { :$caption, :$target, :$level }
         ) if $toc;
         $*prs.body ~= %!templates{ $template }(
-            %( :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
+            %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
         )
     }
     #| generates a single item and adds it to the item structure
@@ -934,7 +970,8 @@ class RakuDoc::Processor {
                 :config( $ast.resolved-config ),
                 :for( $ast.for ),
                 :abbreviated( $ast.abbreviated )
-            ), 'code' )
+            ), 'code', $parify );
+            $*prs.warnings.push: "Undefined custom block ｢$template｣ has been rendered as as code"
         }
     }
     # directive type methods
@@ -945,6 +982,7 @@ class RakuDoc::Processor {
         $!scoped-data.config( { $name => %options } );
     }
     ## completion methods
+
     #| finalise the rendering of footnotes
     #| the numbering only happens when all footnotes are collected
     #| completes the PCell in the body
@@ -972,6 +1010,13 @@ class RakuDoc::Processor {
             %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) )) ),
             :id('toc-schema')
         )
+    }
+    #| finalises all the heading numerations
+    method complete-heading-numerations() {
+        for $*prs.head-numbering {
+            my Numeration $heads .= new;
+            $heads.set(1,1)
+        }
     }
 
     #| finalises rendering of the item list in $*prs
@@ -1088,7 +1133,7 @@ class RakuDoc::Processor {
         %(
             #| special key to name template set
             _name => -> %, $ {
-                'new test text templates'
+                'test templates'
             },
             #| renders =code block
             code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
@@ -1102,6 +1147,8 @@ class RakuDoc::Processor {
             head => -> %prm, $tmpl { express-params( %prm, $tmpl, 'head' ) },
             #| renders =numhead block
             numhead => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numhead' ) },
+            #| renders the numeration part for a toc
+            toc-numeration => -> %prm, %tmpl { express-params( %prm, %tmpl, 'toc-num' )},
             #| renders =defn block
             defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
             #| renders =item block
@@ -1336,6 +1383,8 @@ class RakuDoc::Processor {
             },
             #| renders =numhead block
             numhead => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numhead' ) },
+            #| renders the numeration part for a toc
+            toc-numeration => -> %prm, %tmpl { express-params( %prm, %tmpl, 'toc-num' )},
             #| renders =defn block
             defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
             #| renders =item block

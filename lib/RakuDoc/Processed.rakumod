@@ -14,6 +14,12 @@ class ProcessedState {
     #| target - of item in text, is-heading - used for Index placing
     has Hash @.toc;
 
+    #| heading numbering data
+    #| Ordered array of [ $id, $level ]
+    #| $id is the PCell id of where the numeration structure is to be placed
+    #| level - in heading hierarchy
+    has Array @.head-numbering;
+
     #| Index (from X<> markup)
     #| Hash key => Array of :target, :is-header, :place
     #| key to be displayed, target is for link, place is description of section
@@ -56,6 +62,8 @@ class ProcessedState {
             semantics => { pretty-dump( %.semantics, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
             :indent('  '), :post-separator-spacing("\n  ") )  }
             toc => { pretty-dump(@.toc, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+               :indent('  '), :post-separator-spacing("\n  ")) }
+            head-numbering => { pretty-dump(@.head-numbering, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ")) }
             index => { pretty-dump( %.index, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ") )  }
@@ -143,6 +151,8 @@ class RakuDoc::Processed is ProcessedState {
             :indent('  '), :post-separator-spacing("\n  ") )  }
             toc => { pretty-dump(@.toc, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ")) }
+            head-numbering => { pretty-dump(@.head-numbering, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+               :indent('  '), :post-separator-spacing("\n  ")) }
             index => { pretty-dump( %.index, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ") )  }
             footnotes => { pretty-dump( @.footnotes, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
@@ -169,6 +179,7 @@ class RakuDoc::Processed is ProcessedState {
 multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     sink $p.body ~ $q.body;
     $p.toc.append: $q.toc;
+    $p.head-numbering.append: $q.head-numbering;
     for $q.index.kv -> $k, $v { # by definition, same key but multiple values
         $p.index{ $k }.append: $v.Slip
     }

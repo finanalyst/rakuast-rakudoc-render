@@ -1,0 +1,44 @@
+use v6.d;
+use Test;
+use Test::Output;
+use RakuDoc::Render;
+
+plan *;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin MyCustomBlock :an<option> :another<one>
+    Some thingB<to be said>inside letters.
+    =end MyCustomBlock
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.warnings.elems, 1, 'warning generated';
+like $rv.warnings[0], / 'Undefined custom block ｢MyCustomBlock' /, 'got undefined warning';
+like $rv.body, /
+    '<head>' .+ 'caption' .+? 'MyCustomBlock' .+ '</head>' .+
+    '<code>' .+ 'Some thing' .+ '</code>'
+/, 'treated as head followed by code';
+
+$rdp.templates<MyCustomBlock> = sub ( %prm, $ ) {
+    RakuDoc::Processor::express-params( %prm, $, 'myblock')
+}
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin MyCustomBlock :an<option> :another<one>
+    Some thingB<to be said>inside letters.
+    =end MyCustomBlock
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.warnings.elems, 0, 'no warning';
+like $rv.body, /
+    '<myblock>' .+ 'caption' .+? 'MyCustomBlock' .+
+    'Some thing' .+ '</myblock>'
+/, 'treated as head followed by code';
+
+done-testing;

@@ -1,0 +1,9 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+my  Numeration $n .= new;
+
+is $n.Str, '1.', 'first level is 1';
+
+done-testing;
