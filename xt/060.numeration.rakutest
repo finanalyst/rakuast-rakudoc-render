@@ -2,8 +2,16 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
+plan 7;
+
 my  Numeration $n .= new;
 
-is $n.Str, '1.', 'first level is 1';
+is $n.Str, '0.', 'first level is 0';
+is $n.inc(3).Str, '0.0.1.', 'incremented level 3 leaving others at 0';
+is $n.inc(2).Str, '0.1.', ' incremented level2, which resets level 3';
+is $n.reset.Str, '0.', 'resets to 0';
+is $n.inc(1).Str, '1.', 'first level when incremented is 1';
+is $n.inc(3).Str, '1.0.1.', 'incremented level 3 to stem = 1';
+is $n.inc(2).Str, '1.1.', ' incremented level2, which resets level 3';
 
 done-testing;

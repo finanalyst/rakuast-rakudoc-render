@@ -10,13 +10,16 @@ use URI;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
 
-#| Class for setting numeration of headings and items
+#| Class for numeration of headings, defns and items
 class Numeration {
     has Int @!counters is default(0);
+    submethod TWEAK {
+        @!counters = Nil
+    };
     method Str () { @!counters>>.Str.join('.') ~ '.' }
     method inc ($level) {
-        @!counters[$level - 1]++;
-        @!counters.splice($level);
+        @!counters[+$level - 1]++;
+        @!counters.splice(+$level);
         self
     }
     method reset () {
@@ -661,17 +664,16 @@ class RakuDoc::Processor {
         # numeration is attached to contents first
         my $numeration = '';
         if $numerate {
-            $numeration = PCell( :$!register, :id('num_' ~ $target ) );
+            $numeration ~= PCell.new( :$!register, :id('num_' ~ $target ) );
             $*prs.head-numbering.push: ['num_' ~ $target, $level ];
         }
         my $caption = %config<caption>:delete;
         $caption = ($template eq <head numhead>.any ?? $contents !! $template) without $caption;
         my $toc = %config<toc>:delete // True;
         # attach numeration to caption and contents separately, allowing template
-        # user to add to caption if wanted by changing the template
-        $caption = %!templates<toc-numeration>(:$numeration, :$caption) if $numerate;
+        # developer to add numeration to caption if wanted by changing the template
         $*prs.toc.push(
-            { :$caption, :$target, :$level }
+            { :$caption, :$target, :$level, :$numeration }
         ) if $toc;
         $*prs.body ~= %!templates{ $template }(
             %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
@@ -840,6 +842,8 @@ class RakuDoc::Processor {
     }
     method gen-rakudoc($ast, $parify) {
         my %config = $ast.resolved-config;
+        # all meta data declared in rakudoc block becomes global for all blocks in scope
+        $!scoped-data.config( %config );
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);
         # render any tailing lists
@@ -1013,9 +1017,11 @@ class RakuDoc::Processor {
     }
     #| finalises all the heading numerations
     method complete-heading-numerations() {
-        for $*prs.head-numbering {
-            my Numeration $heads .= new;
-            $heads.set(1,1)
+        return unless $*prs.head-numbering.elems;
+        my Numeration $heads .= new;
+        for $*prs.head-numbering -> ( $id, $level  ) {
+            my $payload = $heads.inc( $level ).Str;
+            $!register.add-payload( :$payload, :$id )
         }
     }
 
