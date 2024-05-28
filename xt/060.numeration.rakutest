@@ -1,10 +1,10 @@
 use v6.d;
 use Test;
-use RakuDoc::Render;
+use RakuDoc::Numeration;
 
 plan 7;
 
-my  Numeration $n .= new;
+my Numeration $n .= new;
 
 is $n.Str, '0.', 'first level is 0';
 is $n.inc(3).Str, '0.0.1.', 'incremented level 3 leaving others at 0';

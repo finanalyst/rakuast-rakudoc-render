@@ -4,33 +4,12 @@ use RakuDoc::Templates;
 use RakuDoc::ScopedData;
 use RakuDoc::MarkupMeta;
 use RakuDoc::PromiseStrings;
+use RakuDoc::Numeration;
 use LibCurl::Easy;
 use Digest::SHA1::Native;
 use URI;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
-
-#| Class for numeration of headings, defns and items
-class Numeration {
-    has Int @!counters is default(0);
-    submethod TWEAK {
-        @!counters = Nil
-    };
-    method Str () { @!counters>>.Str.join('.') ~ '.' }
-    method inc ($level) {
-        @!counters[+$level - 1]++;
-        @!counters.splice(+$level);
-        self
-    }
-    method reset () {
-        @!counters = Nil;
-        self
-    }
-    method set ( $level, $value ) {
-        @!counters[ $level - 1 ] = $value;
-        self
-    }
-}
 
 class RakuDoc::Processor {
     has %.templates is Template-directory;
@@ -171,10 +150,12 @@ class RakuDoc::Processor {
             ~ ( ' [extended]' if $parify )
             if $.debug (cont) BlockType;
         # When any block, other than =item or =defn, is started,
-        # there may be a list of preceeding items or defns, which need to be
+        # there may be a list of preceding items or defns, which need to be
         # completed and rendered
         $*prs.body ~= $.complete-item-list unless $type eq 'item';
         $*prs.body ~= $.complete-defn-list unless $type eq 'defn';
+        $*prs.body ~= $.complete-numitem-list unless $type eq 'numitem';
+        $*prs.body ~= $.complete-numdefn-list unless $type eq 'numdefn';
 
         # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
@@ -320,11 +301,7 @@ class RakuDoc::Processor {
             return
         }
         say "Doc::Markup letter: $letter" if $.debug (cont) MarkUp;
-        my %config;
-        my %scoped = $!scoped-data.config;
-        %scoped{ $letter }.pairs.map({
-            %config{ .key } = .value unless %config{ .key }:exists
-        });
+        my %config = $.merged-config( $, $letter );
         # for X<> and to help with warnings
         my $place = $!scoped-data.last-title;
         my $context = $!scoped-data.last-starter;
@@ -575,9 +552,7 @@ class RakuDoc::Processor {
             $ast.atoms.map({ $.handle($_) });
             return
         }
-        my %config;
-        my %scoped = $!scoped-data.config;
-        %config{ .key } = .value for %scoped<para>.pairs;
+        my %config = $.merged-config($, 'para' );
         my $rem = $.complete-item-list ~ $.complete-defn-list;
         do {
             my ProcessedState $*prs .= new;
@@ -617,11 +592,7 @@ class RakuDoc::Processor {
 
     #| generic code for next, para, code, input, output blocks
     method gen-paraish( $ast, $template, $parify ) {
-        my %config = $ast.resolved-config;
-        my %scoped = $!scoped-data.config;
-        %scoped{ $template }.pairs.map({
-            %config{ .key } = .value unless %config{ .key }:exists
-        });
+        my %config = $.merged-config( $ast, $template);
         my %*ALLOW;
         $!scoped-data.start-scope(:starter($template), :verbatim )
             if $template ~~ any(<code input output>);
@@ -642,12 +613,9 @@ class RakuDoc::Processor {
         my $contents = $.contents($ast, $parify).strip.trim;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
-        my %config = $ast.resolved-config;
-        my %scoped = $!scoped-data.config;
-        my $scoping = $template eq <head numhead>.any ?? ($template ~ $level) !! $template;
-        %scoped{ $scoping }.pairs.map({
-            %config{ .key } = .value unless %config{ .key }:exists
-        });
+        my %config = $.merged-config($ast,
+            $template eq <head numhead>.any ?? ($template ~ $level) !! $template
+        );
         my $target = $.name-id($contents);
         my $id = %config<id>:delete;
         with $id {
@@ -684,11 +652,7 @@ class RakuDoc::Processor {
     method gen-item($ast, $parify) {
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         my $contents = $.contents($ast, $parify);
-        my %config = $ast.resolved-config;
-        my %scoped = $!scoped-data.config;
-        %scoped{ "item$level" }.pairs.map({
-            %config{ .key } = .value unless %config{ .key }:exists
-        });
+        my %config = $.merged-config($ast, 'item' ~ $level );
         $*prs.items.push: %!templates<item>(
             %( :$level, :$contents, %config )
         )
@@ -716,11 +680,7 @@ class RakuDoc::Processor {
         my $contents = $*prs.body;
         # keep most of state, initialise body
         $*prs.body .= new;
-        my %config = $ast.resolved-config;
-        my %scoped = $!scoped-data.config;
-        %scoped<defn>.pairs.map({
-            %config{ .key } = .value unless %config{ .key }:exists
-        });
+        my %config = $.merged-config($ast, 'defn');
         my $defn-expansion = %!templates<defn>(
             %( :$term, :$target, :$contents, %config )
         );
@@ -736,12 +696,8 @@ class RakuDoc::Processor {
         $!register.add-payload(:payload($target), :id($term ~ '_target'))
     }
     method gen-place($ast) {
-        my %config = $ast.resolved-config;
+        my %config = $.merged-config( $ast, 'place');
         my $uri = %config<uri>:delete;
-        my %scoped = $!scoped-data.config;
-        %scoped<place>.pairs.map({
-            %config{ .key } = .value unless %config{ .key }:exists
-        });
         %config<caption> = 'Placement' unless %config<caption>:exists;
         my $caption = %config<caption>;
         my $level = %config<headlevel> // 1;
@@ -841,22 +797,26 @@ class RakuDoc::Processor {
         )
     }
     method gen-rakudoc($ast, $parify) {
+        # rakudoc config differs from other blocks
+        #TODO look at scoping this
         my %config = $ast.resolved-config;
-        # all meta data declared in rakudoc block becomes global for all blocks in scope
-        $!scoped-data.config( %config );
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);
         # render any tailing lists
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
+        $contents ~= $.complete-numitem-list;
+        $contents ~= $.complete-numdefn-list;
         $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) );
     }
     method gen-section($ast, $parify) {
-        my %config = $ast.resolved-config;
+        my %config = $.merged-config($ast, 'section');
         my $contents = $.contents($ast, $parify);
         # render any tailing lists
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
+        $contents ~= $.complete-numitem-list;
+        $contents ~= $.complete-numdefn-list;
         $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
     method gen-table($ast) {
@@ -887,11 +847,7 @@ class RakuDoc::Processor {
     #| All other SEMANTIC blocks are :!hidden by default
     method gen-semantics($ast, $parify) {
         my $block-name = $ast.type;
-        my %config = $ast.resolved-config;
-        my %scoped = $!scoped-data.config;
-        %scoped{ $block-name }.pairs.map({
-            %config{ .key } = .value unless %config{ .key }:exists
-        });
+        my %config = $.merged-config($ast, $block-name);
         # treat all semantic blocks as a heading level 1 unless otherwise specified
         my $caption = %config<caption> // $block-name;
         my $level = %config<headlevel> // 1;
@@ -982,7 +938,7 @@ class RakuDoc::Processor {
     method manage-config($ast) {
         my %options = $ast.resolved-config;
         my $name = $ast.paragraphs[0].Str;
-        $name = $name ~ '1' if $name ~~ / ^ 'item' $ | ^ 'head' $ /;
+        $name = $name ~ '1' if $name eq <item head numitem numhead>.any;
         $!scoped-data.config( { $name => %options } );
     }
     ## completion methods
@@ -1024,7 +980,6 @@ class RakuDoc::Processor {
             $!register.add-payload( :$payload, :$id )
         }
     }
-
     #| finalises rendering of the item list in $*prs
     method complete-item-list() {
         return '' unless $*prs.items; # do nothing of no accumulated items
@@ -1039,6 +994,24 @@ class RakuDoc::Processor {
         return '' unless $*prs.defns; # do nothing of no accumulated items
         my $rv = %!templates<defn-list>(
             %( :defn-list($*prs.defns), )
+        );
+        $*prs.defns = ();
+        $rv
+    }
+    #| finalises rendering of the item list in $*prs
+    method complete-numitem-list() {
+        return '' unless $*prs.numitems; # do nothing of no accumulated items
+        my $rv = %!templates<numitem-list>(
+            %( :numitem-list($*prs.numitems), )
+        );
+        $*prs.items = ();
+        $rv
+    }
+    #| finalises rendering of a defn list in $*prs
+    method complete-numdefn-list() {
+        return '' unless $*prs.numdefns; # do nothing of no accumulated items
+        my $rv = %!templates<numdefn-list>(
+            %( :numdefn-list($*prs.numdefns), )
         );
         $*prs.defns = ();
         $rv
@@ -1078,6 +1051,15 @@ class RakuDoc::Processor {
         $*prs.body .= new;
         CALLERS::<$*prs> += $*prs;
         $text
+    }
+    #| get config merged from the ast and scoped data
+    method merged-config( $ast, $block-name --> Hash ) {
+        my %config = $ast.resolved-config with $ast;
+        my %scoped = $!scoped-data.config;
+        %scoped{ $block-name }.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
+        %config
     }
 
     ## A set of methods to generate anchors / targets
@@ -1234,9 +1216,17 @@ class RakuDoc::Processor {
             item-list => -> %prm, $tmpl {
                 "<item-list>\n" ~ %prm<item-list>.join ~ "</item-list>\n"
             },
-            #| special template to render an item list data structure
+            #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl {
                 "<defn-list>\n" ~ %prm<defn-list>.join ~ "</defn-list>\n"
+            },
+            #| special template to render a numbered item list data structure
+            numitem-list => -> %prm, $tmpl {
+                "<numitem-list>\n" ~ %prm<item-list>.join ~ "</numitem-list>\n"
+            },
+            #| special template to render a numbered defn list data structure
+            numdefn-list => -> %prm, $tmpl {
+                "<numdefn-list>\n" ~ %prm<defn-list>.join ~ "</numdefn-list>\n"
             },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
@@ -1444,6 +1434,14 @@ class RakuDoc::Processor {
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
                 '<item-list> ' ~ %prm<item-list>.join ~ ' </item-list>'
+            },
+            #| special template to render a numbered item list data structure
+            numitem-list => -> %prm, $tmpl {
+                "<numitem-list>\n" ~ %prm<item-list>.join ~ "</numitem-list>\n"
+            },
+            #| special template to render a numbered defn list data structure
+            numdefn-list => -> %prm, $tmpl {
+                "<numdefn-list>\n" ~ %prm<defn-list>.join ~ "</numdefn-list>\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
