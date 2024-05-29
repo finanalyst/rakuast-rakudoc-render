@@ -1,6 +1,5 @@
 use v6.d;
 use RakuDoc::PromiseStrings;
-use RakuDoc::Numeration;
 use PrettyDump;
 
 #| Instances of ProcessedState are created to contain the rendered form and collected data
@@ -51,13 +50,9 @@ class ProcessedState {
 
     #| An array of accumulated rendered numbered items, added to body when next non-item block encountered
     has @.numitems;
-    #| the last item numeration
-    has Numeration $.item-numeration is rw;
 
     #| An array of accumulated rendered numbered definitions, added to body when next non-defn block encountered
     has @.numdefns;
-    #| the last defn numeration
-    has Numeration $.defn-numeration is rw;
 
     #| Hash of definition => rendered value for definitions
     has %.definitions;
@@ -92,10 +87,8 @@ class ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
-            item-numeration => $.item-numeration.Str
             numdefns => { pretty-dump( @.num-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
-            defn-numeration => $.defn-numeration.Str
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
     }
@@ -187,10 +180,8 @@ class RakuDoc::Processed is ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
-            item-numeration => $.item-numeration.Str
             numdefns => { pretty-dump( @.num-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
-            defn-numeration => $.defn-numeration.Str
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
@@ -218,9 +209,6 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
         $p.definitions{$k} = $v # redefinition possible
     }
     $p.numitems.append: $q.numitems;
-    # the last numeration is taken from the right-most object
-    $p.item-numeration = $q.item-numeration;
     $p.numdefns.append: $q.numdefns;
-    $p.defn-numeration = $q.defn-numeration;
     $p
 }

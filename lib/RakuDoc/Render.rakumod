@@ -228,12 +228,12 @@ class RakuDoc::Processor {
             # =numitemN
             # Nth-level numbered list item
             when 'numitem' {
-
+                $.gen-numitem($ast, $parify)
             }
-            # =numdefn
-            when 'numdefn' {
-
-            }
+#            # =numdefn
+#            when 'numdefn' {
+#                $.gen-defn($ast, :numerate)
+#            }
             # =place block, mostly mimics P<>, but allows for TOC and caption
             when 'place' {
                  $.gen-place($ast);
@@ -553,7 +553,8 @@ class RakuDoc::Processor {
             return
         }
         my %config = $.merged-config($, 'para' );
-        my $rem = $.complete-item-list ~ $.complete-defn-list;
+        my $rem = $.complete-item-list ~ $.complete-defn-list
+        ~ $.complete-numitem-list ~ $.complete-numdefn-list;
         do {
             my ProcessedState $*prs .= new;
             for $ast.atoms { $.handle($_) }
@@ -657,6 +658,18 @@ class RakuDoc::Processor {
             %( :$level, :$contents, %config )
         )
     }
+    #| generates a single numitem and adds it to the numitem structure
+    #| nothing is added to the .body string
+    method gen-numitem($ast, $parify) {
+        my $level = $ast.level > 1 ?? $ast.level !! 1;
+        my $contents = $.contents($ast, $parify);
+        my %config = $.merged-config($ast, 'numitem' ~ $level );
+        $!scoped-data.item-reset unless ($*prs.numitems.elems or %config<continued>);
+        my $numeration = $!scoped-data.item-inc($level);
+        $*prs.numitems.push: %!templates<numitem>(
+            %( :$level, :$contents, :$numeration, %config )
+        )
+    }
     #| generates a single definition and adds it to the defn structure
     #| unlike item, a defn:
     #| - list has a flat hierarchy
@@ -664,36 +677,76 @@ class RakuDoc::Processor {
     #| - needs a target for links, and text for popup
     #| - is PCell-stored allowing for defn to be redefined
     #| like items nothing is added to the .body string until next non-defn
-    method gen-defn($ast) {
-        unless $ast.paragraphs.elems == 2 {
+    method gen-defn($ast, :$numerate = False) {
+        my $term;
+        my $defn-expansion;
+        if $ast.paragraphs.elems == 2 {
+            $term = $ast.paragraphs[0].Str.trim; # the term may not contain embedded code
+            $defn-expansion = $ast.paragraphs[1];
+        }
+#        elsif {
+#
+#        }
+        else {
             my $string = $ast.Str;
             $*prs.body ~= $string;
             $*prs.warnings.push:
                 "Invalid definition: ｢$string｣"
-                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.";
+            return
         }
-        my $term = $ast.paragraphs[0].Str; # the term may not contain embedded code
         my $target = $.name-id("defn_$term");
-        # generate contents from second str/paragraph
-        my ProcessedState $*prs .= new;
-        $.handle( $ast.paragraphs[1] );
-        my $contents = $*prs.body;
-        # keep most of state, initialise body
-        $*prs.body .= new;
+        my $contents;
         my %config = $.merged-config($ast, 'defn');
-        my $defn-expansion = %!templates<defn>(
-            %( :$term, :$target, :$contents, %config )
-        );
+        # generate contents from second str/paragraph
+        do {
+            my ProcessedState $*prs .= new;
+            $.handle( $defn-expansion );
+            $contents = $*prs.body;
+            # keep most of state, initialise body
+            $*prs.body .= new;
+            CALLERS::<$*prs> += $*prs;
+        }
+        if $numerate {
+            $!scoped-data.defn-reset unless ($*prs.numdefns.elems or %config<continued>);
+            my $numeration = $!scoped-data.defn-inc;
+            $defn-expansion = %!templates<numdefn>(
+                %( :$term, :$target, :$contents, :$numeration, %config )
+            )
+        }
+        else {
+            $defn-expansion = %!templates<defn>(
+                %( :$term, :$target, :$contents, %config )
+            )
+        }
         $*prs.defns.push: $defn-expansion; # for the defn list to be rendered
         $*prs.warnings.push:
             "Definition ｢$term｣ has been redefined"
             ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
             if $*prs.definitions{ $term }:exists;
         $*prs.definitions{ $term } = $defn-expansion, $target;
-        CALLERS::<$*prs> += $*prs;
         # define for previously referenced
         $!register.add-payload(:payload($defn-expansion), :id($term));
         $!register.add-payload(:payload($target), :id($term ~ '_target'))
+    }
+    #| generates a single numitem and adds it to the numitem structure
+    #| nothing is added to the .body string
+    method gen-numdefn($ast, $parify) {
+    return '';
+        my $level = $ast.level > 1 ?? $ast.level !! 1;
+        my $contents = $.contents($ast, $parify);
+        my %config = $.merged-config($ast, 'numitem' ~ $level );
+        my Numeration $item-num;
+        with $*prs.item-numeration and %config<continued> {
+            $item-num = $*prs.item-numeration
+        }
+        else {
+            $item-num .= new;
+        }
+        my $numeration = $item-num.inc($level).Str;
+        $*prs.items.push: %!templates<numitem>(
+            %( :$level, :$contents, :$numeration, %config )
+        )
     }
     method gen-place($ast) {
         my %config = $.merged-config( $ast, 'place');
@@ -803,20 +856,16 @@ class RakuDoc::Processor {
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);
         # render any tailing lists
-        $contents ~= $.complete-item-list;
-        $contents ~= $.complete-defn-list;
-        $contents ~= $.complete-numitem-list;
-        $contents ~= $.complete-numdefn-list;
+        $contents ~= $.complete-item-list ~ $.complete-defn-list
+        ~ $.complete-numitem-list ~ $.complete-numdefn-list;
         $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) );
     }
     method gen-section($ast, $parify) {
         my %config = $.merged-config($ast, 'section');
         my $contents = $.contents($ast, $parify);
         # render any tailing lists
-        $contents ~= $.complete-item-list;
-        $contents ~= $.complete-defn-list;
-        $contents ~= $.complete-numitem-list;
-        $contents ~= $.complete-numdefn-list;
+        $contents ~= $.complete-item-list ~ $.complete-defn-list
+        ~ $.complete-numitem-list ~ $.complete-numdefn-list;
         $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
     method gen-table($ast) {
@@ -982,7 +1031,7 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of the item list in $*prs
     method complete-item-list() {
-        return '' unless $*prs.items; # do nothing of no accumulated items
+        return '' unless $*prs.items.elems; # do nothing of no accumulated items
         my $rv = %!templates<item-list>(
             %( :item-list($*prs.items), )
         );
@@ -991,7 +1040,7 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of a defn list in $*prs
     method complete-defn-list() {
-        return '' unless $*prs.defns; # do nothing of no accumulated items
+        return '' unless $*prs.defns.elems; # do nothing of no accumulated items
         my $rv = %!templates<defn-list>(
             %( :defn-list($*prs.defns), )
         );
@@ -1000,20 +1049,20 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of the item list in $*prs
     method complete-numitem-list() {
-        return '' unless $*prs.numitems; # do nothing of no accumulated items
+        return '' unless $*prs.numitems.elems; # do nothing of no accumulated items
         my $rv = %!templates<numitem-list>(
             %( :numitem-list($*prs.numitems), )
         );
-        $*prs.items = ();
+        $*prs.numitems = ();
         $rv
     }
     #| finalises rendering of a defn list in $*prs
     method complete-numdefn-list() {
-        return '' unless $*prs.numdefns; # do nothing of no accumulated items
+        return '' unless $*prs.numdefns.elems; # do nothing of no accumulated items
         my $rv = %!templates<numdefn-list>(
             %( :numdefn-list($*prs.numdefns), )
         );
-        $*prs.defns = ();
+        $*prs.numdefns = ();
         $rv
     }
     # helper methods
@@ -1222,11 +1271,11 @@ class RakuDoc::Processor {
             },
             #| special template to render a numbered item list data structure
             numitem-list => -> %prm, $tmpl {
-                "<numitem-list>\n" ~ %prm<item-list>.join ~ "</numitem-list>\n"
+                "<numitem-list>\n" ~ %prm<numitem-list>.join ~ "</numitem-list>\n"
             },
             #| special template to render a numbered defn list data structure
             numdefn-list => -> %prm, $tmpl {
-                "<numdefn-list>\n" ~ %prm<defn-list>.join ~ "</numdefn-list>\n"
+                "<numdefn-list>\n" ~ %prm<numdefn-list>.join ~ "</numdefn-list>\n"
             },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {

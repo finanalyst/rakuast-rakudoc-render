@@ -1,7 +1,7 @@
 # list of things to do
 
 - [x] Semantic blocks / :hidden
-- [?] Custom blocks ( undefined only )
+- [x] Custom blocks ( undefined only )
 - [x] Handle custom Markup if template exists
 - [x] =place directive
 - [x] inline delta
@@ -14,8 +14,8 @@
 - [x] =output
 - [ ] =table
 - [ ] =row / =column outside =table
-- [ ] =numitem
-- [ ] =numhead 
+- [x] =numitem
+- [x] =numhead 
 - [ ] F<>
 - [ ] M<> (undefined)
 - [ ] :id
@@ -24,8 +24,9 @@
 - [ ] :bullet
 - [x] =para
 - [x] =nested
-- [ ] add plugins
-  - Custom block
+- [x] add plugins (plugins are implemented by sub-classes of renderer)
+  - Custom templates can be added to the template directory
+  - Custom data can be added to the main instance and given to each template
   - M<>
 - [ ] create text only templates
 - [ ] 

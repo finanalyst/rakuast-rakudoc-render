@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan *;
+plan 5;
 
 my $ast;
 my $rv;
@@ -49,12 +49,15 @@ $ast = Q:to/AST/.AST;
     =numitem2 Vici
     =end rakudoc
     AST
+
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
+    '<numitem-list>' .+
     '<numitem>' .+? 'contents' .+? 'Visito' .+ 'numeration' .+ '1.｣' .+
     '<numitem>' .+? 'contents' .+? 'Veni' .+ 'numeration' .+ '1.1.｣' .+
     '<numitem>' .+? 'contents' .+? 'Vidi' .+ 'numeration' .+ '1.2.｣' .+
-    '<numitem>' .+? 'contents' .+? 'Vici' .+ 'numeration' .+ '1.3.｣'
+    '<numitem>' .+? 'contents' .+? 'Vici' .+ 'numeration' .+ '1.3.｣' .+
+    '</numitem-list>'
     /, 'simple ordered list';
 
 $ast = Q:to/AST/.AST;
@@ -77,11 +80,11 @@ like $rv.body.Str, /
     '<numitem>' .+? 'contents' .+? 'Liberty' .+ 'numeration' .+ '1.｣' .+
     '<numitem>' .+? 'contents' .+? 'Death' .+ 'numeration' .+ '2.｣' .+
     '<numitem>' .+? 'contents' .+? 'Beer' .+ 'numeration' .+ '3.｣' .+
-    'para' .+? 'contents' .+ 'The tools are:'
+    'para' .+? 'contents' .+ 'The tools are:' .+
     '<numitem>' .+? 'contents' .+? 'Revolution' .+ 'numeration' .+ '1.｣' .+
     '<numitem>' .+? 'contents' .+? 'Deep-fried peanut butter sandwich' .+ 'numeration' .+ '2.｣' .+
     '<numitem>' .+? 'contents' .+? 'Keg' .+ 'numeration' .+ '3.｣'
-    /, 'simple ordered list';
+    /, 'two ordered lists';
 
 $ast = Q:to/AST/.AST;
     =begin rakudoc
@@ -97,8 +100,37 @@ $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     '<numitem>' .+? 'contents' .+? 'Retreat to remote Himalayan monastery' .+ 'numeration' .+ '1.｣' .+
     '<numitem>' .+? 'contents' .+? 'Learn the hidden mysteries of space and time' .+ 'numeration' .+ '2.｣' .+
-    'para' .+? 'contents' .+ 'contents' .+ '????'
+    'para' .+? 'contents' .+ 'important' .+ 'contents' .+ '????' .+ '/important' .+
     '<numitem>' .+? 'contents' .+? 'Prophet!' .+ 'numeration' .+ '3.｣'
-    /, 'simple ordered list';
+    /, 'continued ordered list';
+
+#$ast = Q:to/QAST/.AST;
+#    =begin rakudoc
+#    =defn Happy B<Person>
+#    When you're I<not> blue.
+#
+#    =numdefn Blue
+#    When you're not happy.
+#    =end rakudoc
+#    QAST
+#$rdp.debug(AstBlock, BlockType, Templates);
+#say $ast;
+#$rv = $rdp.render( $ast, :pre-finalised );
+#like $rv.body.Str, /
+#    '<numdefn-list>' .+
+#    '<numdefn>' .+
+#    'contents:' .+ "When you're not blue" .+
+#    'numeration:' .+ '｢1.｣'
+#    'target:' .+ 'defn_Happy' .*
+#    'term:' .+ 'Happy' .*
+#    '</numdefn>' .*
+#    '<numdefn>' .+
+#    'contents:' .+ "When you're not happy" .+
+#    'numeration:' .+ '｢2.｣'
+#    'target:' .+ 'defn_Blue' .+
+#    'term:' .+ 'Blue' .+
+#    '</numdefn>' .+
+#    '</numdefn-list>'
+#    /, 'Basic definitions';
 
 done-testing;
