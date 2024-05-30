@@ -230,10 +230,10 @@ class RakuDoc::Processor {
             when 'numitem' {
                 $.gen-numitem($ast, $parify)
             }
-#            # =numdefn
-#            when 'numdefn' {
-#                $.gen-defn($ast, :numerate)
-#            }
+            # =numdefn
+            when 'numdefn' {
+                $.gen-defn($ast, :numerate)
+            }
             # =place block, mostly mimics P<>, but allows for TOC and caption
             when 'place' {
                  $.gen-place($ast);
@@ -684,9 +684,6 @@ class RakuDoc::Processor {
             $term = $ast.paragraphs[0].Str.trim; # the term may not contain embedded code
             $defn-expansion = $ast.paragraphs[1];
         }
-#        elsif {
-#
-#        }
         else {
             my $string = $ast.Str;
             $*prs.body ~= $string;
@@ -697,7 +694,7 @@ class RakuDoc::Processor {
         }
         my $target = $.name-id("defn_$term");
         my $contents;
-        my %config = $.merged-config($ast, 'defn');
+        my %config = $.merged-config($ast, $numerate ?? 'numdefn' !! 'defn');
         # generate contents from second str/paragraph
         do {
             my ProcessedState $*prs .= new;
@@ -712,14 +709,15 @@ class RakuDoc::Processor {
             my $numeration = $!scoped-data.defn-inc;
             $defn-expansion = %!templates<numdefn>(
                 %( :$term, :$target, :$contents, :$numeration, %config )
-            )
+            );
+            $*prs.numdefns.push: $defn-expansion
         }
         else {
             $defn-expansion = %!templates<defn>(
                 %( :$term, :$target, :$contents, %config )
-            )
+            );
+            $*prs.defns.push: $defn-expansion; # for the defn list to be render
         }
-        $*prs.defns.push: $defn-expansion; # for the defn list to be rendered
         $*prs.warnings.push:
             "Definition ｢$term｣ has been redefined"
             ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
@@ -728,25 +726,6 @@ class RakuDoc::Processor {
         # define for previously referenced
         $!register.add-payload(:payload($defn-expansion), :id($term));
         $!register.add-payload(:payload($target), :id($term ~ '_target'))
-    }
-    #| generates a single numitem and adds it to the numitem structure
-    #| nothing is added to the .body string
-    method gen-numdefn($ast, $parify) {
-    return '';
-        my $level = $ast.level > 1 ?? $ast.level !! 1;
-        my $contents = $.contents($ast, $parify);
-        my %config = $.merged-config($ast, 'numitem' ~ $level );
-        my Numeration $item-num;
-        with $*prs.item-numeration and %config<continued> {
-            $item-num = $*prs.item-numeration
-        }
-        else {
-            $item-num .= new;
-        }
-        my $numeration = $item-num.inc($level).Str;
-        $*prs.items.push: %!templates<numitem>(
-            %( :$level, :$contents, :$numeration, %config )
-        )
     }
     method gen-place($ast) {
         my %config = $.merged-config( $ast, 'place');
@@ -1188,6 +1167,8 @@ class RakuDoc::Processor {
             toc-numeration => -> %prm, %tmpl { express-params( %prm, %tmpl, 'toc-num' )},
             #| renders =defn block
             defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
+            #| renders =numdefn block
+            numdefn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn' ) },
             #| renders =item block
             item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item' ) },
             #| renders =numitem block
@@ -1432,6 +1413,8 @@ class RakuDoc::Processor {
             toc-numeration => -> %prm, %tmpl { express-params( %prm, %tmpl, 'toc-num' )},
             #| renders =defn block
             defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
+            #| renders =numdefn block
+            numdefn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn' ) },
             #| renders =item block
             item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item' ) },
             #| renders =numitem block
