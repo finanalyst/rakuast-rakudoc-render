@@ -127,11 +127,6 @@ class RakuDoc::Processor {
     multi method handle(RakuAST::Node:D $ast) {
         $ast.rakudoc.map({ $.handle($_) })
     }
-            # =column
-            # Start a new column in a procedural table
-
-            # =row
-            # Start a new row in a procedural table
 
             # =formula
             # Render content as LaTex formula
@@ -241,8 +236,7 @@ class RakuDoc::Processor {
             # =rakudoc
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
-                $!scoped-data.start-scope(:starter($_));
-                $!scoped-data.last-title( $!current.source-data<rakudoc-title> );
+                $!scoped-data.start-scope(:starter($_), :title( $!current.source-data<rakudoc-title> ));
                 say $!scoped-data.debug if $.debug (cont) Scoping;
                 $.gen-rakudoc($ast, $parify);
                 $!scoped-data.end-scope;
@@ -254,9 +248,7 @@ class RakuDoc::Processor {
             # =section
             # Defines a section
             when 'section' {
-                my $last-title = $!scoped-data.last-title;
-                $!scoped-data.start-scope( :starter($_) );
-                $!scoped-data.last-title( $last-title );
+                $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-section($ast, $parify);
                 $!scoped-data.end-scope;
@@ -264,13 +256,29 @@ class RakuDoc::Processor {
             }
             # =table
             # Visual or procedural table
-            when 'table' { $.gen-table($ast) }
+            when 'table' {
+                $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
+                say $!scoped-data.debug if $.debug (cont) Scoping;
+                $.gen-table($ast);
+                $!scoped-data.end-scope;
+                say $!scoped-data.debug if $.debug (cont) Scoping
+            }
+            # =cell
+            # Contains data in a procedural table
+            # =column
+            # Start a new column in a procedural table
+            # =row
+            # Start a new row in a procedural table
+            when any(<cell column row>) {
+                $*prs.warnings.push: qq:to/WARN/;
+                The text ｢{ $ast.DEPARSE }｣ may not exist outside a 'table' block.
+                WARN
+            }
             # RESERVED
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
                 $!scoped-data.start-scope( :starter($_) );
-                $!scoped-data.last-title( $_ );
                 say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-semantics($ast, $parify);
                 $!scoped-data.end-scope;
@@ -290,9 +298,11 @@ class RakuDoc::Processor {
             default { $.gen-unknown-builtin($ast) }
         }
     }
-    # Raku data section
+    # RakuDoc declarator block
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
-        #ignore declarator block
+        $*prs.warnings.push: qq:to/WARN/;
+            ｢{ $ast.Str }｣ is a declarator block and not rendered for text-based output formats.
+            WARN
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         my $letter = $ast.letter;
@@ -310,6 +320,7 @@ class RakuDoc::Processor {
             ## meta data via Config is allowed
             ## E is not format code, but we can ignore display possibility
             # TODO add :allow to C & V
+            # TODO use verbatim string for S
             when any( <B C H I J K R S T U V O E> ) {
                 my $contents = self.markup-contents($ast);
                 $*prs.body ~= %!templates{"markup-$letter"}(
@@ -582,8 +593,10 @@ class RakuDoc::Processor {
             CALLERS::<$*prs> += $*prs;
        }
     }
-    multi method handle(RakuAST::Doc::Row:D $ast) {
-        self.handle($ast.WHICH.Str)
+    multi method handle(RakuAST::Doc::LegacyRow:D $ast) {
+        $*prs.warnings.push: qq:to/WARN/;
+            The line ｢{ $ast.Str }｣ should not appear outside the scope of a =table
+            WARN
     }
     multi method handle(Cool:D $ast) {
         self.handle($ast.WHICH.Str)
@@ -633,8 +646,8 @@ class RakuDoc::Processor {
         # numeration is attached to contents first
         my $numeration = '';
         if $numerate {
-            $numeration ~= PCell.new( :$!register, :id('num_' ~ $target ) );
-            $*prs.head-numbering.push: ['num_' ~ $target, $level ];
+            $numeration ~= PCell.new( :$!register, :id('heading_' ~ $target ) );
+            $*prs.head-numbering.push: ['heading_' ~ $target, $level ];
         }
         my $caption = %config<caption>:delete;
         $caption = ($template eq <head numhead>.any ?? $contents !! $template) without $caption;
@@ -847,8 +860,176 @@ class RakuDoc::Processor {
         ~ $.complete-numitem-list ~ $.complete-numdefn-list;
         $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
-    method gen-table($ast) {
-        $*prs.body ~= ''
+    multi method gen-table($ast) {
+        my %config = $.merged-config($ast, 'table');
+        my $caption = %config<caption>:delete // 'Table';
+        my $target = $.name-id($caption);
+        $!scoped-data.last-title( $target );
+        my $id = %config<id>:delete;
+        with $id {
+            if self.is-target-unique( $_ ) {
+                $id = self.register-target( $_ );
+            }
+            else {
+                $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣";
+            }
+        }
+        my $level = %config<headlevel> // 1 ;
+        $level = 1 if $level < 1;
+        # numeration is attached to contents first
+        my $numeration = '';
+        if %config<numerate> {
+            $numeration ~= PCell.new( :$!register, :id('table_' ~ $target ) );
+            $*prs.head-numbering.push: ['table_' ~ $target, $level ];
+        }
+        my $toc = %config<toc>:delete // True;
+        # attach numeration to caption and contents separately, allowing template
+        # developer to add numeration to caption if wanted by changing the template
+        $*prs.toc.push(
+            { :$caption, :$target, :$level, :$numeration }
+        ) if $toc;
+        my Bool $procedural = $ast.procedural;
+        my @grid;
+        my @headers;
+        my @rows;
+        if $procedural {
+            # grid traversing algorithm due to Damian Conway
+            # Initially empty grid...
+            # How to locate the next empty cell...
+            my \find_next_empty = {
+                ACROSS => sub (:%at is copy) {
+                    # Search leftwards for first empty cell...
+                    repeat { %at<col>++ } until !defined @grid[%at<row>][%at<col>];
+                    return %at;
+                },
+                DOWN => sub (:%at is copy) {
+                    # Search downwards for first empty cell...
+                    repeat { %at<row>++ } until !defined @grid[%at<row>][%at<col>];
+                    return %at;
+                },
+                ROW => sub (:%at is copy) {
+                    # Search downwards for first row with an empty cell to the right...
+                    # (Note: starts by searching current row before moving down)
+                    for %at<row> ..* -> $row {
+                        for 0 ..^ %at<col> -> $col {
+                            return { :$row, :$col } if !defined @grid[$row][$col];
+                        }
+                    }
+                },
+                COLUMN => sub (:%at is copy) {
+                    # Search rightwards for first column with an empty cell above...
+                    # (Note: starts by searching current column before moving left)
+                    for %at<col> ..* -> $col {
+                        for 0 ..^ %at<row> -> $row {
+                            return { :$row, :$col } if !defined @grid[$row][$col];
+                        }
+                    }
+                },
+            }
+            # parse row and column directive contents, should be in node.config
+            my %POS = :row(0), :col(0);
+            my $DIR = 'ACROSS';
+            # Track previous action at each step...
+            my $prev-was-cell = False; # because we are in grid
+            my @cell-context = ( %(), ); # cell context can be set at grid, row, column, or cell level
+            # span type only set at cell level
+            for <label header align> -> $k {
+                @cell-context[*-1]{ $k } = $_ with %config{ $k };
+            }
+            for $ast.paragraphs -> $grid-instruction {
+                next if $grid-instruction.type eq 'comment';
+                unless $grid-instruction.^can('type') {
+                    $*prs.body ~= $ast.Str;
+                    $*prs.warnings.push: "｢{$grid-instruction.DEPARSE}｣ is illegal as an immediate child of a =table";
+                    return
+                }
+                given $grid-instruction.type {
+                    when 'cell' {
+                        my %cell-config = $grid-instruction.resolved-config;
+                        my %payload = %( |@cell-context[*-1], %cell-config );
+                        # to be expanded to get-contents
+                        %payload<data> = $.contents( $grid-instruction, False );
+                        my $span;
+                        $span = $_ with %cell-config<span>;
+                        with %cell-config<column-span> {
+                            $span[0] = $_;
+                            $span[1] //= 1
+                        }
+                        with %cell-config<row-span> {
+                            $span[0] //= 1;
+                            $span[1] = $_
+                        }
+                        %payload<span> = $span if $span;
+                        # Fill current cell with payload...
+                        @grid[%POS<row>][%POS<col>] = %payload;
+                        # Reserve the full span of cells specified...
+                        if $span {
+                            for 0 ..^ $span[0] -> $extra-col {
+                                for 0 ..^ $span[1] -> $extra-row {
+                                    @grid[%POS<row> + $extra-row][%POS<col> + $extra-col]
+                                            //= %( :no-cell, );
+                                }
+                            }
+                        }
+                        # Find next empty cell in the fill direction...
+                        %POS = find_next_empty{$DIR}(at => %POS);
+                    }
+                    when 'row' {
+                        @cell-context.pop if @cell-context.elems > 1;  # this is only false if the first row/column after =table
+                        # Check the contents for metadata
+                        @cell-context.push: %( |@cell-context[0], |$grid-instruction.resolved-config );
+                        # Start filling across the new row...
+                        $DIR = 'ACROSS';
+                        # Find the new fill position...
+                        if $prev-was-cell {
+                            %POS = find_next_empty<ROW>(at => %POS);
+                        }
+                    }
+                    when 'column' {
+                        @cell-context.pop if @cell-context.elems > 1;  # this is only false if the first row/column after =table
+                        # Check the contents for metadata
+                        @cell-context.push: %( |@cell-context[0], |$grid-instruction.resolved-config );
+
+                        # Start filling down the new column...
+                        $DIR = 'DOWN';
+                        # Find the new fill position...
+                        if $prev-was-cell {
+                            %POS = find_next_empty<COLUMN>(at => %POS);
+                        }
+                    }
+                    default { # only =cell =row =column allowed after a =grid
+                        $*prs.body ~= $ast.Str;
+                        $*prs.warnings.push: "｢{$grid-instruction.DEPARSE}｣ is illegal as an immediate child of a =table";
+                        return
+                    }
+                }
+                # Update previous action...
+                $prev-was-cell = $grid-instruction.type eq 'cell';
+            }
+        }
+        else {
+            for $ast.paragraphs -> $row {
+                next if $row ~~ Str; # rows as strings are row/header separators
+                unless $row ~~ RakuAST::Doc::LegacyRow {
+                    $*prs.body ~= $ast.DEPARSE;
+                    $*prs.warnings.push: "｢{$row.Str}｣ is illegal as an immediate child of a =table";
+                    return
+                }
+                my @this-row;
+                for $row.cells {
+                    my ProcessedState $*prs .= new;
+                    $.handle( $_ );
+                    @this-row.push: $*prs.body;
+                    $*prs.body .= new;
+                    CALLERS::<$*prs> += $*prs;
+                }
+                @rows.push: @this-row
+            }
+            with %config<header-row> {
+                @headers = @rows.shift for ^($_+1);
+            }
+        }
+        $*prs.body ~= %!templates<table>.( %( :$procedural, :$caption, :$id, :@headers, :@rows, :@grid, %config ) );
     }
     method gen-unknown-builtin($ast) {
         my %config = $ast.resolved-config;
@@ -1003,8 +1184,11 @@ class RakuDoc::Processor {
     method complete-heading-numerations() {
         return unless $*prs.head-numbering.elems;
         my Numeration $heads .= new;
+        my Numeration $tables .= new;
         for $*prs.head-numbering -> ( $id, $level  ) {
-            my $payload = $heads.inc( $level ).Str;
+            my $payload;
+            $payload = $heads.inc( $level ).Str if $id.starts-with('heading');
+            $payload = $tables.inc( $level ).Str if $id.starts-with('table');
             $!register.add-payload( :$payload, :$id )
         }
     }

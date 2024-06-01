@@ -87,7 +87,7 @@ class ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
-            numdefns => { pretty-dump( @.num-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+            numdefns => { pretty-dump( @.numdefns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
@@ -180,7 +180,7 @@ class RakuDoc::Processed is ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
-            numdefns => { pretty-dump( @.num-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+            numdefns => { pretty-dump( @.numdefns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }

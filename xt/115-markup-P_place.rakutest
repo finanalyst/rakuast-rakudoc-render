@@ -69,7 +69,6 @@ like $rv, /
     .+ '</placement>'
     .+ '</rakudoc>'
 /, 'got a toc inside a placement, inside a rakudoc';
-
 $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
     =head1 Head One

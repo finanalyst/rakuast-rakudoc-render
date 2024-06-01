@@ -1,0 +1,116 @@
+use v6.d;
+use Test;
+
+use RakuDoc::Render;
+
+plan 8;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+
+$ast = Q:to/QAST/.AST;
+=begin rakudoc
+=begin table
+one | two | three | four
+d1  | d2  | d3    | d4
+=end table
+=end rakudoc
+QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<table>'  .+
+    'procedural:' .+ False
+    /, 'got textual table';
+like $rv.body.Str, /
+    '<table>' .+
+    'rows' .+ 'one' .+ 'd4'
+    /, 'got data in rows';
+$ast = Q:to/QAST/.AST;
+=begin rakudoc
+=table
+one | two | three | four
+====|=====|=======|=====
+d1  | d2  | d3    | d4
+d21 | d22 | d23   | d24
+
+=end rakudoc
+QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<table>'  .+
+    'headers' .+ 'one' .+ 'four' .+
+    'rows' .+ 'd1' .+ 'd24'
+    /, 'got a header & rows';
+$ast = Q:to/QAST/.AST;
+=begin rakudoc
+=begin table
+=row
+=cell one
+=cell two
+=cell three
+=row
+=cell d1
+=cell d2
+=cell d3
+=end table
+=end rakudoc
+QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<table>'  .+
+    'grid' .+ 'one' .+ 'd3' .+
+    'procedural:' .+ True
+    /, 'got procedural table';
+$ast = Q:to/QAST/.AST;
+=begin rakudoc
+=begin table
+=row
+=cell one
+=cell two with B<markup> in it
+=cell three
+=row
+=cell d1
+=cell d2
+=cell d3
+=end table
+=end rakudoc
+QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<table>'  .+
+    'grid' .+ 'one' .+?
+    'basis' .+ 'contents' .+
+    'markup' .+
+     '</basis>' .+ 'in it' .+
+    'procedural:' .+ True
+    /, 'got procedural table with markup in cell';
+
+$ast = Q:to/QAST/.AST;
+=begin rakudoc
+=row :header
+=begin table
+=cell one
+=cell two with B<markup> in it
+=cell three
+=row
+=cell d1
+=cell d2
+=cell d3
+=end table
+=end rakudoc
+QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<table>'  .+
+    'grid' .+ 'one' .+?
+    'basis' .+ 'contents' .+
+    'markup' .+
+     '</basis>' .+ 'in it' .+
+    'procedural:' .+ True
+    /, 'got valid procedural table after illegal row';
+is $rv.warnings.elems, 1, 'got an error';
+like $rv.warnings[0], /
+    '=row' .+ 'not exist outside'
+    /, 'trapped row outside table';
+done-testing;
