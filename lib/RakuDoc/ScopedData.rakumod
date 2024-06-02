@@ -18,10 +18,8 @@ has Numeration @.defns-numeration = Numeration.new , ;
 has Bool $.debug is rw = False;
 #| debug information
 method diagnostic {
-    qq:to/DEBUG/;
-    Scope levels: { +@!starters }
-    Scope starters: { +@!starters ?? @!starters.join(' ') !! 'original level' }
-    DEBUG
+    qq[ Scope levels: { +@!starters }
+    Scope starters: { +@!starters ?? @!starters.join(' ') !! 'original level' } ]
 }
 #| starts a new scope
 method start-scope(:$starter!, :$title, :$verbatim ) {
@@ -37,7 +35,7 @@ method start-scope(:$starter!, :$title, :$verbatim ) {
     }
     @!items-numeration.push: @!items-numeration[ * - 1 ];
     @!defns-numeration.push: @!defns-numeration[ * - 1 ];
-    say $.diagnostic if $!debug
+    say 'New scope started. ', $.diagnostic if $!debug
 }
 #| ends the current scope, forgets new data
 method end-scope {
@@ -46,7 +44,7 @@ method end-scope {
     @!config.pop;
     @!aliases.pop;
     @!save-spacer.pop;
-    say $.diagnostic if $!debug
+    say 'Scope ended. ', $.diagnostic if $!debug
 }
 multi method config(%h) {
     @!config[*-1]{ .key } = .value for %h;

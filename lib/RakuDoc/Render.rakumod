@@ -319,8 +319,6 @@ class RakuDoc::Processor {
             ## meta data via Config is allowed
             ## E is not format code, but we can ignore display possibility
             # Eat space inside markup
-            # TODO add :allow to C & V
-            # TODO use verbatim string for S
             when any( <B H I J K R T U O E> ) {
                 my $contents = self.markup-contents($ast);
                 $*prs.body ~= %!templates{"markup-$letter"}(
