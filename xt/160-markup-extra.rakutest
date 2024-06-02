@@ -1,0 +1,67 @@
+use v6.d;
+use Test;
+use Test::Output;
+use RakuDoc::Render;
+
+plan *;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to M<extra markup no meta> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    '<markup>' .+? 'content' .+ 'extra markup no meta' .+ '</mark'
+    /, 'markup with no meta has only display text rendered';
+like $rv.warnings[0], / 'Markup-M failed: no meta information. Got' /, 'got no meta warning';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to M<extra markup|builtin; some data, strings> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    '<markup>' .+? 'content' .+ 'extra markup' .+ '</mark'
+    /, 'markup with bad (builtin) meta has only display text rendered';
+like $rv.warnings[0], /
+        'Markup-M failed: first meta string must conform to Custom template spelling. Got'
+    /, 'got expected custom template warning';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to M<extra markup|MyTemplate; some data, strings> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    '<markup>' .+? 'content' .+ 'extra markup' .+ '</mark'
+    /, 'markup with good meta, no template, has only display rendered';
+like $rv.warnings[0], /
+        'Markup-M failed: template' .+ 'MyTemplate' .+ 'does not exist'
+    /, 'got no template warning';
+
+## test possible and defined
+$rdp.templates<MyTemplate> = sub ( %prm, $ ) {
+    RakuDoc::Processor::express-params( %prm, $, 'extramarkup')
+}
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing to M<extra markup|MyTemplate; some data, strings> in between words.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing to '
+    '<extramarkup>' .+? 'content' .+ 'extra markup' .+
+    'meta' .+ 'some data' .+ 'strings' .+
+    '</extramarkup>'
+    /, 'markup with good meta, template is used';
+is $rv.warnings.elems, 0, 'no warnings issued';
+
+done-testing;

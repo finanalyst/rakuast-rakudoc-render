@@ -523,6 +523,30 @@ class RakuDoc::Processor {
             # M< DISPLAY-TEXT |  METADATA = WHATEVER >
             # Markup extra ( M<display text|functionality;param,sub-type;...>)
             when 'M' {
+                my $contents = self.markup-contents($ast);
+                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
+                unless $meta {
+                    $*prs.body ~= %!templates<markup-M>( %(:$contents ) );
+                    $*prs.warnings.push: "Markup-M failed: no meta information. Got ｢{ $ast.DEPARSE }｣";
+                    return
+                }
+                my $target = self.index-id($ast, :$context, :$contents, :$meta);
+                my $template = $meta[0].Str;
+                if any($template.uniprops) ~~ / Lu / and any($template.uniprops) ~~ / Ll / {
+                    # template has an acceptable custom template spelling
+                    if %!templates{ $template }:exists {
+                        $*prs.body ~= %!templates{ $template }( %(:$contents, :$meta ) );
+                    }
+                    else {
+                        $*prs.body ~= %!templates<markup-M>( %(:$contents ) );
+                        $*prs.warnings.push: "Markup-M failed: template ｢$template｣ does not exist. Got ｢{ $ast.DEPARSE }｣"
+                    }
+                }
+                else {
+                    # template is spelt like a SEMANTIC or builtin
+                    $*prs.body ~= %!templates<markup-M>( %(:$contents ) );
+                    $*prs.warnings.push: "Markup-M failed: first meta string must conform to Custom template spelling. Got ｢{ $ast.DEPARSE }｣"
+                }
             }
             # X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             # Index entry ( X<display text|entry,subentry;...>)

@@ -17,7 +17,8 @@
 - [x] =numitem
 - [x] =numhead 
 - [ ] F<>
-- [ ] M<> (undefined)
+- [ ] =formula
+- [x] M<> (undefined)
 - [ ] :id
 - [ ] :toc / :!toc
 - [ ] :headerlevel
@@ -27,6 +28,4 @@
 - [x] add plugins (plugins are implemented by sub-classes of renderer)
   - Custom templates can be added to the template directory
   - Custom data can be added to the main instance and given to each template
-  - M<>
 - [ ] create text only templates
-- [ ] 
