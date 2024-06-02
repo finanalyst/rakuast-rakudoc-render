@@ -12,8 +12,8 @@
 - [x] =code
 - [x] =input
 - [x] =output
-- [ ] =table
-- [ ] =row / =column outside =table
+- [x] =table
+- [x] =row / =column outside =table
 - [x] =numitem
 - [x] =numhead 
 - [ ] F<>

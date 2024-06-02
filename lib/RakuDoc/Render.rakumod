@@ -24,13 +24,19 @@ class RakuDoc::Processor {
             when None {
                 $!debug-modes = Nil;
                 %!templates.debug = False;
+                $!scoped-data.debug = False;
             }
             when All {
                 $!debug-modes .= new( RDProcDebug::.values.grep( none( All, None )) );
                 %!templates.debug = True;
+                $!scoped-data.debug = True;
             }
             when Templates {
                 %!templates.debug = True;
+                proceed
+            }
+            when Scoping {
+                $!scoped-data.debug = True;
                 proceed
             }
             default {
@@ -121,7 +127,8 @@ class RakuDoc::Processor {
         {*}
     }
     multi method handle(Str:D $ast) {
-        $*prs.body ~= $!scoped-data.verbatim
+        $*prs.body ~=
+            $!scoped-data.verbatim
             ?? ~$ast !! $.compactify( $ast )
     }
     multi method handle(RakuAST::Node:D $ast) {
@@ -193,10 +200,8 @@ class RakuDoc::Processor {
             # Nth-level heading
             when 'head' {
                 $!scoped-data.start-scope(:starter($_)) if $parify;
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-headish($ast, $parify);
                 $!scoped-data.end-scope if $parify;
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # =item
             # First-level list item
@@ -237,10 +242,8 @@ class RakuDoc::Processor {
             # No "ambient" blocks inside
             when 'rakudoc' | 'pod' {
                 $!scoped-data.start-scope(:starter($_), :title( $!current.source-data<rakudoc-title> ));
-                say $!scoped-data.debug if $.debug (cont) Scoping;
                 $.gen-rakudoc($ast, $parify);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # =pod
             # Legacy version of rakudoc
@@ -249,19 +252,15 @@ class RakuDoc::Processor {
             # Defines a section
             when 'section' {
                 $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-section($ast, $parify);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # =table
             # Visual or procedural table
             when 'table' {
                 $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
-                say $!scoped-data.debug if $.debug (cont) Scoping;
                 $.gen-table($ast);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $.debug (cont) Scoping
             }
             # =cell
             # Contains data in a procedural table
@@ -279,10 +278,8 @@ class RakuDoc::Processor {
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
                 $!scoped-data.start-scope( :starter($_) );
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-semantics($ast, $parify);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             # CustomName
             # User-defined block
@@ -290,10 +287,8 @@ class RakuDoc::Processor {
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
                 $!scoped-data.start-scope( :starter($_) );
                 $!scoped-data.last-title( $_ );
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
                 $.gen-custom($ast, $parify);
                 $!scoped-data.end-scope;
-                say $!scoped-data.debug if $.debug (cont) Scoping ;
             }
             default { $.gen-unknown-builtin($ast) }
         }
@@ -301,16 +296,20 @@ class RakuDoc::Processor {
     # RakuDoc declarator block
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
         $*prs.warnings.push: qq:to/WARN/;
-            ｢{ $ast.Str }｣ is a declarator block and not rendered for text-based output formats.
+            ｢{ $ast.DEPARSE }｣ is a declarator block and not rendered for text-based output formats.
             WARN
     }
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         my $letter = $ast.letter;
-        if ($!scoped-data.verbatim(:called-by) eq 'code') and !%*ALLOW{ $letter } {
+        say "Doc::Markup letter: $letter" if $.debug (cont) MarkUp;
+        if (
+            $!scoped-data.verbatim(:called-by) eq <code markup-C markup-V>.any
+            )
+            and !%*ALLOW{ $letter }
+            {
             $*prs.body ~= $ast.DEPARSE;
             return
         }
-        say "Doc::Markup letter: $letter" if $.debug (cont) MarkUp;
         my %config = $.merged-config( $, $letter );
         # for X<> and to help with warnings
         my $place = $!scoped-data.last-title;
@@ -319,13 +318,36 @@ class RakuDoc::Processor {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
             ## E is not format code, but we can ignore display possibility
+            # Eat space inside markup
             # TODO add :allow to C & V
             # TODO use verbatim string for S
-            when any( <B C H I J K R S T U V O E> ) {
+            when any( <B H I J K R T U O E> ) {
                 my $contents = self.markup-contents($ast);
                 $*prs.body ~= %!templates{"markup-$letter"}(
                     %( :$contents, %config )
                 );
+            }
+            # Do not eat space inside markup
+            when 'S' {
+                $*prs.body ~= %!templates{"markup-$letter"}(
+                    %( :contents( $ast.atoms.join ), %config )
+                );
+            }
+            # Make verbatim, but compactify space
+            when any( <C V> ) {
+                my %*ALLOW = %( CALLERS::<%*ALLOW> );
+                # replace contents of %*ALLOW if so configured
+                with %config<allow> {
+                    %*ALLOW = Empty;
+                    %*ALLOW{$_} = True for $_.list
+                }
+                $!scoped-data.start-scope(:starter("markup-$letter"));
+                $!scoped-data.verbatim;
+                my $contents = $.markup-contents($ast);
+                $*prs.body ~= %!templates{"markup-$letter"}(
+                    %( :$contents, %config )
+                );
+                $!scoped-data.end-scope
             }
             ## Display only, but has side-effects
             #| Footnotes (from N<> markup)

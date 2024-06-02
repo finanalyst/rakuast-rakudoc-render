@@ -1,0 +1,77 @@
+use v6.d;
+use Test;
+
+use Test::Output;
+use RakuDoc::Render;
+
+plan *;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+#$ast = Q:to/QAST/.AST;
+#    =begin rakudoc
+#    The emergency signal is: S<
+#    dot dot dot   dash dash dash   dot dot dot>.
+#    =end rakudoc
+#    QAST
+#$rv = $rdp.render( $ast, :pre-finalised );
+#like $rv.body.Str, /
+#    'The emergency signal is:' .+
+#    '<space>' .+? 'content' .+
+#    '｢' \v
+#    'dot dot dot'  \s**3 'dash dash dash' \s**3   'dot dot dot｣'  .+
+#    '</space>' .+ '.'
+#    /, 'S-markup with extra spaces';
+#$ast = Q:to/QAST/.AST;
+#    =begin rakudoc
+#    The emergency signal is: B<
+#    dot dot dot   dash dash dash   dot dot dot>.
+#    =end rakudoc
+#    QAST
+#$rv = $rdp.render( $ast, :pre-finalised );
+#like $rv.body.Str, /
+#    'The emergency signal is:' .+?
+#    '<basis>' .+?
+#    'content' .+?
+#    '｢ dot dot dot dash dash dash dot dot dot｣' .+?
+#     '</basis>' .+ '.'
+#    /, 'B-markup removes extra spaces inside text';
+#$ast = Q:to/QAST/.AST;
+#    =begin rakudoc
+#    The B<V< V<> >> markup instruction disarms other codes
+#    such as V< I<>, C<>, B<>, and M<> >.
+#    =end rakudoc
+#    QAST
+#$rv = $rdp.render( $ast, :pre-finalised );
+#like $rv.body.Str, /
+#    'The ' .+?
+#    'basis' .+?
+#    'content' .+?
+#    'verbatim' .+? 'content' .+ 'V<>' .+ '</verbatim' .+
+#    '</basis' .+
+#    'disarms' .+
+#    'verbatim' .+? 'content' .+ 'I<>, C<>, B<>, and M<>'
+#    /, 'verbatim test';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =config C :allow< B I U >
+    =config V :allow< K L X >
+    Some C<text with B<morkup> and K<markup> > back to normal.
+    Some V<text with B<morkup> and K<markup> > back to normal.
+    =end rakudoc
+    QAST
+$rdp.debug(AstBlock, MarkUp, Scoping);
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    'Some '
+    '<code>' .+? 'content' .+ 'text with' .+
+    'basis' .+? 'content' .+ 'markup' .+ '/basis' .+
+    'K<markup>' .+ '/code' .+ 'back to normal' .+
+    'Some '
+    '<verbatim>' .+? 'content' .+ 'text with' .+
+    'B<markup> and' .+
+    'keyboard' .+? 'content' .+ 'markup' .+ '/keyboard' .+
+    '/code' .+ 'back to'
+    /, 'Verbatim/code with config works';
+done-testing;

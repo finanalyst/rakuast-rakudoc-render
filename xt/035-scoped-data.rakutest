@@ -6,7 +6,7 @@ use Test::Output;
 
 my RakuDoc::ScopedData $sc;
 
-plan 22;
+plan 24;
 lives-ok { $sc .= new }, 'ScopedData instantiates';
 is $sc.last-title, 'No starter yet', 'zeroth title';
 is $sc.last-starter, 'original level', 'zeroth starter';
@@ -19,24 +19,32 @@ $sc.start-scope(:starter<foo>);
 is-deeply-relaxed $sc.config, { :foo('bar')}, 'new current scope correct';
 $sc.config( {:1foo, :2xxx});
 is-deeply-relaxed $sc.config, {:1foo, :2xxx }, 'new current scope updated';
-like $sc.debug, /
+like $sc.diagnostic, /
     'Scope levels' .+ 1
     .+ 'ters:' \s 'foo' \s+ $
-/, 'debug data as expected';
+/, 'diagnostic data as expected';
 is $sc.last-title, 'Block # 1', 'title  of first starter';
-$sc.start-scope(:starter<testing>);
-like $sc.debug, /
+$sc.debug = True;
+output-like { $sc.start-scope(:starter<testing>) }, /
     'Scope levels' .+ 2
     .+ 'ters:' \s 'foo' \s+ 'testing'
-/, 'debug data as expected';
+/, 'diagnostic data output with debug';
+like $sc.diagnostic, /
+    'Scope levels' .+ 2
+    .+ 'ters:' \s 'foo' \s+ 'testing'
+/, 'diagnostic data as expected';
 is $sc.last-starter, 'testing', 'only last starter context';
 lives-ok { $sc.last-title('Test') }, 'accepts title';
 is $sc.last-title, 'Test', 'title  of last starter';
-$sc.end-scope;
-like $sc.debug, /
+output-like { $sc.end-scope }, /
     'Scope levels' .+ 1
     .+ 'ters:' \s 'foo' \s+ $
-/, 'debug data as expected';
+/, 'diagnostic data output with debug';
+like $sc.diagnostic, /
+    'Scope levels' .+ 1
+    .+ 'ters:' \s 'foo' \s+ $
+/, 'diagnostic data as expected';
+$sc.debug = False;
 $sc.end-scope;
 my %conf = $sc.config;
 is-deeply-relaxed %conf, { :foo('bar')}, 'old scope restored';

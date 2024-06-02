@@ -8,7 +8,8 @@ plan 15;
 my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new(:test);
-# only test B as C H I J K R S T U V O are the same but different key words
+# only test B as H I J K R T U O are the same but different key words
+# C V S tested later
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     Some thingB<to be said>inside letters.

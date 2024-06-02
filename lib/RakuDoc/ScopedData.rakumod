@@ -15,8 +15,9 @@ has @!save-spacer = 'None' but False, ;
 has Numeration @.items-numeration = Numeration.new , ;
 #| the last defn numeration
 has Numeration @.defns-numeration = Numeration.new , ;
+has Bool $.debug is rw = False;
 #| debug information
-method debug {
+method diagnostic {
     qq:to/DEBUG/;
     Scope levels: { +@!starters }
     Scope starters: { +@!starters ?? @!starters.join(' ') !! 'original level' }
@@ -35,7 +36,8 @@ method start-scope(:$starter!, :$title, :$verbatim ) {
         @!save-spacer.push: @!save-spacer[*-1]
     }
     @!items-numeration.push: @!items-numeration[ * - 1 ];
-    @!defns-numeration.push: @!defns-numeration[ * - 1 ]
+    @!defns-numeration.push: @!defns-numeration[ * - 1 ];
+    say $.diagnostic if $!debug
 }
 #| ends the current scope, forgets new data
 method end-scope {
@@ -44,6 +46,7 @@ method end-scope {
     @!config.pop;
     @!aliases.pop;
     @!save-spacer.pop;
+    say $.diagnostic if $!debug
 }
 multi method config(%h) {
     @!config[*-1]{ .key } = .value for %h;
