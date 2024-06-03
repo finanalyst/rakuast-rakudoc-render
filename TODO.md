@@ -16,8 +16,8 @@
 - [x] =row / =column outside =table
 - [x] =numitem
 - [x] =numhead 
-- [ ] F<>
-- [ ] =formula
+- [x] F<>
+- [x] =formula
 - [x] M<> (undefined)
 - [ ] :id
 - [ ] :toc / :!toc
@@ -28,4 +28,14 @@
 - [x] add plugins (plugins are implemented by sub-classes of renderer)
   - Custom templates can be added to the template directory
   - Custom data can be added to the main instance and given to each template
-- [ ] create text only templates
+- [ ] Templates
+  - [ ] text only
+  - [ ] MarkDown, different id naming conventions
+  - [ ] HTML, need to add CSS and Javascript
+  - [ ] Epub, need to add extra metadata pages 
+- [ ] Documentation
+  - [ ] ScopedData
+  - [ ] MarkupMeta
+  - [ ] Processed
+  - [ ] Render, noting the extensions from RakuDoc v2
+- [ ] Apply numeration possibilities numTable, numFormula, numPara

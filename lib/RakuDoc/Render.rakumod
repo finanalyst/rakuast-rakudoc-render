@@ -134,10 +134,6 @@ class RakuDoc::Processor {
     multi method handle(RakuAST::Node:D $ast) {
         $ast.rakudoc.map({ $.handle($_) })
     }
-
-            # =formula
-            # Render content as LaTex formula
-
     multi method handle(RakuAST::Doc::Block:D $ast) {
         if $!scoped-data.verbatim {
             $*prs.body ~= $ast.set-paragraphs( $ast.paragraphs.map({ $.handle($_) }) ).DEPARSE;
@@ -194,6 +190,9 @@ class RakuDoc::Processor {
             # =config
             # Block scope modifications to a block or markup instruction
             when 'config' { $.manage-config($ast); }
+            # =formula
+            # Render content as LaTex formula
+            when 'formula' { $.gen-formula($ast) }
             # =head
             # First-level heading
             # =headN
@@ -339,8 +338,7 @@ class RakuDoc::Processor {
                     %*ALLOW = Empty;
                     %*ALLOW{$_} = True for $_.list
                 }
-                $!scoped-data.start-scope(:starter("markup-$letter"));
-                $!scoped-data.verbatim;
+                $!scoped-data.start-scope(:starter("markup-$letter"), :verbatim);
                 my $contents = $.markup-contents($ast);
                 $*prs.body ~= %!templates{"markup-$letter"}(
                     %( :$contents, %config )
@@ -399,8 +397,13 @@ class RakuDoc::Processor {
 
             # F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             # Formula inline content ( F<ALT|LaTex notation> )
+            # At a minimum, only the ALT text should be rendered. But the metadata is passed to the
+            # template, so the template can be adapted to render the LATEX formula.
             when 'F' {
-
+                my $formula = $.markup-contents($ast).Str;
+                my $contents = $formula;
+                $formula = $ast.meta if $ast.meta;
+                $*prs.body ~= %!templates<markup-F>( %( :$contents, :$formula, %config ) )
             }
             # L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             # Link ( L<display text|destination URI> )
@@ -704,6 +707,34 @@ class RakuDoc::Processor {
         $*prs.body ~= %!templates{ $template }(
             %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
         )
+    }
+    #| generates a formula
+    method gen-formula($ast) {
+        my %config = $.merged-config( $ast, 'formula' );
+        my $formula = $.contents( $ast, False ); # do not treat strings paragraphs
+        my $alt = %config<alt>:delete // 'Formula cannot be rendered';
+        my $caption = %config<caption>:delete // 'Formula';
+        my $target = $.name-id($alt);
+        my $id = %config<id>:delete;
+        my $numeration = ''; # TODO allow for TABLE and FORMULA numeration
+        with $id {
+            if self.is-target-unique( $_ ) {
+                $id = self.register-target( $_ );
+            }
+            else {
+                $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$alt｣";
+            }
+        }
+        # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
+        my $level = %config<headlevel> // 1;
+        $level = 1 if $level < 1;
+        my $toc = %config<toc>:delete // True;
+        # attach numeration to caption and contents separately, allowing template
+        # developer to add numeration to caption if wanted by changing the template
+        $*prs.toc.push(
+            { :$caption, :$target, :$level, :$numeration }
+        ) if $toc;
+        $*prs.body ~= %!templates<formula>(%(:$formula, :$alt, %config ) )
     }
     #| generates a single item and adds it to the item structure
     #| nothing is added to the .body string
@@ -1387,6 +1418,8 @@ class RakuDoc::Processor {
             output => -> %prm, $tmpl { express-params( %prm, $tmpl, 'output' ) },
             #| renders =comment block
             comment => -> %prm, $tmpl { express-params( %prm, $tmpl, 'comment' ) },
+            #| renders =formula block
+            formula => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula-block' ) },
             #| renders =head block
             head => -> %prm, $tmpl { express-params( %prm, $tmpl, 'head' ) },
             #| renders =numhead block
@@ -1627,6 +1660,8 @@ class RakuDoc::Processor {
             output => -> %prm, $tmpl { express-params( %prm, $tmpl, 'output' ) },
             #| renders =comment block
             comment => -> %prm, $tmpl { express-params( %prm, $tmpl, 'comment' ) },
+            #| renders =formula block
+            formula => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula-block' ) },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;

@@ -43,6 +43,7 @@ $ast = Q:to/QAST/.AST;
     such as V< I<>, C<>, B<>, and M<> >.
     =end rakudoc
     QAST
+
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'The ' .+?
@@ -57,21 +58,20 @@ $ast = Q:to/QAST/.AST;
     =begin rakudoc
     =config C :allow< B I U >
     =config V :allow< K L X >
-    Some C<text with B<morkup> and K<markup> > back to normal.
-    Some V<text with B<morkup> and K<markup> > back to normal.
+    Some C<text with B<markup> and K<markup> > back to normal.
+    Some V<text with B<markup> and K<markup> > back to normal.
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
-todo 'waiting for change in parser to have markup input parsed';
 like $rv.body.Str, /
     'Some '
-    '<code>' .+? 'content' .+ 'text with' .+
-    'basis' .+? 'content' .+ 'markup' .+ '/basis' .+
+    '<code>' .+? 'content' .+ 'text with ' .+?
+    'basis' .+? 'content' .+? 'markup' .+ '/basis' .+
     'K<markup>' .+ '/code' .+ 'back to normal' .+
     'Some '
     '<verbatim>' .+? 'content' .+ 'text with' .+
-    'B<markup> and' .+
+    'B<markup> and ' .+
     'keyboard' .+? 'content' .+ 'markup' .+ '/keyboard' .+
-    '/code' .+ 'back to'
+    '/verbatim' .+ 'back to'
     /, 'Verbatim/code with config works';
 done-testing;

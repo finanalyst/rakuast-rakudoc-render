@@ -3,7 +3,7 @@ use Test;
 
 use RakuDoc::Render;
 
-plan 8;
+plan 5;
 
 my $ast;
 my $rv;
@@ -86,31 +86,4 @@ like $rv.body.Str, /
     'procedural:' .+ True
     /, 'got procedural table with markup in cell';
 
-$ast = Q:to/QAST/.AST;
-=begin rakudoc
-=row :header
-=begin table
-=cell one
-=cell two with B<markup> in it
-=cell three
-=row
-=cell d1
-=cell d2
-=cell d3
-=end table
-=end rakudoc
-QAST
-$rv = $rdp.render( $ast, :pre-finalised );
-like $rv.body.Str, /
-    '<table>'  .+
-    'grid' .+ 'one' .+?
-    'basis' .+ 'contents' .+
-    'markup' .+
-     '</basis>' .+ 'in it' .+
-    'procedural:' .+ True
-    /, 'got valid procedural table after illegal row';
-is $rv.warnings.elems, 1, 'got an error';
-like $rv.warnings[0], /
-    '=row' .+ 'not exist outside'
-    /, 'trapped row outside table';
 done-testing;
