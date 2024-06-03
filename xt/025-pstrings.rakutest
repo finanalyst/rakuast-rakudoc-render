@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::PromiseStrings;
 
-plan 38;
+plan 40;
 
 my $register = CompletedCells.new;
 my $payload;
@@ -23,7 +23,6 @@ is $pc2.Str, 'some stuff', 'duplicate stringifies with payload';
 ok $pc.is-expanded, 'PCell now expanded';
 # create PCell with id thats been emitted
 $pc2 .= new(:$register, :id<FFF>);
-say $pc2.debug;
 is $pc2.Str, 'some stuff', 'stringifies with payload after id emitted';
 # tests of PStr
 my PStr $s .= new;
@@ -73,6 +72,8 @@ $s.trim-leading;
 like $s.Str, / ^ 'one ' .+ 'QQQ' .+ ' two' $ /, 'should trim leading space';
 is $s.segments, 3, 'trimming should not change segments';
 $rv.trim;
+isa-ok $rv, PStr, 'rv remains a PStr after a trim';
+isa-ok $rv.trim, PStr, 'rv.trim yields a PStr';
 like $rv.Str, / ^ 'one ' .+ 'QQQ' .+ ' two' $ /, 'should trim leading/trailing space';
 is $rv.segments, 3, 'trim should not change segments';
 $s .= new( '  just a single string ');

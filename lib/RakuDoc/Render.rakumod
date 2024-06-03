@@ -671,7 +671,7 @@ class RakuDoc::Processor {
     }
     #| handles blocks that are like headings
     method gen-headish($ast, $parify, :$template = 'head', :$numerate = False ) {
-        my $contents = $.contents($ast, $parify).strip.trim;
+        my $contents = $.contents($ast, $parify).strip.trim.Str;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         $!scoped-data.last-title( $contents );
         my %config = $.merged-config($ast,
@@ -738,6 +738,7 @@ class RakuDoc::Processor {
     }
     #| generates a single item and adds it to the item structure
     #| nothing is added to the .body string
+    #| bullet strategy can be left to template, with bullet in %config
     method gen-item($ast, $parify) {
         my $level = $ast.level > 1 ?? $ast.level !! 1;
         my $contents = $.contents($ast, $parify);
@@ -1142,7 +1143,7 @@ class RakuDoc::Processor {
         given $ast.type {
             when 'TITLE' {
                 $hidden = %config<hidden>.so // True; # hide by default
-                $!current.title = $contents;
+                $!current.title = $contents.Str;
                 # allows for TITLE to have its own template
                 if %!templates<TITLE>:exists {
                     $rv = %!templates<TITLE>( %( :$contents, %config ) )
@@ -1153,7 +1154,7 @@ class RakuDoc::Processor {
             }
             when 'SUBTITLE' {
                 $hidden = %config<hidden>.so // True;
-                $!current.subtitle = $contents;
+                $!current.subtitle = $contents.Str;
                 if %!templates<SUBTITLE>:exists {
                     $rv = %!templates<SUBTITLE>( %( :$contents, %config ) )
                 }
@@ -1164,7 +1165,7 @@ class RakuDoc::Processor {
             when 'NAME' {
                 $hidden = %config<hidden>.so // True;
                 # name probably should not be anything but a bare string
-                $!current.name = $rv = $contents ~ '.' ~ $!output-format;
+                $!current.name = $rv = $contents.Str ~ '.' ~ $!output-format;
             }
             default {
                 $hidden = %config<hidden>.so // False; # other SEMANTIC by default rendered in place
@@ -1325,7 +1326,7 @@ class RakuDoc::Processor {
         else {
             $.handle( $_ ) for $ast.paragraphs
         }
-        my $text = $*prs.body;
+        my $text = $*prs.body.trim-trailing;
         $*prs.body .= new;
         CALLERS::<$*prs> += $*prs;
         $text

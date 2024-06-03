@@ -22,7 +22,7 @@
 - [ ] :id
 - [ ] :toc / :!toc
 - [ ] :headerlevel
-- [ ] :bullet
+- [x] :bullet handled in templates
 - [x] =para
 - [x] =nested
 - [x] add plugins (plugins are implemented by sub-classes of renderer)

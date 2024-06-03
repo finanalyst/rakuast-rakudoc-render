@@ -88,12 +88,14 @@ class PStr {
     #| trims any white space from the end string, if any
     method trim-leading {
         $.strip;
-        @!string[0] .= trim-leading if @!string[0] ~~ Str
+        @!string[0] .= trim-leading if @!string[0] ~~ Str;
+        self
     }
     #| trims any white space from the end string, if any
     method trim-trailing {
         $.strip;
-        @!string[* - 1] .= trim-trailing if @!string[* - 1] ~~ Str
+        @!string[* - 1] .= trim-trailing if @!string[* - 1] ~~ Str;
+        self
     }
     #| trims any white space from the end string, if any
     method trim {
@@ -111,7 +113,8 @@ class PStr {
             }
             else { @new.append: $elem }
         }
-        @!string = @new if +@new
+        @!string = @new if +@new;
+        self
     }
     #| return whether there are PCells in the string
     method has-PCells( --> Bool ) {

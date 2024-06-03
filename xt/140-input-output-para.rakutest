@@ -3,7 +3,7 @@ use Test;
 
 use RakuDoc::Render;
 
-plan 19;
+plan 13;
 
 my $ast;
 my $rv;
@@ -14,7 +14,7 @@ $ast = Q:to/QAST/.AST;
     plain string
     =para    Ordinary       para
     =for comment
-    1234567890123456789012345678901234567890
+    01234567890123456789012345678901234567890
 
     =begin input
        This  is   a preformatted
@@ -26,29 +26,36 @@ $ast = Q:to/QAST/.AST;
     QAST
 
 $rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    'para' .+ 'contents' .+
+    '｢plain string ｣'
+    /, 'String as 1st level of block is a para';
+like $rv.body.Str, /
+    'para' .+ 'contents' .+
+     '｢Ordinary para｣'
+    /, 'para works as expected';
 my @posn;
 my $strt;
-my $n = -1;
-$rv.body.Str ~~ /
-    'para' .+? 'contents: ｢' (.+?) '｣' .+
-    'para' .+? 'contents: ｢' (.+?) '｣' .+
-    'input' .+? 'contents: ｢'
+my $n = 0;
+my $input;
+$input = $rv.body.Str.comb( /
+    <?after 'input' .+ 'contents: ｢'>
+    .+?
+    <?before '｣'>
+    /)[0];
+$input ~~ /
     [
-    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
-     \h+: [
-        { @posn[$n].push: $/.pos - $strt } \S+
-        \h*:
+    { $strt = $/.pos }
+     \h*: [
+        { @posn[$n].push: $/.pos - $strt } \S+ \h*
         ]+:
      \v*
+     { $n++ }
     ]+
-     '｣'
 /;
-is $/[0], 'plain string ', 'String as 1st level of block is a para';
-is $/[1], 'Ordinary para ', 'para works as expected';
-is @posn.elems, 4, 'got four input content lines';
-is @posn[*-1][0], 0 , 'last line blank';
-is-deeply @posn[0][^4], @posn[1][^4], 'input first two rows start' ;
-is-deeply @posn[0][^4], @posn[2][^4], 'input first & third starts match' ;
+is $input.comb(/ \V+ \v* /).elems, 3, 'got three input content lines';
+is-deeply @posn[0][^3], @posn[1][^3], 'input first two rows start' ;
+is-deeply @posn[1][^3], @posn[2][^3], 'input second & third starts match' ;
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     =begin code
@@ -60,23 +67,25 @@ $ast = Q:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 @posn = ();
-$n = -1;
-$rv.body.Str ~~ /
-    'code' .+? 'contents: ｢'
+$n = 0;
+$input = $rv.body.Str.comb( /
+    <?after 'code' .+ 'contents: ｢'>
+    .+?
+    <?before '｣'>
+    /)[0];
+$input ~~ /
     [
-    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
-     \h+: [
+    { $strt = $/.pos }
+     \h*: [
         { @posn[$n].push: $/.pos - $strt } \S+ \h*
         ]+:
      \v*
+     { $n++ }
     ]+
-     '｣'
 /;
-
-is @posn.elems, 4, 'got four input content lines';
-is @posn[*-1][0], 0 , 'last line blank';
-is-deeply @posn[0][^4], @posn[1][^4], 'code first two rows start' ;
-is-deeply @posn[0][^4], @posn[2][^4], 'code first & third starts match' ;
+is $input.comb(/ \V+ \v* /).elems, 3, 'got three input content lines';
+is-deeply @posn[0][^3], @posn[1][^3], 'input first two rows start' ;
+is-deeply @posn[1][^3], @posn[2][^3], 'input second & third starts match' ;
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -89,14 +98,17 @@ $ast = Q:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 @posn = ();
-$n = -1;
 my regex tag { '<' $<tag> = [\w+?] '>' .+? '</' $<tag> '>' \v }
-
-$rv.body.Str ~~ /
-    'input' .+? 'contents: ｢'
+$n = 0;
+$input = $rv.body.Str.comb( /
+    <?after 'input' .+ 'contents: ｢'>
+    .+?
+    <?before '｣' \s+ '</input'>
+    /)[0];
+$input ~~ /
     [
-    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
-     \h+: [
+    { $strt = $/.pos }
+     \h*: [
         { @posn[$n].push: $/.pos - $strt }
         [
             <tag>
@@ -105,13 +117,11 @@ $rv.body.Str ~~ /
         ] \h*
         ]+:
      \v*
+     { $n++ }
     ]+
-     '｣'
 /;
-is @posn.elems, 4, 'got three input content lines';
-is @posn[*-1][0], 0 , 'last line blank';
-is-deeply @posn[0][^4], @posn[1][^4], 'input expanded first two rows start' ;
-is-deeply @posn[0][^4], @posn[2][^4], 'input expanded first & third starts match' ;
+is-deeply @posn[0][^3], @posn[1][^3], 'input first two rows start' ;
+is-deeply @posn[1][^3], @posn[2][^3], 'input second & third starts match' ;
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -124,13 +134,16 @@ $ast = Q:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 @posn = ();
-$n = -1;
-
-$rv.body.Str ~~ /
-    'code' .+? 'contents: ｢'
+$n = 0;
+$input = $rv.body.Str.comb( /
+    <?after 'code' .+ 'contents: ｢'>
+    .+?
+    <?before '｣' \s+ '</code'>
+    /)[0];
+$input ~~ /
     [
-    { $strt = $/.pos ; @posn[++$n].push: $/.pos - $strt }
-     \h+: [
+    { $strt = $/.pos }
+     \h*: [
         { @posn[$n].push: $/.pos - $strt }
         [
             <tag>
@@ -139,13 +152,11 @@ $rv.body.Str ~~ /
         ] \h*
         ]+:
      \v*
+     { $n++ }
     ]+
-     '｣'
 /;
-is @posn.elems, 4, 'got three code expanded content lines';
-is @posn[*-1][0], 0 , 'last line blank';
-is-deeply @posn[0][^4], @posn[1][^4], 'code expanded first two rows start' ;
-is-deeply @posn[0][^4], @posn[2][^4], 'code expanded first & third starts match' ;
+is-deeply @posn[0][^3], @posn[1][^3], 'input first two rows start' ;
+is-deeply @posn[1][^3], @posn[2][^3], 'input second & third starts match' ;
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
