@@ -1,0 +1,171 @@
+=begin rakudoc
+=TITLE Templates in C<test-text-templates>
+=SUBTITLE Auto generated from C<lib/RakuDoc/Render.rakumod>
+=begin table
+    =row :header
+        =cell Name
+        =cell Description
+    =row
+        =column
+			=for cell :label :row-span(2)
+			defn
+        =column
+			=cell V«renders the numeration part for a toc»
+			=cell V«renders =defn block»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-A
+        =column
+			=cell V«A< DISPLAY-TEXT &#124;  METADATA = ALIAS-NAME >»
+			=cell V«Alias to be replaced by contents of specified V<=alias> directive»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-B
+        =column
+			=cell V«B< DISPLAY-TEXT >»
+			=cell V«Basis/focus of sentence (typically rendered bold)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-C
+        =column
+			=cell V«C< DISPLAY-TEXT >»
+			=cell V«Code (typically rendered fixed-width)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-D
+        =column
+			=cell V«D< DISPLAY-TEXT &#124;  METADATA = SYNONYMS >»
+			=cell V«Definition inline ( D<term being defined&#124;synonym1; synonym2> )»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-E
+        =column
+			=cell V«E< DISPLAY-TEXT &#124;  METADATA = HTML/UNICODE-ENTITIES >»
+			=cell V«Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-F
+        =column
+			=cell V«F< DISPLAY-TEXT &#124;  METADATA = LATEX-FORM >»
+			=cell V«Formula inline content ( F<ALT&#124;LaTex notation> )»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-H
+        =column
+			=cell V«H< DISPLAY-TEXT >»
+			=cell V«High text (typically rendered superscript)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-I
+        =column
+			=cell V«I< DISPLAY-TEXT >»
+			=cell V«Important (typically rendered in italics)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-J
+        =column
+			=cell V«J< DISPLAY-TEXT >»
+			=cell V«Junior text (typically rendered subscript)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-K
+        =column
+			=cell V«K< DISPLAY-TEXT >»
+			=cell V«Keyboard input (typically rendered fixed-width)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-L
+        =column
+			=cell V«L< DISPLAY-TEXT &#124;  METADATA = TARGET-URI >»
+			=cell V«Link ( L<display text&#124;destination URI> )»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-M
+        =column
+			=cell V«M< DISPLAY-TEXT &#124;  METADATA = WHATEVER >»
+			=cell V«Markup extra ( M<display text&#124;functionality;param,sub-type;...>)»
+    =row
+        =column
+			=for cell :label :row-span(3)
+			markup-N
+        =column
+			=cell V«N< DISPLAY-TEXT >»
+			=cell V«Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))»
+			=cell V«This is the template for the in-text part, which should have a Number, link, and return anchor»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-O
+        =column
+			=cell V«O< DISPLAY-TEXT >»
+			=cell V«Overstrike or strikethrough»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-P
+        =column
+			=cell V«P< DISPLAY-TEXT &#124;  METADATA = REPLACEMENT-URI >»
+			=cell V«Placement link»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-R
+        =column
+			=cell V«R< DISPLAY-TEXT >»
+			=cell V«Replaceable component or metasyntax»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-S
+        =column
+			=cell V«S< DISPLAY-TEXT >»
+			=cell V«Space characters to be preserved»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-T
+        =column
+			=cell V«T< DISPLAY-TEXT >»
+			=cell V«Terminal output (typically rendered fixed-width)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-U
+        =column
+			=cell V«U< DISPLAY-TEXT >»
+			=cell V«Unusual (typically rendered with underlining)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-V
+        =column
+			=cell V«V< DISPLAY-TEXT >»
+			=cell V«Verbatim (internal markup instructions ignored)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-X
+        =column
+			=cell V«X< DISPLAY-TEXT &#124;  METADATA = INDEX-ENTRY >»
+			=cell V«Index entry ( X<display text&#124;entry,subentry;...>)»
+    =row
+        =column
+			=for cell :label :row-span(2)
+			markup-Δ
+        =column
+			=cell V«Δ< DISPLAY-TEXT &#124;  METADATA = VERSION-ETC >»
+			=cell V«Delta note ( Δ<visible text&#124;version; Notification text> )»
+=end table
+=end rakudoc

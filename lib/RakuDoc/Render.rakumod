@@ -1447,14 +1447,11 @@ class RakuDoc::Processor {
         for %h.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
         $rv ~= "</{ $c }>\n"
     }
-
     #| returns hash of test templates
     multi method test-text-templates {
         %(
             #| special key to name template set
-            _name => -> %, $ {
-                'test templates'
-            },
+            _name => -> %, $ { 'test templates' },
             #| renders =code block
             code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
             #| renders =input block
@@ -1694,9 +1691,7 @@ class RakuDoc::Processor {
     multi method default-text-templates {
         %(
             #| special key to name template set
-            _name => -> %, $ {
-                'default text templates'
-            },
+            _name => -> %, $ { 'default text templates' },
             #| renders =code blocks
             code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
             #| renders =input block
