@@ -1,0 +1,109 @@
+=begin rakudoc
+=TITLE The ScopeData module
+
+=head1 Purpose
+
+RakuDoc v2 introduces the concept of a block scope. The choice
+of terminology is to avoid some of the complexities of Raku's
+'lexical scope'.
+
+Basically a block scope is started by a C<=begin BLOCKNAME>
+and ended by a C<=end BLOCKNAME>. 
+
+Within a block scope, several directives may affect other
+RakuDoc features within the same block, such as C<=config>
+and C<=alias>.
+
+Once the block has ended, the effect of such directives end.
+
+The ScopedData class was written to track and handle this sort
+of behaviour.
+
+Typically only one ScopedData object is instantiated.
+
+The following pieces of information are tracked:
+=item starter - the block that starts a scope
+=item titles - the title of the block starting the scope
+=item config - the accumulated config data
+=item2 config data is a hash for each block
+=item2 the value for each block is the metadata option available for
+such a block
+
+=item alias - alias defined for the scope
+=item items-numeration - the current numeration for items
+=item defns-numeration - the current numeration for defns
+
+=head2 Method diagnostic()
+
+Provides information about all block scopes. 
+A ScopeData object has an attribute C<debug>. If set to True
+then diagnostic is called by C<start-scope> and C<end-scope>.
+
+=head2 Method C<< start-scope( :$starter!, :$title, :$verbatim )
+
+Starts a new scope. When a scope is started, all the previous
+information is copied.
+
+This information can be changed within the scope.
+
+If C<verbatim> is set, then all strings will be rendered without
+removing spaces or new lines.
+
+=head2 Method end-scope
+
+Changes to items tracked by the object are forgotten.
+
+=head2 C<< multi method config(%h)>>
+
+Add key/value pair to the existing scope's config
+
+=head2 C<< multi method config( --> Hash )>>
+
+Get the current scope's config
+
+=head2 C<< multi method aliases(%h)>>
+
+Add key/value pair to the existing scope's aliases
+
+=head2 C<< multi method aliases( --> Hash )>>
+
+Get the current scope's aliases
+
+=head2 C<< method last-starter >>
+
+Return the last starter block
+
+=head2 C<< multi method last-title() >>
+
+Return the most recent title
+
+=head2 C<< multi method last-title( $s )>>
+
+Change the title for the current block
+
+=head2 C<< multi method verbatim()>>
+
+Change the state of the verbatim flag to True
+
+=head2 C<< multi method verbatim( :called-by($)! )>>
+
+Which block set the verbatim flag
+
+=head2 C<< multi method item-inc( $level --> Str )>>
+
+Increment the item numeration at the required level, returns the result.
+See L<Numeration module|/Numeration> for more detail
+
+=head2 C<< multi method item-reset()>>
+
+Reset the item numeration altogether
+
+=head2 C<< multi method defn-inc( --> Str )>>
+
+Increment the defn numeration, only one level
+
+=head2 C<< multi method defn-reset()>>
+
+Reset the defn numeration
+
+=end rakudoc

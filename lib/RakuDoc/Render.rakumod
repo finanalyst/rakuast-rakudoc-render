@@ -104,10 +104,8 @@ class RakuDoc::Processor {
         # so ToC and Index need to be rendered and any other PCells triggered
         # toc may contain numbered captions, so the heading-numbers need to be calculated
         self.complete-heading-numerations;
-        my $rendered-toc = PCell.new( :$!register, :id<toc-schema> );
-        self.complete-toc;
-        my $rendered-index = PCell.new( :$!register, :id<index-schema> );
-        self.complete-index;
+        $!current.rendered-toc = self.complete-toc;
+        $!current.rendered-index = self.complete-index;
         # placed semantic blocks now need triggering
         for $!current.semantics.kv -> $block, @vals {
             $!register.add-payload( :payload( @vals.join ), :id("semantic-schema_$block") )
@@ -122,9 +120,13 @@ class RakuDoc::Processor {
             }
         }
         return $.current if $pre-finalised;
-        # Placing of footnotes, ToC etc, is left to final template
-        %!templates<final>( %( :processed( $!current ), :$rendered-index, :$rendered-toc ) ).Str
+        $.finalise
     }
+
+    method finalise( --> Str ) {
+        # Placing of footnotes, ToC etc, is left to final template
+        %!templates<final>( %( :$!current ) ).Str
+    };
 
     method compactify( Str:D $s ) {
         $s .subst(/ \v+ /,' ',:g )
@@ -1289,26 +1291,24 @@ class RakuDoc::Processor {
         }
         my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ));
         $!register.add-payload( :$payload, :id('index-schema') );
+        $payload
     }
     #| renders the toc and triggers the 'toc-schema' id for P<>
     method complete-toc {
         my @toc-list = gather for $!current.toc -> $toc-entry {
             take %!templates<toc-item>( %( :$toc-entry , ) )
         }
-        $!register.add-payload( :payload(
-            %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) )) ),
-            :id('toc-schema')
-        )
+        my $payload = %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) ) );
+        $!register.add-payload( :$payload, :id('toc-schema') );
+        $payload
     }
     #| finalises all the heading numerations
     method complete-heading-numerations() {
         return unless $*prs.head-numbering.elems;
         my Numeration $heads .= new;
-        my Numeration $tables .= new;
         for $*prs.head-numbering -> ( $id, $level  ) {
             my $payload;
             $payload = $heads.inc( $level ).Str if $id.starts-with('heading');
-            $payload = $tables.inc( $level ).Str if $id.starts-with('table');
             $!register.add-payload( :$payload, :$id )
         }
     }
@@ -1499,20 +1499,20 @@ class RakuDoc::Processor {
             unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
             #| special template to encapsulate all the output to save to a file
             final => -> %prm, $tmpl {
-                %prm<processed>.title ~ "\n"
-                ~ %prm<processed>.subtitle ~ "\n"
-                ~ %prm<rendered-toc> ~ "\n"
-                ~ %prm<rendered-index> ~ "\n"
-                ~ %prm<processed>.body.Str ~ "\n"
+                %prm<current>.title ~ "\n"
+                ~ %prm<current>.subtitle ~ "\n"
+                ~ %prm<current>.rendered-toc ~ "\n"
+                ~ %prm<current>.rendered-index ~ "\n"
+                ~ %prm<current>.body.Str ~ "\n"
                 ~ $tmpl('footnotes', {
-                    footnotes => %prm<processed>.footnotes,
+                    footnotes => %prm<current>.footnotes,
                 }) ~ "\n"
                 ~ $tmpl('warnings', {
-                    warnings => %prm<processed>.warnings,
+                    warnings => %prm<current>.warnings,
                 }) ~ "\n"
-                ~ 'Rendered from ｢' ~ %prm<processed>.source-data<name> ~ "｣\n"
-                ~ 'at ' ~ %prm<processed>.modified ~ "\n"
-                ~ 'into ｢' ~ %prm<processed>.name ~ "｣\n"
+                ~ 'Rendered from ｢' ~ %prm<current>.source-data<name> ~ "｣\n"
+                ~ 'at ' ~ %prm<current>.modified ~ "\n"
+                ~ 'into ｢' ~ %prm<current>.name ~ "｣\n"
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },

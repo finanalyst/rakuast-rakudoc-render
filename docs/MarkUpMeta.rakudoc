@@ -1,0 +1,9 @@
+=begin rakudoc
+
+=TITLE MarkUpMeta module
+
+=head1 Purpose
+
+A grammar to handle the content of the meta portion of a MarkUp code.
+
+=end rakudoc

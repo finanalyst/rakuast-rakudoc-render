@@ -1,0 +1,159 @@
+=begin rakudoc
+=TITLE ProcessState and RakuDoc::Processed
+
+=head1 Purpose
+
+When a RakuDoc source is being processed, data is collected about numerous items,
+such as the Table of Contents, the Index, list and definition entries.
+
+Many RakuDoc blocks allow for recursion, with blocks being embedded within
+each other.
+A ProcessState object is therefore created to contain all the intermediary
+data.
+
+One ProcessState object can be added to another, and so once one block has been 
+processed, it can be 'added' to the ProcessState object of the containing block.
+
+Finally, when an entire RakuDoc source has been fully rendered, it is useful
+to retain all the intermediary data structures as well. 
+
+The overall RakuDoc::Processed object contains data related to the source as
+well as the rendered data.
+
+By keeping track of the timestamps of the source file and the rendering, it
+will be possible to determine whether to render a source again, or not. 
+
+=head2 Attributes of ProcessedState object
+
+=head3 C<PStr $.body is rw >
+
+String of rendered source, may contain Promises during rendering
+
+=head3 C<Hash @.toc >
+
+Table of Contents data 
+Ordered array of { :level, :text, :target, :is-heading } 
+level - in heading hierarchy, text - to be shown in TOC 
+target - of item in text, is-heading - used for Index placing
+
+=head3 C<Array @.head-numbering >
+
+heading numbering data 
+Ordered array of [ $id, $level ] 
+$id is the PCell id of where the numeration structure is to be placed 
+level - in heading hierarchy
+
+=head3 C<%.index >
+
+Index (from X<> markup) 
+Hash key => Array of :target, :is-header, :place 
+key to be displayed, target is for link, place is description of section 
+is-header because X<> in headings treated differently to ordinary text
+
+=head3 C<@.footnotes >
+
+Footnotes (from N<> markup) 
+Ordered Array of :$text, :$retTarget, :$fnNumber, :$fnTarget 
+text is content of footnote, fnNumber is footNote number 
+fnTarget is link to rendered footnote 
+retTarget is link to where footnote is defined to link back form footnote
+
+=head3 C<Array %.semantics >
+
+Semantic blocks (which includes TITLE & SUBTITLE) can be hidden 
+Hash of SEMANTIC => [ PStr | Str ]
+
+=head3 C<@.warnings >
+
+An array of warnings is generated and then rendered by the warnings template 
+The warning template, by default is called by the wrap-source template 
+RakuDoc warnings are generated as specified in the RakuDoc v2 document.
+
+=head3 C<@.items >
+
+An array of accumulated rendered items, added to body when next non-item block encountered
+
+=head3 C<@.defns >
+
+An array of accumulated rendered definitions, added to body when next non-defn block encountered
+
+=head3 C<@.numitems >
+
+An array of accumulated rendered numbered items, added to body when next non-item block encountered
+
+=head3 C<@.numdefns >
+
+An array of accumulated rendered numbered definitions, added to body when next non-defn block encountered
+
+=head3 C<%.definitions >
+
+Hash of definition => rendered value for definitions
+
+=head3 C<@.inline-defns >
+
+Array to signal when one or more inline defn are made in a Paragraph
+
+=head2 Attributes of RakuDoc::Processed
+
+All of the ProcessState attributes, and the following.
+
+=head3 C<< %.source-data >>
+
+Information about the RakuDoc source, eg file name, path, modified, language
+
+=head3 C<< $!output-format = 'txt' >>
+
+The output format that the source has been rendered into
+
+=head3 C<< Str $.front-matter is rw = 'preface' >>
+
+Text between =TITLE and first header, used for X<> place before first header
+
+=head3 C<< Str $.name is rw >>
+
+Name to be used in titles and files 
+name can be modified after creation of Object 
+name can be set when creating object 
+if name is not set, then it is taken from source name + format
+
+=head3 C<< Str $.title is rw = 'NO_TITLE' >>
+
+String value of TITLE.
+
+=head3 C<< Str $.title-target is rw = '___top' >>
+
+Target of Title Line
+
+=head3 C<< Str $.subtitle is rw = '' >>
+
+String value of SUBTITLE, provides description of file
+
+=head3 C<< Str $.modified is rw = now.DateTime.utc.truncated-to('seconds').Str >>
+
+When RakuDoc Processed Object modified 
+(source-data<modified> should be earlier than RPO.modified)
+
+=head3 C<< SetHash $.targets >>
+
+target data generated from block names and :id metadata 
+A set of unique targets inside the file, new targets must be unique
+
+=head3 C<< Hash %.links >>
+
+Links (from L<link-label|destination> markup)
+Hash of destination => :target, :type, :place, :link-label 
+target = computed URL (for local files), place = anchor inside file 
+type has following values:
+=item Internal are of the form '#this is a heading' and refer to anchors inside the file
+=item Local are of the form 'some-type#a heading there', where 'some-type' is a file name in the same directory
+=item External is a fully qualified URL
+
+=head3 C<< Str $.rendered-toc is rw >>
+
+Rendered version of the ToC
+
+=head3 C<< Str $.rendered-index is rw >>
+
+Rendered version of the Index
+
+=end rakudoc

@@ -34,8 +34,10 @@
   - [ ] HTML, need to add CSS and Javascript
   - [ ] Epub, need to add extra metadata pages 
 - [ ] Documentation
-  - [ ] ScopedData
-  - [ ] MarkupMeta
-  - [ ] Processed
-  - [ ] Render, noting the extensions from RakuDoc v2
+  - [x] PromiseStrings 
+  - [x] ScopedData
+  - [x] MarkupMeta
+  - [x] Numeration
+  - [x] Processed
+  - [x] Render, noting the extensions from RakuDoc v2
 - [ ] Apply numeration possibilities numTable, numFormula, numPara

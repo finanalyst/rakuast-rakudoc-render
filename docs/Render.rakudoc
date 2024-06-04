@@ -1,0 +1,174 @@
+=begin rakudoc
+=TITLE Minimal documentation of RakuDoc::Render Module
+
+=head1 Overview
+
+The module contains the RakuDoc::Processor class.
+
+The class method 'render' is the principal one for rendering RakuDoc v2.
+The Raku compiler expects to call render with an AST and to return a Str.
+It can be called with the option C<:pre-finalised> to get the processed data,
+see the example in L<Debugging|#Debugging>.
+
+The aim is for a B<RakuDoc::Processor> object (an B<RPO>) to be as generic as
+possible, allowing for other classes to instantiate it, and to attach
+templates that will generate more specific formats, such as HTML,
+MarkDown, or EPub pages.
+
+An B<RPO> relies on L<Templates|/Templates>, L<PromiseStrings|/PromiseStrings>,
+and L<ScopedData|/ScopedData>.
+
+It is also necessary to have a good understanding of RakuDoc v2.
+
+The following describes choices that are left by RakuDoc v2 to the renderer.
+
+=head2 Templates
+
+An B<RPO> contains two sets of templates, one to be used for testing,
+as can be seen in the C<xt/> directory, and a default set of Text templates.
+
+The aim of the text templates is that they are the lowest level templates
+needed to render any RakuDoc source.
+
+When a renderer is needed to output a new format, eg., HTML, the renderer
+instantiates an B<RPO> and attaches new templates to it using the
+C<add-template( Pair $p )> method or the C<add-templates( Hash $h )> method.
+
+The design of the Templates object means that new additions to the object
+push the previous definition onto a linked list, and so they will always
+be available by default.
+
+The set of template keys needed to create a renderer is L<tabulated here|/test-text-templates>.
+
+All aspects of the output can be defined using the templates.
+
+=head2 Warnings
+
+In order to offer the maximum flexibility to a RakuDoc author, if there
+is an error condition after the RakuDoc source has been compiled,
+a set of warnings are generated.
+
+By default these are rendered using the 'warnings' template, and the rendered
+version is appended to the output file.
+
+=head2 Customisability
+
+RakuDoc allows for customisability. This renderer handles customisability
+via the template mechanism.
+
+=head3 Custom blocks
+
+When custom block is detected according to the RakuDoc v2 spelling rules,
+an B<RPO> will check whether a template exists with that name.
+
+If a template has been attached to an B<RPO>, then the rendered content
+of the block (including rendered embedded RakuDoc instructions) will be
+provided to the template as C<contents> and the verbatim contents with
+no renderering will be provided as C<raw>.
+
+So a new block can be created by attaching a template with the blockname
+to the B<RPO>.
+
+=head3 Custom markup codes
+
+RakuDoc v2 allows for custom markup codes in two ways:
+=item the C<< M< DISPLAY | FUNCTION ; list of comma delimited strings > >>
+=item a single Unicode (not ASCII ) character with the I<upper> property.
+
+=head4 Markup M
+
+When a C<< M< DISPLAY | FUNCTION ; LIST > >> is encountered, the renderer
+will look for a template named in the R<FUNCTION> position. If no
+such template exists,  the text will be rendered verbatim and a warning
+logged.
+
+=head4 Markup UNICODE[upper]
+
+When some custom markup is encountered, the renderer will
+=item check that the character, eg Ɵ (Greek Capital Theta), has
+the unicode property I<Upper>;
+
+=item look for a template called (eg) B<markup-Ɵ>. For clarity,
+the Unicode character chosen for the markup code is prefixed
+by B<markup-> in order to name the template.
+
+Thus in order to create a new markup code, create an appropriately
+named template and add it to the B<RPO>.
+
+=head3 Global data accessible in templates
+
+More information is available in L<Templates|/Templates>.
+
+All templates can attach items to the Table of Contents, Index,
+Footnotes, and Warnings structures of the rendered source using
+the helper methods.
+
+The following helper methods are available:
+
+=item add-to-toc( %h ), where %h is a hash with the following keys:
+=item2 :caption(Str)
+=item2 :target( Str )
+=item2 :level( Int )
+
+=item add-to-index( %h ), where %h is a hash with the following keys:
+=item2 :contents(Str)
+=item2 :target(Str)
+=item2 :place( Str }
+
+=item add-to-footnotes( %h ), where %h is a hash with the following keys:
+=item2 :retTarget(Str)
+=item2 :fnTarget(Str)
+=item2 :fnNumber(Str}
+
+=item add-to-warnings( $warning )
+
+In addition, within a template, it is possible to attach data
+to globals, and to retrieve the data in another template.
+
+For an example of this, see test B<xt/030-customisation-data.rakutest>.
+(test number may be changed, but otherwise the filename will be the same).
+
+=head2 Debugging
+
+When developing new templates or renderers based on an B<RPO>, several
+debug options can be attached to the B<RPO>, eg.
+=begin code
+    my RakuDoc::Processor $rdp .=new( :test );
+    $rdp.debug( AstBlock, Templates);
+    $ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head This is a header
+
+    Some text
+
+    =end rakudoc
+    QAST
+
+    $rv = $rdp.render( $ast, :pre-finalised );
+    'myOutput'.IO.spurt: $rdp.finalise
+=end code
+Commentary on the code
+=item C< new( :test )> this attaches the test templates to the B<RPO>
+=item the list inside the debug method may contain several entities as described below
+=item creation of an AST from a string, or it can be slurped in from a file.
+=item C< :pre-finalised > returns the RakuDoc::Processed object
+=item if called with C<:pre-finalised>, calling C<finalise> returns a
+Str that can then be stored as a file.
+
+=head3 Debug options
+
+The following options are available:
+=item None removes all previous debugging
+=item All adds all debugging options
+=item AstBlock diagnostic whenever a new Block is called
+=item BlockType information about which C<RakuAST::Doc::Block> is being processed
+=item Scoping produces scope level diagnostics when a new level is started/ended
+=item Templates indicates which templates are called and the params they are called with
+=item MarkUp like BlockType but gives the MarkUp letter
+
+It is also possible to get the result of one template (so as to reduce
+the amount of output information). This is done eg for the 'table' template:
+    $rdp.verbose( 'table' );
+    $rv =  $rdp.render( $ast, :pre-finalised );
+
+=end rakudoc

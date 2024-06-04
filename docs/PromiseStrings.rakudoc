@@ -10,7 +10,7 @@ The renderer actually renders a source into C<PStr> or B<PromiseStrings> rather
 than C<Str>. As forward references become known, they are included in the
 text.
 
-=head1 PStr class and concatenation
+=head1 PCell and PStr classes
 
 RakuDoc statements that make references to structures or data that have not
 been completely rendered embed the references in B<PCells>, which
@@ -46,7 +46,38 @@ value of the block, eg.,
     $p ~= PCell.new( :s($a-supplier.Supply), :id<AAA> );
     sink '<bold>' ~ $p
 
-=head2 Template methods B<lead> and B<tail>
+=head2 PStr methods
+
+The following methods are defined for B<PStr>. Unless specified, they result in a B<PStr>
+allowing for chaining.
+
+=head3 new() and new( *@string )
+
+Creates a new B<PStr> either with no parameters, or a sequence of strings.
+
+=head3 debug
+Calling debug on a B<PStr> will stringify the object together with information
+about any B<PCells> inside the object.
+
+=head3 Method strip
+Goes through a B<PStr> and substitutes any expanded B<PCell> with its Str equivalent.
+All Str are then concatenated.
+
+=head3 Method trim-trailing, trim-leading, trim
+
+C<strip> is first called, then trailing or leading space, respectively, are
+removed from final, initial strings in the B<PStr>. C<trim> calls both
+trim-trailing and trim-leading.
+
+=head3 Method C<< has-PCells( --> Bool ) >>
+
+Determines whether there are any unexpanded B<PCell> in a B<PStr>.
+
+=head3 Method C<< segments( --> Int ) >>
+
+Returns the number of segments (strings or B<PCells>) in a B<PStr>
+
+=head3 Methods C<< lead( -->Str ) >> and C<< tail( --> Str ) >>
 
 These two methods of a I<PStr> object return any of the B<leading> or B<tailing> (respectively)
 I<Str> elements of the I<PStr>. The elements are removed, and so should be concatenated
@@ -70,5 +101,14 @@ For example, the post-processing should be done as follows:
         else { $rv.subst( / '<table' \s+ 'class="pod-table' /, '<table class="table is-centered') }
     }
 
+=head2 PCell methods
 
+B<PCells> should be invisible to the end user. However, if references are made
+that are not expanded, then a PCell will become visible.
+
+Typically, B<PCell> instances are converted to Str as soon as possible.
+
+=head3 debug
+
+Provides information about a B<PCell>.
 =end rakudoc
