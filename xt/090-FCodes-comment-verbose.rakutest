@@ -132,9 +132,9 @@ like $rv.body, /
     /, 'ɤ code without change';
 
 ## test possible and defined
-$rdp.templates<markup-Ɵ> = sub ( %prm, $ ) {
+$rdp.add-template: ( markup-Ɵ => sub ( %prm, $ ) {
     RakuDoc::Processor::express-params( %prm, $, 'theta')
-}
+});
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc

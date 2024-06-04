@@ -18,7 +18,7 @@ $ast = Q:to/QAST/.AST;
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :final-wrap );
-like $rv, / '<unknown>' .+ 'block-type: ｢nonitem｣' .+ '</unknown>' /, 'minimal render of unknown';
+like $rv, / '<unknown>' .+ 'contents' .+ 'nonitem' .+ '</unknown>' /, 'minimal render of unknown';
 like $rv, / '<warning-list>' .+ '<warning>' .+ 'not a valid builtin' .+ '</warning>' .+ '</warning-list>' /,'warning list';
 
 $ast = Q:to/QAST/.AST;

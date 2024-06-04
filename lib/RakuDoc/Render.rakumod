@@ -61,9 +61,18 @@ class RakuDoc::Processor {
      :$debug = None ) {
         %!templates.source = $test ?? 'test templates' !! 'default templates' ;
         %!templates = $test ?? self.test-text-templates !! self.default-text-templates;
-        %!templates.helper = self.text-helpers;
+        %!templates.helper = self.default-helpers;
         if $debug ~~ List { self.debug($debug.list) }
         else { self.debug( $debug ) }
+    }
+
+    method add-template( Pair $t ) {
+        %!templates{ $t.key } = $t.value
+    }
+    method add-templates( Hash $tt ) {
+        for $tt.pairs {
+            %!templates{ .key } = .value
+        }
     }
 
     #| renders to a String by default,
@@ -73,6 +82,8 @@ class RakuDoc::Processor {
         my ProcessedState $*prs .= new;
         $ast.rakudoc.map( { $.handle( $_ ) } );
         $!current += $*prs;
+        # neither of the approaches below allow for multi-threading.
+        # both fail on xt/055-debug-vals, and -simple-render.
 ## yields error with Numeric(ProcessedState:D) cant be resolved
 #        $ast.rakudoc.map( {
 #            $.handle( $_ );
@@ -192,15 +203,21 @@ class RakuDoc::Processor {
             when 'config' { $.manage-config($ast); }
             # =formula
             # Render content as LaTex formula
-            when 'formula' { $.gen-formula($ast) }
+            when 'formula' { $.gen-formula($ast) } #toc
             # =head
             # First-level heading
             # =headN
             # Nth-level heading
-            when 'head' {
-                $!scoped-data.start-scope(:starter($_)) if $parify;
+            when 'head' { #toc
                 $.gen-headish($ast, $parify);
-                $!scoped-data.end-scope if $parify;
+            }
+            # =numhead
+            # First-level numbered heading
+            # =numheadN
+            # Nth-level numbered heading
+            # heading numeration is fixed when TOC is generated and all headers are known
+            when 'numhead' {
+                $.gen-headish( $ast, $parify, :template<numhead>, :numerate)
             }
             # =item
             # First-level list item
@@ -214,14 +231,6 @@ class RakuDoc::Processor {
             when 'defn' {
                 $.gen-defn($ast)
             }
-            # =numhead
-            # First-level numbered heading
-            # =numheadN
-            # Nth-level numbered heading
-            # heading numeration is fixed when TOC is generated and all headers are known
-            when 'numhead' {
-                $.gen-headish( $ast, $parify, :template<numhead>, :numerate)
-            }
             # =numitem
             # First-level numbered list item
             # =numitemN
@@ -234,7 +243,7 @@ class RakuDoc::Processor {
                 $.gen-defn($ast, :numerate)
             }
             # =place block, mostly mimics P<>, but allows for TOC and caption
-            when 'place' {
+            when 'place' { #toc
                  $.gen-place($ast);
             }
             # =rakudoc
@@ -256,7 +265,7 @@ class RakuDoc::Processor {
             }
             # =table
             # Visual or procedural table
-            when 'table' {
+            when 'table' { #toc
                 $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
                 $.gen-table($ast);
                 $!scoped-data.end-scope;
@@ -274,7 +283,7 @@ class RakuDoc::Processor {
             }
             # RESERVED
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
-            when all($_.uniprops) ~~ / Lu / {
+            when all($_.uniprops) ~~ / Lu / {  #toc
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
                 $!scoped-data.start-scope( :starter($_) );
                 $.gen-semantics($ast, $parify);
@@ -282,7 +291,7 @@ class RakuDoc::Processor {
             }
             # CustomName
             # User-defined block
-            when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
+            when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / { #toc
                 # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
                 $!scoped-data.start-scope( :starter($_) );
                 $!scoped-data.last-title( $_ );
@@ -652,8 +661,17 @@ class RakuDoc::Processor {
     # and add the string to a structure, typically, not always, to $*prs.body
 
     #| generic code for next, para, code, input, output blocks
+    #| No ToC content is added unless overridden by toc/caption/headlevel
     method gen-paraish( $ast, $template, $parify ) {
         my %config = $.merged-config( $ast, $template);
+        if %config<toc> {
+            my $caption = %config<caption> // $template.tc;
+            my $level = %config<headlevel> // 1;
+            $level = 1 unless $level >= 1;
+            my $numeration = '';
+            my $target = %config<id> // $.name-id($caption);
+            $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target )
+        }
         my %*ALLOW;
         $!scoped-data.start-scope(:starter($template), :verbatim )
             if $template ~~ any(<code input output>);
@@ -662,23 +680,24 @@ class RakuDoc::Processor {
                 ?? %config<allow>.map({ $_ => True }).hash
                 !! {}
         }
-
         my PStr $contents = $.contents($ast, $parify);
         $*prs.body ~= %!templates{ $template }(
             %( :$contents, %config)
         );
         $!scoped-data.end-scope if $template ~~ any( <code input output> )
     }
-    #| handles blocks that are like headings
+    #| A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption
+    #| These can be set by a config directive
+    #| The id option may be used to create a target
+    #| An automatic target is also created from the contents
     method gen-headish($ast, $parify, :$template = 'head', :$numerate = False ) {
         my $contents = $.contents($ast, $parify).strip.trim.Str;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
+        $!scoped-data.start-scope(:starter($_)) if $parify;
         $!scoped-data.last-title( $contents );
-        my %config = $.merged-config($ast,
-            $template eq <head numhead>.any ?? ($template ~ $level) !! $template
-        );
+        my %config = $.merged-config($ast,($template ~ $level) );
         my $target = $.name-id($contents);
-        my $id = %config<id>:delete;
+        my $id = %config<id>:delete ;
         with $id {
             if self.is-target-unique( $_ ) {
                 $id = self.register-target( $_ );
@@ -687,6 +706,7 @@ class RakuDoc::Processor {
                 $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣";
             }
         }
+        else { $id = '' }
         # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
         $level = %config<headlevel> if %config<headlevel>:exists;
         $level = 1 if $level < 1;
@@ -697,7 +717,7 @@ class RakuDoc::Processor {
             $*prs.head-numbering.push: ['heading_' ~ $target, $level ];
         }
         my $caption = %config<caption>:delete;
-        $caption = ($template eq <head numhead>.any ?? $contents !! $template) without $caption;
+        $caption = $contents without $caption;
         my $toc = %config<toc>:delete // True;
         # attach numeration to caption and contents separately, allowing template
         # developer to add numeration to caption if wanted by changing the template
@@ -706,9 +726,12 @@ class RakuDoc::Processor {
         ) if $toc;
         $*prs.body ~= %!templates{ $template }(
             %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
-        )
+        );
+        $!scoped-data.end-scope if $parify;
     }
-    #| generates a formula
+    #| Formula at level 1 is added to ToC unless overriden by toc/headlevel/caption
+    #| Content is passed verbatim to template as formula
+    #| An alt text is also generated
     method gen-formula($ast) {
         my %config = $.merged-config( $ast, 'formula' );
         my $formula = $.contents( $ast, False ); # do not treat strings paragraphs
@@ -816,6 +839,8 @@ class RakuDoc::Processor {
         $!register.add-payload(:payload($defn-expansion), :id($term));
         $!register.add-payload(:payload($target), :id($term ~ '_target'))
     }
+    #| A place block adds Place at level 1 to ToC unless toc/headlevel/caption set
+    #| The contents of Place is a URI that is generated and then rendered with place template
     method gen-place($ast) {
         my %config = $.merged-config( $ast, 'place');
         my $uri = %config<uri>:delete;
@@ -917,9 +942,9 @@ class RakuDoc::Processor {
             %( :$contents, :$keep-format, :$schema, %config )
         )
     }
+    #| The rakudoc block should encompass the output
+    #| Config data associated with block is provided to overall process state
     method gen-rakudoc($ast, $parify) {
-        # rakudoc config differs from other blocks
-        #TODO look at scoping this
         my %config = $ast.resolved-config;
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);
@@ -928,6 +953,9 @@ class RakuDoc::Processor {
         ~ $.complete-numitem-list ~ $.complete-numdefn-list;
         $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) );
     }
+    #| A section is invisible to ToC, but is used by scoping
+    #| Some output formats may want to handle section, so
+    #| embedded RakuDoc are rendered and contents rendered by section template
     method gen-section($ast, $parify) {
         my %config = $.merged-config($ast, 'section');
         my $contents = $.contents($ast, $parify);
@@ -936,6 +964,8 @@ class RakuDoc::Processor {
         ~ $.complete-numitem-list ~ $.complete-numdefn-list;
         $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
     }
+    #| Table is added to ToC with level 1 as TABLE unless overriden by toc/headlevel/caption
+    #| contents is processed and rendered using table template
     multi method gen-table($ast) {
         my %config = $.merged-config($ast, 'table');
         my $caption = %config<caption>:delete // 'Table';
@@ -1107,9 +1137,11 @@ class RakuDoc::Processor {
         }
         $*prs.body ~= %!templates<table>.( %( :$procedural, :$caption, :$id, :@headers, :@rows, :@grid, %config ) );
     }
+    #| A lower case block generates a warning
+    #| DEPARSED Str is rendered with 'unknown' template
+    #| Nothing added to ToC
     method gen-unknown-builtin($ast) {
-        my %config = $ast.resolved-config;
-        my $contents = $.contents($ast, False);
+        my $contents = $ast.DEPARSE;
         if $ast.type ~~ any(<
                 cell code input output comment head numhead defn item numitem nested para
                 rakudoc section pod table formula
@@ -1123,12 +1155,15 @@ class RakuDoc::Processor {
             $*prs.warnings.push:
                 '｢' ~ $ast.type ~ '｣' ~ 'is not a valid builtin block, is it a misspelt Custom block?'
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
-        } # TODO make like unknown Custom
-        $*prs.body ~= %!templates<unknown>( %( :block-type($ast.type), :$contents, %config ) )
+        }
+        $*prs.body ~= %!templates<unknown>( %( :$contents, ) )
     }
-    #| All Semantic blocks are processed into strings, and the contents added to the semantic structure
+    #| Semantic blocks defined by spelling
+    #| embedded content is rendered and passed to template as contents
+    #| rendered contents is added to the semantic structure
     #| If :hidden is True, then the string is not added to .body
-    #| TITLE SUBTITLE NAME are by default :hidden and added to $*prs separately
+    #| Unless :hidden, Block name is added to ToC at level 1, unless overriden by toc/caption/headlevel
+    #| TITLE SUBTITLE NAME by default :hidden is True and added to $*prs separately
     #| All other SEMANTIC blocks are :!hidden by default
     method gen-semantics($ast, $parify) {
         my $block-name = $ast.type;
@@ -1195,28 +1230,37 @@ class RakuDoc::Processor {
     }
     method gen-custom($ast, $parify) {
         # Custom blocks are defined by their spelling
-        my $template = $ast.type;
-        # A customiser must provide a template with the same name & spelling as the block name
-        if %!templates{ $template }:exists {
-            $.gen-headish( $ast, $parify, :$template)
+        # - the block name is added to ToC at level 1 unless changed by toc/caption/headlevel
+        # If a template exists with the block name
+        # - provides content verbatim to template as raw
+        # - provides content rendered to template as contents
+        # If NOT, 
+        # - the block content is rendered as verbatim text
+        # - the content is rendered with 'unknown' template
+        # - a warning is issued
+        my $block-name = $ast.type;
+        my %config = $.merged-config( $ast, $block-name);
+        my $caption = %config<caption>:delete // $block-name;
+        my $level = %config<headlevel>:delete // 1;
+        $level = 1 unless $level >= 1;
+        my $numeration = '';
+        my $target = %config<id>:delete // $.name-id($caption);
+        unless %config<toc> {
+            $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target )
+        }
+        if %!templates{ $block-name }:exists {
+            my $contents = $.contents( $ast, $parify );
+            my $raw = $ast.paragraphs.Str.join;
+            $*prs.body ~= %!templates{ $block-name }( %( :$contents, :$raw, :$level, :$target, :$caption, %config ) )
         }
         else {
             # by spec, the name of an unrecognised Custom is treated like =head1
             # the contents are treated like =code
-            $.gen-headish( RakuAST::Doc::Block.new(
-                :type<head>,
-                :paragraphs( $template, ),
-                :config( $ast.resolved-config ),
-                :abbreviated
-            ), False );
-            $.gen-paraish( RakuAST::Doc::Block.new(
-                :type<code>,
-                :paragraphs( $ast.paragraphs ),
-                :config( $ast.resolved-config ),
-                :for( $ast.for ),
-                :abbreviated( $ast.abbreviated )
-            ), 'code', $parify );
-            $*prs.warnings.push: "Undefined custom block ｢$template｣ has been rendered as as code"
+            my $contents = $ast.DEPARSE;
+            $*prs.warnings.push: 
+            "No template exists for custom block ｢$block-name｣. It has been rendered as unknown"
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.";
+            $*prs.body ~= %!templates<unknown>( %( :$contents, :$block-name) )
         }
     }
     # directive type methods
@@ -1825,19 +1869,22 @@ class RakuDoc::Processor {
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
     #| returns hash of test helper callables
-    multi method text-helpers {
+    multi method default-helpers {
         %(
             add-to-toc => -> %h {
-                %h<state>.toc.push:
+                $*prs.toc.push:
                     { :caption(%h<caption>.Str), :target(%h<target>), :level(%h<level>) },
             },
             add-to-index => -> %h {
-                %h<state>.index.push:
+                $*prs.index.push:
                     { :contents(%h<contents>.Str), :target(%h<target>), :place(%h<place>) },
             },
             add-to-footnotes => -> %h {
-                %h<state>.footnotes.push:
+                $*prs.footnotes.push:
                     { :retTarget(%h<retTarget>), :fnTarget(%h<fnTarget>), :fnNumber(%h<fnNumber>) },
+            },
+            add-to-warnings => -> $warn {
+                $*prs.warnings.push: $warn
             }
         )
     }

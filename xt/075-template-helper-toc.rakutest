@@ -1,8 +1,9 @@
 use v6.d;
 use Test;
 use RakuDoc::Render;
+use RakuDoc::PromiseStrings;
 
-plan 1;
+plan 8;
 
 my $ast;
 my $rv;
@@ -20,4 +21,46 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 is $rv.toc.elems, 3, 'got correct number of contents';
 
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head2 First header
+    =begin section
+    =head2 Second header without option
+    =config head2 :!toc
+    =head2 Third test text with option
+    =end section
+    =head2 Fourth without option
+    =for MyNewBlock :caption<I got here>
+    Some text
+
+    =end rakudoc
+    QAST
+
+$rdp.add-template: ( MyNewBlock => -> %prm, $tmpl {
+    PStr.new( 'my new block' )
+});
+
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.toc.elems, 4, 'ToC includes one for custom';
+is $rv.toc[3]<caption>, 'I got here', 'caption as given in source';
+$rdp.add-template: ( MyNewBlock => -> %prm, $tmpl {
+    $tmpl.globals.helper<add-to-toc>(%(
+        :caption<new entry>,
+        :target(%prm<target> ~ '_one'),
+        :level(%prm<level>),
+    ));
+    $tmpl.globals.helper<add-to-warnings>( 'You have been warned' );
+    PStr.new( 'new block here')
+});
+
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.toc.elems, 5, 'got correct number of contents';
+is $rv.toc[4]<caption>, 'new entry', 'caption from helper';
+is $rv.warnings.elems, 1, 'got a new warning';
+is $rv.warnings[0], 'You have been warned', 'warning passed';
+$rdp.add-templates: %(
+    new-template => -> %prm, $ { 'say something' },
+    second-template => -> %prm, $ { 'say something else' },
+);
+ok $rdp.templates.keys (>) <new-template second-template>.Set, 'got two more templates';
 done-testing;

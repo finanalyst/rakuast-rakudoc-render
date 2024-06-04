@@ -3,7 +3,7 @@ use Test;
 use Test::Output;
 use RakuDoc::Render;
 
-plan *;
+plan 7;
 
 my $ast;
 my $rv;
@@ -18,15 +18,18 @@ $ast = Q:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 is $rv.warnings.elems, 1, 'warning generated';
-like $rv.warnings[0], / 'Undefined custom block ｢MyCustomBlock' /, 'got undefined warning';
+like $rv.warnings[0], / 'No template exists for custom block ｢MyCustomBlock' /, 'got undefined warning';
 like $rv.body, /
-    '<head>' .+ 'caption' .+? 'MyCustomBlock' .+ '</head>' .+
-    '<code>' .+ 'Some thing' .+ '</code>'
-/, 'treated as head followed by code';
+    '<unknown>' .+ 'MyCustomBlock' .+
+    'Some thing' .+ '</unknown>'
+/, 'rendered verbatim with unknown';
 
-$rdp.templates<MyCustomBlock> = sub ( %prm, $ ) {
+is $rv.toc.elems, 1, 'ToC includes one for custom';
+is $rv.toc[0]<caption>, 'MyCustomBlock', 'caption is blockname';
+
+$rdp.add-template: ( MyCustomBlock => -> %prm, $ {
     RakuDoc::Processor::express-params( %prm, $, 'myblock')
-}
+} );
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     =begin MyCustomBlock :an<option> :another<one>
@@ -37,8 +40,11 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 is $rv.warnings.elems, 0, 'no warning';
 like $rv.body, /
-    '<myblock>' .+ 'caption' .+? 'MyCustomBlock' .+
-    'Some thing' .+ '</myblock>'
-/, 'treated as head followed by code';
+    '<myblock>' .+
+    'caption' .+? 'MyCustomBlock' .+
+    'content' .+ 'Some thing<basis>' .+ 'to be said' .+ '/basis' .+ 'inside' .+
+    'raw' .+ 'Some thingB<to be said>inside' .+
+    '</myblock>'
+/, 'treated according to template';
 
 done-testing;

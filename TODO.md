@@ -19,9 +19,9 @@
 - [x] F<>
 - [x] =formula
 - [x] M<> (undefined)
-- [ ] :id
-- [ ] :toc / :!toc
-- [ ] :headerlevel
+- [x] :id
+- [x] :toc / :!toc
+- [x] :headerlevel
 - [x] :bullet handled in templates
 - [x] =para
 - [x] =nested

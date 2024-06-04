@@ -3,7 +3,7 @@ use Test;
 use Test::Output;
 use RakuDoc::Render;
 
-plan *;
+plan 8;
 
 my $ast;
 my $rv;

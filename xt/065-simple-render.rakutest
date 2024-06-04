@@ -22,8 +22,9 @@ like $rv.body.Str, /
     ^ '<head>' .+?
     'caption: ｢Test text｣' .+
     'contents: ｢Test text｣' .+
-    'id: ｢UNINITIALISED｣' .+
+    'id: ｢｣' .+
     'level: ｢1｣' .+
+    'numeration: ｢｣' .+
     'target: ｢Test_text｣' .+
     'toc: ｢True｣' .+
     '</head>'
