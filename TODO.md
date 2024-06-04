@@ -33,7 +33,7 @@
   - [ ] MarkDown, different id naming conventions
   - [ ] HTML, need to add CSS and Javascript
   - [ ] Epub, need to add extra metadata pages 
-- [ ] Documentation
+- [x] Documentation
   - [x] PromiseStrings 
   - [x] ScopedData
   - [x] MarkupMeta

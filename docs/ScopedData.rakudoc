@@ -39,7 +39,7 @@ Provides information about all block scopes.
 A ScopeData object has an attribute C<debug>. If set to True
 then diagnostic is called by C<start-scope> and C<end-scope>.
 
-=head2 Method C<< start-scope( :$starter!, :$title, :$verbatim )
+=head2 Method C<< start-scope( :$starter!, :$title, :$verbatim ) >>
 
 Starts a new scope. When a scope is started, all the previous
 information is copied.

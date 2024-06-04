@@ -2,7 +2,25 @@
 =TITLE RakuDoc renderer
 
 =SUBTITLE Renders RakuDoc sources into an output format dependent on templates
+=AUTHOR Richard Hainsworth aka finanalyst
 
-In progress
+=head1 Overview
+
+This module is intended to provide a generic renderer from RakuDoc v2 into text, but
+is designed to be easily extended to other output formats by subclassing.
+
+Two other formats, namely HTML and MarkDown, are provided in the distribution.
+
+The two main documentation sources are:
+=item L<An overview of the generic renderer|/Render>
+=item L<The templating system|/Templates>
+
+Other modules are also documented:
+=item L<Processed - objects to keep track of intermediate state|/Processed>
+=item L<PStr - Strings containing forward references|/PromiseStrings>
+=item L<ScopeData - an object to keep track of data valid for a block scope>
+=item L<a table of the minimum set of templates to render any RakuDoc source|/default-text-templates>
+=item L<a grammar for parsing the meta data of a Markup code|/MarkUpMeta>
+=item L<an object for numerating items headings|/Numeration>
 
 =end rakudoc

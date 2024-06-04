@@ -10,10 +10,9 @@
 [method $tmpl.prev](#method-tmplprev)  
 [Calling a helper callable](#calling-a-helper-callable)  
 [Calling another defined template](#calling-another-defined-template)  
-[PStr class and concatenation](#pstr-class-and-concatenation)  
-[Concatenation to PStr](#concatenation-to-pstr)  
-[Template methods lead and tail](#template-methods-lead-and-tail)  
 [Predefined templates](#predefined-templates)  
+[Debugging templates](#debugging-templates)  
+[Verbose output of one template](#verbose-output-of-one-template)  
 
 ----
 # Overview
@@ -120,39 +119,6 @@ page => -> %prm, $tmpl { $tmpl<header> ~ $tmpl<body> ~ $tmpl<footer> } where `he
 
 _With parameters_, eg. `$tmpl('aaa', %( :attr(1), :new-attr<some string> ) )`, the block registered with the key `aaa` is called with the new set of parameters specified in the Hash. It can be used to provide a subset of parameters, or to rename the parameters for a different template.
 
-# PStr class and concatenation
-Some RakuDoc statements make references to structures or data that have not been completely rendered. These references are embedded in **PCells**, which contain supplies that will interpolate the rendering once known.
-
-Consequently, parameters to a template may contain a mixture of Raku _Str_ and _PCells_, in an object of type called **PStr**.
-
-_PCells_ should not be visible to the template user.
-
-If a _PStr_ or _PCell_ is stringified before the data has been rendered, its internal _id_ and _UNAVAILABLE_ will be the rendered result.
-
-Since the embedded content of a _PStr_ may ony be available after a template has rendered, care must be taken not be stringify any of the parameters prematurely.
-
-Consequently, the return object from a template should be built from the parameter values using the concatenation operator `~`.
-
-## Concatenation to PStr
-A PStr is built up by concatenating using the infix operator `~`. Assignment does not add to a PStr. Concatenation can be on the left or the right of the PStr and the result will depend on the type.
-
-*  A PCell on the left or right is added to the start or end, respectively, of the PStr
-
-*  Concatentating two PStr adds the right hand one to the left hand one, and returns the left hand one
-
-*  Any other type on the left or right is coerced to a Str and added to the start/end of the PStr
-
-Since left concatenation has an effect on the PStr on the right, use `sink` to discard the return value, unless of course the return value is the last line of a block, in which case it is returned as the value of the block, eg.,
-
-my PStr $p; $p ~= PCell.new( :s($a-supplier.Supply), :id<AAA> ); sink '<bold>' ~ $p
-
-## Template methods **lead** and **tail**
-These two methods of a _PStr_ object return any of the **leading** or **tailing** (respectively) _Str_ elements of the _PStr_. The elements are removed, and so should be concatenated back on after processing.
-
-For simplicity above, examples were given of pre- and post-processing templates, and treating the contents of `%prm` as _Str_. Since some parameters may contain _PStr_, more care is needed. For example, the post-processing should be done as follows:
-
-table => -> %prm, $tmpl { my $rv = $tmpl.prev; if $rv ~~ PStr { # get leading text my $lead = $rv.lead; # process the string, if it exists $lead.subst( / '<table' \s+ 'class="pod-table' /, '<table class="table is-centered'); # left concatenate onto the PStr $lead ~ $rv # concatenating to a PStr results in a PStr, which is the return object } else { $rv.subst( / '<table' \s+ 'class="pod-table' /, '<table class="table is-centered') } }
-
 # Predefined templates
 `RakuAST::Render` defines a number of templates for Text output. These will be the fall-back templates when more specialist renderers add new templates to the Template Directory.
 
@@ -162,6 +128,22 @@ The special template `_name` is used to distinguish between test and default tem
 
 Information about both sets of templates are listed in the generated files [default-text-templates](/default-text-templates.md) and [test-text-templates](/test-text-templates.md).
 
+# Debugging templates
+The `Template-directory` class has a `.debug` attribute. When set to True, eg
+
+my Template-directory %global; # assign some templates to %global %global.debug = True;
+
+debugging information is sent to STDOUT via `say`.
+
+# Verbose output of one template
+The `Template-directory` class has a `.verbose` attribute. When set to a string corresponding to the name of a template, eg.
+
+my Template-directory %global = %( one => -> %prm, $tml { 'Hello world' }, two => -> %prm, $tml { 'Not again' }, ); # later ... %global.verbose = 'one';
+
+the verbose result of that template (eg. 'one') will be sent to STDOUT via `say`.
+
+The output of only one template at a time is supported at the moment.
+
 
 
 
@@ -169,4 +151,4 @@ Information about both sets of templates are listed in the generated files [defa
 
 
 ----
-Rendered from Templates at 2024-01-30T21:15:28Z
+Rendered from Templates at 2024-06-04T22:22:58Z
