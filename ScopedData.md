@@ -92,7 +92,7 @@ Change the state of the verbatim flag to True
 Which block set the verbatim flag
 
 ## `multi method item-inc( $level --&gt; Str )`
-Increment the item numeration at the required level, returns the result. See [Numeration module](/Numeration.md) for more detail
+Increment the item numeration at the required level, returns the result. See [Numeration module](Numeration.md) for more detail
 
 ## `multi method item-reset()`
 Reset the item numeration altogether
@@ -110,4 +110,4 @@ Reset the defn numeration
 
 
 ----
-Rendered from ScopedData at 2024-06-04T22:25:03Z
+Rendered from ScopedData at 2024-06-04T22:36:33Z

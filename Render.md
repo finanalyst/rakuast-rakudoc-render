@@ -21,7 +21,7 @@ The class method 'render' is the principal one for rendering RakuDoc v2. The Rak
 
 The aim is for a **RakuDoc::Processor** object (an **RPO**) to be as generic as possible, allowing for other classes to instantiate it, and to attach templates that will generate more specific formats, such as HTML, MarkDown, or EPub pages.
 
-An **RPO** relies on [Templates](/Templates.md), [PromiseStrings](/PromiseStrings.md), and [ScopedData](/ScopedData.md).
+An **RPO** relies on [Templates](Templates.md), [PromiseStrings](PromiseStrings.md), and [ScopedData](ScopedData.md).
 
 It is also necessary to have a good understanding of RakuDoc v2.
 
@@ -36,7 +36,7 @@ When a renderer is needed to output a new format, eg., HTML, the renderer instan
 
 The design of the Templates object means that new additions to the object push the previous definition onto a linked list, and so they will always be available by default.
 
-The set of template keys needed to create a renderer is [tabulated here](/test-text-templates.md).
+The set of template keys needed to create a renderer is [tabulated here](default-text-templates.md).
 
 All aspects of the output can be defined using the templates.
 
@@ -77,7 +77,7 @@ When some custom markup is encountered, the renderer will
 Thus in order to create a new markup code, create an appropriately named template and add it to the **RPO**.
 
 ### Global data accessible in templates
-More information is available in [Templates](/Templates.md).
+More information is available in [Templates](Templates.md).
 
 All templates can attach items to the Table of Contents, Index, Footnotes, and Warnings structures of the rendered source using the helper methods.
 
@@ -170,4 +170,4 @@ It is also possible to get the result of one template (so as to reduce the amoun
 
 
 ----
-Rendered from Render at 2024-06-04T22:21:33Z
+Rendered from Render at 2024-06-04T22:36:32Z

@@ -18,29 +18,29 @@ Two other formats, namely HTML and MarkDown, are provided in the distribution.
 
 The two main documentation sources are:
 
-*  [An overview of the generic renderer](/Render.md)
+*  [An overview of the generic renderer](Render.md)
 
-*  [The templating system](/Templates.md)
+*  [The templating system](Templates.md)
 
 Other modules are also documented:
 
 
 
-*  [Processed - objects to keep track of intermediate state](/Processed.md)
+*  [Processed - objects to keep track of intermediate state](Processed.md)
 
-*  [PStr - Strings containing forward references](/PromiseStrings.md)
+*  [PStr - Strings containing forward references](PromiseStrings.md)
 
-*  [ScopeData - an object to keep track of data valid for a block scope](ScopeData - an object to keep track of data valid for a block scope.md)
+*  [ScopedData - an object to keep track of data valid for a block scope](ScopedData.md)
 
-*  [a table of the minimum set of templates to render any RakuDoc source](/default-text-templates.md)
+*  [a table of the minimum set of templates to render any RakuDoc source](default-text-templates.md)
 
-*  [a grammar for parsing the meta data of a Markup code](/MarkUpMeta.md)
+*  [a grammar for parsing the meta data of a Markup code](MarkUpMeta.md)
 
-*  [an object for numerating items headings](/Numeration.md)
+*  [an object for numerating items headings](Numeration.md)
 
 
 
 
 
 ----
-Rendered from README at 2024-06-04T22:21:29Z
+Rendered from README at 2024-06-04T22:36:33Z

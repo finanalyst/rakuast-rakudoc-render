@@ -15,8 +15,8 @@ possible, allowing for other classes to instantiate it, and to attach
 templates that will generate more specific formats, such as HTML,
 MarkDown, or EPub pages.
 
-An B<RPO> relies on L<Templates|/Templates>, L<PromiseStrings|/PromiseStrings>,
-and L<ScopedData|/ScopedData>.
+An B<RPO> relies on L<Templates|Templates>, L<PromiseStrings|PromiseStrings>,
+and L<ScopedData|ScopedData>.
 
 It is also necessary to have a good understanding of RakuDoc v2.
 
@@ -38,7 +38,7 @@ The design of the Templates object means that new additions to the object
 push the previous definition onto a linked list, and so they will always
 be available by default.
 
-The set of template keys needed to create a renderer is L<tabulated here|/test-text-templates>.
+The set of template keys needed to create a renderer is L<tabulated here|default-text-templates>.
 
 All aspects of the output can be defined using the templates.
 
@@ -97,7 +97,7 @@ named template and add it to the B<RPO>.
 
 =head3 Global data accessible in templates
 
-More information is available in L<Templates|/Templates>.
+More information is available in L<Templates|Templates>.
 
 All templates can attach items to the Table of Contents, Index,
 Footnotes, and Warnings structures of the rendered source using

@@ -149,8 +149,8 @@ text templates is used when a C<RakuDoc::Processor> object is instantiated as C<
 The special template C<_name> is used to distinguish between test and default templates, and can be used to
 check that that a new Renderer has loaded its templates.
 
-Information about both sets of templates are listed in the generated files L<default-text-templates|/default-text-templates>
-and L<test-text-templates|/test-text-templates>.
+Information about both sets of templates are listed in the generated files L<default-text-templates|default-text-templates>
+and L<test-text-templates|test-text-templates>.
 
 =head1 Debugging templates
 

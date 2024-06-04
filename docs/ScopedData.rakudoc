@@ -92,7 +92,7 @@ Which block set the verbatim flag
 =head2 C<< multi method item-inc( $level --> Str )>>
 
 Increment the item numeration at the required level, returns the result.
-See L<Numeration module|/Numeration> for more detail
+See L<Numeration module|Numeration> for more detail
 
 =head2 C<< multi method item-reset()>>
 
