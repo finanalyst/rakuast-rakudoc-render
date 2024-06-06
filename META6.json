@@ -30,7 +30,8 @@
     "RakuDoc::ScopedData": "lib/RakuDoc/ScopedData.rakumod",
     "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",
     "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
-    "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
+    "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod",
+    "RakuDoc::To::TestText": "lib/RakuDoc/To/TestText.rakumod"
   },
   "resources": [],
   "support": {
@@ -40,6 +41,27 @@
   },
   "license": "Artistic-2.0",
   "source-url": "git://github.com/finanalyst/rakuast-rakudoc-render.git",
-  "bin": [],
+  "bin": [
+    "bin/RenderTextify.raku",
+    "bin/gen-default-template-info.raku"
+  ],
+  "docs": [
+    "README.md",
+    "MarkUpMeta.md",
+    "Numeration.md",
+    "Processed.md",
+    "PromiseStrings.md",
+    "Render.md",
+    "ScopedData.md",
+    "Templates.md",
+    "docs/README.rakudoc",
+    "docs/MarkUpMeta.rakudoc",
+    "docs/Numeration.rakudoc",
+    "docs/Processed.rakudoc",
+    "docs/PromiseStrings.rakudoc",
+    "docs/Render.rakudoc",
+    "docs/ScopedData.rakudoc",
+    "docs/Templates.rakudoc"
+  ],
   "source-type": "git"
 }

@@ -7,6 +7,7 @@ use RakuDoc::PromiseStrings;
 use RakuDoc::Numeration;
 use LibCurl::Easy;
 use Digest::SHA1::Native;
+use PrettyDump;
 use URI;
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
@@ -104,8 +105,8 @@ class RakuDoc::Processor {
         # so ToC and Index need to be rendered and any other PCells triggered
         # toc may contain numbered captions, so the heading-numbers need to be calculated
         self.complete-heading-numerations;
-        $!current.rendered-toc = self.complete-toc;
-        $!current.rendered-index = self.complete-index;
+        $!current.rendered-toc = self.complete-toc.Str;
+        $!current.rendered-index = self.complete-index.Str;
         # placed semantic blocks now need triggering
         for $!current.semantics.kv -> $block, @vals {
             $!register.add-payload( :payload( @vals.join ), :id("semantic-schema_$block") )
@@ -124,8 +125,19 @@ class RakuDoc::Processor {
     }
 
     method finalise( --> Str ) {
-        # Placing of footnotes, ToC etc, is left to final template
-        %!templates<final>( %( :$!current ) ).Str
+        %!templates<final>( %(
+            :body($!current.body),
+            :source-data($!current.source-data),
+            :front-matter($!current.front-matter),
+            :name($!current.name),
+            :title($!current.title),
+            :title-target($!current.title-target),
+            :subtitle($!current.subtitle),
+            :modified($!current.modified),
+            :rendered-toc($!current.rendered-toc),
+            :rendered-index($!current.rendered-index),
+            :warnings(%!templates<warnings>( %(:warnings($!current.warnings),))),
+        ) ).Str
     };
 
     method compactify( Str:D $s ) {
@@ -1440,12 +1452,16 @@ class RakuDoc::Processor {
     method local-heading($ast) {
         $ast.Str.trim.subst(/ \s /, '_', :g);
     }
-
+    my $*INDENT = 0;
     #| utility for test templates
     our &express-params is export = -> %h, $t, $c {
-        my PStr $rv .= new("<{ $c }>\n");
-        for %h.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-        $rv ~= "</{ $c }>\n"
+        my $*INDENT = 0;
+        $*INDENT = ($_ + 2) with CALLERS::<$*INDENT>;
+        my PStr $rv .= new("{ ' ' x $*INDENT }<{ $c }>\n");
+        for %h.sort(*.key)>>.kv -> ($k, $v) {
+            $rv ~= ( ' ' x ($*INDENT + 2) ) ~ $k ~ ': ｢' ~ pretty-dump( $v // 'UNINITIALISED' ) ~  "｣\n"
+        }
+        $rv ~= "{ ' ' x $*INDENT }</{ $c }>\n"
     }
     #| returns hash of test templates
     multi method test-text-templates {
@@ -1454,6 +1470,8 @@ class RakuDoc::Processor {
             _name => -> %, $ { 'test templates' },
             #| renders =code block
             code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
+            #| renders implict code from an indented paragraph
+            implicit-code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'implicit-code' )},
             #| renders =input block
             input => -> %prm, $tmpl { express-params( %prm, $tmpl, 'input' ) },
             #| renders =output block
@@ -1495,86 +1513,27 @@ class RakuDoc::Processor {
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
             #| special template to encapsulate all the output to save to a file
-            final => -> %prm, $tmpl {
-                %prm<current>.title ~ "\n"
-                ~ %prm<current>.subtitle ~ "\n"
-                ~ %prm<current>.rendered-toc ~ "\n"
-                ~ %prm<current>.rendered-index ~ "\n"
-                ~ %prm<current>.body.Str ~ "\n"
-                ~ $tmpl('footnotes', {
-                    footnotes => %prm<current>.footnotes,
-                }) ~ "\n"
-                ~ $tmpl('warnings', {
-                    warnings => %prm<current>.warnings,
-                }) ~ "\n"
-                ~ 'Rendered from ｢' ~ %prm<current>.source-data<name> ~ "｣\n"
-                ~ 'at ' ~ %prm<current>.modified ~ "\n"
-                ~ 'into ｢' ~ %prm<current>.name ~ "｣\n"
-            },
+            final => -> %prm, $tmpl { express-params( %prm, $tmpl, 'final' ) },
             #| renders a single item in the toc
-            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
+            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc-item' ) },
             #| special template to render the toc list
-            toc => -> %prm, $tmpl {
-                my $toc-list = %prm<toc-list>:delete;
-                $toc-list = .elems ?? .join !! "No items\n" with $toc-list;
-                my $rv = "<toc>\n";
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "items:" ~ $toc-list ~"</toc>\n"
-            },
+            toc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
             #| renders a single item in the index
-            index-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
+            index-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index-item' ) },
             #| special template to render the index data structure
-            index => -> %prm, $tmpl {
-                my $ind-list = %prm<index-list>:delete;
-                $ind-list = .elems ?? .join !! "No items\n" with $ind-list;
-                my $rv = "\n<index>\n";
-				for %prm.sort(*.key)>>.kv -> ($k, $v) { $rv ~= $k ~ ': ｢' ~ ( $v // 'UNINITIALISED' ) ~  "｣\n" }
-				$rv ~= "items:" ~ $ind-list ~"</index>\n"
-            },
+            index => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
             #| special template to render the footnotes data structure
-            footnotes => -> %prm, $tmpl {
-                if %prm<footnotes>.elems {
-                    my $n = 1;
-                    "<footnote-list>\n"
-                    ~ [~] %prm<footnotes>.map({
-                        "<footnote>{ $n++ }: $_\</footnote>\n"
-                    })
-                    ~ "</footnote-list>\n"
-                }
-                else {
-                    ''
-                }
-            },
+            footnotes => -> %prm, $tmpl { express-params( %prm, $tmpl, 'footnotes' ) },
             #| special template to render an item list data structure
-            item-list => -> %prm, $tmpl {
-                "<item-list>\n" ~ %prm<item-list>.join ~ "</item-list>\n"
-            },
+            item-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item-list' ) },
             #| special template to render a defn list data structure
-            defn-list => -> %prm, $tmpl {
-                "<defn-list>\n" ~ %prm<defn-list>.join ~ "</defn-list>\n"
-            },
+            defn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn-list' ) },
             #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl {
-                "<numitem-list>\n" ~ %prm<numitem-list>.join ~ "</numitem-list>\n"
-            },
+            numitem-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem-list' ) },
             #| special template to render a numbered defn list data structure
-            numdefn-list => -> %prm, $tmpl {
-                "<numdefn-list>\n" ~ %prm<numdefn-list>.join ~ "</numdefn-list>\n"
-            },
+            numdefn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn-list' ) },
             #| special template to render the warnings data structure
-            warnings => -> %prm, $tmpl {
-                if %prm<warnings>.elems {
-                    my $n = 1;
-                    "<warning-list>\n"
-                    ~ [~] %prm<warnings>.map({
-                        "<warning>{ $n++ }: $_\</warning>\n"
-                    })
-                    ~ "</warning-list>\n"
-                }
-                else {
-                    ''
-                }
-            },
+            warnings => -> %prm, $tmpl { express-params( %prm, $tmpl, 'warnings' ) },
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
             #| B< DISPLAY-TEXT >
@@ -1694,6 +1653,8 @@ class RakuDoc::Processor {
             _name => -> %, $ { 'default text templates' },
             #| renders =code blocks
             code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
+            #| renders implict code from an indented paragraph
+            implicit-code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'implicit-code' )},
             #| renders =input block
             input => -> %prm, $tmpl { express-params( %prm, $tmpl, 'input' ) },
             #| renders =output block

@@ -58,10 +58,9 @@ $ast = Q:scalar:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast );
 like $rv, /
-    '<toc>' .+? '</toc>'
-    .+ '<index>' .+? '</index>'
-    .+ '<rakudoc>'
-/, 'got a toc, an index, then a rakudoc';
+    'rendered-index' .+ '<index>' .+? '</index>' .+
+    'rendered-toc' .+ '<toc>' .+? '</toc>'
+/, 'got rendered toc, and index';
 like $rv, /
     '<rakudoc>'
     .+ '<placement>'
