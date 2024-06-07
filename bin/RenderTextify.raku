@@ -2,7 +2,14 @@
 use experimental :rakuast;
 use RakuDoc::Render;
 sub MAIN( $fn, :$test = False ) {
-    exit note "$fn\.rakudoc doesn't exist" unless "$fn.rakudoc".IO ~~ :e & :f;
-    my $ast = "$fn.rakudoc".IO.slurp.AST;
-    ("$fn.rakudoc".IO.basename ~ '.text').IO.spurt: RakuDoc::Processor.new(:$test).render($ast);
+    my $f = $fn.ends-with('.rakudoc') ?? $fn !! $fn ~ '.rakudoc';
+    exit note "$f doesn't exist" unless $f.IO ~~ :e & :f;
+    my $ast = $f.IO.slurp.AST;
+    my %source-data = %(
+        name     => $fn,
+        modified => $f.IO.modified,
+        path     => $f.IO.path
+    );
+    my RakuDoc::Processor $rdp .= new( :$test );
+    ("$fn.rakudoc".IO.basename ~ '.text').IO.spurt: $rdp.render($ast, :%source-data);
 }
