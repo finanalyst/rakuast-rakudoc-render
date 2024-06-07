@@ -21,9 +21,11 @@ class ProcessedState {
     has Array @.head-numbering;
 
     #| Index (from X<> markup)
-    #| Hash key => Array of :target, :is-header, :place
-    #| key to be displayed, target is for link, place is description of section
-    #| is-header because X<> in headings treated differently to ordinary text
+    #| Hash entry => Hash of :refs, :sub-index
+    #| :index (maybe empty) is Hash of sub-entry => :target, :sub-index
+    #| :refs is Array of (Hash :target, :place, :is-header)
+    #| :target is for link, :place is section name
+    #| :is-header because X<> in headings treated differently to ordinary text
     has %.index;
 
     #| Footnotes (from N<> markup)
@@ -115,7 +117,7 @@ class RakuDoc::Processed is ProcessedState {
     has Str $.subtitle is rw = '';
     #| When RakuDoc Processed Object modified
     #| (source-data<modified> should be earlier than RPO.modified)
-    has Str $.modified is rw = now.DateTime.utc.truncated-to('seconds').Str;
+    has Str $.modified is rw = now.DateTime.truncated-to('seconds').Str;
     #| target data generated from block names and :id metadata
     #| A set of unique targets inside the file, new targets must be unique
     has SetHash $.targets;
@@ -192,15 +194,32 @@ class RakuDoc::Processed is ProcessedState {
         GIST
     }
 }
+multi sub merge-index( %p, %q ) {
+    for %q.keys -> $k {
+        if %p{$k}:exists {
+            %p{$k}<refs>.append: %q{$k}<refs>.Slip;
+            if %p{$k}<sub-index>.elems and %q{$k}<sub-index>.elems {
+                %p{$k}<sub-index> = merge-index( %p{$k}<sub-index>, %q{$k}<sub-index> )
+            }
+            elsif %q{$k}<sub-index>.elems {
+                %p{$k}<sub-index> = %q{$k}<sub-index>
+            } # otherwise either p-subindex or q-sub-index are empty, so no change
+        }
+        else {
+            %p{$k} = %q{$k}
+        }
+    }
+}
+multi sub merge-index( $p, $q ) {
+    # no change needed
+}
 
 #| Add one ProcessedState object to another
 multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     sink $p.body ~ $q.body;
     $p.toc.append: $q.toc;
     $p.head-numbering.append: $q.head-numbering;
-    for $q.index.kv -> $k, $v { # by definition, same key but multiple values
-        $p.index{ $k }.append: $v.Slip
-    }
+    merge-index($p.index, $q.index);
     $p.footnotes.append: $q.footnotes;
     for $q.semantics.kv -> $k, $v { # by definition, same key but multiple values
         $p.semantics{$k}.append: $v.Slip

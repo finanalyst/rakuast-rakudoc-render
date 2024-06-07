@@ -69,20 +69,57 @@ subtest {
     /, 'sequence of warnings seems right';
 }, 'warnings compiled in correct order';
 
-$ps.index = %( syntax => ['one',], kind => ['two',]);
-$pt.index = %( syntax => ['tone',], xxx => ['yyy',]);
+$ps.index = %(
+    syntax => %(:refs([%(:target<one>,:place<Preface>,),]),
+        :sub-index( %() ),
+    ),
+    kind => %(:refs([%(:target<two>,:place<Preface>,),]),
+        :sub-index( %() ),
+    ),
+);
+$pt.index = %(
+    syntax => %(:refs([%(:target<tone>,:place<Preface>,),]),
+        :sub-index( %(
+            hierarchy => %(:refs([%(:target<tone>,:place<Preface>,),]),
+                :sub-index( %() ),
+            ),
+        ) ),
+    ),
+    xxx => %(:refs([%(:target<yyy>,:place<Preface>,),]),
+        :sub-index( %() ),
+    ),
+);
 $pu += [+] $ps, $pt;
 my %expected-ind = %(
-    syntax => ['one', 'tone'],
-    kind => ['two'],
-    xxx => ['yyy'],
+    syntax => %(
+        :refs([
+            %(:target<one>,:place<Preface>,),
+            %(:target<tone>,:place<Preface>,),
+        ]),
+        :sub-index( %(
+            hierarchy => %(:refs([%(:target<tone>,:place<Preface>,),]),
+                :sub-index( %() ),
+            ),
+        ) ),
+    ),
+    kind => %(:refs([%(:target<two>,:place<Preface>,),]),
+        :sub-index( %() ),
+    ),
+    xxx => %(:refs([%(:target<yyy>,:place<Preface>,),]),
+        :sub-index( %() ),
+    ),
 );
 is-deeply-relaxed $pu.index, %expected-ind, 'ProcessedState object index added as expected';
 
 $ps.semantics = %( syntax => ['one',], kind => ['two',]);
 $pt.semantics = %( syntax => ['tone',], xxx => ['yyy',]);
 $pu += [+] $ps, $pt;
-is-deeply-relaxed $pu.semantics, %expected-ind, 'ProcessedState object semantics added as expected';
+my %expected-semantics = %(
+    syntax => ['one', 'tone'],
+    kind => ['two'],
+    xxx => ['yyy'],
+);
+is-deeply-relaxed $pu.semantics, %expected-semantics, 'ProcessedState object semantics added as expected';
 
 $payload = '< more things >';
 $register.add-payload( :$payload, :id<XXX> );
