@@ -550,13 +550,13 @@ class RakuDoc::Processor {
             # Markup extra ( M<display text|functionality;param,sub-type;...>)
             when 'M' {
                 my $contents = self.markup-contents($ast);
-                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
-                unless $meta {
+                unless $ast.meta {
                     $*prs.body ~= %!templates<markup-M>( %(:$contents ) );
                     $*prs.warnings.push: "Markup-M failed: no meta information. Got ｢{ $ast.DEPARSE }｣";
                     return
                 }
-                my $target = self.index-id($ast, :$context, :$contents, :$meta);
+                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
+                my $target = self.index-id(:$context, :$contents, :$meta);
                 my $template = $meta[0].Str;
                 if any($template.uniprops) ~~ / Lu / and any($template.uniprops) ~~ / Ll / {
                     # template has an acceptable custom template spelling
@@ -564,7 +564,7 @@ class RakuDoc::Processor {
                         $*prs.body ~= %!templates{ $template }( %(:$contents, :$meta ) );
                     }
                     else {
-                        $*prs.body ~= %!templates<markup-M>( %(:$contents ) );
+                        $*prs.body ~= %!templates<markup-M>( %(:$contents, :$target ) );
                         $*prs.warnings.push: "Markup-M failed: template ｢$template｣ does not exist. Got ｢{ $ast.DEPARSE }｣"
                     }
                 }
@@ -577,17 +577,33 @@ class RakuDoc::Processor {
             # X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             # Index entry ( X<display text|entry,subentry;...>)
             #| Index (from X<> markup)
-            #| Hash key => Array of :target, :context, :place
-            #| key to be displayed, target is for link, place is description of section
-            #| context because X<> in headings treated differently to ordinary text
+            #| Hash entry => Hash of :refs, :sub-index
+            #| :sub-index (maybe empty) is Hash of sub-entry => :refs, :sub-index
+            #| :refs is Array of (Hash :target, :place, :is-header)
+            #| :target is for link, :place is section name
+            #| :is-header because X<> in headings treated differently to ordinary text
             when 'X' {
                 my $contents = self.markup-contents($ast);
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
-                my $target = self.index-id($ast, :$context, :$contents, :$meta);
-                $*prs.index{$contents} = %( :$target, :$place );
+                my $target = self.index-id(:$context, :$contents, :$meta);
+                my %ref = %( :$target, :$place );
+                if $ast.meta and $meta {
+                    $.merge-index( $*prs.index, $.add-index( $_, %ref )) for $meta.list
+                }
+                elsif $ast.meta {
+                    $*prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $*prs.index{$contents}:exists;
+                    $*prs.index{$contents}<refs>.push: %ref;
+                    $*prs.warnings.push: 'Ignoring content of L<> after | ｢'
+                        ~ $ast.meta.Str ~ '｣'
+                        ~ " in block ｢$context｣ with heading ｢$place｣."
+                }
+                else {
+                    $*prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $*prs.index{$contents}:exists;
+                    $*prs.index{$contents}<refs>.push: %ref
+                }
                 my $rv = %!templates{"markup-$letter"}(
                     %( :$contents, :$meta, :$target, :$place, %config )
-                );
+                ).Str;
                 $*prs.body ~= $rv;
             }
 
@@ -671,6 +687,32 @@ class RakuDoc::Processor {
     multi method handle(Cool:D $ast) {
         self.handle($ast.WHICH.Str)
     }
+
+    # helper methods for markup
+    multi method merge-index( %p, %q ) {
+        for %q.keys -> $k {
+            if %p{$k}:exists {
+                %p{$k}<refs>.append: %q{$k}<refs>.Slip;
+                $.merge-index( %p{$k}<sub-index>, %q{$k}<sub-index> )
+            }
+            else {
+                %p{$k} = %q{$k};
+            }
+        }
+    }
+    multi method add-index( Str:D $r, $ref ) {
+        my @refs;
+        @refs.push: $ref;
+        %( $r => %( :@refs, sub-index => %( ) ) )
+    }
+    multi method add-index( $r where * ~~ List, $ref --> Hash ) {
+        my @refs;
+        @refs.push: $ref;
+        my %h = %( :@refs, sub-index => %( ) );
+        $.merge-index( %h<sub-index>, $.add-index( $r[ 1 .. *-1 ] , $ref ) ) if $r[1 .. *-1].elems.so;
+        %( $r[0] => %h.clone )
+    }
+
     # gen-XX methods take an $ast, process the contents, based on a template,
     # and add the string to a structure, typically, not always, to $*prs.body
 
@@ -1298,10 +1340,11 @@ class RakuDoc::Processor {
     #| completes the index by rendering each key
     #| triggers the 'index-schema' id, which may be placed by a P<>
     method complete-index {
-        my @index-list = gather for $!current.index.sort( *.key )>>.kv -> ( $key, @index-entries ) {
-            take %!templates<index-item>( %( :@index-entries , ) )
+        my @index-list = gather for $!current.index.sort( *.key )>>.kv
+            -> ( $entry, %index-entries ) {
+            take %!templates<index-item>( %( :$entry, :%index-entries , ) )
         }
-        my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ));
+        my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) )).Str;
         $!register.add-payload( :$payload, :id('index-schema') );
         $payload
     }
@@ -1436,7 +1479,7 @@ class RakuDoc::Processor {
     #| Like name-id, index-id returns a unique Str to be used as a target
     #| Target should be unique
     #| Should be sub-classed by Renderers
-    method index-id($ast, :$context, :$contents, :$meta ) {
+    method index-id(:$context, :$contents, :$meta ) {
         my $target = 'index-entry-' ~ $contents.Str.trim.subst(/ \s /, '_', :g );
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
@@ -1458,8 +1501,10 @@ class RakuDoc::Processor {
         my $*INDENT = 0;
         $*INDENT = ($_ + 2) with CALLERS::<$*INDENT>;
         my PStr $rv .= new("{ ' ' x $*INDENT }<{ $c }>\n");
-        for %h.sort(*.key)>>.kv -> ($k, $v) {
-            $rv ~= ( ' ' x ($*INDENT + 2) ) ~ $k ~ ': ｢' ~ pretty-dump( $v // 'UNINITIALISED' ) ~  "｣\n"
+        for %h.sort(*.key)>>.kv -> ($k, $v is rw) {
+            if $v ~~ (Array, Hash).any { $v = pretty-dump( $v ) };
+            $v = 'UNINITIALISED' without $v;
+            $rv ~= ( ' ' x ($*INDENT + 2) ) ~ $k ~ ': ｢' ~ $v ~  "｣\n"
         }
         $rv ~= "{ ' ' x $*INDENT }</{ $c }>\n"
     }
@@ -1618,34 +1663,15 @@ class RakuDoc::Processor {
     my constant BOLD-ON = "\e[1m";
     my constant ITALIC-ON = "\e[3m";
     my constant UNDERLINE-ON = "\e[4m";
-    my constant INVERSE-ON = "\e[7m";
+    my constant INDEXED-ON = "\e[7m";
     my constant BOLD-OFF = "\e[22m";
     my constant ITALIC-OFF = "\e[23m";
     my constant UNDERLINE-OFF = "\e[24m";
-    my constant INVERSE-OFF = "\e[27m";
+    my constant INDEXED-OFF = "\e[27m";
 
-    my sub bold(str $text) {
-        BOLD-ON ~ $text ~ BOLD-OFF
-    }
-    my sub italic(str $text) {
-        ITALIC-ON ~ $text ~ ITALIC-OFF
-    }
-    my sub underline(str $text) {
-        UNDERLINE-ON ~ $text ~ UNDERLINE-OFF
-    }
-    my sub inverse(str $text) {
-        INVERSE-ON ~ $text ~ INVERSE-OFF
-    }
+    # terminal measure
+    my constant WIDTH = 80;
 
-    # ANSI formatting allowed
-    my constant %formats =
-    B => &bold,
-    C => &bold,
-    L => &underline,
-    D => &underline,
-    R => &inverse,
-    I => &italic,
-    ;
     #| returns a set of text templates
     multi method default-text-templates {
         %(
@@ -1667,6 +1693,7 @@ class RakuDoc::Processor {
             head => -> %prm, $tmpl {
                 my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;
                 qq:to/HEAD/
+
                 { %prm<contents>.Str.indent($indent) }
                 { ('-' x %prm<contents>.Str.chars).indent($indent) }
                 HEAD
@@ -1686,11 +1713,11 @@ class RakuDoc::Processor {
             #| renders =nested block
             nested => -> %prm, $tmpl { express-params( %prm, $tmpl, 'nested' ) },
             #| renders =para block
-            para => -> %prm, $tmpl { express-params( %prm, $tmpl, 'para' ) },
+            para => -> %prm, $tmpl { %prm<contents> ~ "\n" },
             #| renders =place block
             place => -> %prm, $tmpl { express-params( %prm, $tmpl, 'place' ) },
             #| renders =rakudoc block
-            rakudoc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'rakudoc' ) },
+            rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
             #| renders =section block
             section => -> %prm, $tmpl { express-params( %prm, $tmpl, 'section' ) },
             #| renders =pod block
@@ -1702,56 +1729,53 @@ class RakuDoc::Processor {
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
             #| special template to encapsulate all the output to save to a file
-            final => -> %prm, $tmpl { express-params( %prm, $tmpl, 'final' ) },
-            #| renders a single item in the index
-            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
-            #| special template to render the toc data structure
-            toc => -> %prm, $tmpl {
-               %prm<caption> ~ "\n"
-               ~ %prm<toc>.map({
-                    ' ' x .<level> ~ .<level>
-                    ~ ': caption ｢'
-                    ~ .<caption>
-                    ~ '｣ target ｢'
-                    ~ .<target>
-                    ~ "｣\n" }).join()
-                ~ '-' x 50 ~ "\n"
+            final => -> %prm, $tmpl {
+                ( %prm<rendered-toc> ??
+                 ( %prm<rendered-toc> ~ "\n" ~ '=' x WIDTH ~ "\n")
+                 !! ''
+                ) ~
+                %prm<body>.Str ~
+                ( %prm<rendered-index>
+                    ?? ( "\n\n" ~ '=' x WIDTH ~ "\n" ~ %prm<rendered-index> ~ "\n" )
+                    !! ''
+                ) ~
+                "\x203b" x WIDTH ~
+                "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
+                "\nAt " ~ %prm<modified>.DateTime.yyyy-mm-dd ~
+                "\nSource last modified " ~ %prm<source-data><modified>.DateTime.yyyy-mm-dd ~
+                "\n\n"
             },
+            #| renders a single item in the toc
+            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'final' ) },
+            #| special template to render the toc list
+            toc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
+            #| renders a single item in the index
+            index-item => -> %prm, $tmpl {
+                %prm<entry> ~ ': see in section ' ~ %prm<place> ~ "\n"
+             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                ''
-            },
-            #| renders a single item in the index
-            index-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
-            #| special template to render an item list data structure
-            defn-list => -> %prm, $tmpl {
-                "<defn-list>\n" ~ %prm<defn-list>.join ~ "</defn-list>\n"
-            },
-            #| special template to render an item list data structure
-            item-list => -> %prm, $tmpl {
-                '<item-list> ' ~ %prm<item-list>.join ~ ' </item-list>'
-            },
-            #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl {
-                "<numitem-list>\n" ~ %prm<item-list>.join ~ "</numitem-list>\n"
-            },
-            #| special template to render a numbered defn list data structure
-            numdefn-list => -> %prm, $tmpl {
-                "<numdefn-list>\n" ~ %prm<defn-list>.join ~ "</numdefn-list>\n"
+                %prm<index-list>.join
             },
             #| special template to render the footnotes data structure
-            footnotes => -> %prm, $tmpl {
-                "<footnotes>\n" ~ %prm<footnote-list>.join ~ "</footnotes>\n"
-            },
+            footnotes => -> %prm, $tmpl { express-params( %prm, $tmpl, 'footnotes' ) },
+            #| special template to render an item list data structure
+            item-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item-list' ) },
+            #| special template to render a defn list data structure
+            defn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn-list' ) },
+            #| special template to render a numbered item list data structure
+            numitem-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem-list' ) },
+            #| special template to render a numbered defn list data structure
+            numdefn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn-list' ) },
             #| special template to render the warnings data structure
-            warnings => -> %prm, $tmpl {
-                ''
-            },
+            warnings => -> %prm, $tmpl { express-params( %prm, $tmpl, 'warnings' ) },
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
             #| B< DISPLAY-TEXT >
             #| Basis/focus of sentence (typically rendered bold)
-			markup-B => -> %prm, $tmpl { express-params( %prm, $tmpl, 'basis' ) },
+			markup-B => -> %prm, $ {
+			    BOLD-ON ~ %prm<contents> ~ BOLD-OFF
+			},
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
 			markup-C => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
@@ -1819,7 +1843,7 @@ class RakuDoc::Processor {
 			markup-M => -> %prm, $tmpl { express-params( %prm, $tmpl, 'markup' ) },
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
-			markup-X => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
+			markup-X => -> %prm, $tmpl { INDEXED-ON ~ %prm<contents> ~ INDEXED-OFF },
             #| Unknown markup, render minimally
             markup-unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)

@@ -2,11 +2,28 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 1;
+plan *;
 
 my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new(:test);
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing X<to be said> inside spaces.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing '
+    '<index>' .+ 'contents:' .+ 'to be said｣' .+
+    'target:' .+ 'index-entry-to_be_said' .+
+    '</index>' .+
+    ' inside spaces.'
+    /, 'X-markup works no meta';
+is $rv.index.elems, 1, 'one index entry';
+ok $rv.index.keys (cont) 'to be said', 'entry ok';
+is $rv.index{'to be said'}<refs>[0]<place>, 'Preface', 'default starting heading';
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -16,10 +33,96 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing '
-    '<index>' .*? 'contents: ｢to be said｣' .*?
-    'meta: ｢with index content｣' .*?
-    'target: ｢index-entry-to_be_said｣' .*?
-    '</index>' .*?
+    '<index>' .+ 'contents:' .+ 'to be said｣' .+
+    'target:' .+ 'index-entry-to_be_said' .+
+    '</index>' .+
     ' inside spaces.'
     /, 'X-markup works with text and indexed text';
+is $rv.index.elems, 1, 'one index entry';
+ok $rv.index.keys (cont) 'with index content', 'indexed entry ok';
+is $rv.index{'with index content'}<refs>[0]<place>, 'Preface', 'default starting heading';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head First
+
+    Some thing X<to be said|indexed; glossed> inside spaces.
+
+    =head Second
+
+    Another X<stupidity|glossed> over here.
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing '
+    '<index' .+ 'contents:' .+ 'to be said｣' .+
+    'target:' .+ 'index-entry-to_be_said' .+
+    '</index>' .*?
+    ' inside spaces.' .+
+    'Another '
+    '<index>' .+ 'contents:' .+ 'stupidity｣' .+
+    'target:' .+ 'index-entry-stupidity' .+
+    '</index>'
+    /, 'X-markup works with text and indexed text';
+is $rv.index.elems, 2, 'two index entry';
+ok $rv.index.keys (>=) <glossed indexed>.Set, 'entries ok';
+is $rv.index<glossed><refs>[0]<place>, 'First', 'in first heading';
+is $rv.index<glossed><refs>[1]<place>, 'Second', 'in second heading';
+is $rv.index<indexed><refs>[0]<place>, 'First', 'in 1st heading';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head First
+
+    Some thing X<to be said|indexed; glossed, over> inside spaces.
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Some thing '
+    '<index' .+ 'contents:' .+ 'to be said｣' .+
+    'target:' .+ 'index-entry-to_be_said' .+
+    '</index>' .*?
+    ' inside spaces.'
+    /, 'X-markup with hierarchical entry';
+is $rv.index.elems, 2, 'two index entry';
+ok $rv.index.keys (>=) <glossed indexed>.Set, 'entries ok';
+is $rv.index<glossed><refs>[0]<place>, 'First', 'in first heading';
+ok $rv.index<glossed><sub-index><over>:exists, 'over is in sub-index';
+is $rv.index<indexed><refs>[0]<place>, 'First', 'in 1st heading';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head3 Adding index entries to your text
+
+    An X<index entry|index, entry> is an inline X<formatting code|formatting code;inline formatting> that
+    is rendered normally (i.e. with no special identifying styling) within the text, but which is also added
+    to the X<index>. X<Index entries|index, entry> may be specified with X<subentries|index, subentry>, including
+    X<multilevel subentries|index, subentry, multilevel>, though a renderer is not required to represent anything
+    more than the X<first level|index, subentry, rendering>. A single index entry can specify
+    X<two or more separate entries in the index|index; index, multiple entries; index, entry, nested>,
+    all of which will refer back to the same point in the text.
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+#like $rv.body, /
+## INDEX
+##
+##formatting code: line 538
+##index: lines 540, 543
+##    - entry: lines 538, 540
+##        - nested: line 543
+##    - multiple entries: line 543
+##    - subentry: line 540
+##        - multilevel: line 541
+##        - rendering: line 542
+##inline formatting: line 538
+#    .
+#    /, 'X-markup with hierarchical entry';
+ok $rv.index.keys (>=) ('formatting code', 'index', 'inline formatting').Set, 'index entry list as expected';
+ok $rv.index<index><sub-index>.keys (>=) ('entry', 'multiple entries', 'subentry').Set, 'sub entry list ok';
+
 done-testing;
