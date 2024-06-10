@@ -1670,59 +1670,64 @@ class RakuDoc::Processor {
     # colorless ANSI constants
     my constant RESET = "\e[0m";
     my constant BOLD-ON = "\e[1m";
-    my constant ITALIC-ON = "\e[3m";
-    my constant UNDERLINE-ON = "\e[4m";
-    my constant BLINK-ON = "\e[5m";
-    my constant INDEXED-ON = "\e[7m";
-    my constant CODE-ON = "\e[7m";
-    my constant STRIKE-ON = "\e[9m";
-    my constant NORMAL = "\e[10m";
-    my constant ALT-A = "\e[11m";
-    my constant ALT-B = "\e[12m";
-    my constant SUPERSCR-ON = "\e[73";
-    my constant SUBSCR-ON = "\e[74";
     my constant BOLD-OFF = "\e[22m";
+    my constant ITALIC-ON = "\e[3m";
     my constant ITALIC-OFF = "\e[23m";
+    my constant UNDERLINE-ON = "\e[4m";
     my constant UNDERLINE-OFF = "\e[24m";
+    my constant BLINK-ON = "\e[5m";
     my constant BLINK-OFF = "\e[25m";
+    my constant INDEXED-ON = "\e[7m";
     my constant INDEXED-OFF = "\e[27m";
+    my constant CODE-ON = "\e[7m";
     my constant CODE-OFF = "\e[27m";
+    my constant STRIKE-ON = "\e[9m";
     my constant STRIKE-OFF = "\e[29m";
-    my constant SUBSCR-OFF = "\e[75";
-    my constant SUPERSCR-OFF = "\e[75";
+    my constant SUPERSCR-ON = "\e[48;5;78m\e[73m";
+    my constant SUBSCR-ON = "\e[48;5;80m\e[74m";
+    my constant SUBSCR-OFF = "\e[75m\e[39;49m";
+    my constant SUPERSCR-OFF = "\e[75m\e[39;49m";
+    my constant INDEX-ENTRY-ON = "\e[48;5;2m";
+    my constant INDEX-ENTRY-OFF = "\e[39;49m";
+    my constant KEYBOARD-ON = "\e[48;5;5m";
+    my constant KEYBOARD-OFF = "\e[39;49m";
+    my constant TERMINAL-ON = "\e[48;5;6m";
+    my constant TERMINAL-OFF = "\e[39;49m";
+    my constant FOOTNOTE-ON = "\e[48;5;214m\e[38;5;0m";
+    my constant FOOTNOTE-OFF = "\e[39;49m";
 
     # terminal measure
     my constant WIDTH = 80;
 
     #| returns a set of text templates
     multi method default-text-templates {
-        my @bullets = "\x2219", "\x2022", "\x25b9", "\x2023", "\x2043", ;
+        my @bullets = <<\x2219, \x2022, \x25b9, \x2023, \x2043>> ;
         %(
             #| special key to name template set
             _name => -> %, $ { 'default text templates' },
             #| renders =code blocks
             code => -> %prm, $tmpl {
-                PStr.new: "\n --- code --- \n"
+                PStr.new: "\n  --- code --- \n"
                 ~ %prm<contents>
-                ~ "\n--- ----- ---\n"
+                ~ "\n  --- ----- ---\n"
             },
             #| renders implict code from an indented paragraph
             implicit-code => -> %prm, $tmpl {
-                PStr.new: "\n --- code --- \n"
+                PStr.new: "\n  --- code --- \n"
                 ~ %prm<contents>
-                ~ "\n--- ----- ---\n"
+                ~ "\n  --- ----- ---\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
-                PStr.new: "\n --- input --- \n"
+                PStr.new: "\n  --- input --- \n"
                 ~ %prm<contents>
-                ~ "\n--- ------ ---\n"
+                ~ "\n  --- ------ ---\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
-                PStr.new: "\n --- output --- \n"
+                PStr.new: "\n  --- output --- \n"
                 ~ %prm<contents>
-                ~ "\n--- ------ ---\n"
+                ~ "\n  --- ------ ---\n"
              },
             #| renders =comment block
             comment => -> %prm, $tmpl { '' },
@@ -1756,7 +1761,7 @@ class RakuDoc::Processor {
             numitem => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem' ) },
             #| renders =nested block
             nested => -> %prm, $tmpl {
-                PStr.new: "\t" ~ %prm<contents>
+                PStr.new: "\t" ~ %prm<contents> ~ "\n\n"
             },
             #| renders =para block
             para => -> %prm, $tmpl { %prm<contents> ~ "\n\n" },
@@ -1775,7 +1780,76 @@ class RakuDoc::Processor {
             #| renders =pod block
             pod => -> %prm, $tmpl { %prm<contents> },
             #| renders =table block
-            table => -> %prm, $tmpl { express-params( %prm, $tmpl, 'table' ) },
+            table => -> %prm, $tmpl {
+                    if %prm<procedural> {
+                    # calculate column widths naively, will include possible markup, and
+                    # will fail if embedded tables
+                    # TODO comply with justification, now right-justify col-head, top-justify row labels.
+                    my @col-wids;
+                    my $wid;
+                    for %prm<grid>.list -> @row {
+                        for @row.kv -> $n, %cell {
+                            next if %cell<no-cell>;
+                            $wid = %cell<data>.Str.chars + 2;
+                            @col-wids[$n] = $wid if $wid > (@col-wids[$n] // 0)
+                        }
+                    }
+                    my $table-wid = (+@col-wids * 3) + 4 + [+] @col-wids;
+                    my @rendered-grid;
+                    my $col-count;
+                    for %prm<grid>.kv -> $r, @row {
+                        $col-count = 0;
+                        for @row.kv -> $n, %cell {
+                            next if %cell<no-cell>;
+                            my $data = %cell<data>.Str;
+                            my $chars = $data.subst(/ "\x1B".+?'m' /,'',:g).chars;
+                            my $col-wid = @col-wids[$n];
+                            if %cell<span>:exists {
+                                #for the col-span
+                                if %cell<span>[0] > 1 {
+                                    for ^( %cell<span>[0] - 1) {
+                                        $col-wid += @col-wids[ $n + $_ + 1] + 2
+                                    }
+                                }
+                                #for the row-span
+                                if %cell<span>[1] > 1 {
+                                    for ^ (%cell<span>[1] - 1 ) {
+                                        @rendered-grid[$r + $_ + 1][$n] ~= ' ' x $col-wid ~ ' |'
+                                    }
+                                }
+                            }
+                            my $pref = ( $col-wid - $chars ) div 2;
+                            my $post = $col-wid - $pref - $chars;
+                            @rendered-grid[ $r ][ $n ] ~=
+                                ' ' x $pref ~
+                                (%cell<header> || %cell<label> ?? BOLD-ON !! '') ~
+                                $data ~
+                                (%cell<header> || %cell<label> ?? BOLD-OFF !! '')
+                                ~ ' ' x $post ~ ' |';
+                        }
+                    }
+                    my $cap-shift = ( $table-wid - %prm<caption>.chars ) div 2;
+                    my $row-shift = $cap-shift < 0 ?? - $cap-shift !! 0;
+                    $cap-shift = 0 if $cap-shift < 0;
+                    PStr.new: "\n\t" ~ ' ' x $cap-shift ~ %prm<caption> ~ "\n\t" ~
+                        ' ' x $cap-shift ~ '-' x %prm<caption>.chars ~ "\n" ~
+                        @rendered-grid.map({
+                        "\t" ~ ' ' x $row-shift ~ '| ' ~ $_.grep( *.isa(Str) ).join('') ~ "\n"
+                        }) ~ "\n\n"
+                   ;
+                }
+                else {
+                    my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - %prm<caption>.chars ) div 2;
+                    my $row-shift = $cap-shift < 0 ?? - $cap-shift !! 0;
+                    $cap-shift = 0 if $cap-shift < 0;
+                    PStr.new: "\n\t" ~ ' ' x $cap-shift ~ %prm<caption> ~ "\n\t" ~
+                        ' ' x $cap-shift ~ '-' x %prm<caption>.chars ~ "\n" ~
+                        "\t" ~ ' ' x $row-shift ~ '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n" ~
+                        %prm<rows>.map({
+                            "\t" ~ ' ' x $row-shift ~ '| ' ~ $_.join(' | ') ~ " |\n"
+                        }) ~ "\n\n"
+                }
+            },
             #| renders =custom block
             custom => -> %prm, $tmpl {
                 PStr.new: %prm<caption> ~ "\n" ~
@@ -1803,9 +1877,11 @@ class RakuDoc::Processor {
                 ) ~
                 "\x203b" x WIDTH ~
                 "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
-                "\nAt " ~ %prm<modified>.DateTime.yyyy-mm-dd ~
-                "\nSource last modified " ~ %prm<source-data><modified>.DateTime.yyyy-mm-dd ~
-                "\n\n"
+                "\nAt " ~ (.hour ~ ':' ~ .minute ~ ' on ' ~ .yyyy-mm-dd ~ ' UTC'  with %prm<modified>.DateTime) ~
+                "\nSource last modified " ~ (.hour ~ ':' ~ .minute ~ ' on ' ~ .yyyy-mm-dd ~ ' UTC' with %prm<source-data><modified>.DateTime) ~
+                "\n\n"~
+                "\x203b" x WIDTH ~ "\n" ~
+                %prm<warnings>
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {
@@ -1815,7 +1891,9 @@ class RakuDoc::Processor {
             },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
-                PStr.new: %prm<caption> ~ "\n" ~ [~] %prm<toc-list>
+                PStr.new: %prm<caption>  ~ "\n"
+                ~ '-' x %prm<caption>.chars ~ "\n"
+                ~ ' ' ~ [~] %prm<toc-list> ~ "\n\n"
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
@@ -1829,20 +1907,22 @@ class RakuDoc::Processor {
                     }
                     $rv
                 }
-                PStr.new: %prm<entry> ~ ': see in'
+                PStr.new: INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': see in'
                     ~ %prm<entry-data><refs>.map({ ' § ' ~ .<place> }).join(',')
                     ~ "\n"
                     ~ si( %prm<entry-data><sub-index>, 1 );
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                PStr.new: %prm<caption> ~ "\n" ~ [~] %prm<index-list>
+                PStr.new: %prm<caption> ~ "\n"
+                ~ '-' x %prm<caption>.chars ~ "\n"
+                ~ ' ' ~ [~] %prm<index-list> ~ "\n\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl { express-params( %prm, $tmpl, 'footnotes' ) },
             #| special template to render an item list data structure
-            item-list => -> %prm, $tmpl {
-                PStr.new: [~] %prm<item-list> ~ "\n"
+            item-list => -> %prm, $tmpl { # add space to first item due to stringification of PStr lists.
+                PStr.new: ' ' ~ [~] %prm<item-list> ~ "\n"
             },
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn-list' ) },
@@ -1851,7 +1931,10 @@ class RakuDoc::Processor {
             #| special template to render a numbered defn list data structure
             numdefn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn-list' ) },
             #| special template to render the warnings data structure
-            warnings => -> %prm, $tmpl { express-params( %prm, $tmpl, 'warnings' ) },
+            warnings => -> %prm, $tmpl {
+                PStr.new: "WARNINGS\n" ~ '-' x 8 ~ "\n" ~
+                %prm<warnings>.kv.map({ $^a + 1 ~ ": $^b" }).join("\n") ~ "\n\n"
+            },
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
             #| B< DISPLAY-TEXT >
@@ -1873,10 +1956,12 @@ class RakuDoc::Processor {
 			markup-J => -> %prm, $tmpl { SUBSCR-ON ~ %prm<contents> ~ SUBSCR-OFF },
             #| K< DISPLAY-TEXT >
             #| Keyboard input (typically rendered fixed-width)
-			markup-K => -> %prm, $tmpl { ALT-A ~ %prm<contents> ~ NORMAL },
+			markup-K => -> %prm, $tmpl { KEYBOARD-ON ~ %prm<contents> ~ KEYBOARD-OFF },
             #| N< DISPLAY-TEXT >
-            #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
-			markup-N => -> %prm, $tmpl { express-params( %prm, $tmpl, 'note' ) },
+            #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
+			markup-N => -> %prm, $tmpl {
+			    PStr.new: FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF
+			},
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
 			markup-O => -> %prm, $tmpl { STRIKE-ON ~ %prm<contents> ~ STRIKE-OFF },
@@ -1888,7 +1973,7 @@ class RakuDoc::Processor {
 			markup-S => -> %prm, $tmpl { %prm<contents> },
             #| T< DISPLAY-TEXT >
             #| Terminal output (typically rendered fixed-width)
-			markup-T => -> %prm, $tmpl { ALT-B ~ %prm<contents> ~ NORMAL },
+			markup-T => -> %prm, $tmpl { TERMINAL-ON ~ %prm<contents> ~ TERMINAL-OFF },
             #| U< DISPLAY-TEXT >
             #| Unusual (typically rendered with underlining)
 			markup-U => -> %prm, $tmpl { UNDERLINE-ON ~ %prm<contents> ~ UNDERLINE-OFF },
