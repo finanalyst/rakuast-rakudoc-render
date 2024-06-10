@@ -131,9 +131,9 @@ class RakuDoc::Processed is ProcessedState {
     #|
     has Hash %.links;
     #| Rendered version of the ToC
-    has Str $.rendered-toc is rw;
+    has $.rendered-toc is rw;
     #| Rendered version of the Index
-    has Str $.rendered-index is rw;
+    has $.rendered-index is rw;
 
     submethod TWEAK( :%source-data, :$name, :$output-format ) {
         %!source-data = %(

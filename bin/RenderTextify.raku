@@ -11,5 +11,6 @@ sub MAIN( $fn, :$test = False ) {
         path     => $f.IO.path
     );
     my RakuDoc::Processor $rdp .= new( :$test );
-    ("$fn.rakudoc".IO.basename ~ '.text').IO.spurt: $rdp.render($ast, :%source-data);
+    note "Using {$rdp.templates.source}";
+    ($f ~ ( $test ?? '.test' !! '') ~ '.text').IO.spurt: $rdp.render($ast, :%source-data);
 }

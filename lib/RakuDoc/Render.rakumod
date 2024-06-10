@@ -98,6 +98,10 @@ class RakuDoc::Processor {
 #        }
 #        await.allof( @leaves );
 #        $!current += $*prs;
+        # placed semantic blocks now need triggering
+        for $!current.semantics.kv -> $block, @vals {
+            $!register.add-payload( :payload( @vals.join ), :id("semantic-schema_$block") )
+        }
         # Since the footnote order may only be known at the end
         # footnote numbers are PCells, which need triggering
         self.complete-footnotes;
@@ -105,13 +109,21 @@ class RakuDoc::Processor {
         # so ToC and Index need to be rendered and any other PCells triggered
         # toc may contain numbered captions, so the heading-numbers need to be calculated
         self.complete-heading-numerations;
-        $!current.rendered-toc = self.complete-toc.Str;
-        $!current.rendered-index = self.complete-index.Str;
-        # placed semantic blocks now need triggering
-        for $!current.semantics.kv -> $block, @vals {
-            $!register.add-payload( :payload( @vals.join ), :id("semantic-schema_$block") )
-        }
         # All PCells should be triggered by this point
+        self.complete-toc;
+        if $!current.rendered-toc.has-PCells {
+            while $!current.rendered-toc.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
+                $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded in ToC." )
+            }
+            $!current.rendered-toc .= Str
+        }
+        self.complete-index;
+        if $!current.rendered-index.has-PCells {
+            while $!current.rendered-index.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
+                $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded in Index." )
+            }
+            $!current.rendered-index .= Str
+        }
         $!current.body.strip; # replace expanded PCells with Str
         # all suspended PCells should have been replaced by Str
         # Remaining PCells should trigger warnings
@@ -408,7 +420,7 @@ class RakuDoc::Processor {
                     $error = True;
                     $error-text = $term unless $error-text;
                     $*prs.warnings.push:
-                        "unknown alias ｢$term｣"
+                        "Unknown alias ｢$term｣"
                         ~ " in block ｢$context｣ with heading ｢$place｣"
                         ~ ( $error-text ?? " over-riden by ｢$error-text｣" !! ''  )
                 }
@@ -1233,34 +1245,31 @@ class RakuDoc::Processor {
         my $rv;
         given $ast.type {
             when 'TITLE' {
-                $hidden = %config<hidden>.so // True; # hide by default
+                $hidden = True; # hide by default
+                $hidden = $_ with %config<hidden>;
                 $!current.title = $contents.Str;
                 # allows for TITLE to have its own template
                 if %!templates<TITLE>:exists {
-                    $rv = %!templates<TITLE>( %( :$contents, %config ) )
+                    $rv = %!templates<TITLE>( %( :$contents, :$caption, %config ) )
                 }
                 else {
-                    $rv = $contents
+                    $rv = %!templates<semantic>( %( :$contents, :$caption, %config ) )
                 }
             }
             when 'SUBTITLE' {
-                $hidden = %config<hidden>.so // True;
+                $hidden = True; # hide by default
+                $hidden = $_ with %config<hidden>;
                 $!current.subtitle = $contents.Str;
                 if %!templates<SUBTITLE>:exists {
-                    $rv = %!templates<SUBTITLE>( %( :$contents, %config ) )
+                    $rv = %!templates<SUBTITLE>( %( :$contents, :$caption, %config ) )
                 }
                 else {
-                    $rv = $contents
+                    $rv = %!templates<semantic>( %( :$contents, :$caption, %config ) )
                 }
-            }
-            when 'NAME' {
-                $hidden = %config<hidden>.so // True;
-                # name probably should not be anything but a bare string
-                $!current.name = $rv = $contents.Str ~ '.' ~ $!output-format;
             }
             default {
                 $hidden = %config<hidden>.so // False; # other SEMANTIC by default rendered in place
-                my $template = %!templates{ $block-name }:exists ?? $block-name !! 'head';
+                my $template = %!templates{ $block-name }:exists ?? $block-name !! 'semantic';
                 my $target = $.name-id($block-name);
                 my $id = '';
                 with %config<id> {
@@ -1275,7 +1284,7 @@ class RakuDoc::Processor {
                     }
                 }
                 $rv = %!templates{$template}(
-                    %( :$level, :$target, :$contents, :$id, %config )
+                    %( :$level, :$caption, :$target, :$contents, :$id, %config )
                 );
                 $*prs.toc.push(  %( :$caption, :$target, :$level ) ) unless $hidden;
             }
@@ -1341,12 +1350,12 @@ class RakuDoc::Processor {
     #| triggers the 'index-schema' id, which may be placed by a P<>
     method complete-index {
         my @index-list = gather for $!current.index.sort( *.key )>>.kv
-            -> ( $entry, %index-entries ) {
-            take %!templates<index-item>( %( :$entry, :%index-entries , ) )
+            -> ( $entry, %entry-data ) {
+            take %!templates<index-item>( %( :$entry, :%entry-data , ) )
         }
-        my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) )).Str;
+        my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ));
         $!register.add-payload( :$payload, :id('index-schema') );
-        $payload
+        $!current.rendered-index = $payload
     }
     #| renders the toc and triggers the 'toc-schema' id for P<>
     method complete-toc {
@@ -1355,7 +1364,7 @@ class RakuDoc::Processor {
         }
         my $payload = %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) ) );
         $!register.add-payload( :$payload, :id('toc-schema') );
-        $payload
+        $!current.rendered-toc = $payload
     }
     #| finalises all the heading numerations
     method complete-heading-numerations() {
@@ -1495,18 +1504,16 @@ class RakuDoc::Processor {
     method local-heading($ast) {
         $ast.Str.trim.subst(/ \s /, '_', :g);
     }
-    my $*INDENT = 0;
     #| utility for test templates
     our &express-params is export = -> %h, $t, $c {
-        my $*INDENT = 0;
-        $*INDENT = ($_ + 2) with CALLERS::<$*INDENT>;
-        my PStr $rv .= new("{ ' ' x $*INDENT }<{ $c }>\n");
+        my $indent = 0;
+        my PStr $rv .= new("\n{ ' ' x $indent }<{ $c }>\n");
         for %h.sort(*.key)>>.kv -> ($k, $v is rw) {
             if $v ~~ (Array, Hash).any { $v = pretty-dump( $v ) };
             $v = 'UNINITIALISED' without $v;
-            $rv ~= ( ' ' x ($*INDENT + 2) ) ~ $k ~ ': ｢' ~ $v ~  "｣\n"
+            $rv ~= ( ' ' x ($indent + 2) ) ~ $k ~ ': ｢' ~ $v ~  "｣\n"
         }
-        $rv ~= "{ ' ' x $*INDENT }</{ $c }>\n"
+        $rv ~= "{ ' ' x $indent }</{ $c }>\n"
     }
     #| returns hash of test templates
     multi method test-text-templates {
@@ -1514,7 +1521,7 @@ class RakuDoc::Processor {
             #| special key to name template set
             _name => -> %, $ { 'test templates' },
             #| renders =code block
-            code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
+            code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code-block' ) },
             #| renders implict code from an indented paragraph
             implicit-code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'implicit-code' )},
             #| renders =input block
@@ -1549,6 +1556,8 @@ class RakuDoc::Processor {
             rakudoc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'rakudoc' ) },
             #| renders =section block
             section => -> %prm, $tmpl { express-params( %prm, $tmpl, 'section' ) },
+            #| renders =SEMANTIC block, if not otherwise given
+            semantic => -> %prm, $tmpl { express-params( %prm, $tmpl, 'semantic' ) },
             #| renders =pod block
             pod => -> %prm, $tmpl { express-params( %prm, $tmpl, 'pod' ) },
             #| renders =table block
@@ -1663,36 +1672,66 @@ class RakuDoc::Processor {
     my constant BOLD-ON = "\e[1m";
     my constant ITALIC-ON = "\e[3m";
     my constant UNDERLINE-ON = "\e[4m";
+    my constant BLINK-ON = "\e[5m";
     my constant INDEXED-ON = "\e[7m";
+    my constant CODE-ON = "\e[7m";
+    my constant STRIKE-ON = "\e[9m";
+    my constant NORMAL = "\e[10m";
+    my constant ALT-A = "\e[11m";
+    my constant ALT-B = "\e[12m";
+    my constant SUPERSCR-ON = "\e[73";
+    my constant SUBSCR-ON = "\e[74";
     my constant BOLD-OFF = "\e[22m";
     my constant ITALIC-OFF = "\e[23m";
     my constant UNDERLINE-OFF = "\e[24m";
+    my constant BLINK-OFF = "\e[25m";
     my constant INDEXED-OFF = "\e[27m";
+    my constant CODE-OFF = "\e[27m";
+    my constant STRIKE-OFF = "\e[29m";
+    my constant SUBSCR-OFF = "\e[75";
+    my constant SUPERSCR-OFF = "\e[75";
 
     # terminal measure
     my constant WIDTH = 80;
 
     #| returns a set of text templates
     multi method default-text-templates {
+        my @bullets = "\x2219", "\x2022", "\x25b9", "\x2023", "\x2043", ;
         %(
             #| special key to name template set
             _name => -> %, $ { 'default text templates' },
             #| renders =code blocks
-            code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
+            code => -> %prm, $tmpl {
+                PStr.new: "\n --- code --- \n"
+                ~ %prm<contents>
+                ~ "\n--- ----- ---\n"
+            },
             #| renders implict code from an indented paragraph
-            implicit-code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'implicit-code' )},
+            implicit-code => -> %prm, $tmpl {
+                PStr.new: "\n --- code --- \n"
+                ~ %prm<contents>
+                ~ "\n--- ----- ---\n"
+            },
             #| renders =input block
-            input => -> %prm, $tmpl { express-params( %prm, $tmpl, 'input' ) },
+            input => -> %prm, $tmpl {
+                PStr.new: "\n --- input --- \n"
+                ~ %prm<contents>
+                ~ "\n--- ------ ---\n"
+            },
             #| renders =output block
-            output => -> %prm, $tmpl { express-params( %prm, $tmpl, 'output' ) },
+            output => -> %prm, $tmpl {
+                PStr.new: "\n --- output --- \n"
+                ~ %prm<contents>
+                ~ "\n--- ------ ---\n"
+             },
             #| renders =comment block
-            comment => -> %prm, $tmpl { express-params( %prm, $tmpl, 'comment' ) },
+            comment => -> %prm, $tmpl { '' },
             #| renders =formula block
             formula => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula-block' ) },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;
-                qq:to/HEAD/
+                PStr.new: qq:to/HEAD/
 
                 { %prm<contents>.Str.indent($indent) }
                 { ('-' x %prm<contents>.Str.chars).indent($indent) }
@@ -1707,33 +1746,56 @@ class RakuDoc::Processor {
             #| renders =numdefn block
             numdefn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn' ) },
             #| renders =item block
-            item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item' ) },
+            item => -> %prm, $tmpl {
+                my $num = %prm<level> - 1;
+                $num = @bullets.elems - 1 if $num >= @bullets.elems;
+                my $bullet = %prm<bullet> // @bullets[ $num ];
+                PStr.new: $bullet ~ ' ' ~ %prm<contents> ~ "\n"
+            },
             #| renders =numitem block
             numitem => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem' ) },
             #| renders =nested block
-            nested => -> %prm, $tmpl { express-params( %prm, $tmpl, 'nested' ) },
+            nested => -> %prm, $tmpl {
+                PStr.new: "\t" ~ %prm<contents>
+            },
             #| renders =para block
-            para => -> %prm, $tmpl { %prm<contents> ~ "\n" },
+            para => -> %prm, $tmpl { %prm<contents> ~ "\n\n" },
             #| renders =place block
             place => -> %prm, $tmpl { express-params( %prm, $tmpl, 'place' ) },
             #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
             #| renders =section block
-            section => -> %prm, $tmpl { express-params( %prm, $tmpl, 'section' ) },
+            section => -> %prm, $tmpl { %prm<contents> ~ "\n" },
+            #| renders =SEMANTIC block, if not otherwise given
+            semantic => -> %prm, $tmpl {
+                PStr.new: %prm<caption> ~ "\n" ~
+                '-' x %prm<caption>.chars ~ "\n" ~
+                %prm<contents> ~ "\n\n"
+            },
             #| renders =pod block
-            pod => -> %prm, $tmpl { express-params( %prm, $tmpl, 'pod' ) },
+            pod => -> %prm, $tmpl { %prm<contents> },
             #| renders =table block
             table => -> %prm, $tmpl { express-params( %prm, $tmpl, 'table' ) },
             #| renders =custom block
-            custom => -> %prm, $tmpl { express-params( %prm, $tmpl, 'custom' ) },
+            custom => -> %prm, $tmpl {
+                PStr.new: %prm<caption> ~ "\n" ~
+                '-' x %prm<caption>.chars ~ "\n" ~
+                %prm<raw> ~ "\n\n"
+            },
             #| renders any unknown block minimally
-            unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
+            unknown => -> %prm, $tmpl {
+                PStr.new: "UNKNOWN\n" ~
+                '-' x 7 ~ "\n" ~
+                %prm<contents> ~ "\n\n"
+            },
             #| special template to encapsulate all the output to save to a file
             final => -> %prm, $tmpl {
                 ( %prm<rendered-toc> ??
                  ( %prm<rendered-toc> ~ "\n" ~ '=' x WIDTH ~ "\n")
                  !! ''
                 ) ~
+                %prm<title> ~ "\n" ~ ('=' x %prm<title>.chars) ~ "\n" ~
+                (%prm<subtitle>:exists ?? (%prm<subtitle> ~ "\n" ~ ('-' x %prm<subtitle>.chars) ~ "\n") !! '') ~
                 %prm<body>.Str ~
                 ( %prm<rendered-index>
                     ?? ( "\n\n" ~ '=' x WIDTH ~ "\n" ~ %prm<rendered-index> ~ "\n" )
@@ -1746,21 +1808,42 @@ class RakuDoc::Processor {
                 "\n\n"
             },
             #| renders a single item in the toc
-            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'final' ) },
+            toc-item => -> %prm, $tmpl {
+                my $pref = ' ' x ( %prm<toc-entry><level> > 4 ?? 4 !! (%prm<toc-entry><level> - 1) * 2 )
+                    ~ (%prm<toc-entry><level> > 1 ?? '- ' !! '');
+                PStr.new: $pref ~ %prm<toc-entry><caption> ~ "\n"
+            },
             #| special template to render the toc list
-            toc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
+            toc => -> %prm, $tmpl {
+                PStr.new: %prm<caption> ~ "\n" ~ [~] %prm<toc-list>
+            },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
-                %prm<entry> ~ ': see in section ' ~ %prm<place> ~ "\n"
-             },
+                sub si( %h, $n ) {
+                    my $rv = '';
+                    for %h.sort( *.key )>>.kv -> ( $k, %v ) {
+                        $rv ~= "\t" x $n ~ "- $k : see in"
+                            ~ %v<refs>.map({ ' § ' ~ .<place> }).join(',')
+                            ~ "\n"
+                            ~ si( %v<sub-index>, $n + 1 );
+                    }
+                    $rv
+                }
+                PStr.new: %prm<entry> ~ ': see in'
+                    ~ %prm<entry-data><refs>.map({ ' § ' ~ .<place> }).join(',')
+                    ~ "\n"
+                    ~ si( %prm<entry-data><sub-index>, 1 );
+            },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                %prm<index-list>.join
+                PStr.new: %prm<caption> ~ "\n" ~ [~] %prm<index-list>
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl { express-params( %prm, $tmpl, 'footnotes' ) },
             #| special template to render an item list data structure
-            item-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item-list' ) },
+            item-list => -> %prm, $tmpl {
+                PStr.new: [~] %prm<item-list> ~ "\n"
+            },
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn-list' ) },
             #| special template to render a numbered item list data structure
@@ -1778,40 +1861,40 @@ class RakuDoc::Processor {
 			},
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
-			markup-C => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
+			markup-C => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
-			markup-H => -> %prm, $tmpl { express-params( %prm, $tmpl, 'high' ) },
+			markup-H => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
             #| I< DISPLAY-TEXT >
             #| Important (typically rendered in italics)
-			markup-I => -> %prm, $tmpl { express-params( %prm, $tmpl, 'important' ) },
+			markup-I => -> %prm, $tmpl { ITALIC-ON ~ %prm<contents> ~ ITALIC-OFF },
             #| J< DISPLAY-TEXT >
             #| Junior text (typically rendered subscript)
-			markup-J => -> %prm, $tmpl { express-params( %prm, $tmpl, 'junior' ) },
+			markup-J => -> %prm, $tmpl { SUBSCR-ON ~ %prm<contents> ~ SUBSCR-OFF },
             #| K< DISPLAY-TEXT >
             #| Keyboard input (typically rendered fixed-width)
-			markup-K => -> %prm, $tmpl { express-params( %prm, $tmpl, 'keyboard' ) },
+			markup-K => -> %prm, $tmpl { ALT-A ~ %prm<contents> ~ NORMAL },
             #| N< DISPLAY-TEXT >
             #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
 			markup-N => -> %prm, $tmpl { express-params( %prm, $tmpl, 'note' ) },
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
-			markup-O => -> %prm, $tmpl { express-params( %prm, $tmpl, 'overstrike' ) },
+			markup-O => -> %prm, $tmpl { STRIKE-ON ~ %prm<contents> ~ STRIKE-OFF },
             #| R< DISPLAY-TEXT >
             #| Replaceable component or metasyntax
-			markup-R => -> %prm, $tmpl { express-params( %prm, $tmpl, 'replaceable' ) },
+			markup-R => -> %prm, $tmpl { BLINK-ON ~ %prm<contents> ~ BLINK-OFF },
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
-			markup-S => -> %prm, $tmpl { express-params( %prm, $tmpl, 'space' ) },
+			markup-S => -> %prm, $tmpl { %prm<contents> },
             #| T< DISPLAY-TEXT >
             #| Terminal output (typically rendered fixed-width)
-			markup-T => -> %prm, $tmpl { express-params( %prm, $tmpl, 'terminal' ) },
+			markup-T => -> %prm, $tmpl { ALT-B ~ %prm<contents> ~ NORMAL },
             #| U< DISPLAY-TEXT >
             #| Unusual (typically rendered with underlining)
-			markup-U => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unusual' ) },
+			markup-U => -> %prm, $tmpl { UNDERLINE-ON ~ %prm<contents> ~ UNDERLINE-OFF },
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
-			markup-V => -> %prm, $tmpl { express-params( %prm, $tmpl, 'verbatim' ) },
+			markup-V => -> %prm, $tmpl { %prm<contents> },
 
             ##| Markup codes, optional display and meta data
 
@@ -1840,12 +1923,12 @@ class RakuDoc::Processor {
             markup-Δ => -> %prm, $tmpl { express-params( %prm, $tmpl, 'delta' ) },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
-			markup-M => -> %prm, $tmpl { express-params( %prm, $tmpl, 'markup' ) },
+			markup-M => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
 			markup-X => -> %prm, $tmpl { INDEXED-ON ~ %prm<contents> ~ INDEXED-OFF },
             #| Unknown markup, render minimally
-            markup-unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
+            markup-unknown => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
     #| returns hash of test helper callables

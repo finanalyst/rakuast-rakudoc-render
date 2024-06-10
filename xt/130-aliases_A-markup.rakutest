@@ -48,8 +48,8 @@ like $rv.body, /
     .+ '<alias>' .+ 'error: ｢True' .+ 'error-text: ｢obliterate default'
 /, 'default unknown alias in first A, over ride text as content in second';
 is $rv.warnings.elems, 2, 'got two errors';
-like $rv.warnings[0], /'unknown alias' .+ 'YYY' /, 'first error ok';
-like $rv.warnings[1], /'unknown alias' .+ 'YYY' .+ 'obliterate default'/, 'second error generates warning plus over ride';
+like $rv.warnings[0], /'Unknown alias' .+ 'YYY' /, 'first error ok';
+like $rv.warnings[1], /'Unknown alias' .+ 'YYY' .+ 'obliterate default'/, 'second error generates warning plus over ride';
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
