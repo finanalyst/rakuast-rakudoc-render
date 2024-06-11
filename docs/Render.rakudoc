@@ -24,15 +24,16 @@ The following describes choices that are left by RakuDoc v2 to the renderer.
 
 =head2 Templates
 
-An B<RPO> contains two sets of templates, one to be used for testing,
-as can be seen in the C<xt/> directory, and a default set of Text templates.
+An B<RPO> contains a default set of Text templates.
 
 The aim of the text templates is that they are the lowest level templates
 needed to render any RakuDoc source.
 
 When a renderer is needed to output a new format, eg., HTML, the renderer
 instantiates an B<RPO> and attaches new templates to it using the
-C<add-template( Pair $p )> method or the C<add-templates( Hash $h )> method.
+C<add-template( Pair $p, :source )> method or the C<add-templates( Hash $h, :source )> method.
+Setting the C<source> option to some value will help determine which module introduced
+the templates.
 
 The design of the Templates object means that new additions to the object
 push the previous definition onto a linked list, and so they will always
@@ -170,5 +171,13 @@ It is also possible to get the result of one template (so as to reduce
 the amount of output information). This is done eg for the 'table' template:
     $rdp.verbose( 'table' );
     $rv =  $rdp.render( $ast, :pre-finalised );
+
+The Test and Pretty options described in L<the Templates documentation|Templates> can
+be set on an B<RPO>, eg.
+    $rdp.test( True );
+    $rdp.pretty( True );
+
+Bear in mind that the B<pretty> flag overrides the B<test> flag, and both override the
+B<debug> and B<verbose> flags.
 
 =end rakudoc

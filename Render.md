@@ -28,11 +28,11 @@ It is also necessary to have a good understanding of RakuDoc v2.
 The following describes choices that are left by RakuDoc v2 to the renderer.
 
 ## Templates
-An **RPO** contains two sets of templates, one to be used for testing, as can be seen in the `xt/` directory, and a default set of Text templates.
+An **RPO** contains a default set of Text templates.
 
 The aim of the text templates is that they are the lowest level templates needed to render any RakuDoc source.
 
-When a renderer is needed to output a new format, eg., HTML, the renderer instantiates an **RPO** and attaches new templates to it using the `add-template( Pair $p )` method or the `add-templates( Hash $h )` method.
+When a renderer is needed to output a new format, eg., HTML, the renderer instantiates an **RPO** and attaches new templates to it using the `add-template( Pair $p, :source )` method or the `add-templates( Hash $h, :source )` method. Setting the `source` option to some value will help determine which module introduced the templates.
 
 The design of the Templates object means that new additions to the object push the previous definition onto a linked list, and so they will always be available by default.
 
@@ -163,6 +163,10 @@ The following options are available:
 
 It is also possible to get the result of one template (so as to reduce the amount of output information). This is done eg for the 'table' template: $rdp.verbose( 'table' ); $rv = $rdp.render( $ast, :pre-finalised );
 
+The Test and Pretty options described in [the Templates documentation](Templates.md) can be set on an **RPO**, eg. $rdp.test( True ); $rdp.pretty( True );
+
+Bear in mind that the **pretty** flag overrides the **test** flag, and both override the **debug** and **verbose** flags.
+
 
 
 
@@ -170,4 +174,4 @@ It is also possible to get the result of one template (so as to reduce the amoun
 
 
 ----
-Rendered from Render at 2024-06-04T22:36:32Z
+Rendered from Render at 2024-06-11T15:51:12Z
