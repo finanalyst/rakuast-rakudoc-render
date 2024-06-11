@@ -8,11 +8,13 @@
 [Custom data](#custom-data)  
 [Template object](#template-object)  
 [method $tmpl.prev](#method-tmplprev)  
-[Calling a helper callable](#calling-a-helper-callable)  
+[Calling a helper callable](#calling-a-helper-callable-0)  
 [Calling another defined template](#calling-another-defined-template)  
-[Predefined templates](#predefined-templates)  
-[Debugging templates](#debugging-templates)  
+[Template information and debugging](#template-information-and-debugging)  
+[.debug attribute](#debug-attribute)  
 [Verbose output of one template](#verbose-output-of-one-template)  
+[The .test attribute](#the-test-attribute)  
+[The .pretty attribute](#the-pretty-attribute)  
 
 ----
 # Overview
@@ -24,7 +26,7 @@ The custom data is also added to the _processor_'s **Template-directory** object
 
 Helper callables that can be used inside a template can also be added to the _processor_'s **Template-directory** object.
 
-Within a template, all the registered templates, the custom data of the _processor_, and the helper callables can be accessed. The helper callables, such as `name-id` which is used to name internal links, may be output format sensitive, and so should be added after the _Processor_ has been instantiated.
+Within a template, all the registered templates, the custom data of the _processor_, and the helper callables can be accessed. See [helper callables](calling-a-helper-callable) for more information.
 
 When a template is added to a _Template-directory_ and the template name already exists, the old value is pushed onto a stack, and can be accessed.
 
@@ -119,30 +121,62 @@ page => -> %prm, $tmpl { $tmpl<header> ~ $tmpl<body> ~ $tmpl<footer> } where `he
 
 _With parameters_, eg. `$tmpl('aaa', %( :attr(1), :new-attr<some string> ) )`, the block registered with the key `aaa` is called with the new set of parameters specified in the Hash. It can be used to provide a subset of parameters, or to rename the parameters for a different template.
 
-# Predefined templates
-`RakuAST::Render` defines a number of templates for Text output. These will be the fall-back templates when more specialist renderers add new templates to the Template Directory.
+# Template information and debugging
+Four attributes can be set on a `Template-directory` object to aid with debugging templates, especially when templates have content that is derived from other templates:
 
-Since it is anticipated that the output Text templates will be modified over time to match changing preferences, it is best for another set of minimal templates be used to test the module. Consequently, a different set of text templates is used when a `RakuDoc::Processor` object is instantiated as `$rpp .= new(:test)`.
+*  **debug**
 
-The special template `_name` is used to distinguish between test and default templates, and can be used to check that that a new Renderer has loaded its templates.
+*  **verbose**
 
-Information about both sets of templates are listed in the generated files [default-text-templates](default-text-templates.md) and [test-text-templates](test-text-templates.md).
+*  **test**
 
-# Debugging templates
-The `Template-directory` class has a `.debug` attribute. When set to True, eg
+*  **pretty**
 
-my Template-directory %global; # assign some templates to %global %global.debug = True;
+## `.debug` attribute
+When set to True, eg
 
-debugging information is sent to STDOUT via `say`.
+my Template-directory %template-dir; # assign some templates to %template-dir %template-dir.debug = True;
 
-# Verbose output of one template
+information about the name of the template being used, and the source of the template is sent to STDOUT via `say`. This is used by the `debug(Templates)` command in a `Rakudoc::Processor` object.
+
+The information generated is for the registered template, not to be confused with the `.test` or `.pretty` attributes.
+
+## Verbose output of one template
 The `Template-directory` class has a `.verbose` attribute. When set to a string corresponding to the name of a template, eg.
 
-my Template-directory %global = %( one => -> %prm, $tml { 'Hello world' }, two => -> %prm, $tml { 'Not again' }, ); # later ... %global.verbose = 'one';
+my Template-directory %template-dir = %( one => -> %prm, $tml { 'Hello world' }, two => -> %prm, $tml { 'Not again' }, ); # later ... %template-dir.verbose = 'one';
 
 the verbose result of that template (eg. 'one') will be sent to STDOUT via `say`.
 
 The output of only one template at a time is supported at the moment.
+
+## The `.test` attribute
+When this attribute is set for the Template-directory object, eg.
+
+my Template-directory %template-dir; # assign some templates to %template-dir %template-dir = %( aaa => -> %prm, $tmpl { 'orig: ' ~ %prm<contents>; }, ggg =. -> %prm, $tmpl { %prm<contents> = 'Chapter ' ~ %prm<contents> } ); %template-dir.test = True;
+
+In order to test the template with a set of unit tests, it is important for the results of the template to be uniform and predictable.
+
+Also the renderer will call the template with options defined at run time, eg., because of a `=config` directive.
+
+The output from a template when `test` is True does not depend on the block registered with the template. Instead, all the options (which may include the output from other templates) are returned in alphabetical order.
+
+For example, the result of calling the templates defined above, with `test=True`, where the output from one template is contained in another, will be:
+
+say %template-dir<aaa>(%( :contents<something>, ggg => %template-dir<ggg>(%(:contents<more stiff>,)), )); # output <aaa> contents: ｢something｣ ggg: ｢<ggg> contents: ｢more stiff｣ </ggg> ｣ </aaa>
+
+It does not matter _how_ the templates were defined, but it does matter that they **were** defined. Calling a template that is not registered in the **Templated-directory** object will cause an error.
+
+## The `.pretty` attribute
+When this attribute is set for the Template-directory object, eg.
+
+my Template-directory %template-dir; # assign some templates to %template-dir %template-dir = %( aaa => -> %prm, $tmpl { 'orig: ' ~ %prm<contents>; }, ggg =. -> %prm, $tmpl { %prm<contents> = 'Chapter ' ~ %prm<contents> } ); %template-dir.pretty = True;
+
+the output is similar to the `.test` attribute, which it overrides, but white space is added to make the content structure clearer.
+
+For example,
+
+say %template-dir<aaa>(%( :contents<something>, array => <one two three four>, hash => ( <eight nine ten> Z=> 1..* ).hash, )); # output produced <aaa> array: ｢List=( "one", "two", "three", "four" )｣ contents: ｢something｣ hash: ｢Hash={ :eight(1), :nine(2), :ten(3) }｣ </aaa>
 
 
 
@@ -151,4 +185,4 @@ The output of only one template at a time is supported at the moment.
 
 
 ----
-Rendered from Templates at 2024-06-04T22:36:31Z
+Rendered from Templates at 2024-06-11T15:33:23Z

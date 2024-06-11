@@ -16,9 +16,8 @@ Helper callables that can be used inside a template can also be added to the
 I<processor>'s B<Template-directory> object.
 
 Within a template, all the registered templates, the custom data of the I<processor>,
-and the helper callables can be accessed. The helper callables, such as C<name-id>
-which is used to name internal links, may be output format sensitive, and so should
-be added after the I<Processor> has been instantiated.
+and the helper callables can be accessed. See L<helper callables|#Calling a helper callable> for more
+information.
 
 When a template is added to a I<Template-directory> and the template name
 already exists, the old value is pushed onto a stack, and can be accessed.
@@ -137,46 +136,130 @@ the block registered with the key C<aaa> is called with the new set of parameter
 Hash. It can be used to provide a subset of parameters, or to rename the parameters for a different
 template.
 
-=head1 Predefined templates
+=head1 Template information and debugging
 
-C<RakuAST::Render> defines a number of templates for Text output. These will be the fall-back templates
-when more specialist renderers add new templates to the Template Directory.
+Four attributes can be set on a C<Template-directory> object to aid with debugging templates,
+especially when templates have content that is derived from other templates:
+=item B<debug>
+=item B<verbose>
+=item B<test>
+=item B<pretty>
 
-Since it is anticipated that the output Text templates will be modified over time to match changing preferences,
-it is best for another set of minimal templates be used to test the module. Consequently, a different set of
-text templates is used when a C<RakuDoc::Processor> object is instantiated as C< $rpp .= new(:test)>.
+=head2 C<.debug> attribute
 
-The special template C<_name> is used to distinguish between test and default templates, and can be used to
-check that that a new Renderer has loaded its templates.
+When set to True, eg
 
-Information about both sets of templates are listed in the generated files L<default-text-templates|default-text-templates>
-and L<test-text-templates|test-text-templates>.
+    my Template-directory %template-dir;
+    # assign some templates to %template-dir
+    %template-dir.debug = True;
 
-=head1 Debugging templates
+information about the name of the template being used, and the source of the template
+is sent to STDOUT via C<say>. This is used by the C<debug(Templates)> command in a C<Rakudoc::Processor> object.
 
-The C<Template-directory> class has a C<.debug> attribute. When set to True, eg
+The information generated is for the registered template, not to be confused with the C<.test> or C<.pretty> attributes.
 
-    my Template-directory %global;
-    # assign some templates to %global
-    %global.debug = True;
-
-debugging information is sent to STDOUT via C<say>.
-
-=head1 Verbose output of one template
+=head2 Verbose output of one template
 
 The C<Template-directory> class has a C<.verbose> attribute.
 When set to a string corresponding to the name of a template, eg.
 
-    my Template-directory %global = %(
+    my Template-directory %template-dir = %(
         one => -> %prm, $tml { 'Hello world' },
         two => -> %prm, $tml { 'Not again' },
     );
     # later ...
-    %global.verbose = 'one';
+    %template-dir.verbose = 'one';
 
 the verbose result of that template (eg. 'one') will be sent to
 STDOUT via C<say>.
 
 The output of only one template at a time is supported at the moment.
+
+=head2 The C<.test> attribute
+
+When this attribute is set for the Template-directory object, eg.
+
+    my Template-directory %template-dir;
+    # assign some templates to %template-dir
+    %template-dir = %(
+        aaa => -> %prm, $tmpl {
+            'orig: ' ~ %prm<contents>;
+        },
+        ggg =. -> %prm, $tmpl {
+            %prm<contents> = 'Chapter ' ~ %prm<contents>
+        }
+    );
+    %template-dir.test = True;
+
+In order to test the template with a set of unit tests, it is important for the results of the
+template to be uniform and predictable.
+
+Also the renderer will call the template with options defined at run time, eg., because of
+a C<=config> directive.
+
+The output from a template when C<test> is True does not depend on the block registered with the template.
+Instead, all the options (which may include the output from other templates) are returned in alphabetical
+order.
+
+For example, the result of calling the templates defined above, with C<test=True>, where the
+output from one template is contained in another, will be:
+
+    say %template-dir<aaa>(%(
+        :contents<something>,
+        ggg => %template-dir<ggg>(%(:contents<more stiff>,)),
+    ));
+    # output
+    <aaa>
+    contents: ｢something｣
+    ggg: ｢<ggg>
+    contents: ｢more stiff｣
+    </ggg>
+    ｣
+    </aaa>
+
+It does not matter I<how> the templates were defined, but it does matter that they B<were> defined.
+Calling a template that is not registered in the B<Templated-directory> object will cause an error.
+
+=head2 The C<.pretty> attribute
+
+When this attribute is set for the Template-directory object, eg.
+
+    my Template-directory %template-dir;
+    # assign some templates to %template-dir
+    %template-dir = %(
+        aaa => -> %prm, $tmpl {
+            'orig: ' ~ %prm<contents>;
+        },
+        ggg =. -> %prm, $tmpl {
+            %prm<contents> = 'Chapter ' ~ %prm<contents>
+        }
+    );
+    %template-dir.pretty = True;
+
+the output is similar to the C<.test> attribute, which it overrides, but white space is added to
+make the content structure clearer.
+
+For example,
+
+    say %template-dir<aaa>(%(
+        :contents<something>,
+        array => <one two three four>,
+        hash => ( <eight nine ten> Z=> 1..* ).hash,
+    ));
+    # output produced
+    <aaa>
+      array: ｢List=(
+            "one",
+            "two",
+            "three",
+            "four"
+      )｣
+      contents: ｢something｣
+      hash: ｢Hash={
+            :eight(1),
+            :nine(2),
+            :ten(3)
+      }｣
+    </aaa>
 
 =end rakudoc

@@ -1,4 +1,5 @@
 use v6.d;
+use PrettyDump;
 
 class Template {
     has &.block;
@@ -8,6 +9,8 @@ class Template {
     has %.call-params;
     has $.source;
     has Bool $.debug is rw = False;
+    has Bool $.test is rw = False;
+    has Bool $.pretty is rw = False;
     has Bool $.verbose is rw = False;
     multi method AT-KEY(Str:D $key) {
         self.CALL-ME($key)
@@ -16,7 +19,32 @@ class Template {
         say "Template used: ｢$!name｣, source: {$!source}" if $!debug;
         say("Template params:\n" ~ %params ) if $!verbose;
         %!call-params = %params;
-        my $rv = &!block(%params, self);
+        my $rv;
+        if $!test && $!pretty.not {
+            $rv = "<$!name>\n";
+            for %params.sort(*.key)>>.kv -> ($k, $v is rw) {
+                $v = 'UNINITIALISED' without $v;
+                $rv ~= $k ~ ': ｢' ~ $v ~  "｣\n"
+            }
+            $rv ~= "</$!name>\n";
+        }
+        elsif $!pretty {
+            my $indent = ' ' x 2;
+            for %params.sort(*.key)>>.kv -> ($k, $v is rw) {
+                $v = 'UNINITIALISED' without $v;
+                given $v {
+                    when Str { $v .= subst(/ \n /, "\n$indent", :g) }
+                    default {
+                        $v = pretty-dump( $v ).subst(/ \n /, "\n$indent", :g)
+                    }
+                }
+                $rv ~= $indent ~ $k ~ ': ｢' ~ $v ~  "｣\n"
+            }
+            $rv = "\n<$!name>\n$rv\</$!name>\n";
+        }
+        else {
+            $rv = &!block(%params, self);
+        }
         say "Template output: ｢$rv｣" if $!verbose;
         $rv
     }
@@ -60,11 +88,15 @@ class Template-directory does Associative {
     has %.helper;
     has $.source is rw = 'Initial';
     has Bool $.debug is rw = False;
+    has Bool $.test is rw = False;
+    has Bool $.pretty is rw = False;
     has Str $.verbose is rw = '';
     multi method AT-KEY ($key) is rw {
         with %!fields{$key} {
             .[* - 1].globals = self;
             .[* - 1].debug = $!debug;
+            .[* - 1].test = $!test;
+            .[* - 1].pretty = $!pretty;
             .[* - 1].verbose = $.verbose eq $key;
             .[* - 1]
         }
