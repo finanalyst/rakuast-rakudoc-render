@@ -56,21 +56,32 @@ class RakuDoc::Processor {
     method verbose( Str $template ){ # hook onto $!templates
         %!templates.verbose = $template
     }
+    method test( $flag ){ # hook onto $!templates
+        %!templates.test = $flag
+    }
+    method pretty( $flag ){ # hook onto $!templates
+        %!templates.pretty = $flag
+    }
 
     multi submethod TWEAK(:$!output-format = 'txt',
      :$test = False,
+     :$pretty = False,
      :$debug = None ) {
-        %!templates.source = $test ?? 'test templates' !! 'default templates' ;
-        %!templates = $test ?? self.test-text-templates !! self.default-text-templates;
+        %!templates.source = 'Default text templates' ;
+        %!templates = self.default-text-templates;
+        %!templates.test = $test;
+        %!templates.pretty = $pretty;
         %!templates.helper = self.default-helpers;
         if $debug ~~ List { self.debug($debug.list) }
         else { self.debug( $debug ) }
     }
 
-    method add-template( Pair $t ) {
+    method add-template( Pair $t, :$source ) {
+        %!templates.source = $source with $source;
         %!templates{ $t.key } = $t.value
     }
-    method add-templates( Hash $tt ) {
+    method add-templates( Hash $tt, :$source ) {
+        %!templates.source = $source with $source;
         for $tt.pairs {
             %!templates{ .key } = .value
         }
@@ -1513,168 +1524,7 @@ class RakuDoc::Processor {
     method local-heading($ast) {
         $ast.Str.trim.subst(/ \s /, '_', :g);
     }
-    #| utility for test templates
-    our &express-params is export = -> %h, $t, $c {
-        my $indent = 0;
-        my PStr $rv .= new("\n{ ' ' x $indent }<{ $c }>\n");
-        for %h.sort(*.key)>>.kv -> ($k, $v is rw) {
-            if $v ~~ (Array, Hash).any { $v = pretty-dump( $v ) };
-            $v = 'UNINITIALISED' without $v;
-            $rv ~= ( ' ' x ($indent + 2) ) ~ $k ~ ': ｢' ~ $v ~  "｣\n"
-        }
-        $rv ~= "{ ' ' x $indent }</{ $c }>\n"
-    }
-    #| returns hash of test templates
-    multi method test-text-templates {
-        %(
-            #| special key to name template set
-            _name => -> %, $ { 'test templates' },
-            #| renders =code block
-            code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code-block' ) },
-            #| renders implict code from an indented paragraph
-            implicit-code => -> %prm, $tmpl { express-params( %prm, $tmpl, 'implicit-code' )},
-            #| renders =input block
-            input => -> %prm, $tmpl { express-params( %prm, $tmpl, 'input' ) },
-            #| renders =output block
-            output => -> %prm, $tmpl { express-params( %prm, $tmpl, 'output' ) },
-            #| renders =comment block
-            comment => -> %prm, $tmpl { express-params( %prm, $tmpl, 'comment' ) },
-            #| renders =formula block
-            formula => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula-block' ) },
-            #| renders =head block
-            head => -> %prm, $tmpl { express-params( %prm, $tmpl, 'head' ) },
-            #| renders =numhead block
-            numhead => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numhead' ) },
-            #| renders the numeration part for a toc
-            toc-numeration => -> %prm, %tmpl { express-params( %prm, %tmpl, 'toc-num' )},
-            #| renders =defn block
-            defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
-            #| renders =numdefn block
-            numdefn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn' ) },
-            #| renders =item block
-            item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item' ) },
-            #| renders =numitem block
-            numitem => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem' ) },
-            #| renders =nested block
-            nested => -> %prm, $tmpl { express-params( %prm, $tmpl, 'nested' ) },
-            #| renders =para block
-            para => -> %prm, $tmpl { express-params( %prm, $tmpl, 'para' ) },
-            #| renders =place block
-            place => -> %prm, $tmpl { express-params( %prm, $tmpl, 'place' ) },
-            #| renders =rakudoc block
-            rakudoc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'rakudoc' ) },
-            #| renders =section block
-            section => -> %prm, $tmpl { express-params( %prm, $tmpl, 'section' ) },
-            #| renders =SEMANTIC block, if not otherwise given
-            semantic => -> %prm, $tmpl { express-params( %prm, $tmpl, 'semantic' ) },
-            #| renders =pod block
-            pod => -> %prm, $tmpl { express-params( %prm, $tmpl, 'pod' ) },
-            #| renders =table block
-            table => -> %prm, $tmpl { express-params( %prm, $tmpl, 'table' ) },
-            #| renders =custom block
-            custom => -> %prm, $tmpl { express-params( %prm, $tmpl, 'custom' ) },
-            #| renders any unknown block minimally
-            unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
-            #| special template to encapsulate all the output to save to a file
-            final => -> %prm, $tmpl { express-params( %prm, $tmpl, 'final' ) },
-            #| renders a single item in the toc
-            toc-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc-item' ) },
-            #| special template to render the toc list
-            toc => -> %prm, $tmpl { express-params( %prm, $tmpl, 'toc' ) },
-            #| renders a single item in the index
-            index-item => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index-item' ) },
-            #| special template to render the index data structure
-            index => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
-            #| special template to render the footnotes data structure
-            footnotes => -> %prm, $tmpl { express-params( %prm, $tmpl, 'footnotes' ) },
-            #| special template to render an item list data structure
-            item-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'item-list' ) },
-            #| special template to render a defn list data structure
-            defn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn-list' ) },
-            #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem-list' ) },
-            #| special template to render a numbered defn list data structure
-            numdefn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn-list' ) },
-            #| special template to render the warnings data structure
-            warnings => -> %prm, $tmpl { express-params( %prm, $tmpl, 'warnings' ) },
-            ## Markup codes with only display (format codes), no meta data allowed
-            ## meta data via Config is allowed
-            #| B< DISPLAY-TEXT >
-            #| Basis/focus of sentence (typically rendered bold)
-			markup-B => -> %prm, $tmpl { express-params( %prm, $tmpl, 'basis' ) },
-            #| C< DISPLAY-TEXT >
-            #| Code (typically rendered fixed-width)
-			markup-C => -> %prm, $tmpl { express-params( %prm, $tmpl, 'code' ) },
-            #| H< DISPLAY-TEXT >
-            #| High text (typically rendered superscript)
-			markup-H => -> %prm, $tmpl { express-params( %prm, $tmpl, 'high' ) },
-            #| I< DISPLAY-TEXT >
-            #| Important (typically rendered in italics)
-			markup-I => -> %prm, $tmpl { express-params( %prm, $tmpl, 'important' ) },
-            #| J< DISPLAY-TEXT >
-            #| Junior text (typically rendered subscript)
-			markup-J => -> %prm, $tmpl { express-params( %prm, $tmpl, 'junior' ) },
-            #| K< DISPLAY-TEXT >
-            #| Keyboard input (typically rendered fixed-width)
-			markup-K => -> %prm, $tmpl { express-params( %prm, $tmpl, 'keyboard' ) },
-            #| N< DISPLAY-TEXT >
-            #| Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
-            #| This is the template for the in-text part, which should have a Number, link, and return anchor
-			markup-N => -> %prm, $tmpl { express-params( %prm, $tmpl, 'note' ) },
-            #| O< DISPLAY-TEXT >
-            #| Overstrike or strikethrough
-			markup-O => -> %prm, $tmpl { express-params( %prm, $tmpl, 'overstrike' ) },
-            #| R< DISPLAY-TEXT >
-            #| Replaceable component or metasyntax
-			markup-R => -> %prm, $tmpl { express-params( %prm, $tmpl, 'replaceable' ) },
-            #| S< DISPLAY-TEXT >
-            #| Space characters to be preserved
-			markup-S => -> %prm, $tmpl { express-params( %prm, $tmpl, 'space' ) },
-            #| T< DISPLAY-TEXT >
-            #| Terminal output (typically rendered fixed-width)
-			markup-T => -> %prm, $tmpl { express-params( %prm, $tmpl, 'terminal' ) },
-            #| U< DISPLAY-TEXT >
-            #| Unusual (typically rendered with underlining)
-			markup-U => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unusual' ) },
-            #| V< DISPLAY-TEXT >
-            #| Verbatim (internal markup instructions ignored)
-			markup-V => -> %prm, $tmpl { express-params( %prm, $tmpl, 'verbatim' ) },
 
-            ##| Markup codes, optional display and meta data
-
-            #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
-            #| Alias to be replaced by contents of specified V<=alias> directive
-			markup-A => -> %prm, $tmpl { express-params( %prm, $tmpl, 'alias' ) },
-            #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
-            #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
-			markup-E => -> %prm, $tmpl { express-params( %prm, $tmpl, 'entity' ) },
-            #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
-            #| Formula inline content ( F<ALT|LaTex notation> )
-			markup-F => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula' ) },
-            #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
-            #| Link ( L<display text|destination URI> )
-			markup-L => -> %prm, $tmpl { express-params( %prm, $tmpl, 'link' ) },
-            #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
-            #| Placement link
-			markup-P => -> %prm, $tmpl { express-params( %prm, $tmpl, 'placement' ) },
-
-            ##| Markup codes, mandatory display and meta data
-            #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
-            #| Definition inline ( D<term being defined|synonym1; synonym2> )
-			markup-D => -> %prm, $tmpl { express-params( %prm, $tmpl, 'inline-defn' ) },
-            #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
-            #| Delta note ( Δ<visible text|version; Notification text> )
-            markup-Δ => -> %prm, $tmpl { express-params( %prm, $tmpl, 'delta' ) },
-            #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
-            #| Markup extra ( M<display text|functionality;param,sub-type;...>)
-			markup-M => -> %prm, $tmpl { express-params( %prm, $tmpl, 'markup' ) },
-            #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
-            #| Index entry ( X<display text|entry,subentry;...>)
-			markup-X => -> %prm, $tmpl { express-params( %prm, $tmpl, 'index' ) },
-            #| Unknown markup, render minimally
-            markup-unknown => -> %prm, $tmpl { express-params( %prm, $tmpl, 'unknown' ) },
-        ); # END OF TEMPLATES (this comment is to simplify documentation generation)
-    }
     # text helpers adapted from Liz's RakuDoc::To::Text
     # colorless ANSI constants
     my constant RESET = "\e[0m";
