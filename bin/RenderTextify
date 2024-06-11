@@ -1,4 +1,4 @@
-#!/usr/bin/env raku
+#!/usr/bin/env -S raku -I/home/richard/development/rakuast-rakudoc-render
 use experimental :rakuast;
 use RakuDoc::Render;
 sub MAIN( $fn, :$test = False ) {

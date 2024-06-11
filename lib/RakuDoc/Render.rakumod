@@ -137,20 +137,28 @@ class RakuDoc::Processor {
     }
 
     method finalise( --> Str ) {
-        %!templates<final>( %(
-            :body($!current.body),
-            :source-data($!current.source-data),
-            :front-matter($!current.front-matter),
-            :name($!current.name),
-            :title($!current.title),
-            :title-target($!current.title-target),
-            :subtitle($!current.subtitle),
-            :modified($!current.modified),
-            :rendered-toc($!current.rendered-toc),
-            :rendered-index($!current.rendered-index),
-            :warnings(%!templates<warnings>( %(:warnings($!current.warnings),))),
-        ) ).Str
+        $.post-process(
+            %!templates<final>( %(
+                :body($!current.body),
+                :source-data($!current.source-data),
+                :front-matter($!current.front-matter),
+                :name($!current.name),
+                :title($!current.title),
+                :title-target($!current.title-target),
+                :subtitle($!current.subtitle),
+                :modified($!current.modified),
+                :rendered-toc($!current.rendered-toc),
+                :rendered-index($!current.rendered-index),
+                :footnotes(%!templates<footnotes>( %( :footnotes( $!current.footnotes ),) )),
+                :warnings(%!templates<warnings>( %(:warnings($!current.warnings),))),
+            ) ).Str
+        )
     };
+
+    #| This method is used to post process the final rendered output
+    #| Use case: change targets to line numbers in a text output
+    #| It should be overridden in subclasses for other outputs
+    method post-process( Str:D $final --> Str ) { $final }
 
     method compactify( Str:D $s ) {
         $s .subst(/ \v+ /,' ',:g )
@@ -392,6 +400,7 @@ class RakuDoc::Processor {
                 my $retTarget = $id;
                 my $fnNumber = PCell.new( :id("fn_num_$id"), :$!register);
                 my $fnTarget = "fn_target_$id";
+                # fnNumber is changed by complete-footnotes at end of rendering
                 $*prs.footnotes.push: %( :$contents, :$retTarget, :0fnNumber, :$fnTarget );
                 my $rv = %!templates<markup-N>(
                     %( %config, :$retTarget, :$fnNumber, :$fnTarget )
@@ -825,7 +834,7 @@ class RakuDoc::Processor {
         $*prs.toc.push(
             { :$caption, :$target, :$level, :$numeration }
         ) if $toc;
-        $*prs.body ~= %!templates<formula>(%(:$formula, :$alt, %config ) )
+        $*prs.body ~= %!templates<formula>(%(:$formula, :$alt, :$target, :$caption, :$level, :$numeration, %config ) )
     }
     #| generates a single item and adds it to the item structure
     #| nothing is added to the .body string
@@ -1695,13 +1704,15 @@ class RakuDoc::Processor {
     my constant TERMINAL-OFF = "\e[39;49m";
     my constant FOOTNOTE-ON = "\e[48;5;214m\e[38;5;0m";
     my constant FOOTNOTE-OFF = "\e[39;49m";
+    my constant LINK-ON = "\e[48;5;227m\e[38;5;0m";
+    my constant LINK-OFF = "\e[39;49m";
 
     # terminal measure
     my constant WIDTH = 80;
 
     #| returns a set of text templates
     multi method default-text-templates {
-        my @bullets = <<\x2219, \x2022, \x25b9, \x2023, \x2043>> ;
+        my @bullets = <<\x2219 \x2022 \x25b9 \x2023 \x2043>> ;
         %(
             #| special key to name template set
             _name => -> %, $ { 'default text templates' },
@@ -1732,33 +1743,60 @@ class RakuDoc::Processor {
             #| renders =comment block
             comment => -> %prm, $tmpl { '' },
             #| renders =formula block
-            formula => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula-block' ) },
+            formula => -> %prm, $tmpl {
+                my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
+                "\n\n" ~ ' ' x $indent ~ %prm<caption> ~ "\n" ~
+                ' ' x $indent ~ '-' x %prm<caption>.chars ~ "\n"
+                ~ %prm<formula> ~ "\n\n"
+            },
             #| renders =head block
             head => -> %prm, $tmpl {
-                my $indent = %prm<level> > 2 ?? 4 !! (%prm<level> - 1) * 2;
-                PStr.new: qq:to/HEAD/
-
-                { %prm<contents>.Str.indent($indent) }
-                { ('-' x %prm<contents>.Str.chars).indent($indent) }
-                HEAD
+                my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
+                "\n\n" ~ ' ' x $indent ~ %prm<contents> ~ "\n" ~
+                ' ' x $indent ~ '-' x %prm<contents>.chars ~ "\n"
             },
             #| renders =numhead block
-            numhead => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numhead' ) },
+            numhead => -> %prm, $tmpl {
+                my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
+                my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
+                "\n\n" ~ ' ' x $indent ~ $title ~ "\n" ~
+                ' ' x $indent ~ '-' x $title.Str.chars ~ "\n"
+            },
             #| renders the numeration part for a toc
-            toc-numeration => -> %prm, %tmpl { express-params( %prm, %tmpl, 'toc-num' )},
+            toc-numeration => -> %prm, %tmpl { %prm<contents> },
             #| renders =defn block
-            defn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn' ) },
+            defn => -> %prm, $tmpl {
+                BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
+                "\t" ~ %prm<contents> ~ "\n"
+            },
             #| renders =numdefn block
-            numdefn => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn' ) },
+            #| special template to render a defn list data structure
+            defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
+            numdefn => -> %prm, $tmpl {
+                BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
+                "\t" ~ %prm<contents> ~ "\n"
+            },
+            #| special template to render a numbered defn list data structure
+            numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
                 my $num = %prm<level> - 1;
                 $num = @bullets.elems - 1 if $num >= @bullets.elems;
                 my $bullet = %prm<bullet> // @bullets[ $num ];
-                PStr.new: $bullet ~ ' ' ~ %prm<contents> ~ "\n"
+                $bullet ~ ' ' ~ %prm<contents> ~ "\n"
+            },
+            #| special template to render an item list data structure
+            item-list => -> %prm, $tmpl {
+                "\n" ~ [~] %prm<item-list>
             },
             #| renders =numitem block
-            numitem => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem' ) },
+            numitem => -> %prm, $tmpl {
+                %prm<numeration> ~ ' ' ~ %prm<contents> ~ "\n"
+            },
+            #| special template to render a numbered item list data structure
+            numitem-list => -> %prm, $tmpl {
+                "\n" ~ [~] %prm<numitem-list>
+            },
             #| renders =nested block
             nested => -> %prm, $tmpl {
                 PStr.new: "\t" ~ %prm<contents> ~ "\n\n"
@@ -1766,7 +1804,7 @@ class RakuDoc::Processor {
             #| renders =para block
             para => -> %prm, $tmpl { %prm<contents> ~ "\n\n" },
             #| renders =place block
-            place => -> %prm, $tmpl { express-params( %prm, $tmpl, 'place' ) },
+            place => -> %prm, $tmpl { PStr.new: %prm<contents> ~ "\n\n" },
             #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
             #| renders =section block
@@ -1858,7 +1896,7 @@ class RakuDoc::Processor {
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                PStr.new: "UNKNOWN\n" ~
+                PStr.new: "\n\nUNKNOWN\n" ~
                 '-' x 7 ~ "\n" ~
                 %prm<contents> ~ "\n\n"
             },
@@ -1871,14 +1909,15 @@ class RakuDoc::Processor {
                 %prm<title> ~ "\n" ~ ('=' x %prm<title>.chars) ~ "\n" ~
                 (%prm<subtitle>:exists ?? (%prm<subtitle> ~ "\n" ~ ('-' x %prm<subtitle>.chars) ~ "\n") !! '') ~
                 %prm<body>.Str ~
+                %prm<footnotes>.Str ~
                 ( %prm<rendered-index>
                     ?? ( "\n\n" ~ '=' x WIDTH ~ "\n" ~ %prm<rendered-index> ~ "\n" )
                     !! ''
                 ) ~
                 "\x203b" x WIDTH ~
                 "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
-                "\nAt " ~ (.hour ~ ':' ~ .minute ~ ' on ' ~ .yyyy-mm-dd ~ ' UTC'  with %prm<modified>.DateTime) ~
-                "\nSource last modified " ~ (.hour ~ ':' ~ .minute ~ ' on ' ~ .yyyy-mm-dd ~ ' UTC' with %prm<source-data><modified>.DateTime) ~
+                "\n" ~ (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
+                "\nSource last modified " ~ (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime) ~
                 "\n\n"~
                 "\x203b" x WIDTH ~ "\n" ~
                 %prm<warnings>
@@ -1893,7 +1932,7 @@ class RakuDoc::Processor {
             toc => -> %prm, $tmpl {
                 PStr.new: %prm<caption>  ~ "\n"
                 ~ '-' x %prm<caption>.chars ~ "\n"
-                ~ ' ' ~ [~] %prm<toc-list> ~ "\n\n"
+                ~ ([~] %prm<toc-list>) ~ "\n\n"
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
@@ -1916,20 +1955,18 @@ class RakuDoc::Processor {
             index => -> %prm, $tmpl {
                 PStr.new: %prm<caption> ~ "\n"
                 ~ '-' x %prm<caption>.chars ~ "\n"
-                ~ ' ' ~ [~] %prm<index-list> ~ "\n\n"
+                ~ ([~] %prm<index-list>) ~ "\n\n"
             },
             #| special template to render the footnotes data structure
-            footnotes => -> %prm, $tmpl { express-params( %prm, $tmpl, 'footnotes' ) },
-            #| special template to render an item list data structure
-            item-list => -> %prm, $tmpl { # add space to first item due to stringification of PStr lists.
-                PStr.new: ' ' ~ [~] %prm<item-list> ~ "\n"
+            footnotes => -> %prm, $tmpl {
+                if %prm<footnotes>.elems {
+                PStr.new: "\nFootnotes\n" ~ '-' x 9 ~ "\n" ~
+                    %prm<footnotes>.map({
+                        FOOTNOTE-ON ~ $_.<fnNumber> ~ FOOTNOTE-OFF ~ '. ' ~ $_.<contents>.Str
+                    }).join("\n") ~ "\n\n"
+                }
+                else { '' }
             },
-            #| special template to render a defn list data structure
-            defn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'defn-list' ) },
-            #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numitem-list' ) },
-            #| special template to render a numbered defn list data structure
-            numdefn-list => -> %prm, $tmpl { express-params( %prm, $tmpl, 'numdefn-list' ) },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
                 PStr.new: "WARNINGS\n" ~ '-' x 8 ~ "\n" ~
@@ -1985,16 +2022,26 @@ class RakuDoc::Processor {
 
             #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             #| Alias to be replaced by contents of specified V<=alias> directive
-			markup-A => -> %prm, $tmpl { express-params( %prm, $tmpl, 'alias' ) },
+			markup-A => -> %prm, $tmpl { %prm<contents> },
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
-			markup-E => -> %prm, $tmpl { express-params( %prm, $tmpl, 'entity' ) },
+			markup-E => -> %prm, $tmpl { %prm<contents> },
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
-			markup-F => -> %prm, $tmpl { express-params( %prm, $tmpl, 'formula' ) },
+			markup-F => -> %prm, $tmpl { CODE-ON ~ %prm<formula> ~ CODE-OFF },
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
-			markup-L => -> %prm, $tmpl { express-params( %prm, $tmpl, 'link' ) },
+			markup-L => -> %prm, $tmpl {
+			    %prm<contents> ~
+			    '[' ~
+			    ( given %prm<type> {
+			        when 'internal' { 'this location' }
+			        when 'external' { 'internet location' }
+			        when 'local' { 'this page' }
+                } ) ~
+			    LINK-ON ~ %prm<target> ~ LINK-OFF ~
+			    ']'
+			 },
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             #| Placement link
 			markup-P => -> %prm, $tmpl { express-params( %prm, $tmpl, 'placement' ) },
@@ -2002,7 +2049,7 @@ class RakuDoc::Processor {
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
-			markup-D => -> %prm, $tmpl { express-params( %prm, $tmpl, 'definition' ) },
+			markup-D => -> %prm, $tmpl {  %prm<contents>  },
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
             markup-Δ => -> %prm, $tmpl { express-params( %prm, $tmpl, 'delta' ) },

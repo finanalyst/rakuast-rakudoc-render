@@ -19,7 +19,7 @@ $rv = $rdp.render( $ast, :pre-finalised );
 
 isa-ok $rv, RakuDoc::Processed, 'got a RakuDoc Processed object';
 like $rv.body.Str, /
-    ^ '<head>' .+?
+    '<head>' .+?
     'caption: ｢Test text｣' .+
     'contents: ｢Test text｣' .+
     'id: ｢｣' .+
