@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 12;
+plan 11;
 
 my $ast;
 my $rv;
@@ -11,7 +11,6 @@ $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
     =TITLE This is a new one
     =SUBTITLE A page of tests
-    =NAME tester-file
 
     this is text
 
@@ -35,17 +34,15 @@ $ast = Q:scalar:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 is $rv.title, 'This is a new one', 'Title processed';
 is  $rv.subtitle, 'A page of tests', 'Subtitle processed';
-is $rv.name, 'tester-file.txt', 'file name set with default txt';
-cmp-ok $rv.semantics.keys, '(==)', <TITLE SUBTITLE NAME AUTHOR SUMMARY SYNOPSIS TEST>, 'got all Semantics in structure';
+cmp-ok $rv.semantics.keys, '(==)', <TITLE SUBTITLE AUTHOR SUMMARY SYNOPSIS TEST>, 'got all Semantics in structure';
 is $rv.semantics<TEST>.elems, 2, 'Two Tests generate two elements';
 is-deeply $rv.toc.map( *.<caption> ), <AUTHOR SUMMARY SYNOPSIS TEST TEST>, 'Raw toc correct';
 like $rv.body, /
-    'This is a new one'
-    .+ 'this is text'
-    .+ '<head' .+ 'AUTHOR'
-    .+ '<head' .+ 'SUMMARY'
-    .+ '<head' .+ 'SYNOPSIS'
-    .+ '<head' .+ 'TEST'
+    'this is text'
+    .+ '<semantic' .+ 'AUTHOR'
+    .+ '<semantic' .+ 'SUMMARY'
+    .+ '<semantic' .+ 'SYNOPSIS'
+    .+ '<semantic' .+ 'TEST'
 /, 'semantic blocks rendered as expected';
 
 $rdp .= new(:test);
@@ -53,7 +50,6 @@ $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
     =TITLE This is a new one
     =SUBTITLE A page of tests
-    =NAME tester-file
 
     this is text
 
@@ -79,13 +75,12 @@ $ast = Q:scalar:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 is-deeply $rv.toc.map( *.<caption> ), <AUTHOR TEST>, 'Toc doesnt contain hidden blocks';
 like $rv.body, /
-    'This is a new one'
-    .+ 'this is text'
-    .+ '<head' .+ 'AUTHOR'
-    .+ '<head' .+ 'TEST'
+    'this is text'
+    .+ '<semantic' .+ 'AUTHOR'
+    .+ '<semantic' .+ 'TEST'
 /, 'semantic blocks hidden';
 unlike $rv.body, /
-    .+ '<head' .+ 'SUMMARY'
+    .+ '<semantic' .+ 'SUMMARY'
     /, 'no SUMMARY';
 
 $rv = $rdp.render( $ast, :pre-finalised );
@@ -114,10 +109,10 @@ $rv = $rdp.render( $ast, :pre-finalised );
 is-deeply $rv.toc.map( *.<caption> ), <AUTHOR TEST>, 'Toc doesnt contain hidden blocks';
 like $rv.body, /
     'this is text'
-    .+ '<head' .+ 'AUTHOR'
-    .+ '<head' .+ 'TEST'
-    .+ '<head' .+ 'SYNOPSIS'
-    .+ '<head' .+ 'SUMMARY'
+    .+ '<semantic' .+ 'AUTHOR'
+    .+ '<semantic' .+ 'TEST'
+    .+ '<semantic' .+ 'SYNOPSIS'
+    .+ '<semantic' .+ 'SUMMARY'
 /, 'semantic blocks rendered in placement order';
 
 done-testing;

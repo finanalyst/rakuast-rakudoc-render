@@ -19,17 +19,17 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'We can'
-    \s* '<link>'
+    \s* '<markup-L>'
     .+? 'extra: ｢｣' .*?
     \s* 'link-label' .+? 'Link to a place'
     .+? 'target' .+? 'https://docs.raku.org'
     .+? 'type' .+? 'external'
-    .+? '</link>'
+    .+? '</markup-L>'
     .+? 'with no problem.'
     /, 'External L<> works';
 like $rv.body, /
     'Linking inside'
-    .+? '<link>'
+    .+? '<markup-L>'
     .+? 'extra: ｢｣' .*?
     'link-label' .+? 'like this'
     .+? 'target: ｢Here_is_a_header｣'
@@ -37,13 +37,13 @@ like $rv.body, /
     /, 'Internal L standard works';
 like $rv.body, /
     'No link'
-    .+? '<link>'
+    .+? '<markup-L>'
     \s* 'extra' .+? '｢｣'
     .+? 'link-label' .+? 'path/to/file'
     .+? 'target' .+? '｢path/to/file｣'
     \s* 'type' .+? 'local'
     .+? 'Blank link'
-    .+? '<link>'
+    .+? '<markup-L>'
     \s* 'extra' .+? '｢｣' .+?
     'link-label' .+? 'Forgot to put link' .+?
     'target' .+? '｢｣'
@@ -62,7 +62,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'We also'
-    .+? '<link>'
+    .+? '<markup-L>'
     .+? 'extra' .+? 'an item'
     .+? 'link-label' .+? 'link to an index test code'
     .+? 'target' .+? 'format-code-index-test-pod-file_2'
@@ -70,13 +70,13 @@ like $rv.body, /
 /, 'Link to another file';
 like $rv.body, /
     'Otherwise'
-    .+? '<link>'
+    .+? '<markup-L>'
     .+? 'extra' .+? '｢｣'
     .+? 'link-label' .+? 'Block'
     .+? 'target' .+? '/type/Block'
     .+? 'type' .+? 'local'
     .+? 'force construction'
-    .+? '<link>'
+    .+? '<markup-L>'
     .+? 'extra' .+? '｢｣'
     .+? 'link-label' .+? 'Block'
     .+? 'target' .+? '/type/Block'

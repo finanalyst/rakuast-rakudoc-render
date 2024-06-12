@@ -45,12 +45,12 @@ $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     '<defn-list>' .*
     '<defn>' .*
-    'contents:' .* "When you're " .* '<basis>' .* 'not' .* '</basis>' .* 'blue' .*
+    'contents:' .* "When you're " .* '<markup-B>' .* 'not' .* '</markup-B>' .* 'blue' .*
     'target:' .* 'defn_Happy' .*
     'term:' .* 'Happy' .*
     '</defn>' .*
     '<defn>' .*
-    'contents:' .* 'When ' .* '<basis>' .* "you're" .* '</basis>' .* ' not happy' .*
+    'contents:' .* 'When ' .* '<markup-B>' .* "you're" .* '</markup-B>' .* ' not happy' .*
     'target:' .* 'defn_Blue' .*
     'term:' .* 'Blue' .*
     '</defn>' .*
@@ -73,12 +73,12 @@ $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
     '<defn>' .+? 'target:' .+? 'defn_glossoligation' .+
-    '<link>' .*?
+    '<markup-L>' .*?
         'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'link-label:' .+? 'lexiphania' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
-    '<link>' .*?
+    '<markup-L>' .*?
         'extra:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'link-label:' .+? 'glossoligation' .+
         'target:' .+? 'defn_glossoligation' .+
@@ -101,18 +101,18 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'To treat his' .+?
-    '<link>' .*?
+    '<markup-L>' .*?
         'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
         'link-label:' .+? 'lexiphania' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
-    '</link>' .*?
-    '<link>' .*?
+    '</markup-L>' .*?
+    '<markup-L>' .*?
         'extra:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
         'link-label:' .+? 'glossoligation' .+
         'target:' .+? 'defn_glossoligation' .+
         'type:' .+? 'defn' .+
-    '</link>' .+
+    '</markup-L>' .+
     '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
     '<defn>' .+? 'target:' .+? 'defn_glossoligation' .+
 /, 'links to forward defns work';
@@ -128,16 +128,16 @@ $rv = $rdp.render( $ast, :pre-finalised );
 
 like $rv.body.Str, /
     'There ensued' .+?
-    'of <inline-defn>' .+?
+    'of <markup-D>' .+?
     'contents' .+? 'coyotus interruptus' .+?
-    '</inline-defn>'
+    '</markup-D>'
 /, 'inline definition rendered';
 like $rv.body.Str, /
-    '<link>' .+?
+    '<markup-L>' .+?
     'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
     'link-label' .+? '｢coyotus interruptus｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
-    '</link>'
+    '</markup-L>'
 /, 'link picks up the inline-definition';
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -153,21 +153,21 @@ $rv = $rdp.render( $ast, :pre-finalised );
 
 like $rv.body.Str, /
     'There ensued' .+?
-    'of <inline-defn>' .+?
+    'of <markup-D>' .+?
     'contents' .+? 'coyotus interruptus' .+?
-    '</inline-defn>'
+    '</markup-D>'
 /, 'inline definition rendered';
 like $rv.body.Str, /
-    '<link>' .+?
+    '<markup-L>' .+?
     'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
     'link-label' .+? '｢crazy coyote｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
-    '</link>' .+?
-    '<link>' .+?
+    '</markup-L>' .+?
+    '<markup-L>' .+?
     'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
     'link-label' .+? '｢speed runner revenge｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
-    '</link>'
+    '</markup-L>'
 /, 'links picks out synonyms';
 #
 $ast = Q:to/QAST/.AST;
@@ -185,23 +185,23 @@ $rv = $rdp.render( $ast, :pre-finalised );
 
 like $rv.body.Str, /
     'There ensued' .+?
-    'of <inline-defn>' .+?
+    'of <markup-D>' .+?
     'contents' .+? 'coyotus interruptus' .+?
-    '</inline-defn>' .+
-    '<inline-defn>' .+?
+    '</markup-D>' .+
+    '<markup-D>' .+?
     'contents' .+? 'hubris' .+?
-    '</inline-defn>'
+    '</markup-D>'
 /, 'inline definition rendered';
 like $rv.body.Str, /
-    '<link>' .+?
+    '<markup-L>' .+?
     'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
     'link-label' .+? '｢coyotus interruptus｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
-    '</link>' .+?
-    '<link>' .+?
+    '</markup-L>' .+?
+    '<markup-L>' .+?
     'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
     'link-label' .+? '｢hubris｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
-    '</link>'
+    '</markup-L>'
 /, 'link picks one of synonyms';
 done-testing;

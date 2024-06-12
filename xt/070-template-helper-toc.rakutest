@@ -52,7 +52,7 @@ $rdp.add-template: ( MyNewBlock => -> %prm, $tmpl {
     $tmpl.globals.helper<add-to-warnings>( 'You have been warned' );
     PStr.new( 'new block here')
 });
-
+$rdp.test(False);
 $rv = $rdp.render( $ast, :pre-finalised );
 is $rv.toc.elems, 5, 'got correct number of contents';
 is $rv.toc[4]<caption>, 'new entry', 'caption from helper';

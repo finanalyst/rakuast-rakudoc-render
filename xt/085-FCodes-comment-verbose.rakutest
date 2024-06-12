@@ -2,6 +2,7 @@ use v6.d;
 use Test;
 use Test::Output;
 use RakuDoc::Render;
+use RakuDoc::Templates;
 
 plan 15;
 
@@ -17,8 +18,8 @@ $ast = Q:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
-    'Some thing' .*?
-    '<basis>' .*? 'contents:' .*? '｢to be said｣' .*? '</basis>' .*?
+    'Some thing'
+    '<markup-B>' .*? 'contents:' .*? '｢to be said｣' .*? '</markup-B>' .*?
     'inside letters.'
     /, 'B-markup works with text with spaces inside text';
 
@@ -30,7 +31,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing to '
-    '<basis>' .*? 'contents:' .*? '｢say｣' .+? '</basis>' .*?
+    '<markup-B>' .*? 'contents:' .*? '｢say｣' .+? '</markup-B>' .*?
     ' in between words.'
     /, 'B-markup works with space';
 
@@ -62,7 +63,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Raku makes' .+
-    '<entity>' .*? 'contents: ｢«»｣' .*? '</entity>' .*? 'characters'
+    '<markup-E>' .*? 'contents: ｢«»｣' .*? '</markup-E>' .*? 'characters'
     /, 'E-markup ';
 
 # test verbose functionality for markup
@@ -76,16 +77,16 @@ $rdp.verbose('markup-I');
 my $out = output-from {
     $rv = $rdp.render( $ast, :pre-finalised );
 };
-like $out, / '<important>' .*? 'in italics' .+ '</important>'
+like $out, / '<markup-I>' .*? 'in italics' .+ '</markup-I>'
     /, 'the template result for I is output';
 unlike $out, /
-    '<basis>' .*? 'contents:' .*? '｢to be said｣' .*? '</basis>' .*?
+    '<markup-B>' .*? 'contents:' .*? '｢to be said｣' .*? '</markup-B>' .*?
     /, 'template result for B is not output';
 like $rv.body, /
     'Some thing' .*?
-    '<basis>' .*? 'contents:' .*? '｢to be said｣' .*? '</basis>' .*?
+    '<markup-B>' .*? 'contents:' .*? '｢to be said｣' .*? '</markup-B>' .*?
     'inside letters.' \s*
-    'And also' .+? '<important>' .*? 'in italics'
+    'And also' .+? '<markup-I>' .*? 'in italics'
     /, 'B & I works with text with spaces inside text';
 
 # test undefined ASCII
@@ -133,7 +134,7 @@ like $rv.body, /
 
 ## test possible and defined
 $rdp.add-template: ( markup-Ɵ => sub ( %prm, $ ) {
-    RakuDoc::Processor::express-params( %prm, $, 'theta')
+    express-params( %prm, 'markup-Ɵ')
 });
 
 $ast = Q:to/QAST/.AST;
@@ -144,7 +145,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing to '
-    '<theta>' .*? 'contents:' .*? '｢say｣' .+? '</theta>' .*?
+    '<markup-Ɵ>' .*? 'contents:' .*? '｢say｣' .+? '</markup-Ɵ>' .*?
     ' in between words.'
     /, 'Ɵ-markup works with space';
 is $rv.warnings.elems, 0, 'no warning';

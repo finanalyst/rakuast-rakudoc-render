@@ -122,14 +122,14 @@ class RakuDoc::Processor {
         self.complete-heading-numerations;
         # All PCells should be triggered by this point
         self.complete-toc;
-        if $!current.rendered-toc.has-PCells {
+        if $!current.rendered-toc ~~ PStr && $!current.rendered-toc.has-PCells {
             while $!current.rendered-toc.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
                 $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded in ToC." )
             }
             $!current.rendered-toc .= Str
         }
         self.complete-index;
-        if $!current.rendered-index.has-PCells {
+        if $!current.rendered-index ~~ PStr && $!current.rendered-index.has-PCells {
             while $!current.rendered-index.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
                 $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded in Index." )
             }
@@ -1251,7 +1251,7 @@ class RakuDoc::Processor {
     #| rendered contents is added to the semantic structure
     #| If :hidden is True, then the string is not added to .body
     #| Unless :hidden, Block name is added to ToC at level 1, unless overriden by toc/caption/headlevel
-    #| TITLE SUBTITLE NAME by default :hidden is True and added to $*prs separately
+    #| TITLE & SUBTITLE by default :hidden is True and added to $*prs separately
     #| All other SEMANTIC blocks are :!hidden by default
     method gen-semantics($ast, $parify) {
         my $block-name = $ast.type;
@@ -1894,7 +1894,7 @@ class RakuDoc::Processor {
 			 },
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             #| Placement link
-			markup-P => -> %prm, $tmpl { express-params( %prm, $tmpl, 'placement' ) },
+			markup-P => -> %prm, $tmpl { '' },
 
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
@@ -1902,7 +1902,7 @@ class RakuDoc::Processor {
 			markup-D => -> %prm, $tmpl {  %prm<contents>  },
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
-            markup-Δ => -> %prm, $tmpl { express-params( %prm, $tmpl, 'delta' ) },
+            markup-Δ => -> %prm, $tmpl { '' },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
 			markup-M => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },

@@ -2,6 +2,7 @@ use v6.d;
 use Test;
 use Test::Output;
 use RakuDoc::Render;
+use RakuDoc::Templates;
 
 plan 8;
 
@@ -16,7 +17,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing to '
-    '<markup>' .+? 'content' .+ 'extra markup no meta' .+ '</mark'
+    '<markup-M>' .+? 'content' .+ 'extra markup no meta' .+ '</mark'
     /, 'markup with no meta has only display text rendered';
 like $rv.warnings[0], / 'Markup-M failed: no meta information. Got' /, 'got no meta warning';
 $ast = Q:to/QAST/.AST;
@@ -27,7 +28,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing to '
-    '<markup>' .+? 'content' .+ 'extra markup' .+ '</mark'
+    '<markup-M>' .+? 'content' .+ 'extra markup' .+ '</mark'
     /, 'markup with bad (builtin) meta has only display text rendered';
 like $rv.warnings[0], /
         'Markup-M failed: first meta string must conform to Custom template spelling. Got'
@@ -40,7 +41,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing to '
-    '<markup>' .+? 'content' .+ 'extra markup' .+ '</mark'
+    '<markup-M>' .+? 'content' .+ 'extra markup' .+ '</mark'
     /, 'markup with good meta, no template, has only display rendered';
 like $rv.warnings[0], /
         'Markup-M failed: template' .+ 'MyTemplate' .+ 'does not exist'
@@ -48,7 +49,7 @@ like $rv.warnings[0], /
 
 ## test possible and defined
 $rdp.templates<MyTemplate> = sub ( %prm, $ ) {
-    RakuDoc::Processor::express-params( %prm, $, 'extramarkup')
+    express-params( %prm, 'MyTemplate')
 }
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -58,9 +59,9 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing to '
-    '<extramarkup>' .+? 'content' .+ 'extra markup' .+
+    '<MyTemplate>' .+? 'content' .+ 'extra markup' .+
     'meta' .+ 'some data' .+ 'strings' .+
-    '</extramarkup>'
+    '</MyTemplate>'
     /, 'markup with good meta, template is used';
 is $rv.warnings.elems, 0, 'no warnings issued';
 

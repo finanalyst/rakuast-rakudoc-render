@@ -16,9 +16,9 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing '
-    '<index>' .+ 'contents:' .+ 'to be said｣' .+
+    '<markup-X>' .+ 'contents:' .+ 'to be said｣' .+
     'target:' .+ 'index-entry-to_be_said' .+
-    '</index>' .+
+    '</markup-X>' .+
     ' inside spaces.'
     /, 'X-markup works no meta';
 is $rv.index.elems, 1, 'one index entry';
@@ -33,9 +33,9 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing '
-    '<index>' .+ 'contents:' .+ 'to be said｣' .+
+    '<markup-X>' .+ 'contents:' .+ 'to be said｣' .+
     'target:' .+ 'index-entry-to_be_said' .+
-    '</index>' .+
+    '</markup-X>' .+
     ' inside spaces.'
     /, 'X-markup works with text and indexed text';
 is $rv.index.elems, 1, 'one index entry';
@@ -57,14 +57,14 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing '
-    '<index' .+ 'contents:' .+ 'to be said｣' .+
+    '<markup-X' .+ 'contents:' .+ 'to be said｣' .+
     'target:' .+ 'index-entry-to_be_said' .+
-    '</index>' .*?
+    '</markup-X>' .*?
     ' inside spaces.' .+
     'Another '
-    '<index>' .+ 'contents:' .+ 'stupidity｣' .+
+    '<markup-X>' .+ 'contents:' .+ 'stupidity｣' .+
     'target:' .+ 'index-entry-stupidity' .+
-    '</index>'
+    '</markup-X>'
     /, 'X-markup works with text and indexed text';
 is $rv.index.elems, 2, 'two index entry';
 ok $rv.index.keys (>=) <glossed indexed>.Set, 'entries ok';
@@ -82,9 +82,9 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing '
-    '<index' .+ 'contents:' .+ 'to be said｣' .+
+    '<markup-X' .+ 'contents:' .+ 'to be said｣' .+
     'target:' .+ 'index-entry-to_be_said' .+
-    '</index>' .*?
+    '</markup-X>' .*?
     ' inside spaces.'
     /, 'X-markup with hierarchical entry';
 is $rv.index.elems, 2, 'two index entry';

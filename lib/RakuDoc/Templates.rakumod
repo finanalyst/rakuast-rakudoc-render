@@ -1,5 +1,6 @@
 use v6.d;
 use PrettyDump;
+use RakuDoc::PromiseStrings;
 
 class Template {
     has &.block;
@@ -21,12 +22,7 @@ class Template {
         %!call-params = %params;
         my $rv;
         if $!test && $!pretty.not {
-            $rv = "<$!name>\n";
-            for %params.sort(*.key)>>.kv -> ($k, $v is rw) {
-                $v = 'UNINITIALISED' without $v;
-                $rv ~= $k ~ ': ｢' ~ $v ~  "｣\n"
-            }
-            $rv ~= "</$!name>\n";
+            $rv = express-params(%params, $!name)
         }
         elsif $!pretty {
             my $indent = ' ' x 2;
@@ -79,6 +75,16 @@ class X::Unexpected-Template is Exception {
     method message {
         "Template ｢$.key｣ is not known"
     }
+}
+
+sub express-params( %params, $name ) is export {
+    my $rv = "<$name>\n";
+    for %params.sort(*.key)>>.kv -> ($k, $v is rw) {
+        $v = 'UNINITIALISED' without $v;
+        $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n";
+    }
+    $rv ~= "</$name>\n";
+    $rv
 }
 
 #| A hash that remembers previous values

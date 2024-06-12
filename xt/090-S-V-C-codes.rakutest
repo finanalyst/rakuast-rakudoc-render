@@ -18,10 +18,10 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'The emergency signal is:' .+
-    '<space>' .+? 'content' .+
+    '<markup-S>' .+? 'content' .+
     '｢' \v
     'dot dot dot'  \s**3 'dash dash dash' \s**3   'dot dot dot｣'  .+
-    '</space>' .+ '.'
+    '</markup-S>' .+ '.'
     /, 'S-markup with extra spaces';
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -32,10 +32,10 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'The emergency signal is:' .+?
-    '<basis>' .+?
+    '<markup-B>' .+?
     'content' .+?
     '｢ dot dot dot dash dash dash dot dot dot｣' .+?
-     '</basis>' .+ '.'
+     '</markup-B>' .+ '.'
     /, 'B-markup removes extra spaces inside text';
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -47,13 +47,13 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'The ' .+?
-    'basis' .+?
+    'markup-B' .+?
     'content' .+?
-    'verbatim' .+? 'content' .+ 'V<>' .+ '</verbatim' .+
-    '</basis' .+
+    'markup-V' .+? 'content' .+ 'V<>' .+ '</markup-V' .+
+    '</markup-B' .+
     'disarms' .+
-    'verbatim' .+? 'content' .+ 'I<>, C<>, B<>, and M<>'
-    /, 'verbatim test';
+    'markup-V' .+? 'content' .+ 'I<>, C<>, B<>, and M<>'
+    /, 'markup-V test';
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     =config C :allow< B I U >
@@ -65,13 +65,13 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'Some '
-    '<code>' .+? 'content' .+ 'text with ' .+?
-    'basis' .+? 'content' .+? 'markup' .+ '/basis' .+
-    'K<markup>' .+ '/code' .+ 'back to normal' .+
+    '<markup-C>' .+? 'content' .+ 'text with ' .+?
+    'markup-B' .+? 'content' .+? 'markup' .+ '/markup-B' .+
+    'K<markup>' .+ '/markup-C' .+ 'back to normal' .+
     'Some '
-    '<verbatim>' .+? 'content' .+ 'text with' .+
+    '<markup-V>' .+? 'content' .+ 'text with' .+
     'B<markup> and ' .+
-    'keyboard' .+? 'content' .+ 'markup' .+ '/keyboard' .+
-    '/verbatim' .+ 'back to'
+    'markup-K' .+? 'content' .+ 'markup' .+ '/markup-K' .+
+    '/markup-V' .+ 'back to'
     /, 'Verbatim/code with config works';
 done-testing;

@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::PromiseStrings;
 
-plan 40;
+plan 43;
 
 my $register = CompletedCells.new;
 my $payload;
@@ -80,4 +80,16 @@ $s .= new( '  just a single string ');
 is $s.segments, 1, 'simple string is one segment';
 $s.trim;
 like $s.Str, / ^ 'just a single string' $ /, 'trims start/end space without repeating';
+my $str = 'string';
+$str ~= PCell.new(:$register, :id('NewID'));
+isa-ok $str, PStr, 'string coerced to PStr if PCell added to it';
+$str = 'string';
+$s .= new: ' one ', PCell.new(:$register, :id('PPPPP')), ' two ';
+$str ~= $s;
+isa-ok $str, PStr, 'string coerced to PStr if PStr added to it';
+my $str2 = 'new str';
+$s .= new: ' one ', PCell.new(:$register, :id('GGGGGG')), ' two ';
+$str ~= $str2 ~ ': ｢' ~ $s ~  "｣\n";
+isa-ok $str, PStr, 'string coerced to PStr if seq of str & PStr concated to it';
+
 done-testing;

@@ -2,6 +2,7 @@ use v6.d;
 use Test;
 use Test::Output;
 use RakuDoc::Render;
+use RakuDoc::Templates;
 
 plan 7;
 
@@ -28,7 +29,7 @@ is $rv.toc.elems, 1, 'ToC includes one for custom';
 is $rv.toc[0]<caption>, 'MyCustomBlock', 'caption is blockname';
 
 $rdp.add-template: ( MyCustomBlock => -> %prm, $ {
-    RakuDoc::Processor::express-params( %prm, $, 'myblock')
+    express-params( %prm, 'MyCustomBlock')
 } );
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -40,11 +41,11 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 is $rv.warnings.elems, 0, 'no warning';
 like $rv.body, /
-    '<myblock>' .+
+    '<MyCustomBlock>' .+
     'caption' .+? 'MyCustomBlock' .+
-    'content' .+ 'Some thing<basis>' .+ 'to be said' .+ '/basis' .+ 'inside' .+
+    'content' .+ 'Some thing<markup-B>' .+ 'to be said' .+ '/markup-B' .+ 'inside' .+
     'raw' .+ 'Some thingB<to be said>inside' .+
-    '</myblock>'
+    '</MyCustomBlock>'
 /, 'treated according to template';
 
 done-testing;

@@ -80,9 +80,9 @@ $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     '<table>'  .+
     'grid' .+ 'one' .+?
-    'basis' .+ 'contents' .+
+    'markup-B' .+ 'contents' .+
     'markup' .+
-     '</basis>' .+ 'in it' .+
+     '</markup-B>' .+ 'in it' .+
     'procedural:' .+ True
     /, 'got procedural table with markup in cell';
 

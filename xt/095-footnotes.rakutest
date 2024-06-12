@@ -15,11 +15,11 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body, /
     'Some thing'
-    '<note>' .*?
+    '<markup-N>' .*?
     'fnNumber' .*? '｢1｣' .*?
     'fnTarget:' .+
     'retTarget:' .+
-    '</note>' .*?
+    '</markup-N>' .*?
     'inside letters.'
     /, 'N-markup puts note in text';
 is $rv.footnotes.elems, 1, 'One footnote';
