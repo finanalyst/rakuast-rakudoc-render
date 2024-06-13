@@ -1,43 +1,20 @@
 # list of things to do
 
-- [x] Semantic blocks / :hidden
-- [x] Custom blocks ( undefined only )
-- [x] Handle custom Markup if template exists
-- [x] =place directive
-- [x] inline delta
-- [x] alias directive
-- [x] =A<> markup
-- [x] definition list
-- [x] inline definition
-- [x] =code
-- [x] =input
-- [x] =output
-- [x] =table
-- [x] =row / =column outside =table
-- [x] =numitem
-- [x] =numhead 
-- [x] F<>
-- [x] =formula
-- [x] M<> (undefined)
-- [x] :id
-- [x] :toc / :!toc
-- [x] :headerlevel
-- [x] :bullet handled in templates
-- [x] =para
-- [x] =nested
-- [x] add plugins (plugins are implemented by sub-classes of renderer)
-  - Custom templates can be added to the template directory
-  - Custom data can be added to the main instance and given to each template
 - [ ] Templates
-  - [ ] text only
+  - [x] text only
   - [ ] MarkDown, different id naming conventions
   - [ ] HTML, need to add CSS and Javascript
   - [ ] Epub, need to add extra metadata pages 
-- [x] Documentation
-  - [x] PromiseStrings 
-  - [x] ScopedData
-  - [x] MarkupMeta
-  - [x] Numeration
-  - [x] Processed
-  - [x] Render, noting the extensions from RakuDoc v2
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
+- [ ] Implement new numbering extensions, 
+  - [ ] :number
+  - [ ] :numberalias
+- [ ] Fix Generic renderer
+  - [ ] P<> toc: schema envisages short forms, such as toc:1,2
+  - [ ] There is an error in the tests for P<>. It does not seem to affect rendering
+- [ ] Fix default text templates
+  - [ ] text form of 'nested' does not uniformly indent lines
+  - [ ] when lines are wrapped, Esc codes 'leak' accross line boundaries
+  - [ ] Esc chars are counted as if visible, but should not for wrapping
+  - [ ] Replace Section names in Index and ToC with line numbers
+  - [ ] add originating line numbers to Footnotes 

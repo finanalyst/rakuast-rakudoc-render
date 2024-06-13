@@ -10,6 +10,8 @@
 | --- | ---  |
 | **defn**| renders the numeration part for a toc |
 |  - | renders =defn block |
+| **defn-list**| renders =numdefn block |
+|  - | special template to render a defn list data structure |
 | **markup-A**| A< DISPLAY-TEXT &#124; METADATA = ALIAS-NAME > |
 |  - | Alias to be replaced by contents of specified V<=alias> directive |
 | **markup-B**| B< DISPLAY-TEXT > |
@@ -35,7 +37,7 @@
 | **markup-M**| M< DISPLAY-TEXT &#124; METADATA = WHATEVER > |
 |  - | Markup extra ( M<display text&#124;functionality;param,sub-type;...>) |
 | **markup-N**| N< DISPLAY-TEXT > |
-|  - | Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.)) |
+|  - | Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.)) |
 | **markup-O**| O< DISPLAY-TEXT > |
 |  - | Overstrike or strikethrough |
 | **markup-P**| P< DISPLAY-TEXT &#124; METADATA = REPLACEMENT-URI > |
@@ -61,4 +63,4 @@
 
 
 ----
-Rendered from default-text-templates at 2024-06-04T22:21:32Z
+Rendered from default-text-templates at 2024-06-13T21:28:51Z

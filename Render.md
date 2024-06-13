@@ -3,6 +3,7 @@
 ## Table of Contents
 [Overview](#overview)  
 [Templates](#templates)  
+[Process](#process)  
 [Warnings](#warnings)  
 [Customisability](#customisability)  
 [Custom blocks](#custom-blocks)  
@@ -12,6 +13,7 @@
 [Global data accessible in templates](#global-data-accessible-in-templates)  
 [Debugging](#debugging-0)  
 [Debug options](#debug-options)  
+[Utility executable](#utility-executable)  
 
 ----
 # Overview
@@ -39,6 +41,19 @@ The design of the Templates object means that new additions to the object push t
 The set of template keys needed to create a renderer is [tabulated here](default-text-templates.md).
 
 All aspects of the output can be defined using the templates.
+
+## Process
+The generic render method transforms the AST of the input file using a handle method for each type of Block and Markup code. A template exists for each block and markup code.
+
+After all the blocks have been processed, the Table of Contents, Index, and Footnotes are rendered, with templates for each item and for the list of items.
+
+Any forward references and numerations are then resolved.
+
+The intermediate structure of the processed file can then be accessed before it is finally rendered into a string.
+
+The final rendering is done by the 'final' template.
+
+Once a string has been obtained, it can be post-processed using the post-process method. For example, text output can be transformed by wrapping lines.
 
 ## Warnings
 In order to offer the maximum flexibility to a RakuDoc author, if there is an error condition after the RakuDoc source has been compiled, a set of warnings are generated.
@@ -167,6 +182,19 @@ The Test and Pretty options described in [the Templates documentation](Templates
 
 Bear in mind that the **pretty** flag overrides the **test** flag, and both override the **debug** and **verbose** flags.
 
+# Utility executable
+The executable `bin/RenderTexify` can be called with the flags `test` and `pretty` and the name of a file to render. The file is output to text files with the flag and `.text` appended to the name. The file format `.rakudoc` is assumed, and added if missing.
+
+Eg,
+
+bin/RenderTextify --pretty rakudoiem-ipsum
+
+will produce the file rakudociem-ipsum.rakudoc.pretty.text
+
+while without a flag, the default Text templates are used. bin/RenderTextify rakudociem-ipsum
+
+produces rakudociem-ipsum.rakudoc.text
+
 
 
 
@@ -174,4 +202,4 @@ Bear in mind that the **pretty** flag overrides the **test** flag, and both over
 
 
 ----
-Rendered from Render at 2024-06-11T15:51:12Z
+Rendered from Render at 2024-06-13T22:00:03Z

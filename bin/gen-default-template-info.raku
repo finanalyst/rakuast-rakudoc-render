@@ -1,20 +1,10 @@
 #!/usr/bin/env raku
 use v6.d;
 
-sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method, :$dest="docs") {
+sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templates', :$dest="docs") {
     exit note "Could not find $module" unless $module.IO ~~ :e & :f;
     exit note "No directory $dest" unless $dest.IO ~~ :e & :d;
-    with $method {
-        process(:$module, :$method, :$dest )
-    }
-    else {
-        for <test-text-templates default-text-templates > {
-            process( :$module, :$dest, :method($_) )
-        }
-    }
 
-}
-sub process(:$module, :$method, :$dest ) {
     my %data;
     my Bool $code = False;
     my $ln;

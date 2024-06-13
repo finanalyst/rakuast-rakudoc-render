@@ -15,6 +15,13 @@
     =row
         =column
 			=for cell :label :row-span(2)
+			defn-list
+        =column
+			=cell V«renders =numdefn block»
+			=cell V«special template to render a defn list data structure»
+    =row
+        =column
+			=for cell :label :row-span(2)
 			markup-A
         =column
 			=cell V«A< DISPLAY-TEXT &#124;  METADATA = ALIAS-NAME >»
@@ -102,7 +109,7 @@
 			markup-N
         =column
 			=cell V«N< DISPLAY-TEXT >»
-			=cell V«Note (not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))»
+			=cell V«Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))»
     =row
         =column
 			=for cell :label :row-span(2)

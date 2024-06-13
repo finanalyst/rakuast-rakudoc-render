@@ -43,6 +43,24 @@ The set of template keys needed to create a renderer is L<tabulated here|default
 
 All aspects of the output can be defined using the templates.
 
+=head2 Process
+
+The generic render method transforms the AST of the input file using a handle method for each
+type of Block and Markup code. A template exists for each block and markup code.
+
+After all the blocks have been processed, the Table of Contents, Index, and Footnotes are
+rendered, with templates for each item and for the list of items.
+
+Any forward references and numerations are then resolved.
+
+The intermediate structure of the processed file can then be accessed before it is finally
+rendered into a string.
+
+The final rendering is done by the 'final' template.
+
+Once a string has been obtained, it can be post-processed using the post-process method.
+For example, text output can be transformed by wrapping lines.
+
 =head2 Warnings
 
 In order to offer the maximum flexibility to a RakuDoc author, if there
@@ -179,5 +197,25 @@ be set on an B<RPO>, eg.
 
 Bear in mind that the B<pretty> flag overrides the B<test> flag, and both override the
 B<debug> and B<verbose> flags.
+
+=head1 Utility executable
+
+The executable C<bin/RenderTexify> can be called with the flags C<test> and C<pretty>
+and the name of a file to render. The file is output to text files with the flag and C<.text>
+appended to the name. The file format C<.rakudoc> is assumed, and added if missing.
+
+Eg,
+
+    bin/RenderTextify --pretty rakudoiem-ipsum
+
+will produce the file
+    rakudociem-ipsum.rakudoc.pretty.text
+
+while without a flag, the default Text templates are used.
+    bin/RenderTextify rakudociem-ipsum
+
+produces
+    rakudociem-ipsum.rakudoc.text
+
 
 =end rakudoc
