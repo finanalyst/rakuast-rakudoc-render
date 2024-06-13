@@ -217,5 +217,10 @@ while without a flag, the default Text templates are used.
 produces
     rakudociem-ipsum.rakudoc.text
 
+If the environment variable WIDTH is set, the text output will be
+wrapped to the value.
+
+WIDTH by default is set at 80 chars. To set at 70, use:
+    WIDTH=70 bin/RenderTextify rakudociem-ipsum
 
 =end rakudoc
