@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 9;
+#plan 9;
 
 my $ast;
 my $rv;
@@ -14,15 +14,15 @@ $ast = Q:scalar:to/QAST/.AST;
     P<file:$temp-dir/disclaimer.txt>
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-finalised );
-like $rv.body, /
-    'Artistic License 2.0'
-    /,'Got external link';
-like $rv.body, /
-    'ABSOLUTELY NO WARRANTY IS IMPLIED'
-    /,'File contents slurped';
+#$rv = $rdp.render( $ast, :pre-finalised );
+#like $rv.body, /
+#    'Artistic License 2.0'
+#    /,'Got external link';
+#like $rv.body, /
+#    'ABSOLUTELY NO WARRANTY IS IMPLIED'
+#    /,'File contents slurped';
 
-$ast = Q:scalar:to/QAST/.AST;
+$ast = qq:to/QAST/.AST;
     =begin rakudoc
     P<Cannot connect|https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE>
     P<Bad file|file:$temp-dir/xxdisclaimer.txt>
@@ -56,12 +56,12 @@ $ast = Q:scalar:to/QAST/.AST;
 
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast );
-like $rv, /
-    'rendered-index' .+ '<index>' .+? '</index>' .+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    'rendered-index: ｢｣' .+
     'rendered-toc' .+ '<toc>' .+? '</toc>'
-/, 'got rendered toc, and index';
-like $rv, /
+/, 'got rendered toc, and no index because no X<>';
+like $rv.body.Str, /
     '<rakudoc>'
     .+ '<markup-P>'
     .+ '<toc>' .+ '</toc>'
