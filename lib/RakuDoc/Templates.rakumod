@@ -30,8 +30,11 @@ class Template {
                 $v = 'UNINITIALISED' without $v;
                 given $v {
                     when Str { $v .= subst(/ \n /, "\n$indent", :g) }
+                    when PStr { sink $indent ~ $v.debug }
                     default {
-                        $v = pretty-dump( $v ).subst(/ \n /, "\n$indent", :g)
+                        my $sv = $v;
+                        try { $v = pretty-dump( $v ).subst(/ \n /, "\n$indent", :g)};
+                        if $! { $v = $sv.raku }
                     }
                 }
                 $rv ~= $indent ~ $k ~ ': ｢' ~ $v ~  "｣\n"

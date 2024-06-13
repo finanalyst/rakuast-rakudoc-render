@@ -169,7 +169,29 @@ class RakuDoc::Processor {
     #| This method is used to post process the final rendered output
     #| Use case: change targets to line numbers in a text output
     #| It should be overridden in subclasses for other outputs
-    method post-process( Str:D $final --> Str ) { $final }
+    method post-process( Str:D $final --> Str ) {
+        my $width = %*ENV<WIDTH> // 80; #$!current.source-data<line-width> // 80;
+        my $end-zone = %*ENV<LINE-WIDTH> // 6;#$!current.source-data<line-width> // 6;
+        $width = 80 if $width < $end-zone;
+        my $remaining = $final;
+        my @lines;
+        my Bool $hyphen = False;
+        my Bool $nl = False;
+        while ( $remaining ~~ / ^
+                  (\v)
+                | ( .**{0..$width} \v )
+                | ( .**{ $width - $end-zone } \S+ ) \s{ $nl = True }
+                | ( .**{ $width - 1 } ) { $hyphen = $nl = True }
+                / ) {
+            my $l = ~$/[0];
+            $remaining = ~$/.postmatch;
+            $l ~= '-' and ( $hyphen = False ) if $hyphen;
+            $l ~= "\n" and ( $nl = False ) if $nl;
+            @lines.push: $l
+        }
+        @lines.push( $remaining);
+        @lines.join('')
+    }
 
     method compactify( Str:D $s ) {
         $s .subst(/ \v+ /,' ',:g )
@@ -218,8 +240,12 @@ class RakuDoc::Processor {
             when 'alias' {
                 if $ast.paragraphs.elems >= 2 {
                     my $term = $ast.paragraphs[0].Str; # it should be a string without embedded codes
-                    my $expansion = $ast.paragraphs[1 .. *-1 ].map({ $.handle( $_ ) });
+                    my ProcessedState $*prs .= new;
+                    $ast.paragraphs[1 .. *-1 ].map({ $.handle( $_ ) });
+                    my $expansion = $*prs.body.trim-trailing;
                     $!scoped-data.aliases{ $term } = $expansion;
+                    $*prs.body .= new;
+                    CALLERS::<$*prs> += $*prs;
                 }
                 else {
                     $*prs.warnings.push: "Invalid alias ｢{ $ast.Str }｣"
@@ -429,8 +455,8 @@ class RakuDoc::Processor {
                 my $error-text = '';
                 # check to see if there is a text to over-ride automatic failure message
                 if $term ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
-                    $error-text = ~$0;
-                    $term = ~$1
+                    $error-text = ~$0.trim;
+                    $term = ~$1.trim
                 }
                 my $contents;
                 if $!scoped-data.aliases{ $term }:exists {
@@ -438,9 +464,10 @@ class RakuDoc::Processor {
                 }
                 else {
                     $error = True;
-                    $error-text = $term unless $error-text;
+                    $contents = $term;
+                    $contents = $error-text if $error-text;
                     $*prs.warnings.push:
-                        "Unknown alias ｢$term｣"
+                        "Unknown or as yet undeclared alias ｢$term｣"
                         ~ " in block ｢$context｣ with heading ｢$place｣"
                         ~ ( $error-text ?? " over-riden by ｢$error-text｣" !! ''  )
                 }
@@ -572,11 +599,23 @@ class RakuDoc::Processor {
             # Delta note ( Δ<visible text|version; Notification text> )
             when 'Δ' {
                 my $contents = self.markup-contents($ast);
-                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
-                my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, :$meta, %config)
-                );
-                $*prs.body ~= $rv;
+                my $meta = '';
+                if $ast.meta {
+                    $meta = $ast.meta
+                }
+                elsif $contents ~~ / ^ (<-[|]>+) \| (.+) $ / {
+                    $contents = ~$0;
+                    $meta = ~$1
+                }
+                if $contents ~~ / ^ 'v' / {
+                    $*prs.body ~=  %!templates{"markup-Δ"}(
+                        %( :$contents, :$meta, %config)
+                    )
+                }
+                else {
+                    $*prs.warnings.push: "Δ<> markup ignored because it has no version content ｢{ ~$ast.DEPARSE }｣"
+                        ~ " in block ｢$context｣ with heading ｢$place｣.";
+                }
             }
             # M< DISPLAY-TEXT |  METADATA = WHATEVER >
             # Markup extra ( M<display text|functionality;param,sub-type;...>)
@@ -1025,7 +1064,6 @@ class RakuDoc::Processor {
         %config<html> = so $contents ~~ / '<html' .+ '</html>'/;
         $contents = ~$/ if %config<html>;
         # strip off any chars before & after the <html> container if there is one
-
         $*prs.body ~= %!templates{ $template }(
             %( :$contents, :$keep-format, :$schema, %config )
         )
@@ -1270,10 +1308,10 @@ class RakuDoc::Processor {
                 $!current.title = $contents.Str;
                 # allows for TITLE to have its own template
                 if %!templates<TITLE>:exists {
-                    $rv = %!templates<TITLE>( %( :$contents, :$caption, %config ) )
+                    $rv = %!templates<TITLE>( %( :$level, :$contents, :$caption, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$contents, :$caption, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, %config ) )
                 }
             }
             when 'SUBTITLE' {
@@ -1281,10 +1319,10 @@ class RakuDoc::Processor {
                 $hidden = $_ with %config<hidden>;
                 $!current.subtitle = $contents.Str;
                 if %!templates<SUBTITLE>:exists {
-                    $rv = %!templates<SUBTITLE>( %( :$contents, :$caption, %config ) )
+                    $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$contents, :$caption, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, %config ) )
                 }
             }
             default {
@@ -1319,7 +1357,7 @@ class RakuDoc::Processor {
         # If a template exists with the block name
         # - provides content verbatim to template as raw
         # - provides content rendered to template as contents
-        # If NOT, 
+        # If NOT,
         # - the block content is rendered as verbatim text
         # - the content is rendered with 'unknown' template
         # - a warning is issued
@@ -1342,7 +1380,7 @@ class RakuDoc::Processor {
             # by spec, the name of an unrecognised Custom is treated like =head1
             # the contents are treated like =code
             my $contents = $ast.DEPARSE;
-            $*prs.warnings.push: 
+            $*prs.warnings.push:
             "No template exists for custom block ｢$block-name｣. It has been rendered as unknown"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.";
             $*prs.body ~= %!templates<unknown>( %( :$contents, :$block-name) )
@@ -1373,7 +1411,9 @@ class RakuDoc::Processor {
             -> ( $entry, %entry-data ) {
             take %!templates<index-item>( %( :$entry, :%entry-data , ) )
         }
-        my $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ));
+        my $payload = '';
+        $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ))
+            if @index-list.elems;
         $!register.add-payload( :$payload, :id('index-schema') );
         $!current.rendered-index = $payload
     }
@@ -1382,7 +1422,9 @@ class RakuDoc::Processor {
         my @toc-list = gather for $!current.toc -> $toc-entry {
             take %!templates<toc-item>( %( :$toc-entry , ) )
         }
-        my $payload = %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) ) );
+        my $payload = '';
+        $payload = %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) ) )
+            if @toc-list.elems;
         $!register.add-payload( :$payload, :id('toc-schema') );
         $!current.rendered-toc = $payload
     }
@@ -1469,12 +1511,24 @@ class RakuDoc::Processor {
         $text
     }
     #| get config merged from the ast and scoped data
+    #| handle generic metadata options such as delta
     method merged-config( $ast, $block-name --> Hash ) {
         my %config = $ast.resolved-config with $ast;
         my %scoped = $!scoped-data.config;
         %scoped{ $block-name }.pairs.map({
             %config{ .key } = .value unless %config{ .key }:exists
         });
+        if %config<delta>:exists {
+            my $contents = %config<delta>:delete;
+            my $meta;
+            if $contents ~~ / ('v' \S+) \s* '|'? ( .*? ) $ / {
+                %config<delta> = ~$0, ~$1
+            }
+            else {
+                $*prs.warnings.push: "The delta option is ignored because it must have the form / 'v' \\S+ \\s* (['|'] .+)? \$ / ｢{ ~$ast.DEPARSE }｣"
+            }
+        }
+        else { %config<delta> = () }
         %config
     }
 
@@ -1534,6 +1588,10 @@ class RakuDoc::Processor {
     my constant ITALIC-OFF = "\e[23m";
     my constant UNDERLINE-ON = "\e[4m";
     my constant UNDERLINE-OFF = "\e[24m";
+    my constant DBL-UNDERLINE-ON = "\e[21m";
+    my constant DBL-UNDERLINE-OFF = "\e[24m";
+    my constant CURL-UNDERLINE-ON = "\e[4:3m";
+    my constant CURL-UNDERLINE-OFF = "\e[4:0m";
     my constant BLINK-ON = "\e[5m";
     my constant BLINK-OFF = "\e[25m";
     my constant INDEXED-ON = "\e[7m";
@@ -1554,11 +1612,16 @@ class RakuDoc::Processor {
     my constant TERMINAL-OFF = "\e[39;49m";
     my constant FOOTNOTE-ON = "\e[48;5;214m\e[38;5;0m";
     my constant FOOTNOTE-OFF = "\e[39;49m";
-    my constant LINK-ON = "\e[48;5;227m\e[38;5;0m";
+    my constant LINK-TEXT-ON = "\e[48;5;227m\e[38;5;0m";
+    my constant LINK-TEXT-OFF = "\e[39;49m";
+    my constant LINK-ON = "\e[38;5;227m\e[48;5;0m";
     my constant LINK-OFF = "\e[39;49m";
-
-    # terminal measure
-    my constant WIDTH = 80;
+    my constant DEPR-TEXT-ON = "\e[48;5;216m\e[38;5;0m";
+    my constant DEPR-TEXT-OFF = "\e[39;49m";
+    my constant DEPR-ON = "\e[38;5;196m\e[48;5;0m";
+    my constant DEPR-OFF = "\e[39;49m";
+    my constant DEFN-TEXT-ON = "\e[38;5;197m\e[48;5;0m";
+    my constant DEFN-TEXT-OFF = "\e[39;49m";
 
     #| returns a set of text templates
     multi method default-text-templates {
@@ -1568,25 +1631,41 @@ class RakuDoc::Processor {
             _name => -> %, $ { 'default text templates' },
             #| renders =code blocks
             code => -> %prm, $tmpl {
-                PStr.new: "\n  --- code --- \n"
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
+                }
+                PStr.new: $del ~ "\n  --- code --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
             #| renders implict code from an indented paragraph
             implicit-code => -> %prm, $tmpl {
-                PStr.new: "\n  --- code --- \n"
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
+                }
+                PStr.new: $del ~ %prm<delta> ~ "\n  --- code --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
-                PStr.new: "\n  --- input --- \n"
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
+                }
+                PStr.new: $del ~ "\n  --- input --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
-                PStr.new: "\n  --- output --- \n"
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
+                }
+                PStr.new: $del ~ "\n  --- output --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
              },
@@ -1595,22 +1674,33 @@ class RakuDoc::Processor {
             #| renders =formula block
             formula => -> %prm, $tmpl {
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                "\n\n" ~ ' ' x $indent ~ %prm<caption> ~ "\n" ~
-                ' ' x $indent ~ '-' x %prm<caption>.chars ~ "\n"
-                ~ %prm<formula> ~ "\n\n"
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
+                }
+                "\n\n" ~ %prm<delta> ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ %prm<caption> ~  DBL-UNDERLINE-OFF ~ "\n\n" ~
+                $del ~ %prm<formula> ~ "\n\n"
             },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                "\n\n" ~ ' ' x $indent ~ %prm<contents> ~ "\n" ~
-                ' ' x $indent ~ '-' x %prm<contents>.chars ~ "\n"
+                my $del = "\n";
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
+                }
+                "\n\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~
+                "\n" ~ $del
             },
             #| renders =numhead block
             numhead => -> %prm, $tmpl {
+                my $del = "\n";
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
+                }
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
                 my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
-                "\n\n" ~ ' ' x $indent ~ $title ~ "\n" ~
-                ' ' x $indent ~ '-' x $title.Str.chars ~ "\n"
+                "\n\n" ~ ' ' x $indent ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  DBL-UNDERLINE-OFF ~
+                "\n" ~ $del
             },
             #| renders the numeration part for a toc
             toc-numeration => -> %prm, %tmpl { %prm<contents> },
@@ -1654,22 +1744,46 @@ class RakuDoc::Processor {
             #| renders =para block
             para => -> %prm, $tmpl { %prm<contents> ~ "\n\n" },
             #| renders =place block
-            place => -> %prm, $tmpl { PStr.new: %prm<contents> ~ "\n\n" },
+            place => -> %prm, $tmpl {
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
+                }
+                my $rv = PStr.new;
+                $rv ~= $del;
+                $rv ~= %prm<contents> ;
+                $rv ~= "\n\n";
+            },
             #| renders =rakudoc block
             rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
             #| renders =section block
-            section => -> %prm, $tmpl { %prm<contents> ~ "\n" },
+            section => -> %prm, $tmpl {
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
+                }
+                $del ~ %prm<contents> ~ "\n"
+            },
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
-                PStr.new: %prm<caption> ~ "\n" ~
-                '-' x %prm<caption>.chars ~ "\n" ~
-                %prm<contents> ~ "\n\n"
+                my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
+                }
+                "\n\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                $del ~
+                %prm<contents> ~"\n\n"
             },
             #| renders =pod block
             pod => -> %prm, $tmpl { %prm<contents> },
             #| renders =table block
             table => -> %prm, $tmpl {
-                    if %prm<procedural> {
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
+                }
+                if %prm<procedural> {
                     # calculate column widths naively, will include possible markup, and
                     # will fail if embedded tables
                     # TODO comply with justification, now right-justify col-head, top-justify row labels.
@@ -1719,8 +1833,8 @@ class RakuDoc::Processor {
                     my $cap-shift = ( $table-wid - %prm<caption>.chars ) div 2;
                     my $row-shift = $cap-shift < 0 ?? - $cap-shift !! 0;
                     $cap-shift = 0 if $cap-shift < 0;
-                    PStr.new: "\n\t" ~ ' ' x $cap-shift ~ %prm<caption> ~ "\n\t" ~
-                        ' ' x $cap-shift ~ '-' x %prm<caption>.chars ~ "\n" ~
+                    PStr.new: $del ~
+                        "\n\t" ~ ' ' x $cap-shift ~ DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n\t" ~
                         @rendered-grid.map({
                         "\t" ~ ' ' x $row-shift ~ '| ' ~ $_.grep( *.isa(Str) ).join('') ~ "\n"
                         }) ~ "\n\n"
@@ -1730,8 +1844,7 @@ class RakuDoc::Processor {
                     my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - %prm<caption>.chars ) div 2;
                     my $row-shift = $cap-shift < 0 ?? - $cap-shift !! 0;
                     $cap-shift = 0 if $cap-shift < 0;
-                    PStr.new: "\n\t" ~ ' ' x $cap-shift ~ %prm<caption> ~ "\n\t" ~
-                        ' ' x $cap-shift ~ '-' x %prm<caption>.chars ~ "\n" ~
+                    PStr.new: $del ~ "\n\t" ~ ' ' x $cap-shift ~ DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n\t" ~
                         "\t" ~ ' ' x $row-shift ~ '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n" ~
                         %prm<rows>.map({
                             "\t" ~ ' ' x $row-shift ~ '| ' ~ $_.join(' | ') ~ " |\n"
@@ -1740,37 +1853,39 @@ class RakuDoc::Processor {
             },
             #| renders =custom block
             custom => -> %prm, $tmpl {
-                PStr.new: %prm<caption> ~ "\n" ~
-                '-' x %prm<caption>.chars ~ "\n" ~
+                my $del = '';
+                if %prm<delta> {
+                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
+                }
+                PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                $del ~
                 %prm<raw> ~ "\n\n"
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                PStr.new: "\n\nUNKNOWN\n" ~
-                '-' x 7 ~ "\n" ~
+                PStr.new: DBL-UNDERLINE-ON ~ 'UNKNOWN' ~ DBL-UNDERLINE-OFF ~
                 %prm<contents> ~ "\n\n"
             },
             #| special template to encapsulate all the output to save to a file
             final => -> %prm, $tmpl {
                 ( %prm<rendered-toc> ??
-                 ( %prm<rendered-toc> ~ "\n" ~ '=' x WIDTH ~ "\n")
-                 !! ''
-                ) ~
-                %prm<title> ~ "\n" ~ ('=' x %prm<title>.chars) ~ "\n" ~
-                (%prm<subtitle>:exists ?? (%prm<subtitle> ~ "\n" ~ ('-' x %prm<subtitle>.chars) ~ "\n") !! '') ~
-                %prm<body>.Str ~
-                %prm<footnotes>.Str ~
-                ( %prm<rendered-index>
-                    ?? ( "\n\n" ~ '=' x WIDTH ~ "\n" ~ %prm<rendered-index> ~ "\n" )
+                    ( %prm<rendered-toc> ~ "\n" ~ '=' x (%*ENV<WIDTH> // 80) ~ "\n")
                     !! ''
                 ) ~
-                "\x203b" x WIDTH ~
+                "\n" ~ CURL-UNDERLINE-ON ~ %prm<title> ~ CURL-UNDERLINE-OFF ~ "\n\n" ~
+                (%prm<subtitle> ?? ( %prm<subtitle> ~ "\n\n" ~ ('-' x (%*ENV<WIDTH> // 80) ) ~ "\n\n") !! '') ~
+                %prm<body>.Str ~ "\n" ~
+                %prm<footnotes>.Str ~ "\n" ~
+                ( %prm<rendered-index>
+                    ?? ( "\n\n" ~ '=' x (%*ENV<WIDTH> // 80) ~ "\n" ~ %prm<rendered-index> ~ "\n" )
+                    !! ''
+                ) ~
+                "\x203b" x ( %*ENV<WIDTH> // 80 ) ~
                 "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
-                "\n" ~ (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
+                (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
                 "\nSource last modified " ~ (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime) ~
-                "\n\n"~
-                "\x203b" x WIDTH ~ "\n" ~
-                %prm<warnings>
+                "\n\n" ~
+                (( "\x203b" x ( %*ENV<WIDTH> // 80 ) ~ "\n" ~ %prm<warnings> ) if %prm<warnings>)
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {
@@ -1780,9 +1895,8 @@ class RakuDoc::Processor {
             },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
-                PStr.new: %prm<caption>  ~ "\n"
-                ~ '-' x %prm<caption>.chars ~ "\n"
-                ~ ([~] %prm<toc-list>) ~ "\n\n"
+                PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                ([~] %prm<toc-list>) ~ "\n\n"
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
@@ -1803,14 +1917,13 @@ class RakuDoc::Processor {
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                PStr.new: %prm<caption> ~ "\n"
-                ~ '-' x %prm<caption>.chars ~ "\n"
-                ~ ([~] %prm<index-list>) ~ "\n\n"
+                PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n" ~
+                ([~] %prm<index-list>) ~ "\n\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
                 if %prm<footnotes>.elems {
-                PStr.new: "\nFootnotes\n" ~ '-' x 9 ~ "\n" ~
+                PStr.new: "\n" ~ DBL-UNDERLINE-ON ~ 'Footnotes' ~ DBL-UNDERLINE-OFF ~ "\n" ~
                     %prm<footnotes>.map({
                         FOOTNOTE-ON ~ $_.<fnNumber> ~ FOOTNOTE-OFF ~ '. ' ~ $_.<contents>.Str
                     }).join("\n") ~ "\n\n"
@@ -1819,8 +1932,11 @@ class RakuDoc::Processor {
             },
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
-                PStr.new: "WARNINGS\n" ~ '-' x 8 ~ "\n" ~
-                %prm<warnings>.kv.map({ $^a + 1 ~ ": $^b" }).join("\n") ~ "\n\n"
+                if %prm<warnings>.elems {
+                    PStr.new: DBL-UNDERLINE-ON ~ 'WARNINGS' ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                    %prm<warnings>.kv.map({ $^a + 1 ~ ": $^b" }).join("\n") ~ "\n\n"
+                }
+                else { '' }
             },
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
@@ -1882,27 +1998,39 @@ class RakuDoc::Processor {
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
 			markup-L => -> %prm, $tmpl {
-			    %prm<contents> ~
+			    LINK-TEXT-ON ~ %prm<link-label> ~ LINK-TEXT-OFF ~
 			    '[' ~
 			    ( given %prm<type> {
-			        when 'internal' { 'this location' }
-			        when 'external' { 'internet location' }
-			        when 'local' { 'this page' }
+			        when 'internal' { 'this page: ' }
+			        when 'external' { 'internet location: ' }
+			        when 'local' { 'this location (site): ' }
                 } ) ~
 			    LINK-ON ~ %prm<target> ~ LINK-OFF ~
 			    ']'
 			 },
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
             #| Placement link
-			markup-P => -> %prm, $tmpl { '' },
+			markup-P => -> %prm, $tmpl {
+			    given %prm<schema> {
+			        when 'defn' {
+			            BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ "\n\x29DB" ~
+			            DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
+			            "\n\x29DA"
+			        }
+			        default { %prm<contents> }
+			    }
+			},
 
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
-			markup-D => -> %prm, $tmpl {  %prm<contents>  },
+			markup-D => -> %prm, $tmpl {  BOLD-ON ~ %prm<contents> ~ BOLD-OFF },
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
-            markup-Δ => -> %prm, $tmpl { '' },
+            markup-Δ => -> %prm, $tmpl {
+                DEPR-TEXT-ON ~ %prm<meta> ~ DEPR-TEXT-OFF ~
+                '[ for ' ~ DEPR-ON ~ %prm<contents> ~ DEPR-OFF ~ ']'
+            },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
 			markup-M => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },

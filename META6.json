@@ -29,9 +29,9 @@
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
     "RakuDoc::ScopedData": "lib/RakuDoc/ScopedData.rakumod",
     "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",
+    "RakuDoc::To::Generic": "lib/RakuDoc/To/Generic.rakumod",
     "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
-    "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod",
-    "RakuDoc::To::TestText": "lib/RakuDoc/To/TestText.rakumod"
+    "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
   },
   "resources": [],
   "support": {
