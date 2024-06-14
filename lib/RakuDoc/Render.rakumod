@@ -93,7 +93,7 @@ class RakuDoc::Processor {
         $!current .= new(:%source-data, :$!output-format );
         $!register .= new;
         $!scoped-data .= new;
-#        $!scoped-data.debug = $!debug-modes{ Scoping };
+        $!scoped-data.debug = $!debug-modes{ Scoping }.so;
         my ProcessedState $*prs .= new;
         $ast.rakudoc.map( { $.handle( $_ ) } );
         $!current += $*prs;
