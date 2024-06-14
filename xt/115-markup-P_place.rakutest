@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-#plan 9;
+plan 11;
 
 my $ast;
 my $rv;
@@ -14,13 +14,14 @@ $ast = Q:scalar:to/QAST/.AST;
     P<file:$temp-dir/disclaimer.txt>
     =end rakudoc
     QAST
-#$rv = $rdp.render( $ast, :pre-finalised );
-#like $rv.body, /
-#    'Artistic License 2.0'
-#    /,'Got external link';
-#like $rv.body, /
-#    'ABSOLUTELY NO WARRANTY IS IMPLIED'
-#    /,'File contents slurped';
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body, /
+    'Artistic License 2.0'
+    /,'Got external link';
+like $rv.body, /
+    'ABSOLUTELY NO WARRANTY IS IMPLIED'
+    /,'File contents slurped';
 
 $ast = qq:to/QAST/.AST;
     =begin rakudoc
@@ -36,7 +37,7 @@ like $rv.body, /
     'Bad file'
     /,'Failed file';
 
-$ast = Q:scalar:to/QAST/.AST;
+$ast = Q:to/QAST/.AST;
     =begin rakudoc
     =head1 Head One
 
@@ -56,18 +57,55 @@ $ast = Q:scalar:to/QAST/.AST;
 
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-finalised );
-like $rv.body.Str, /
+$rv = $rdp.render( $ast );
+like $rv, /
     'rendered-index: ｢｣' .+
     'rendered-toc' .+ '<toc>' .+? '</toc>'
 /, 'got rendered toc, and no index because no X<>';
-like $rv.body.Str, /
-    '<rakudoc>'
-    .+ '<markup-P>'
-    .+ '<toc>' .+ '</toc>'
-    .+ '</markup-P>'
-    .+ '</rakudoc>'
-/, 'got a toc inside a placement, inside a rakudoc';
+like $rv, /
+    '<rakudoc>' .+
+    '<markup-P>' .+
+    '<toc>' .+?
+    '<toc-item>' .+ 'caption' .+ 'Head One' .+
+    '</toc>' .+
+    '</markup-P>' .+
+    '</rakudoc>'
+/, 'got a toc inside an inline placement, inside a rakudoc';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head1 Head QQQ
+
+    Some text
+
+    =place toc:*
+
+    More text
+
+    =head1 Head WWW
+
+    Again text
+
+    =head2 level two SSSS
+
+    Final stuff
+
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast );
+like $rv, /
+    'rendered-index: ｢｣' .+
+    'rendered-toc' .+ '<toc>' .+? '</toc>'
+/, 'got rendered toc, and no index because no X<>';
+like $rv, /
+    '<rakudoc>' .+
+    '<place>' .+
+    '<toc>' .+?
+    '<toc-item>' .+ 'caption' .+ 'Head QQQ' .+
+    '</toc>' .+
+    '</place>' .+
+    '</rakudoc>'
+/, 'got a toc inside a block placement, inside a rakudoc';
 $ast = Q:scalar:to/QAST/.AST;
     =begin rakudoc
     =head1 Head One

@@ -91,6 +91,9 @@ class RakuDoc::Processor {
     #| but returns ProcessedState object if pre-finalised = True
     multi method render( $ast, :%source-data, :pre-finalize(:$pre-finalised) = False ) {
         $!current .= new(:%source-data, :$!output-format );
+        $!register .= new;
+        $!scoped-data .= new;
+        $!scoped-data.debug = $!debug-modes{ Scoping };
         my ProcessedState $*prs .= new;
         $ast.rakudoc.map( { $.handle( $_ ) } );
         $!current += $*prs;
