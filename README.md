@@ -45,7 +45,7 @@ Other modules are also documented:
 *  [an object for numerating items headings](Numeration.md)
 
 # RenderTextify utility
-The utility `bin/RenderTexify` can be called with a RakuDoc source and it extracts information about the file, such as its name and modification date, which are included in the rendered output. The Rakudo compiler only provides the AST to the render method, so a filename cannot be included in the output.
+The utility `bin/RenderTexify` can be called with a RakuDoc source and it saves the result directly to a file, rather than to STDOUT.
 
 For example, bin/RenderTextify rakudociem-ipsum
 
@@ -81,4 +81,4 @@ Then try running the same command but without 'RAKUDO_RAKUAST=1'
 
 
 ----
-Rendered from README at 2024-06-14T08:54:29Z
+Rendered from README at 2024-06-14T16:14:55Z

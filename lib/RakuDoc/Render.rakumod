@@ -95,7 +95,13 @@ class RakuDoc::Processor {
         $!scoped-data .= new;
         $!scoped-data.debug = $!debug-modes{ Scoping }.so;
         my ProcessedState $*prs .= new;
-        $ast.rakudoc.map( { $.handle( $_ ) } );
+        if $ast ~~ RakuAST::StatementList {
+            $ast.rakudoc.map( { $.handle( $_ ) } )
+        }
+        elsif $ast ~~ List {
+            $ast.map( { $.handle( $_ ) } )
+        }
+        else { return 'Unknown type of AST' }
         $!current += $*prs;
         # neither of the approaches below allow for multi-threading.
         # both fail on xt/055-debug-vals, and -simple-render.
@@ -1891,7 +1897,7 @@ class RakuDoc::Processor {
                 ) ~
                 "\x203b" x ( %*ENV<WIDTH> // 80 ) ~
                 "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
-                (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
+                (sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
                 "\nSource last modified " ~ (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime) ~
                 "\n\n" ~
                 (( "\x203b" x ( %*ENV<WIDTH> // 80 ) ~ "\n" ~ %prm<warnings> ) if %prm<warnings>)
