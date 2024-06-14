@@ -1640,7 +1640,7 @@ class RakuDoc::Processor {
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
-            #| renders implict code from an indented paragraph
+            #| renders implicit code from an indented paragraph
             implicit-code => -> %prm, $tmpl {
                 my $del = '';
                 if %prm<delta> {
@@ -1704,7 +1704,7 @@ class RakuDoc::Processor {
                 "\n" ~ $del
             },
             #| renders the numeration part for a toc
-            toc-numeration => -> %prm, %tmpl { %prm<contents> },
+            toc-numeration => -> %prm, $tmpl { %prm<contents> },
             #| renders =defn block
             defn => -> %prm, $tmpl {
                 BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
@@ -1713,11 +1713,12 @@ class RakuDoc::Processor {
             #| renders =numdefn block
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
+            #| special template to render a numbered defn list data structure
             numdefn => -> %prm, $tmpl {
                 BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
                 "\t" ~ %prm<contents> ~ "\n"
             },
-            #| special template to render a numbered defn list data structure
+            #| special template to render a numbered item list data structure
             numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {

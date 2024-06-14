@@ -5,6 +5,9 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
     exit note "Could not find $module" unless $module.IO ~~ :e & :f;
     exit note "No directory $dest" unless $dest.IO ~~ :e & :d;
 
+    use lib 'lib';
+    use RakuDoc::Render;
+    my %check = RakuDoc::Processor.new.default-text-templates.keys;
     my %data;
     my Bool $code = False;
     my $ln;
@@ -34,11 +37,12 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
             @desc.push: $/.postmatch.subst(/ '|' /, '&#124;', :g);
         }
     }
+    say "Keys in check, not in data: ", %check.keys (-) %data.keys if %check.keys (-) %data.keys;
     my $rakudoc = qq:to/HEAD/;
         =begin rakudoc
         =TITLE Templates in C\<{ $method }>
         =SUBTITLE Auto generated from C\<{ $module }>
-        =begin table
+        =begin table :caption<Documentation of default templates >
             =row :header
                 =cell Name
                 =cell Description
@@ -51,17 +55,22 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
 
         if $span == 1 {
             $name-part = "=for cell \:label\n\t\t$name";
-            $desc-part = "=cell V\«{ $descs[0] }»";
+            if @des[0] {
+                $desc-part = "=cell V\«{ @des[0] }»";
+            }
+            else {
+                $desc-part = "=cell B<I<No documentation for this template>>"
+            }
         }
         else {
             $name-part = "=column\n\t\t\t=for cell \:label \:row-span($span)\n\t\t\t$name";
             $desc-part = "=column\n\t\t\t" ~ (gather for @des.list { take "=cell V\«$_»" }).join("\n\t\t\t");
+        }
         $rakudoc ~= qq:to/ROW/;
                 =row
                     $name-part
                     $desc-part
             ROW
-        }
     }
     $rakudoc ~= q:to/END/;
         =end table
