@@ -14,9 +14,11 @@ Two other formats, namely HTML and MarkDown, are (to be) provided in the distrib
 The cannonical method for generating rendered text is possible, namely
    RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc
 
-The file C<rakudociem-ipsum.rakudoc> is the file for testing RakuDoc v2 compliance.
+The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc>
+is the file for testing RakuDoc v2 compliance.
 
-Several problems L<are currently typical|#Troubleshooting>.
+Another (easier?) way to render a RakuDoc file is L<RenderTextify|RenderTextify utility>, which avoids some problems
+(L<more detail below|#Troubleshooting>) and gives a title and date to the output.
 
 The two main documentation sources are:
 =item L<An overview of the generic renderer|Render>
@@ -29,6 +31,40 @@ Other modules are also documented:
 =item L<a table of the minimum set of templates to render any RakuDoc source|default-text-templates>
 =item L<a grammar for parsing the meta data of a Markup code|MarkUpMeta>
 =item L<an object for numerating items headings|Numeration>
+
+
+=head1 RenderTextify utility
+
+The utility C<bin/RenderTexify> can be called with a RakuDoc source and it extracts
+information about the file, such as its name and modification date, which are included
+in the rendered output. The Rakudo compiler only provides the AST to the render method,
+so a filename cannot be included in the output.
+
+For example,
+    bin/RenderTextify rakudociem-ipsum
+
+will produce the file
+    rakudociem-ipsum.rakudoc.text
+
+The executable C<bin/RenderTexify> can also be called with the flags C<test> and C<pretty>
+and the name of a file to render. The file is output to text files with the flag and C<.text>
+appended to the name. The file format C<.rakudoc> is assumed, and added if missing.
+
+For example,
+    bin/RenderTextify --pretty rakudociem-ipsum
+
+will produce the file
+    rakudociem-ipsum.rakudoc.pretty.text
+
+By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped.
+For example,
+    POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
+
+If the environment variable WIDTH is also set, the text output will be
+wrapped to the value.
+
+WIDTH by default is set at 80 chars. To set at 70, use:
+    POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
 
 =head1 Troubleshooting
 

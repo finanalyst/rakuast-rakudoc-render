@@ -170,6 +170,7 @@ class RakuDoc::Processor {
     #| Use case: change targets to line numbers in a text output
     #| It should be overridden in subclasses for other outputs
     method post-process( Str:D $final --> Str ) {
+        return $final unless (%*ENV<POSTPROCESSING>:exists and %*ENV<POSTPROCESSING> == 1);
         my $width = %*ENV<WIDTH> // 80; #$!current.source-data<line-width> // 80;
         my $end-zone = %*ENV<LINE-WIDTH> // 6;#$!current.source-data<line-width> // 6;
         $width = 80 if $width < $end-zone;
@@ -1831,24 +1832,28 @@ class RakuDoc::Processor {
                         }
                     }
                     my $cap-shift = ( $table-wid - %prm<caption>.chars ) div 2;
-                    my $row-shift = $cap-shift < 0 ?? - $cap-shift !! 0;
-                    $cap-shift = 0 if $cap-shift < 0;
+                    my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
+                    $cap-shift = 0 if $cap-shift <= 0;
                     PStr.new: $del ~
-                        "\n\t" ~ ' ' x $cap-shift ~ DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n\t" ~
+                        "\n" ~ ' ' x $cap-shift ~ DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n" ~
                         @rendered-grid.map({
-                        "\t" ~ ' ' x $row-shift ~ '| ' ~ $_.grep( *.isa(Str) ).join('') ~ "\n"
-                        }) ~ "\n\n"
+                        ' ' x $row-shift ~ '| ' ~ $_.grep( *.isa(Str) ).join('') ~ "\n"
+                        }).join('') ~ "\n\n"
                    ;
                 }
                 else {
                     my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - %prm<caption>.chars ) div 2;
-                    my $row-shift = $cap-shift < 0 ?? - $cap-shift !! 0;
-                    $cap-shift = 0 if $cap-shift < 0;
-                    PStr.new: $del ~ "\n\t" ~ ' ' x $cap-shift ~ DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n\t" ~
-                        "\t" ~ ' ' x $row-shift ~ '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n" ~
+                    my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
+                    $cap-shift = 0 if $cap-shift <= 0;
+                    PStr.new: $del ~ "\n" ~
+                        ' ' x $cap-shift ~
+                        DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n" ~
+                        ' ' x $row-shift ~
+                        '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n" ~
                         %prm<rows>.map({
-                            "\t" ~ ' ' x $row-shift ~ '| ' ~ $_.join(' | ') ~ " |\n"
-                        }) ~ "\n\n"
+                            ' ' x $row-shift ~
+                            '| ' ~ $_.join(' | ') ~ " |\n"
+                        }).join('') ~ "\n\n"
                 }
             },
             #| renders =custom block

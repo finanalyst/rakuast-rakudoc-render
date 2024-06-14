@@ -13,7 +13,7 @@
 [Global data accessible in templates](#global-data-accessible-in-templates)  
 [Debugging](#debugging-0)  
 [Debug options](#debug-options)  
-[Utility executable](#utility-executable)  
+[Environment variables](#environment-variables-0)  
 
 ----
 # Overview
@@ -26,6 +26,8 @@ The aim is for a **RakuDoc::Processor** object (an **RPO**) to be as generic as 
 An **RPO** relies on [Templates](Templates.md), [PromiseStrings](PromiseStrings.md), and [ScopedData](ScopedData.md).
 
 It is also necessary to have a good understanding of RakuDoc v2.
+
+Some [environment variables](environment-variables) provide for some output control.
 
 The following describes choices that are left by RakuDoc v2 to the renderer.
 
@@ -182,18 +184,14 @@ The Test and Pretty options described in [the Templates documentation](Templates
 
 Bear in mind that the **pretty** flag overrides the **test** flag, and both override the **debug** and **verbose** flags.
 
-# Utility executable
-The executable `bin/RenderTexify` can be called with the flags `test` and `pretty` and the name of a file to render. The file is output to text files with the flag and `.text` appended to the name. The file format `.rakudoc` is assumed, and added if missing.
+# Environment variables
+By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped.
 
-Eg,
+For example, POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
 
-bin/RenderTextify --pretty rakudoiem-ipsum
+If the environment variable WIDTH is also set, the text output will be wrapped to the value.
 
-will produce the file rakudociem-ipsum.rakudoc.pretty.text
-
-while without a flag, the default Text templates are used. bin/RenderTextify rakudociem-ipsum
-
-produces rakudociem-ipsum.rakudoc.text
+WIDTH by default is set at 80 chars. To set at 70, use: POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
 
 
 
@@ -202,4 +200,4 @@ produces rakudociem-ipsum.rakudoc.text
 
 
 ----
-Rendered from Render at 2024-06-13T22:00:03Z
+Rendered from Render at 2024-06-14T08:54:28Z

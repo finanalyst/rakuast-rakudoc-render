@@ -20,6 +20,9 @@ and L<ScopedData|ScopedData>.
 
 It is also necessary to have a good understanding of RakuDoc v2.
 
+Some L<environment variables|#Environment variables> provide for some
+output control.
+
 The following describes choices that are left by RakuDoc v2 to the renderer.
 
 =head2 Templates
@@ -198,29 +201,17 @@ be set on an B<RPO>, eg.
 Bear in mind that the B<pretty> flag overrides the B<test> flag, and both override the
 B<debug> and B<verbose> flags.
 
-=head1 Utility executable
+=head1 Environment variables
 
-The executable C<bin/RenderTexify> can be called with the flags C<test> and C<pretty>
-and the name of a file to render. The file is output to text files with the flag and C<.text>
-appended to the name. The file format C<.rakudoc> is assumed, and added if missing.
+By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped.
 
-Eg,
+For example,
+    POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
 
-    bin/RenderTextify --pretty rakudoiem-ipsum
-
-will produce the file
-    rakudociem-ipsum.rakudoc.pretty.text
-
-while without a flag, the default Text templates are used.
-    bin/RenderTextify rakudociem-ipsum
-
-produces
-    rakudociem-ipsum.rakudoc.text
-
-If the environment variable WIDTH is set, the text output will be
+If the environment variable WIDTH is also set, the text output will be
 wrapped to the value.
 
 WIDTH by default is set at 80 chars. To set at 70, use:
-    WIDTH=70 bin/RenderTextify rakudociem-ipsum
+    POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
 
 =end rakudoc
