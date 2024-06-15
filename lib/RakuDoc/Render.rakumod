@@ -1523,7 +1523,10 @@ class RakuDoc::Processor {
     #| get config merged from the ast and scoped data
     #| handle generic metadata options such as delta
     method merged-config( $ast, $block-name --> Hash ) {
-        my %config = $ast.resolved-config with $ast;
+        my %config;
+        %config = $ast.resolved-config with $ast;
+#        say "@ $?LINE ast ", $ast if $ast and $ast.type and $ast.type eq 'item';
+#        say "@ $?LINE merged config ", %config if $ast and $ast.type and $ast.type eq 'item';
         my %scoped = $!scoped-data.config;
         %scoped{ $block-name }.pairs.map({
             %config{ .key } = .value unless %config{ .key }:exists
@@ -1635,7 +1638,7 @@ class RakuDoc::Processor {
 
     #| returns a set of text templates
     multi method default-text-templates {
-        my @bullets = <<\x2219 \x2022 \x25b9 \x2023 \x2043>> ;
+        my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
         %(
             #| special key to name template set
             _name => -> %, $ { 'default text templates' },
@@ -1655,7 +1658,7 @@ class RakuDoc::Processor {
                 if %prm<delta> {
                     $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
                 }
-                PStr.new: $del ~ %prm<delta> ~ "\n  --- code --- \n"
+                PStr.new: $del ~ "\n  --- code --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
@@ -1732,13 +1735,14 @@ class RakuDoc::Processor {
             #| renders =item block
             item => -> %prm, $tmpl {
                 my $num = %prm<level> - 1;
+                my $indent = ' ' x %prm<level>;
                 $num = @bullets.elems - 1 if $num >= @bullets.elems;
                 my $bullet = %prm<bullet> // @bullets[ $num ];
-                $bullet ~ ' ' ~ %prm<contents> ~ "\n"
+                $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "\n"
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
-                "\n" ~ [~] %prm<item-list>
+                [~] %prm<item-list>
             },
             #| renders =numitem block
             numitem => -> %prm, $tmpl {
@@ -1746,14 +1750,16 @@ class RakuDoc::Processor {
             },
             #| special template to render a numbered item list data structure
             numitem-list => -> %prm, $tmpl {
-                "\n" ~ [~] %prm<numitem-list>
+                [~] %prm<numitem-list>
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
                 PStr.new: "\t" ~ %prm<contents> ~ "\n\n"
             },
             #| renders =para block
-            para => -> %prm, $tmpl { %prm<contents> ~ "\n\n" },
+            para => -> %prm, $tmpl {
+                PStr.new: %prm<contents> ~ "\n\n"
+            },
             #| renders =place block
             place => -> %prm, $tmpl {
                 my $del = '';
