@@ -406,9 +406,7 @@ class RakuDoc::Processor {
         given $letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
-            ## E is not format code, but we can ignore display possibility
-            # Eat space inside markup
-            when any( <B H I J K R T U O E> ) {
+            when any( <B H I J K R T U O> ) {
                 my $contents = self.markup-contents($ast);
                 $*prs.body ~= %!templates{"markup-$letter"}(
                     %( :$contents, %config )
@@ -486,6 +484,13 @@ class RakuDoc::Processor {
             # E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             # Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
             # included with format codes
+            when 'E' {
+                my $contents = $ast.meta.map(*.values).join;
+                $*prs.body ~= %!templates<markup-E>(
+                    %( :$contents, %config )
+                );
+            }
+
 
             # F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             # Formula inline content ( F<ALT|LaTex notation> )
@@ -1524,7 +1529,7 @@ class RakuDoc::Processor {
     #| handle generic metadata options such as delta
     method merged-config( $ast, $block-name --> Hash ) {
         my %config;
-        %config = $ast.resolved-config with $ast;
+        %config = .resolved-config with $ast;
 #        say "@ $?LINE ast ", $ast if $ast and $ast.type and $ast.type eq 'item';
 #        say "@ $?LINE merged config ", %config if $ast and $ast.type and $ast.type eq 'item';
         my %scoped = $!scoped-data.config;
@@ -1534,8 +1539,8 @@ class RakuDoc::Processor {
         if %config<delta>:exists {
             my $contents = %config<delta>:delete;
             my $meta;
-            if $contents ~~ / ('v' \S+) \s* '|'? ( .*? ) $ / {
-                %config<delta> = ~$0, ~$1
+            if $contents.join(' ') ~~ / (<-[|]>+) '|'? ( .* ) $ / {
+                %config<delta> = ~$0.trim, ~$1.trim
             }
             else {
                 $*prs.warnings.push: "The delta option is ignored because it must have the form / 'v' \\S+ \\s* (['|'] .+)? \$ / ｢{ ~$ast.DEPARSE }｣"
@@ -1691,7 +1696,7 @@ class RakuDoc::Processor {
                 if %prm<delta> {
                     $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
                 }
-                "\n\n" ~ %prm<delta> ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ %prm<caption> ~  DBL-UNDERLINE-OFF ~ "\n\n" ~
+                "\n" ~ %prm<delta> ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ %prm<caption> ~  DBL-UNDERLINE-OFF ~ "\n\n" ~
                 $del ~ %prm<formula> ~ "\n\n"
             },
             #| renders =head block
@@ -1701,7 +1706,7 @@ class RakuDoc::Processor {
                 if %prm<delta> {
                     $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
                 }
-                "\n\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~
+                "\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~
                 "\n" ~ $del
             },
             #| renders =numhead block
@@ -1712,7 +1717,7 @@ class RakuDoc::Processor {
                 }
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
                 my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
-                "\n\n" ~ ' ' x $indent ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  DBL-UNDERLINE-OFF ~
+                "\n" ~ ' ' x $indent ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  DBL-UNDERLINE-OFF ~
                 "\n" ~ $del
             },
             #| renders the numeration part for a toc
@@ -1724,14 +1729,14 @@ class RakuDoc::Processor {
             },
             #| renders =numdefn block
             #| special template to render a defn list data structure
-            defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
+            defn-list => -> %prm, $tmpl { [~] %prm<defn-list> },
             #| special template to render a numbered defn list data structure
             numdefn => -> %prm, $tmpl {
                 BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
                 "\t" ~ %prm<contents> ~ "\n"
             },
             #| special template to render a numbered item list data structure
-            numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
+            numdefn-list => -> %prm, $tmpl { [~] %prm<numdefn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
                 my $num = %prm<level> - 1;
@@ -1788,18 +1793,21 @@ class RakuDoc::Processor {
                 if %prm<delta> {
                     $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
                 }
-                "\n\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                "\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~ "\n" ~
                 $del ~
-                %prm<contents> ~"\n\n"
+                %prm<contents> ~ "\n"
             },
             #| renders =pod block
             pod => -> %prm, $tmpl { %prm<contents> },
             #| renders =table block
             table => -> %prm, $tmpl {
+                use Text::MiscUtils::Layout;
                 my $del = '';
                 if %prm<delta> {
                     $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
                 }
+                my $caption = DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF;
+                my $cap-width = duospace-width($caption);
                 if %prm<procedural> {
                     # calculate column widths naively, will include possible markup, and
                     # will fail if embedded tables
@@ -1809,7 +1817,7 @@ class RakuDoc::Processor {
                     for %prm<grid>.list -> @row {
                         for @row.kv -> $n, %cell {
                             next if %cell<no-cell>;
-                            $wid = %cell<data>.Str.chars + 2;
+                            $wid = duospace-width(%cell<data>.Str) + 2;
                             @col-wids[$n] = $wid if $wid > (@col-wids[$n] // 0)
                         }
                     }
@@ -1820,8 +1828,8 @@ class RakuDoc::Processor {
                         $col-count = 0;
                         for @row.kv -> $n, %cell {
                             next if %cell<no-cell>;
-                            my $data = %cell<data>.Str;
-                            my $chars = $data.subst(/ "\x1B".+?'m' /,'',:g).chars;
+                            my $data = %cell<data>.Str.trim;
+                            my $chars = duospace-width($data);
                             my $col-wid = @col-wids[$n];
                             if %cell<span>:exists {
                                 #for the col-span
@@ -1847,23 +1855,23 @@ class RakuDoc::Processor {
                                 ~ ' ' x $post ~ ' |';
                         }
                     }
-                    my $cap-shift = ( $table-wid - %prm<caption>.chars ) div 2;
+                    my $cap-shift = ( $table-wid - $cap-width ) div 2;
                     my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
                     $cap-shift = 0 if $cap-shift <= 0;
                     PStr.new: $del ~
-                        "\n" ~ ' ' x $cap-shift ~ DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n" ~
+                        "\n" ~ ' ' x $cap-shift ~ $caption ~"\n" ~
                         @rendered-grid.map({
                         ' ' x $row-shift ~ '| ' ~ $_.grep( *.isa(Str) ).join('') ~ "\n"
                         }).join('') ~ "\n\n"
                    ;
                 }
                 else {
-                    my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - %prm<caption>.chars ) div 2;
+                    my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - $cap-width ) div 2;
                     my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
                     $cap-shift = 0 if $cap-shift <= 0;
-                    PStr.new: $del ~ "\n" ~
+                    PStr.new: $del ~
                         ' ' x $cap-shift ~
-                        DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n" ~
+                        $caption ~ "\n" ~
                         ' ' x $row-shift ~
                         '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n" ~
                         %prm<rows>.map({
@@ -1894,7 +1902,7 @@ class RakuDoc::Processor {
                     !! ''
                 ) ~
                 "\n" ~ CURL-UNDERLINE-ON ~ %prm<title> ~ CURL-UNDERLINE-OFF ~ "\n\n" ~
-                (%prm<subtitle> ?? ( %prm<subtitle> ~ "\n\n" ~ ('-' x (%*ENV<WIDTH> // 80) ) ~ "\n\n") !! '') ~
+                (%prm<subtitle> ?? ( %prm<subtitle> ~ "\n\n" ) !! '') ~
                 %prm<body>.Str ~ "\n" ~
                 %prm<footnotes>.Str ~ "\n" ~
                 ( %prm<rendered-index>

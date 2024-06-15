@@ -93,7 +93,12 @@ class PStr {
     #| trims any white space from the end string, if any
     method trim-trailing {
         $.strip;
-        @!string[* - 1] .= trim-trailing if @!string[* - 1] ~~ Str;
+        if @!string.elems == 1 {
+            @!string[0].trim-trailing if @!string[0] ~~ Str
+        }
+        elsif @!string.elems > 1 {
+            @!string[* - 1] .= trim-trailing if @!string[* - 1] ~~ Str;
+        }
         self
     }
     #| trims any white space from the end string, if any

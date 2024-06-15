@@ -1,7 +1,6 @@
 # list of things to do
 
 - [ ] Templates
-  - [x] text only
   - [ ] MarkDown, different id naming conventions
   - [ ] HTML, need to add CSS and Javascript
   - [ ] Epub, need to add extra metadata pages 
@@ -11,9 +10,8 @@
   - [ ] :numberalias
 - [ ] Fix Generic renderer
   - [ ] P<> toc: schema envisages short forms, such as toc:1,2
-  - [ ] There is an error in the tests for P<>. It does not seem to affect rendering
 - [ ] Fix default text templates
-  - [ ] text form of 'nested' does not uniformly indent lines
+  - [ ] improve wrapping postprocessing
   - [ ] when lines are wrapped, Esc codes 'leak' accross line boundaries
   - [ ] Esc chars are counted as if visible, but should not for wrapping
   - [ ] Replace Section names in Index and ToC with line numbers
