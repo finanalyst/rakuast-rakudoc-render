@@ -18,11 +18,15 @@ This module is intended to provide a generic renderer from RakuDoc v2 into text,
 
 Two other formats, namely HTML and MarkDown, are (to be) provided in the distribution.
 
-The cannonical method for generating rendered text is possible, namely RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc
+This is software using bleeding edge Rakudo, so look ([at troubleshooting below](troubleshooting)).
 
-The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance.
+The canonical method for generating rendered text is possible (which sends output to STDOUT, so pipe to a file), namely RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
-Another (easier?) way to render a RakuDoc file is [RenderTextify](RenderTextify utility.md), which avoids some problems ([more detail below](troubleshooting)) and gives a title and date to the output.
+The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. It can be obtained with: bin/get-compliance-document
+
+Another (easier?) way to render a RakuDoc file is using [RenderTextify](RenderTextify utility.md), which avoids some installation problems, stores the output and offers some other output options, eg. bin/RenderTextify rakudociem-ipsum
+
+(the .rakudoc extension may be omitted if desired)
 
 The two main documentation sources are:
 
@@ -57,22 +61,26 @@ For example, bin/RenderTextify --pretty rakudociem-ipsum
 
 will produce the file rakudociem-ipsum.rakudoc.pretty.text
 
-By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped. For example, POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
+By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped. This option is still being developed.
+
+For example, POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
 
 If the environment variable WIDTH is also set, the text output will be wrapped to the value.
 
 WIDTH by default is set at 80 chars. To set at 70, use: POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
 
 # Troubleshooting
-In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recent version of the Rakudoc compiler is needed: $ raku -v Welcome to Rakudo™ v2024.05-27-g46511d59c. Implementing the Raku® Programming Language v6.d. Built on MoarVM version 2024.05-5-gf48abb710.
+In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recent version of the Rakudoc compiler is needed: $ raku -v Welcome to Rakudo™ v2024.05-32-g5b44a64b2. Implementing the Raku® Programming Language v6.d. Built on MoarVM version 2024.05-5-gf48abb710.
 
 If the cannonical command above fails, perhaps with a message such as ===SORRY!=== This element has not been resolved. Type: RakuAST::Type::Simple
 
-but there is a local version of `RakuDoc::To::Generic` available, then try RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc
+but there is a local version of `RakuDoc::To::Generic` available, then try RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
 If the command above generates an error, such as ===SORRY!=== Error while compiling ...FCE553 (OO::Monitors) Variable '$cond' is not declared. Perhaps you forgot a 'sub' if this was intended to be part of a signature? at ...FCE553 (OO::Monitors):101 ------> macro wait-condition(⏏$cond) is export {
 
-Then try running the same command but without 'RAKUDO_RAKUAST=1'
+Then try running the same command but without 'RAKUDO_RAKUAST=1'. Expect errors because the current production version of Rakudo does not allow for extensive Unicode entities.
+
+Then run the command again but with 'RAKUDO_RAKUAST=1'.
 
 
 
@@ -81,4 +89,4 @@ Then try running the same command but without 'RAKUDO_RAKUAST=1'
 
 
 ----
-Rendered from README at 2024-06-14T16:14:55Z
+Rendered from README at 2024-06-15T15:02:32Z

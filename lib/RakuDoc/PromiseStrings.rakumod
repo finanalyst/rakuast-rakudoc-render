@@ -1,7 +1,6 @@
 use v6.d;
-use OO::Monitors;
 
-monitor CompletedCells {
+class CompletedCells {
     has %.cell-list;
     method add-payload( :$payload, :$id ) {
         %!cell-list{ $id } = $payload;

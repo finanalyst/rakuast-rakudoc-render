@@ -1,3 +1,4 @@
+#!/usr/bin/env raku
 use v6.d;
 'rakudociem-ipsum.rakudoc'.IO.unlink if 'rakudociem-ipsum.rakudoc'.IO ~~ :e & :f;
 'wget-log'.IO.unlink if 'wget-log'.IO ~~ :e & :f;
