@@ -42,7 +42,6 @@ Assuming a new renderer has been developed and installed (eg using [3mzef[23m)
 
 
 [21m[1mPurpose [22m[24m
-
 This file is intended to prove a RakuDoc v2 renderer. It can be used in several ways: 
 
  • to generate the AST representation of all the RakuDoc components in the specification 
@@ -103,17 +102,15 @@ Scoping examples
 
 
 [21m[1mThis is a first heading [22m[24m
-
 text 
 
 
   [21m[1mThis is a second level heading [22m[24m
-
 text 
 
 
     [21m[1mThis is third level heading [22m[24m
-[48;5;216m[38;5;0mdevelopers can note deprecated things[39;49m for [38;5;196m[48;5;0mv2[39;49m
+[48;5;216m[38;5;0mdevelopers can note deprecated things[39;49m for [38;5;196m[48;5;216mv2[39;49m
 
 A paragraph to illustrate [1mBasis type[22m formatting. 
 
@@ -139,7 +136,7 @@ A paragraph to illustrate [5mReplacement[25m formatting.
 
 A paragraph to illustrate [48;5;6mTerminal[39;49m formatting. 
 
-A paragraph to illustrate several G<G undefined type>, Q<Q undefined type>, W<W undefined type>, Y<Y undefined type> formatting; warnings are expected. 
+A paragraph to illustrate several [38;5;117m[48;5;0mG<G undefined type>[39;49m, [38;5;117m[48;5;0mQ<Q undefined type>[39;49m, [38;5;117m[48;5;0mW<W undefined type>[39;49m, [38;5;117m[48;5;0mY<Y undefined type>[39;49m formatting; warnings are expected. 
 
 Various entities are possible such as « or the same thing using unicode «. Entities can be double unicodes, such as 🇺🇦, which is the Ukrainian flag. 
 
@@ -149,7 +146,7 @@ This is an example of an Alias where A<DECLARATION> was replaced by the contents
 
 We can also make an inline [1mdefinition[22m. This whole paragraph will be referenced later. 
 
-A developer note [48;5;216m[38;5;0mcan be attached[39;49m[ for [38;5;196m[48;5;0mv1.2.3 ^.. v2.0.0[39;49m] to text. A renderer may show the text or only show it for contexts compliant with the version. 
+A developer note [48;5;216m[38;5;0mcan be attached[39;49m[ for [38;5;196m[48;5;216mv1.2.3 ^.. v2.0.0[39;49m] to text. A renderer may show the text or only show it for contexts compliant with the version. 
 
 But a note without meta  is ignored and a warning generated. 
 
@@ -173,42 +170,34 @@ Good text will contain [7melements to be placed[27m in an index. The index has
 
 
 [21m[1m1. This is a numbered heading, level 1 [22m[24m
-
 text 
 
 
   [21m[1m1.1. This is a second level heading [22m[24m
-
 text 
 
 
     [21m[1m1.1.1. A third level [22m[24m
-
 text 
 
 
     [21m[1m1.1.2. Another third level [22m[24m
-
 text 
 
 
   [21m[1m1.2. Back to second [22m[24m
-
 text 
 
 
     [21m[1m1.2.1. A third level [22m[24m
-
 Although this heading has the same text in the heading, the Table of Contents should provide a unique target for it (this may not be possible in some formats such as MarkDown) 
 
 
     [21m[1m1.2.2. Another third level [22m[24m
-
 text 
 
 
 [21m[1mLists [22m[24m
-
 Unnumbered up to four levels of bulleting are required, a renderer can offer more. 
 
  • The start of a unnumbered item list 
@@ -266,7 +255,6 @@ An ordinary paragraph creates the definition list.
 	Claim you are the victim here 
 
   [21m[1mTaking a bullet [22m[24m
-
 The project originally consisted of five phases, of which two are already complete and two have been abandoned: 
 
  • Investigate existing solutions 
@@ -285,7 +273,6 @@ The major sources of sustainable energy are:
 
 
 [21m[1mBlocks that are processed differently [22m[24m
-
 
   --- code --- 
 my $x = 2;
@@ -353,7 +340,6 @@ You are reminded that: Do not consider this a disquisition of possible combinati
 
 
 [21m[1mSome tables [22m[24m
-
         [21mA visual table[24m
 | [1mAnimal[22m | [1mLegs[22m | [1m   Eats[22m |
 | Zebra  |   4  | Cookies |
@@ -380,12 +366,10 @@ You are reminded that: Do not consider this a disquisition of possible combinati
 
 
 [21m[1mAdding index entries to your text [22m[24m
-
 An [7mindex entry[27m is an inline [7mformatting code[27m that is rendered normally (i.e. with no special identifying styling) within the text, but which is also added to the [7mindex[27m. [7mIndex entries[27m may be specified with [7msubentries[27m, including [7mmultilevel subentries[27m, though a renderer is not required to represent anything more than the [7mfirst level[27m. A single index entry can specify [7mtwo or more separate entries in the index[27m, all of which will refer back to the same point in the text. 
 
 
 [21m[1mScoping examples [22m[24m
-
 Configuration and aliases are scoped. 
 
 Without configuration [7membedded B<markup> is rendered[27m verbatim. 
@@ -426,8 +410,8 @@ Text finishes.
 
 
 ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-Rendered from rakudociem-ipsum.rakudoc/rakudociem-ipsum.rakudoc at 21:07 UTC on 2024-06-15
-Source last modified at 16:42 UTC on 2024-06-15
+Rendered from rakudociem-ipsum.rakudoc/rakudociem-ipsum.rakudoc at 17:51 UTC on 2024-06-16
+Source last modified at 17:37 UTC on 2024-06-16
 
 ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
 [21mWARNINGS[24m

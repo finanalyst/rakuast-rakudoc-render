@@ -704,7 +704,7 @@ class RakuDoc::Processor {
             ## Undefined and reserved, so generate warnings
             # do not go through templates as these cannot be redefined
             when any(<G Q W Y>) {
-                $*prs.body ~= $ast.DEPARSE;
+                $*prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
                 $*prs.warnings.push:
                     "｢$letter｣ is not defined, but is reserved for future use"
                         ~ " in block ｢$context｣ with heading ｢$place｣."
@@ -716,13 +716,13 @@ class RakuDoc::Processor {
                 );
             }
             when (.uniprop ~~ / Lu /) {
-                $*prs.body ~= $ast.DEPARSE;
+                $*prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
                 $*prs.warnings.push:
                     "｢$letter｣ does not have a template, but could be a custom code"
                         ~ " in block ｢$context｣ with heading ｢$place｣."
             }
             default {
-                $*prs.body ~= $ast.DEPARSE;
+                $*prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
                 $*prs.warnings.push: "｢$letter｣ may not be a markup code"
                         ~ " in block ｢$context｣ with heading ｢$place｣."
             }
@@ -1538,15 +1538,13 @@ class RakuDoc::Processor {
         });
         if %config<delta>:exists {
             my $contents = %config<delta>:delete;
-            my $meta;
             if $contents.join(' ') ~~ / (<-[|]>+) '|'? ( .* ) $ / {
-                %config<delta> = ~$0.trim, ~$1.trim
+                %config<delta> = %!templates<delta>(%( :note( ~$1.trim), :versions(~$0.trim) ));
             }
             else {
                 $*prs.warnings.push: "The delta option is ignored because it must have the form / 'v' \\S+ \\s* (['|'] .+)? \$ / ｢{ ~$ast.DEPARSE }｣"
             }
         }
-        else { %config<delta> = () }
         %config
     }
 
@@ -1606,12 +1604,12 @@ class RakuDoc::Processor {
     my constant ITALIC-OFF = "\e[23m";
     my constant UNDERLINE-ON = "\e[4m";
     my constant UNDERLINE-OFF = "\e[24m";
-    my constant DBL-UNDERLINE-ON = "\e[21m";
-    my constant DBL-UNDERLINE-OFF = "\e[24m";
-    my constant CURL-UNDERLINE-ON = "\e[4:3m";
-    my constant CURL-UNDERLINE-OFF = "\e[4:0m";
-    my constant BLINK-ON = "\e[5m";
-    my constant BLINK-OFF = "\e[25m";
+    my constant HEADING-ON = "\e[21m";
+    my constant HEADING-OFF = "\e[24m";
+    my constant TITLE-ON = "\e[4:3m";
+    my constant TITLE-OFF = "\e[4:0m";
+    my constant REPLACE-ON = "\e[5m";
+    my constant REPLACE-OFF = "\e[25m";
     my constant INDEXED-ON = "\e[7m";
     my constant INDEXED-OFF = "\e[27m";
     my constant CODE-ON = "\e[7m";
@@ -1636,10 +1634,12 @@ class RakuDoc::Processor {
     my constant LINK-OFF = "\e[39;49m";
     my constant DEPR-TEXT-ON = "\e[48;5;216m\e[38;5;0m";
     my constant DEPR-TEXT-OFF = "\e[39;49m";
-    my constant DEPR-ON = "\e[38;5;196m\e[48;5;0m";
+    my constant DEPR-ON = "\e[38;5;196m\e[48;5;216m";
     my constant DEPR-OFF = "\e[39;49m";
     my constant DEFN-TEXT-ON = "\e[38;5;197m\e[48;5;0m";
     my constant DEFN-TEXT-OFF = "\e[39;49m";
+    my constant BAD-MARK-ON = "\e[38;5;117m\e[48;5;0m";
+    my constant BAD-MARK-OFF = "\e[39;49m";
 
     #| returns a set of text templates
     multi method default-text-templates {
@@ -1649,40 +1649,28 @@ class RakuDoc::Processor {
             _name => -> %, $ { 'default text templates' },
             #| renders =code blocks
             code => -> %prm, $tmpl {
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
-                }
+                my $del = %prm<delta> // '';
                 PStr.new: $del ~ "\n  --- code --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
             #| renders implicit code from an indented paragraph
             implicit-code => -> %prm, $tmpl {
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
-                }
+                my $del = %prm<delta> // '';
                 PStr.new: $del ~ "\n  --- code --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
-                }
+                my $del = %prm<delta> // '';
                 PStr.new: $del ~ "\n  --- input --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
-                }
+                my $del = %prm<delta> // '';
                 PStr.new: $del ~ "\n  --- output --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
@@ -1692,36 +1680,37 @@ class RakuDoc::Processor {
             #| renders =formula block
             formula => -> %prm, $tmpl {
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
-                }
-                "\n" ~ %prm<delta> ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ %prm<caption> ~  DBL-UNDERLINE-OFF ~ "\n\n" ~
+                my $del = %prm<delta> // '';
+                "\n" ~ ' ' x $indent  ~ HEADING-ON ~ %prm<caption> ~  HEADING-OFF ~ "\n\n" ~
                 $del ~ %prm<formula> ~ "\n\n"
             },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                my $del = "\n";
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
-                }
-                "\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~
+                my $del = %prm<delta> // '';
+                "\n" ~ ' ' x $indent  ~ HEADING-ON ~ BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ HEADING-OFF ~
                 "\n" ~ $del
             },
             #| renders =numhead block
             numhead => -> %prm, $tmpl {
-                my $del = "\n";
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n\n"
-                }
+                my $del = %prm<delta> // '';
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
                 my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
-                "\n" ~ ' ' x $indent ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  DBL-UNDERLINE-OFF ~
+                "\n" ~ ' ' x $indent ~ HEADING-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  HEADING-OFF ~
                 "\n" ~ $del
             },
             #| renders the numeration part for a toc
             toc-numeration => -> %prm, $tmpl { %prm<contents> },
+            #| rendering the content from the :delta option
+            #| see inline variant markup-Δ
+            delta => -> %prm, $tmpl {
+                DEPR-TEXT-ON ~
+                %prm<note> ~ DEPR-TEXT-OFF ~
+                " for " ~
+                DEPR-ON ~
+                %prm<versions> ~ DEPR-OFF ~
+                "\n\n"
+            },
             #| renders =defn block
             defn => -> %prm, $tmpl {
                 BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
@@ -1767,10 +1756,7 @@ class RakuDoc::Processor {
             },
             #| renders =place block
             place => -> %prm, $tmpl {
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
-                }
+                my $del = %prm<delta> // '';
                 my $rv = PStr.new;
                 $rv ~= $del;
                 $rv ~= %prm<contents> ;
@@ -1780,20 +1766,14 @@ class RakuDoc::Processor {
             rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
             #| renders =section block
             section => -> %prm, $tmpl {
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
-                }
-                $del ~ %prm<contents> ~ "\n"
+                (%prm<delta> // '') ~
+                %prm<contents> ~ "\n"
             },
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
-                }
-                "\n" ~ ' ' x $indent  ~ DBL-UNDERLINE-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                my $del = %prm<delta> // '';
+                "\n" ~ ' ' x $indent  ~ HEADING-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ HEADING-OFF ~ "\n" ~
                 $del ~
                 %prm<contents> ~ "\n"
             },
@@ -1802,11 +1782,8 @@ class RakuDoc::Processor {
             #| renders =table block
             table => -> %prm, $tmpl {
                 use Text::MiscUtils::Layout;
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
-                }
-                my $caption = DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF;
+                my $del = %prm<delta> // '';
+                my $caption = HEADING-ON ~ %prm<caption> ~ HEADING-OFF;
                 my $cap-width = duospace-width($caption);
                 if %prm<procedural> {
                     # calculate column widths naively, will include possible markup, and
@@ -1882,17 +1859,14 @@ class RakuDoc::Processor {
             },
             #| renders =custom block
             custom => -> %prm, $tmpl {
-                my $del = '';
-                if %prm<delta> {
-                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
-                }
-                PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                my $del = %prm<delta> // '';
+                PStr.new: HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n" ~
                 $del ~
                 %prm<raw> ~ "\n\n"
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                PStr.new: DBL-UNDERLINE-ON ~ 'UNKNOWN' ~ DBL-UNDERLINE-OFF ~
+                PStr.new: HEADING-ON ~ 'UNKNOWN' ~ HEADING-OFF ~
                 %prm<contents> ~ "\n\n"
             },
             #| special template to encapsulate all the output to save to a file
@@ -1901,7 +1875,7 @@ class RakuDoc::Processor {
                     ( %prm<rendered-toc> ~ "\n" ~ '=' x (%*ENV<WIDTH> // 80) ~ "\n")
                     !! ''
                 ) ~
-                "\n" ~ CURL-UNDERLINE-ON ~ %prm<title> ~ CURL-UNDERLINE-OFF ~ "\n\n" ~
+                "\n" ~ TITLE-ON ~ %prm<title> ~ TITLE-OFF ~ "\n\n" ~
                 (%prm<subtitle> ?? ( %prm<subtitle> ~ "\n\n" ) !! '') ~
                 %prm<body>.Str ~ "\n" ~
                 %prm<footnotes>.Str ~ "\n" ~
@@ -1924,7 +1898,7 @@ class RakuDoc::Processor {
             },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
-                PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                PStr.new: HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n" ~
                 ([~] %prm<toc-list>) ~ "\n\n"
             },
             #| renders a single item in the index
@@ -1946,13 +1920,13 @@ class RakuDoc::Processor {
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n" ~
+                PStr.new: HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~"\n" ~
                 ([~] %prm<index-list>) ~ "\n\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
                 if %prm<footnotes>.elems {
-                PStr.new: "\n" ~ DBL-UNDERLINE-ON ~ 'Footnotes' ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                PStr.new: "\n" ~ HEADING-ON ~ 'Footnotes' ~ HEADING-OFF ~ "\n" ~
                     %prm<footnotes>.map({
                         FOOTNOTE-ON ~ $_.<fnNumber> ~ FOOTNOTE-OFF ~ '. ' ~ $_.<contents>.Str
                     }).join("\n") ~ "\n\n"
@@ -1962,7 +1936,7 @@ class RakuDoc::Processor {
             #| special template to render the warnings data structure
             warnings => -> %prm, $tmpl {
                 if %prm<warnings>.elems {
-                    PStr.new: DBL-UNDERLINE-ON ~ 'WARNINGS' ~ DBL-UNDERLINE-OFF ~ "\n" ~
+                    PStr.new: HEADING-ON ~ 'WARNINGS' ~ HEADING-OFF ~ "\n" ~
                     %prm<warnings>.kv.map({ $^a + 1 ~ ": $^b" }).join("\n") ~ "\n\n"
                 }
                 else { '' }
@@ -1992,14 +1966,14 @@ class RakuDoc::Processor {
             #| N< DISPLAY-TEXT >
             #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
 			markup-N => -> %prm, $tmpl {
-			    PStr.new: FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF
+			    PStr.new: FOOTNOTE-ON ~ '[' ~ %prm<fnNumber> ~ ']' ~ FOOTNOTE-OFF
 			},
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
 			markup-O => -> %prm, $tmpl { STRIKE-ON ~ %prm<contents> ~ STRIKE-OFF },
             #| R< DISPLAY-TEXT >
             #| Replaceable component or metasyntax
-			markup-R => -> %prm, $tmpl { BLINK-ON ~ %prm<contents> ~ BLINK-OFF },
+			markup-R => -> %prm, $tmpl { REPLACE-ON ~ %prm<contents> ~ REPLACE-OFF },
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
 			markup-S => -> %prm, $tmpl { %prm<contents> },
@@ -2058,7 +2032,7 @@ class RakuDoc::Processor {
             #| Delta note ( Δ<visible text|version; Notification text> )
             markup-Δ => -> %prm, $tmpl {
                 DEPR-TEXT-ON ~ %prm<meta> ~ DEPR-TEXT-OFF ~
-                '[ for ' ~ DEPR-ON ~ %prm<contents> ~ DEPR-OFF ~ ']'
+                '[for ' ~ DEPR-ON ~ %prm<contents> ~ DEPR-OFF ~ ']'
             },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
@@ -2067,7 +2041,7 @@ class RakuDoc::Processor {
             #| Index entry ( X<display text|entry,subentry;...>)
 			markup-X => -> %prm, $tmpl { INDEXED-ON ~ %prm<contents> ~ INDEXED-OFF },
             #| Unknown markup, render minimally
-            markup-unknown => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
+            markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ %prm<contents> ~ BAD-MARK-OFF },
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
     #| returns hash of test helper callables

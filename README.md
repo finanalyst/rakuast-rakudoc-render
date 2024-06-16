@@ -76,9 +76,13 @@ If the cannonical command above fails, perhaps with a message such as ===SORRY!=
 
 but there is a local version of `RakuDoc::To::Generic` available, then try RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
-If the command above generates an error, such as ===SORRY!=== Error while compiling ...FCE553 (OO::Monitors) Variable '$cond' is not declared. Perhaps you forgot a 'sub' if this was intended to be part of a signature? at ...FCE553 (OO::Monitors):101 ------> macro wait-condition(⏏$cond) is export {
+The command above may generate a compile time error because the RakuAST compiler cannot compile a module that the Rakudo compiler can.
 
-Then try running the same command but without 'RAKUDO_RAKUAST=1'. Expect errors because the current production version of Rakudo does not allow for extensive Unicode entities.
+A workaround is to use the utility `bin/force-compile` in the root of the repo. It deletes the `.precomp` files in the current directory, then recompiles the modules in the repo.
+
+Another method might be to run the `raku --rakudoc=...` but without 'RAKUDO_RAKUAST=1'. Expect errors because the current production version of Rakudo does not allow for extensive Unicode entities.
+
+However, this will compile `RakuDoc::Render` and its dependencies.
 
 Then run the command again but with 'RAKUDO_RAKUAST=1'.
 
@@ -89,4 +93,4 @@ Then run the command again but with 'RAKUDO_RAKUAST=1'.
 
 
 ----
-Rendered from README at 2024-06-15T15:02:32Z
+Rendered from README at 2024-06-16T19:46:04Z

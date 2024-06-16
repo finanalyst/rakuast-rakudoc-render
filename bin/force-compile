@@ -1,0 +1,12 @@
+#!/usr/bin/env raku
+use v6.d;
+run <<rm -rf .precomp>>;
+use lib '.';
+use RakuDoc::PromiseStrings;
+use RakuDoc::Templates;
+use RakuDoc::MarkupMeta;
+use RakuDoc::ScopedData;
+use RakuDoc::Processed;
+use RakuDoc::Numeration;
+use RakuDoc::Render;
+say 'force recompiled dependencies';
