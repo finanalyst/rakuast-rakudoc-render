@@ -33,6 +33,13 @@
 			=cell V«renders =numdefn block»
 			=cell V«special template to render a defn list data structure»
     =row
+        =column
+			=for cell :label :row-span(2)
+			delta
+        =column
+			=cell V«rendering the content from the :delta option»
+			=cell V«see inline variant markup-Δ»
+    =row
         =for cell :label
 		final
         =cell V«special template to encapsulate all the output to save to a file»
@@ -221,7 +228,7 @@
 			=cell V«Index entry ( X<display text&#124;entry,subentry;...>)»
     =row
         =for cell :label
-		markup-unknown
+		markup-bad
         =cell V«Unknown markup, render minimally»
     =row
         =column

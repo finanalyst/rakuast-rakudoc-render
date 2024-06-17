@@ -1139,6 +1139,7 @@ class RakuDoc::Processor {
         my @grid;
         my @headers;
         my @rows;
+        my $header-rows;
         if $procedural {
             # grid traversing algorithm due to Damian Conway
             # Initially empty grid...
@@ -1253,6 +1254,7 @@ class RakuDoc::Processor {
                 # Update previous action...
                 $prev-was-cell = $grid-instruction.type eq 'cell';
             }
+            $header-rows = @grid.grep( *.[0]<header> ).elems;
         }
         else {
             for $ast.paragraphs -> $row {
@@ -1276,7 +1278,7 @@ class RakuDoc::Processor {
                 @headers = @rows.shift for ^($_+1);
             }
         }
-        $*prs.body ~= %!templates<table>.( %( :$procedural, :$caption, :$id, :@headers, :@rows, :@grid, %config ) );
+        $*prs.body ~= %!templates<table>.( %( :$procedural, :$caption, :$id, :$header-rows, :@headers, :@rows, :@grid, %config ) );
     }
     #| A lower case block generates a warning
     #| DEPARSED Str is rendered with 'unknown' template
@@ -1398,7 +1400,7 @@ class RakuDoc::Processor {
             $*prs.warnings.push:
             "No template exists for custom block ｢$block-name｣. It has been rendered as unknown"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.";
-            $*prs.body ~= %!templates<unknown>( %( :$contents, :$block-name) )
+            $*prs.body ~= %!templates<unknown>( %( :$contents, :$block-name, :$target) )
         }
     }
     # directive type methods
@@ -1866,7 +1868,8 @@ class RakuDoc::Processor {
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                PStr.new: HEADING-ON ~ 'UNKNOWN' ~ HEADING-OFF ~
+                PStr.new: HEADING-ON ~ %prm<block-name> ~
+                ' UNKNOWN' ~ HEADING-OFF ~ "\n" ~
                 %prm<contents> ~ "\n\n"
             },
             #| special template to encapsulate all the output to save to a file

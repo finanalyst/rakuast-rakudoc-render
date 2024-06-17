@@ -5,9 +5,9 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
     exit note "Could not find $module" unless $module.IO ~~ :e & :f;
     exit note "No directory $dest" unless $dest.IO ~~ :e & :d;
 
-    use lib 'lib';
+    use lib '.';
     use RakuDoc::Render;
-    my %check = RakuDoc::Processor.new.default-text-templates.keys;
+    my @check = RakuDoc::Processor.new.default-text-templates.keys;
     my %data;
     my Bool $code = False;
     my $ln;
@@ -37,7 +37,7 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
             @desc.push: $/.postmatch.subst(/ '|' /, '&#124;', :g);
         }
     }
-    say "Keys in check, not in data: ", %check.keys (-) %data.keys if %check.keys (-) %data.keys;
+    say "Keys in check, not in data: ", @check (-) %data.keys if @check (-) %data.keys;
     my $rakudoc = qq:to/HEAD/;
         =begin rakudoc
         =TITLE Templates in C\<{ $method }>

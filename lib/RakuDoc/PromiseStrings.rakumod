@@ -1,6 +1,7 @@
 use v6.d;
+use OO::Monitors;
 
-class CompletedCells {
+monitor CompletedCells {
     has %.cell-list;
     method add-payload( :$payload, :$id ) {
         %!cell-list{ $id } = $payload;
@@ -94,7 +95,7 @@ class PStr {
     method trim-trailing {
         $.strip;
         if @!string.elems == 1 {
-            @!string[0].trim-trailing if @!string[0] ~~ Str
+            @!string[0] .= trim-trailing if @!string[0] ~~ Str
         }
         elsif @!string.elems > 1 {
             @!string[* - 1] .= trim-trailing if @!string[* - 1] ~~ Str;

@@ -2,9 +2,16 @@ use v6.d;
 use Test;
 use Test::META;
 
-plan 3;
-use-ok 'RakuDoc::Templates', 'Template sanity';
-use-ok 'RakuDoc::Processed', 'Processed Object sanity';
-use-ok 'RakuDoc::Render', 'Render sanity';
+plan 9;
+
+use-ok 'RakuDoc::MarkupMeta', 'MarkupMeta can be used';
+use-ok 'RakuDoc::Numeration', 'Numeration can be used';
+use-ok 'RakuDoc::PromiseStrings', 'PromiseStrings can be used';
+use-ok 'RakuDoc::ScopedData', 'ScopedData can be used';
+use-ok 'RakuDoc::Templates', 'Template sanity can be used';
+use-ok 'RakuDoc::Processed', 'Processed Object sanity can be used';
+use-ok 'RakuDoc::Render', 'Render sanity can be used';
+use-ok 'RakuDoc::To::Generic', 'To::Generic can be used';
+use-ok 'RakuDoc::To::Markdown', 'To::Markdown can be used';
 
 done-testing;

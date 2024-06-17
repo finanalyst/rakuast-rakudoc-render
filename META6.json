@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "perl": "6.e",
   "authors": [
     "Richard Hainsworth"
@@ -15,7 +15,8 @@
     "LibCurl",
     "URI",
     "Digest::SHA1::Native",
-    "Text::MiscUtils"
+    "Text::MiscUtils",
+    "OO::Monitors"
   ],
   "test-depends": [
     "Test",

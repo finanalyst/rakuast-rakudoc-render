@@ -1,0 +1,13 @@
+use v6.d;
+use Test;
+plan 1;
+
+use RakuDoc::Render;
+use RakuDoc::To::Markdown;
+my @generic = RakuDoc::Processor.new.default-text-templates.keys.sort;
+my @markdown = RakuDoc::To::Markdown.new.markdown-templates.keys.sort;
+
+ok @generic (<=) @markdown, 'markdown redefines all the keys in generic';
+diag 'RakuDoc::To::Markdown additionally defines: ' ~ (@markdown (-) @generic);
+
+done-testing;

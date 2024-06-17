@@ -13,7 +13,7 @@ Two other formats, namely HTML and MarkDown, are (to be) provided in the distrib
 
 This is software using bleeding edge Rakudo, so look (L<at troubleshooting below|#Troubleshooting>).
 
-The canonical method for generating rendered text is possible (which sends output to STDOUT, so pipe
+The B<canonical method> for generating rendered text is possible (which sends output to STDOUT, so pipe
 to a file), namely
    RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
@@ -88,14 +88,27 @@ If the cannonical command above fails, perhaps with a message such as
 but there is a local version of C<RakuDoc::To::Generic> available, then try
     RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
-The command above may generate a compile time error because the RakuAST compiler cannot compile
-a module that the Rakudo compiler can.
+The command above may also generate an error, such as
+    ===SORRY!=== Error while compiling ..... (OO::Monitors)
+    Variable '$cond' is not declared.  Perhaps you forgot a 'sub' if this
+    was intended to be part of a signature?
+    at ....
+    ------> macro wait-condition(⏏$cond) is export {
+because the RakuAST compiler does not yet handle macros, and (OO::Monitors) uses them.
 
-A workaround is to use the utility C<bin/force-compile> in the root of the repo.
+The first step is to re-run the test files, eg.,
+    prove6 -I.
+
+This causes a  recompilation of the modules in this distribution to be recompiled
+because the tests run `isa-ok` on each module.
+
+This is sometimes not sufficient. The next step is to use the utility C<bin/force-compile> in the root of the repo.
 It deletes the C<.precomp> files in the current directory, then recompiles the
 modules in the repo.
 
-Another method might be to run the C<raku --rakudoc=...> but without 'RAKUDO_RAKUAST=1'.
+Again try running the basic tests.
+
+Another method might be to run the C<raku --rakudoc=...> command, but without 'RAKUDO_RAKUAST=1'.
 Expect errors because the current
 production version of Rakudo does not allow for extensive Unicode entities.
 

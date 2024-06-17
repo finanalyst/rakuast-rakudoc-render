@@ -20,7 +20,7 @@ Two other formats, namely HTML and MarkDown, are (to be) provided in the distrib
 
 This is software using bleeding edge Rakudo, so look ([at troubleshooting below](troubleshooting)).
 
-The canonical method for generating rendered text is possible (which sends output to STDOUT, so pipe to a file), namely RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
+The **canonical method** for generating rendered text is possible (which sends output to STDOUT, so pipe to a file), namely RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
 The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. It can be obtained with: bin/get-compliance-document
 
@@ -76,11 +76,17 @@ If the cannonical command above fails, perhaps with a message such as ===SORRY!=
 
 but there is a local version of `RakuDoc::To::Generic` available, then try RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
-The command above may generate a compile time error because the RakuAST compiler cannot compile a module that the Rakudo compiler can.
+The command above may also generate an error, such as ===SORRY!=== Error while compiling ..... (OO::Monitors) Variable '$cond' is not declared. Perhaps you forgot a 'sub' if this was intended to be part of a signature? at .... ------> macro wait-condition(⏏$cond) is export { because the RakuAST compiler does not yet handle macros, and (OO::Monitors) uses them.
 
-A workaround is to use the utility `bin/force-compile` in the root of the repo. It deletes the `.precomp` files in the current directory, then recompiles the modules in the repo.
+The first step is to re-run the test files, eg., prove6 -I.
 
-Another method might be to run the `raku --rakudoc=...` but without 'RAKUDO_RAKUAST=1'. Expect errors because the current production version of Rakudo does not allow for extensive Unicode entities.
+This causes a recompilation of the modules in this distribution to be recompiled because the tests run ``isa-ok`` on each module.
+
+This is sometimes not sufficient. The next step is to use the utility `bin/force-compile` in the root of the repo. It deletes the `.precomp` files in the current directory, then recompiles the modules in the repo.
+
+Again try running the basic tests.
+
+Another method might be to run the `raku --rakudoc=...` command, but without 'RAKUDO_RAKUAST=1'. Expect errors because the current production version of Rakudo does not allow for extensive Unicode entities.
 
 However, this will compile `RakuDoc::Render` and its dependencies.
 
@@ -93,4 +99,4 @@ Then run the command again but with 'RAKUDO_RAKUAST=1'.
 
 
 ----
-Rendered from README at 2024-06-16T19:46:04Z
+Rendered from README at 2024-06-17T21:47:44Z

@@ -41,16 +41,16 @@ method markdown-templates {
 #    my constant CURL-UNDERLINE-OFF = "\e[4:0m";
     my constant REPLACE-ON = "**__";
     my constant REPLACE-OFF = "__**";
-    my constant INDEXED-ON = "==";
-    my constant INDEXED-OFF = "==";
-    my constant INDEX-ENTRY-ON = "==";
-    my constant INDEX-ENTRY-OFF = "==";
+    my constant INDEXED-ON = '<span style="color:green; background-color: antiquewhite">';
+    my constant INDEXED-OFF = '</span>';
+    my constant INDEX-ENTRY-ON = '<span style="background-color: antiquewhite; font-weight: 600;">';
+    my constant INDEX-ENTRY-OFF = '</span>';
     my constant KEYBOARD-ON = "***";
     my constant KEYBOARD-OFF = "***";
     my constant TERMINAL-ON = "***__";
     my constant TERMINAL-OFF = "__***";
-    my constant FOOTNOTE-ON = "^";
-    my constant FOOTNOTE-OFF = "^";
+    my constant FOOTNOTE-ON = "<sup>";
+    my constant FOOTNOTE-OFF = "</sup>";
     my constant LINK-TEXT-ON = "[";
     my constant LINK-TEXT-OFF = "]";
     my constant LINK-ON = "(";
@@ -59,8 +59,8 @@ method markdown-templates {
     my constant DEPR-TEXT-OFF = '</span>';
     my constant DEPR-ON = '<span style="background-color: pink">**';
     my constant DEPR-OFF = "</span>";
-    my constant DEFN-TEXT-ON = "**";
-    my constant DEFN-TEXT-OFF = "**";
+    my constant DEFN-TEXT-ON = '<span style="background-color: lightgrey">';
+    my constant DEFN-TEXT-OFF = '</span>';
     my constant BAD-MARK-ON = "`";
     my constant BAD-MARK-OFF = "`";
     my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
@@ -70,8 +70,8 @@ method markdown-templates {
         # escape contents
         escaped => -> %prm, $tmpl {
             %prm<contents>.Str.trans(
-               qw｢ <    >    &     "       `  ｣
-            => qw｢ &lt; &gt; &amp; &quot;  `` ｣
+               qw｢ <    >    &     "       `   ｣
+            => qw｢ &lt; &gt; &amp; &quot;  ``  ｣
             )
         },
         #| renders =code blocks
@@ -109,7 +109,7 @@ method markdown-templates {
             my $del = %prm<delta> // '';
             "\n\n" ~ "----\n" ~
             $del ~ "\n" ~
-            '#' x %prm<level>  ~ ' ' ~ %prm<caption> ~ "\n\n" ~
+            '#' x %prm<level>  ~ ' ' ~ %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~ "\n\n" ~
             %prm<formula> ~ "\n\n"
         },
         #| renders =head block
@@ -120,7 +120,7 @@ method markdown-templates {
             ('----' if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<contents> ~
+            %prm<contents> ~ qq[<div id="{ %prm<target> }"> </div>] ~
             "\n"
         },
         #| renders =numhead block
@@ -132,14 +132,23 @@ method markdown-templates {
             ('----' if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
-            $title ~
+            $title ~ qq[<div id="{ %prm<target> }"> </div>] ~
             "\n"
         },
         #| renders the numeration part for a toc
         toc-numeration => -> %prm, $tmpl { %prm<contents> },
-        #| renders =defn block
+        #| rendering the content from the :delta option
+        #| see inline variant markup-Δ
+        delta => -> %prm, $tmpl {
+            DEPR-TEXT-ON ~
+            %prm<note> ~ DEPR-TEXT-OFF ~
+            " for " ~
+            DEPR-ON ~
+            %prm<versions> ~ DEPR-OFF ~
+            "\n\n"
+        },#| renders =defn block
         defn => -> %prm, $tmpl {
-            BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
+            BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "  \n" ~
             "\t" ~ %prm<contents> ~ "\n\n"
         },
         #| renders =numdefn block
@@ -147,18 +156,18 @@ method markdown-templates {
         defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
         #| special template to render a numbered defn list data structure
         numdefn => -> %prm, $tmpl {
-            BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
-            "\t" ~ %prm<contents> ~ "\n"
+            BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "  \n\n" ~
+            "\t" ~ %prm<contents> ~ "\n\n"
         },
         #| special template to render a numbered item list data structure
         numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
         #| renders =item block
         item => -> %prm, $tmpl {
             my $num = %prm<level> - 1;
-            my $indent = ' ' x %prm<level>;
+            my $indent = '  ' x %prm<level>;
             $num = @bullets.elems - 1 if $num >= @bullets.elems;
-            my $bullet = %prm<bullet> // @bullets[ $num ];
-            $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "\n\n"
+            my $bullet = %prm<bullet> // '-';
+            $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "  \n"
         },
         #| special template to render an item list data structure
         item-list => -> %prm, $tmpl {
@@ -166,7 +175,7 @@ method markdown-templates {
         },
         #| renders =numitem block
         numitem => -> %prm, $tmpl {
-            %prm<numeration> ~ ' ' ~ %prm<contents> ~ "\n\n"
+            %prm<numeration> ~ ' ' ~ %prm<contents> ~ "  \n\n"
         },
         #| special template to render a numbered item list data structure
         numitem-list => -> %prm, $tmpl {
@@ -201,7 +210,7 @@ method markdown-templates {
             ('----' if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<caption> ~
+            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
             "\n" ~
             %prm<contents> ~ "\n\n"
         },
@@ -209,14 +218,15 @@ method markdown-templates {
         pod => -> %prm, $tmpl { %prm<contents> },
         #| renders =table block
         table => -> %prm, $tmpl {
-#                use Text::MiscUtils::Layout;
-#                my $del = '';
-#                if %prm<delta> {
-#                    $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
-#                }
-#                my $caption = DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF;
-#                my $cap-width = duospace-width($caption);
-#                if %prm<procedural> {
+            my $del = %prm<delta> // '';
+            # using level + 1 so that TITLE is always larger
+            # a line above heading level one to separate sections
+            my $rv = ('----' if %prm<level> == 1) ~
+            "\n" ~ $del ~ "\n" ~
+            '#' x ( %prm<level> + 1)  ~ ' ' ~
+            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
+            "\n" ;
+                if %prm<procedural> {
 #                    # calculate column widths naively, will include possible markup, and
 #                    # will fail if embedded tables
 #                    # TODO comply with justification, now right-justify col-head, top-justify row labels.
@@ -272,8 +282,8 @@ method markdown-templates {
 #                        ' ' x $row-shift ~ '| ' ~ $_.grep( *.isa(Str) ).join('') ~ "\n"
 #                        }).join('') ~ "\n\n"
 #                   ;
-#                }
-#                else {
+                }
+                else {
 #                    my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - $cap-width ) div 2;
 #                    my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
 #                    $cap-shift = 0 if $cap-shift <= 0;
@@ -286,95 +296,99 @@ method markdown-templates {
 #                            ' ' x $row-shift ~
 #                            '| ' ~ $_.join(' | ') ~ " |\n"
 #                        }).join('') ~ "\n\n"
-#                }
-    ''    },
+                }
+        },
         #| renders =custom block
         custom => -> %prm, $tmpl {
-#            my $del = '';
-#            if %prm<delta> {
-#                $del = DEPR-TEXT-ON ~ %prm<delta>[1] ~ DEPR-TEXT-OFF ~ " for " ~ DEPR-ON ~ %prm<delta>[0] ~ DEPR-OFF ~ "\n"
-#            }
-#            PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~ "\n" ~
-#            $del ~
-#            %prm<raw> ~ "\n\n"
-    ''    },
+            my $del = %prm<delta> // '';
+            # using level + 1 so that TITLE is always larger
+            # a line above heading level one to separate sections
+            ('----' if %prm<level> == 1) ~
+            "\n" ~ $del ~ "\n" ~
+            '#' x ( %prm<level> + 1)  ~ ' ' ~
+            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
+            "\n" ~
+            %prm<raw> ~ "\n\n"
+        },
         #| renders any unknown block minimally
         unknown => -> %prm, $tmpl {
-#            PStr.new: DBL-UNDERLINE-ON ~ 'UNKNOWN' ~ DBL-UNDERLINE-OFF ~
-#            %prm<contents> ~ "\n\n"
-    ''    },
+            "----\n\n## " ~ qq[<div id="{ %prm<target> }">UNKNOWN { %prm<block-name> }</div>\n\n] ~
+            $tmpl<escaped>
+                .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
+                 .subst(/ \v /, '<br>', :g) ~
+                 "\n\n"
+        },
         #| special template to encapsulate all the output to save to a file
         final => -> %prm, $tmpl {
             "\n# " ~ %prm<title> ~ "\n\n" ~
-            (%prm<subtitle> ?? ( '>' ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
-            ( %prm<rendered-toc> ??
-                ( %prm<rendered-toc> ~ "\n" ~ '=' x 4 ~ "\n")
-                !! ''
-            ) ~
+            (%prm<subtitle> ?? ( '> ' ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
+            ( %prm<rendered-toc> if %prm<rendered-toc> ) ~
             %prm<body>.Str ~ "\n" ~
             %prm<footnotes>.Str ~ "\n" ~
-            ( %prm<rendered-index>
-                ?? ( "\n\n" ~ '=' x 4 ~ "\n" ~ %prm<rendered-index> ~ "\n" )
-                !! ''
-            ) ~
-            "\n----\n----\n" ~
+            ( %prm<rendered-index> if %prm<rendered-index> ) ~
+            "\n----\n\n----\n" ~
             "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
             (sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
             "\n\nSource last modified " ~ (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime) ~
             "\n\n" ~
-            (( "\n----\n----\n\n" ~ %prm<warnings> ) if %prm<warnings>)
+            ( %prm<warnings> if %prm<warnings>)
         },
         #| renders a single item in the toc
         toc-item => -> %prm, $tmpl {
-#            my $pref = ' ' x ( %prm<toc-entry><level> > 4 ?? 4 !! (%prm<toc-entry><level> - 1) * 2 )
-#                ~ (%prm<toc-entry><level> > 1 ?? '- ' !! '');
-#            PStr.new: $pref ~ %prm<toc-entry><caption> ~ "\n"
-    ''    },
+            my $pref = ' ' x ( %prm<toc-entry><level> > 4 ?? 4 !! (%prm<toc-entry><level> - 1) * 2 )
+                ~ (%prm<toc-entry><level> > 1 ?? '- ' !! '');
+            PStr.new: qq[$pref\<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a>   \n]
+        },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-#            PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~ "\n" ~
-#            ([~] %prm<toc-list>) ~ "\n\n"
-   ''     },
+            PStr.new: "----\n\n## " ~ %prm<caption> ~ "\n" ~
+            ([~] %prm<toc-list>) ~ "\n\n"
+        },
         #| renders a single item in the index
         index-item => -> %prm, $tmpl {
-#            sub si( %h, $n ) {
-#                my $rv = '';
-#                for %h.sort( *.key )>>.kv -> ( $k, %v ) {
-#                    $rv ~= "\t" x $n ~ "- $k : see in"
-#                        ~ %v<refs>.map({ ' § ' ~ .<place> }).join(',')
-#                        ~ "\n"
-#                        ~ si( %v<sub-index>, $n + 1 );
-#                }
-#                $rv
-#            }
-#            PStr.new: INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': see in'
-#                ~ %prm<entry-data><refs>.map({ ' § ' ~ .<place> }).join(',')
-#                ~ "\n"
-#                ~ si( %prm<entry-data><sub-index>, 1 );
-  ''      },
+            sub si( %h, $n ) {
+                my $rv = '';
+                for %h.sort( *.key )>>.kv -> ( $k, %v ) {
+                    $rv ~= "  " x $n ~ "- $k : "
+                        ~ %v<refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
+                        ~ "\n\n"
+                        ~ si( %v<sub-index>, $n + 1 );
+                }
+                $rv
+            }#qq[<div id="{ %prm<target> }"> </div>] ~
+            PStr.new:
+                INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ':  ' ~
+                %prm<entry-data><refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
+                ~ "\n\n"
+                ~ si( %prm<entry-data><sub-index>, 1 );
+        },
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
-#            PStr.new: DBL-UNDERLINE-ON ~ %prm<caption> ~ DBL-UNDERLINE-OFF ~"\n" ~
-#            ([~] %prm<index-list>) ~ "\n\n"
-   ''     },
+            PStr.new: "----\n\n## " ~ %prm<caption> ~"\n" ~
+            ([~] %prm<index-list>) ~ "\n\n"
+        },
         #| special template to render the footnotes data structure
         footnotes => -> %prm, $tmpl {
-#            if %prm<footnotes>.elems {
-#            PStr.new: "\n" ~ DBL-UNDERLINE-ON ~ 'Footnotes' ~ DBL-UNDERLINE-OFF ~ "\n" ~
-#                %prm<footnotes>.map({
-#                    FOOTNOTE-ON ~ $_.<fnNumber> ~ FOOTNOTE-OFF ~ '. ' ~ $_.<contents>.Str
-#                }).join("\n") ~ "\n\n"
-#            }
-#            else { '' }
-    ''    },
+            if %prm<footnotes>.elems {
+            PStr.new: "----\n\n## Footnotes\n" ~
+                %prm<footnotes>.map({
+                    .<fnNumber> ~
+                    qq[<a href="#{ .<retTarget> }"> |^| </a>] ~
+                    .<contents>.Str
+                }).join("\n") ~ "\n\n"
+            }
+            else { '' }
+        },
         #| special template to render the warnings data structure
         warnings => -> %prm, $tmpl {
-#            if %prm<warnings>.elems {
-#                PStr.new: DBL-UNDERLINE-ON ~ 'WARNINGS' ~ DBL-UNDERLINE-OFF ~ "\n" ~
-#                %prm<warnings>.kv.map({ $^a + 1 ~ ": $^b" }).join("\n") ~ "\n\n"
-#            }
-#            else { '' }
-    ''    },
+            if %prm<warnings>.elems {
+                PStr.new: "\n\n----\n\n----\n\n## WARNINGS\n\n" ~
+                %prm<warnings>.kv.map( -> $n, $val {
+                    $n + 1 ~ ': ' ~ $tmpl( 'escaped', %( :contents( $val ) ) )
+                }).join("\n\n") ~ "\n\n"
+            }
+            else { '' }
+        },
         ## Markup codes with only display (format codes), no meta data allowed
         ## meta data via Config is allowed
         #| B< DISPLAY-TEXT >
@@ -400,8 +414,11 @@ method markdown-templates {
         #| N< DISPLAY-TEXT >
         #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
         markup-N => -> %prm, $tmpl {
-#            PStr.new: FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF
-    ''    },
+            PStr.new:
+            qq[<a id="{ %prm<retTarget> }" href="#{ %prm<fnTarget> }">] ~
+            FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF ~
+            '</a>'
+        },
         #| O< DISPLAY-TEXT >
         #| Overstrike or strikethrough
         markup-O => -> %prm, $tmpl { STRIKE-ON ~ %prm<contents> ~ STRIKE-OFF },
@@ -441,15 +458,15 @@ method markdown-templates {
         #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
         #| Placement link
         markup-P => -> %prm, $tmpl {
-#            given %prm<schema> {
-#                when 'defn' {
-#                    BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ "\n\x29DB" ~
-#                    DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
-#                    "\n\x29DA"
-#                }
-#                default { %prm<contents> }
-#            }
-     ''   },
+            given %prm<schema> {
+                when 'defn' {
+                    BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ "\n\n\x29DB  " ~
+                    DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
+                    "\n\x29DA"
+                }
+                default { %prm<contents> }
+            }
+        },
 
         ##| Markup codes, mandatory display and meta data
         #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
@@ -458,15 +475,19 @@ method markdown-templates {
         #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
         #| Delta note ( Δ<visible text|version; Notification text> )
         markup-Δ => -> %prm, $tmpl {
-#            DEPR-TEXT-ON ~ %prm<meta> ~ DEPR-TEXT-OFF ~
-#            '[ for ' ~ DEPR-ON ~ %prm<contents> ~ DEPR-OFF ~ ']'
-      ''  },
+            DEPR-TEXT-ON ~ %prm<meta> ~ DEPR-TEXT-OFF ~
+            DEPR-ON ~ '[ for ' ~ %prm<contents> ~ ']' ~ DEPR-OFF
+        },
         #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
         #| Markup extra ( M<display text|functionality;param,sub-type;...>)
         markup-M => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
         #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
         #| Index entry ( X<display text|entry,subentry;...>)
-        markup-X => -> %prm, $tmpl { INDEXED-ON ~ %prm<contents> ~ INDEXED-OFF },
+        markup-X => -> %prm, $tmpl {
+            qq[<span id="{ %prm<target> }">] ~
+            INDEXED-ON ~ %prm<contents> ~ INDEXED-OFF ~
+            '</span>'
+        },
         #| Unknown markup, render minimally
         markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl<escaped> ~ BAD-MARK-OFF },
     ); # END OF TEMPLATES (this comment is to simplify documentation generation)

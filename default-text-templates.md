@@ -17,6 +17,8 @@
 | **defn**| renders =defn block |
 | **defn-list**| renders =numdefn block |
 |  &nbsp; | special template to render a defn list data structure |
+| **delta**| rendering the content from the :delta option |
+|  &nbsp; | see inline variant markup-Δ |
 | **final**| special template to encapsulate all the output to save to a file |
 | **footnotes**| special template to render the footnotes data structure |
 | **formula**| renders =formula block |
@@ -69,7 +71,7 @@
 |  &nbsp; | Verbatim (internal markup instructions ignored) |
 | **markup-X**| X< DISPLAY-TEXT &#124; METADATA = INDEX-ENTRY > |
 |  &nbsp; | Index entry ( X<display text&#124;entry,subentry;...>) |
-| **markup-unknown**| Unknown markup, render minimally |
+| **markup-bad**| Unknown markup, render minimally |
 | **markup-Δ**| Δ< DISPLAY-TEXT &#124; METADATA = VERSION-ETC > |
 |  &nbsp; | Delta note ( Δ<visible text&#124;version; Notification text> ) |
 | **nested**| renders =nested block |
@@ -98,4 +100,4 @@
 
 
 ----
-Rendered from default-text-templates at 2024-06-14T10:23:08Z
+Rendered from default-text-templates at 2024-06-17T20:27:17Z
