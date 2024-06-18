@@ -1194,12 +1194,12 @@ class RakuDoc::Processor {
                 @cell-context[*-1]{ $k } = $_ with %config{ $k };
             }
             for $ast.paragraphs -> $grid-instruction {
-                next if $grid-instruction.type eq 'comment';
                 unless $grid-instruction.^can('type') {
                     $*prs.body ~= $ast.Str;
-                    $*prs.warnings.push: "｢{$grid-instruction.DEPARSE}｣ is illegal as an immediate child of a =table";
+                    $*prs.warnings.push: "｢{$grid-instruction.Str}｣ is illegal as an immediate child of a =table";
                     return
                 }
+                next if $grid-instruction.type eq 'comment';
                 given $grid-instruction.type {
                     when 'cell' {
                         my %cell-config = $grid-instruction.resolved-config;

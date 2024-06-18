@@ -2,316 +2,316 @@
 =TITLE Templates in C<default-text-templates>
 =SUBTITLE Auto generated from C<lib/RakuDoc/Render.rakumod>
 =begin table :caption<Documentation of default templates >
-    =row :header
-        =cell Name
-        =cell Description
-    =row
-        =for cell :label
-		_name
-        =cell V«special key to name template set»
-    =row
-        =for cell :label
-		code
-        =cell V«renders =code blocks»
-    =row
-        =for cell :label
-		comment
-        =cell V«renders =comment block»
-    =row
-        =for cell :label
-		custom
-        =cell V«renders =custom block»
-    =row
-        =for cell :label
-		defn
-        =cell V«renders =defn block»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			defn-list
-        =column
-			=cell V«renders =numdefn block»
-			=cell V«special template to render a defn list data structure»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			delta
-        =column
-			=cell V«rendering the content from the :delta option»
-			=cell V«see inline variant markup-Δ»
-    =row
-        =for cell :label
-		final
-        =cell V«special template to encapsulate all the output to save to a file»
-    =row
-        =for cell :label
-		footnotes
-        =cell V«special template to render the footnotes data structure»
-    =row
-        =for cell :label
-		formula
-        =cell V«renders =formula block»
-    =row
-        =for cell :label
-		head
-        =cell V«renders =head block»
-    =row
-        =for cell :label
-		implicit-code
-        =cell V«renders implicit code from an indented paragraph»
-    =row
-        =for cell :label
-		index
-        =cell V«special template to render the index data structure»
-    =row
-        =for cell :label
-		index-item
-        =cell V«renders a single item in the index»
-    =row
-        =for cell :label
-		input
-        =cell V«renders =input block»
-    =row
-        =for cell :label
-		item
-        =cell V«renders =item block»
-    =row
-        =for cell :label
-		item-list
-        =cell V«special template to render an item list data structure»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-A
-        =column
-			=cell V«A< DISPLAY-TEXT &#124;  METADATA = ALIAS-NAME >»
-			=cell V«Alias to be replaced by contents of specified V<=alias> directive»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-B
-        =column
-			=cell V«B< DISPLAY-TEXT >»
-			=cell V«Basis/focus of sentence (typically rendered bold)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-C
-        =column
-			=cell V«C< DISPLAY-TEXT >»
-			=cell V«Code (typically rendered fixed-width)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-D
-        =column
-			=cell V«D< DISPLAY-TEXT &#124;  METADATA = SYNONYMS >»
-			=cell V«Definition inline ( D<term being defined&#124;synonym1; synonym2> )»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-E
-        =column
-			=cell V«E< DISPLAY-TEXT &#124;  METADATA = HTML/UNICODE-ENTITIES >»
-			=cell V«Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-F
-        =column
-			=cell V«F< DISPLAY-TEXT &#124;  METADATA = LATEX-FORM >»
-			=cell V«Formula inline content ( F<ALT&#124;LaTex notation> )»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-H
-        =column
-			=cell V«H< DISPLAY-TEXT >»
-			=cell V«High text (typically rendered superscript)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-I
-        =column
-			=cell V«I< DISPLAY-TEXT >»
-			=cell V«Important (typically rendered in italics)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-J
-        =column
-			=cell V«J< DISPLAY-TEXT >»
-			=cell V«Junior text (typically rendered subscript)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-K
-        =column
-			=cell V«K< DISPLAY-TEXT >»
-			=cell V«Keyboard input (typically rendered fixed-width)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-L
-        =column
-			=cell V«L< DISPLAY-TEXT &#124;  METADATA = TARGET-URI >»
-			=cell V«Link ( L<display text&#124;destination URI> )»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-M
-        =column
-			=cell V«M< DISPLAY-TEXT &#124;  METADATA = WHATEVER >»
-			=cell V«Markup extra ( M<display text&#124;functionality;param,sub-type;...>)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-N
-        =column
-			=cell V«N< DISPLAY-TEXT >»
-			=cell V«Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-O
-        =column
-			=cell V«O< DISPLAY-TEXT >»
-			=cell V«Overstrike or strikethrough»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-P
-        =column
-			=cell V«P< DISPLAY-TEXT &#124;  METADATA = REPLACEMENT-URI >»
-			=cell V«Placement link»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-R
-        =column
-			=cell V«R< DISPLAY-TEXT >»
-			=cell V«Replaceable component or metasyntax»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-S
-        =column
-			=cell V«S< DISPLAY-TEXT >»
-			=cell V«Space characters to be preserved»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-T
-        =column
-			=cell V«T< DISPLAY-TEXT >»
-			=cell V«Terminal output (typically rendered fixed-width)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-U
-        =column
-			=cell V«U< DISPLAY-TEXT >»
-			=cell V«Unusual (typically rendered with underlining)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-V
-        =column
-			=cell V«V< DISPLAY-TEXT >»
-			=cell V«Verbatim (internal markup instructions ignored)»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-X
-        =column
-			=cell V«X< DISPLAY-TEXT &#124;  METADATA = INDEX-ENTRY >»
-			=cell V«Index entry ( X<display text&#124;entry,subentry;...>)»
-    =row
-        =for cell :label
-		markup-bad
-        =cell V«Unknown markup, render minimally»
-    =row
-        =column
-			=for cell :label :row-span(2)
-			markup-Δ
-        =column
-			=cell V«Δ< DISPLAY-TEXT &#124;  METADATA = VERSION-ETC >»
-			=cell V«Delta note ( Δ<visible text&#124;version; Notification text> )»
-    =row
-        =for cell :label
-		nested
-        =cell V«renders =nested block»
-    =row
-        =for cell :label
-		numdefn
-        =cell V«special template to render a numbered defn list data structure»
-    =row
-        =for cell :label
-		numdefn-list
-        =cell V«special template to render a numbered item list data structure»
-    =row
-        =for cell :label
-		numhead
-        =cell V«renders =numhead block»
-    =row
-        =for cell :label
-		numitem
-        =cell V«renders =numitem block»
-    =row
-        =for cell :label
-		numitem-list
-        =cell V«special template to render a numbered item list data structure»
-    =row
-        =for cell :label
-		output
-        =cell V«renders =output block»
-    =row
-        =for cell :label
-		para
-        =cell V«renders =para block»
-    =row
-        =for cell :label
-		place
-        =cell V«renders =place block»
-    =row
-        =for cell :label
-		pod
-        =cell V«renders =pod block»
-    =row
-        =for cell :label
-		rakudoc
-        =cell V«renders =rakudoc block»
-    =row
-        =for cell :label
-		section
-        =cell V«renders =section block»
-    =row
-        =for cell :label
-		semantic
-        =cell V«renders =SEMANTIC block, if not otherwise given»
-    =row
-        =for cell :label
-		table
-        =cell V«renders =table block»
-    =row
-        =for cell :label
-		toc
-        =cell V«special template to render the toc list»
-    =row
-        =for cell :label
-		toc-item
-        =cell V«renders a single item in the toc»
-    =row
-        =for cell :label
-		toc-numeration
-        =cell V«renders the numeration part for a toc»
-    =row
-        =for cell :label
-		unknown
-        =cell V«renders any unknown block minimally»
-    =row
-        =for cell :label
-		warnings
-        =cell V«special template to render the warnings data structure»
+=row :header
+=cell Name
+=cell Description
+=row
+=for cell :label
+_name
+=cell V«special key to name template set»
+=row
+=for cell :label
+code
+=cell V«renders =code blocks»
+=row
+=for cell :label
+comment
+=cell V«renders =comment block»
+=row
+=for cell :label
+custom
+=cell V«renders =custom block»
+=row
+=for cell :label
+defn
+=cell V«renders =defn block»
+=row
+=column
+=for cell :label :row-span(2)
+defn-list
+=column
+=cell V«renders =numdefn block»
+=cell V«special template to render a defn list data structure»
+=row
+=column
+=for cell :label :row-span(2)
+delta
+=column
+=cell V«rendering the content from the :delta option»
+=cell V«see inline variant markup-Δ»
+=row
+=for cell :label
+final
+=cell V«special template to encapsulate all the output to save to a file»
+=row
+=for cell :label
+footnotes
+=cell V«special template to render the footnotes data structure»
+=row
+=for cell :label
+formula
+=cell V«renders =formula block»
+=row
+=for cell :label
+head
+=cell V«renders =head block»
+=row
+=for cell :label
+implicit-code
+=cell V«renders implicit code from an indented paragraph»
+=row
+=for cell :label
+index
+=cell V«special template to render the index data structure»
+=row
+=for cell :label
+index-item
+=cell V«renders a single item in the index»
+=row
+=for cell :label
+input
+=cell V«renders =input block»
+=row
+=for cell :label
+item
+=cell V«renders =item block»
+=row
+=for cell :label
+item-list
+=cell V«special template to render an item list data structure»
+=row
+=column
+=for cell :label :row-span(2)
+markup-A
+=column
+=cell V«A< DISPLAY-TEXT &#124;  METADATA = ALIAS-NAME >»
+=cell V«Alias to be replaced by contents of specified V<=alias> directive»
+=row
+=column
+=for cell :label :row-span(2)
+markup-B
+=column
+=cell V«B< DISPLAY-TEXT >»
+=cell V«Basis/focus of sentence (typically rendered bold)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-C
+=column
+=cell V«C< DISPLAY-TEXT >»
+=cell V«Code (typically rendered fixed-width)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-D
+=column
+=cell V«D< DISPLAY-TEXT &#124;  METADATA = SYNONYMS >»
+=cell V«Definition inline ( D<term being defined&#124;synonym1; synonym2> )»
+=row
+=column
+=for cell :label :row-span(2)
+markup-E
+=column
+=cell V«E< DISPLAY-TEXT &#124;  METADATA = HTML/UNICODE-ENTITIES >»
+=cell V«Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )»
+=row
+=column
+=for cell :label :row-span(2)
+markup-F
+=column
+=cell V«F< DISPLAY-TEXT &#124;  METADATA = LATEX-FORM >»
+=cell V«Formula inline content ( F<ALT&#124;LaTex notation> )»
+=row
+=column
+=for cell :label :row-span(2)
+markup-H
+=column
+=cell V«H< DISPLAY-TEXT >»
+=cell V«High text (typically rendered superscript)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-I
+=column
+=cell V«I< DISPLAY-TEXT >»
+=cell V«Important (typically rendered in italics)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-J
+=column
+=cell V«J< DISPLAY-TEXT >»
+=cell V«Junior text (typically rendered subscript)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-K
+=column
+=cell V«K< DISPLAY-TEXT >»
+=cell V«Keyboard input (typically rendered fixed-width)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-L
+=column
+=cell V«L< DISPLAY-TEXT &#124;  METADATA = TARGET-URI >»
+=cell V«Link ( L<display text&#124;destination URI> )»
+=row
+=column
+=for cell :label :row-span(2)
+markup-M
+=column
+=cell V«M< DISPLAY-TEXT &#124;  METADATA = WHATEVER >»
+=cell V«Markup extra ( M<display text&#124;functionality;param,sub-type;...>)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-N
+=column
+=cell V«N< DISPLAY-TEXT >»
+=cell V«Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))»
+=row
+=column
+=for cell :label :row-span(2)
+markup-O
+=column
+=cell V«O< DISPLAY-TEXT >»
+=cell V«Overstrike or strikethrough»
+=row
+=column
+=for cell :label :row-span(2)
+markup-P
+=column
+=cell V«P< DISPLAY-TEXT &#124;  METADATA = REPLACEMENT-URI >»
+=cell V«Placement link»
+=row
+=column
+=for cell :label :row-span(2)
+markup-R
+=column
+=cell V«R< DISPLAY-TEXT >»
+=cell V«Replaceable component or metasyntax»
+=row
+=column
+=for cell :label :row-span(2)
+markup-S
+=column
+=cell V«S< DISPLAY-TEXT >»
+=cell V«Space characters to be preserved»
+=row
+=column
+=for cell :label :row-span(2)
+markup-T
+=column
+=cell V«T< DISPLAY-TEXT >»
+=cell V«Terminal output (typically rendered fixed-width)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-U
+=column
+=cell V«U< DISPLAY-TEXT >»
+=cell V«Unusual (typically rendered with underlining)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-V
+=column
+=cell V«V< DISPLAY-TEXT >»
+=cell V«Verbatim (internal markup instructions ignored)»
+=row
+=column
+=for cell :label :row-span(2)
+markup-X
+=column
+=cell V«X< DISPLAY-TEXT &#124;  METADATA = INDEX-ENTRY >»
+=cell V«Index entry ( X<display text&#124;entry,subentry;...>)»
+=row
+=for cell :label
+markup-bad
+=cell V«Unknown markup, render minimally»
+=row
+=column
+=for cell :label :row-span(2)
+markup-Δ
+=column
+=cell V«Δ< DISPLAY-TEXT &#124;  METADATA = VERSION-ETC >»
+=cell V«Delta note ( Δ<visible text&#124;version; Notification text> )»
+=row
+=for cell :label
+nested
+=cell V«renders =nested block»
+=row
+=for cell :label
+numdefn
+=cell V«special template to render a numbered defn list data structure»
+=row
+=for cell :label
+numdefn-list
+=cell V«special template to render a numbered item list data structure»
+=row
+=for cell :label
+numhead
+=cell V«renders =numhead block»
+=row
+=for cell :label
+numitem
+=cell V«renders =numitem block»
+=row
+=for cell :label
+numitem-list
+=cell V«special template to render a numbered item list data structure»
+=row
+=for cell :label
+output
+=cell V«renders =output block»
+=row
+=for cell :label
+para
+=cell V«renders =para block»
+=row
+=for cell :label
+place
+=cell V«renders =place block»
+=row
+=for cell :label
+pod
+=cell V«renders =pod block»
+=row
+=for cell :label
+rakudoc
+=cell V«renders =rakudoc block»
+=row
+=for cell :label
+section
+=cell V«renders =section block»
+=row
+=for cell :label
+semantic
+=cell V«renders =SEMANTIC block, if not otherwise given»
+=row
+=for cell :label
+table
+=cell V«renders =table block»
+=row
+=for cell :label
+toc
+=cell V«special template to render the toc list»
+=row
+=for cell :label
+toc-item
+=cell V«renders a single item in the toc»
+=row
+=for cell :label
+toc-numeration
+=cell V«renders the numeration part for a toc»
+=row
+=for cell :label
+unknown
+=cell V«renders any unknown block minimally»
+=row
+=for cell :label
+warnings
+=cell V«special template to render the warnings data structure»
 =end table
 =end rakudoc

@@ -1,6 +1,10 @@
 =begin rakudoc
-
 =TITLE Numeration module
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+
+=for VERSION :hidden
+v0.2.1
 
 =head1 Purpose
 
@@ -22,5 +26,9 @@ Returns a string of the result.
 
 =head2 method reset
 Reset the counters for all levels.
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 
 =end rakudoc

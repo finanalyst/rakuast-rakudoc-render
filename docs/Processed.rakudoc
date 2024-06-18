@@ -1,5 +1,10 @@
 =begin rakudoc
 =TITLE ProcessState and RakuDoc::Processed
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+
+=for VERSION :hidden
+v0.2.1
 
 =head1 Purpose
 
@@ -157,5 +162,9 @@ Rendered version of the ToC
 =head3 C<< Str $.rendered-index is rw >>
 
 Rendered version of the Index
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 
 =end rakudoc

@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "perl": "6.e",
   "authors": [
     "Richard Hainsworth"
@@ -36,7 +36,12 @@
     "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
   },
   "resources": [
-    "example-new-markdown-templates.raku"
+    "example-new-markdown-templates.raku",
+    "compliance-rendering/rakudociem-ipsum.md",
+    "compliance-rendering/rakudociem-ipsum.rakudoc",
+    "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",
+    "compliance-rendering/rakudociem-ipsum.rakudoc.test.text",
+    "compliance-rendering/rakudociem-ipsum.rakudoc.text"
   ],
   "support": {
     "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",
@@ -49,7 +54,8 @@
     "bin/RenderTextify",
     "bin/gen-default-template-info.raku",
     "bin/force-compile",
-    "bin/get-compliance-document"
+    "bin/get-compliance-document",
+    "bin/RenderDocs"
   ],
   "docs": [
     "README.md",
@@ -60,6 +66,7 @@
     "Render.md",
     "ScopedData.md",
     "Templates.md",
+    "default-text-templates.md",
     "RakuDoc-To-Markdown.md",
     "docs/README.rakudoc",
     "docs/MarkUpMeta.rakudoc",
@@ -69,7 +76,8 @@
     "docs/Render.rakudoc",
     "docs/ScopedData.rakudoc",
     "docs/Templates.rakudoc",
-    "docs/RakuDoc-To-Markdown.rakudoc"
+    "docs/RakuDoc-To-Markdown.rakudoc",
+    "docs/default-text-templates.rakudoc"
   ],
   "source-type": "git"
 }

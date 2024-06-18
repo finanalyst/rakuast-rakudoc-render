@@ -215,7 +215,7 @@ Rendered version of the Index
 
 ----
 
-Rendered from docs/docs/Processed.rakudoc at 17:55 UTC on 2024-06-18
+Rendered from docs/docs/Processed.rakudoc at 21:26 UTC on 2024-06-18
 
 Source last modified at 11:16 UTC on 2024-06-07
 

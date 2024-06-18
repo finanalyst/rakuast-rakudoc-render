@@ -43,9 +43,9 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
         =TITLE Templates in C\<{ $method }>
         =SUBTITLE Auto generated from C\<{ $module }>
         =begin table :caption<Documentation of default templates >
-            =row :header
-                =cell Name
-                =cell Description
+        =row :header
+        =cell Name
+        =cell Description
         HEAD
     for %data.sort(*.key)>>.kv -> ($name, @des) {
         my $descs = +@des;
@@ -54,7 +54,7 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
         my $desc-part;
 
         if $span == 1 {
-            $name-part = "=for cell \:label\n\t\t$name";
+            $name-part = "=for cell \:label\n$name";
             if @des[0] {
                 $desc-part = "=cell V\«{ @des[0] }»";
             }
@@ -63,13 +63,13 @@ sub MAIN(:$module = 'lib/RakuDoc/Render.rakumod', :$method = 'default-text-templ
             }
         }
         else {
-            $name-part = "=column\n\t\t\t=for cell \:label \:row-span($span)\n\t\t\t$name";
-            $desc-part = "=column\n\t\t\t" ~ (gather for @des.list { take "=cell V\«$_»" }).join("\n\t\t\t");
+            $name-part = "=column\n=for cell \:label \:row-span($span)\n$name";
+            $desc-part = "=column\n" ~ (gather for @des.list { take "=cell V\«$_»" }).join("\n");
         }
         $rakudoc ~= qq:to/ROW/;
-                =row
-                    $name-part
-                    $desc-part
+            =row
+            $name-part
+            $desc-part
             ROW
     }
     $rakudoc ~= q:to/END/;

@@ -17,6 +17,7 @@
   - <a href="#Debugging">Debugging</a>   
     - <a href="#Debug_options">Debug options</a>   
 <a href="#Environment_variables">Environment variables</a>   
+<a href="#Credits">Credits</a>   
 
 
 ----
@@ -199,7 +200,23 @@ For example, POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
 
 If the environment variable WIDTH is also set, the text output will be wrapped to the value. 
 
-WIDTH by default is set at 80 chars. To set at 70, use: POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
+WIDTH by default is set at 80 chars. To set at 70, use: POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum 
+
+
+<div id="Credits"> </div>----
+
+## AUTHOR<div id="AUTHOR"> </div>
+Richard Hainsworth aka finanalyst
+
+
+
+
+<div id="Placement"> </div>----
+
+## VERSION<div id="VERSION"> </div>
+v0.2.1
+
+
 
 
 
@@ -207,8 +224,8 @@ WIDTH by default is set at 80 chars. To set at 70, use: POSTPROCESSING=1 WIDTH=7
 
 ----
 
-Rendered from docs/docs/Render.rakudoc at 17:55 UTC on 2024-06-18
+Rendered from docs/docs/Render.rakudoc at 21:26 UTC on 2024-06-18
 
-Source last modified at 08:53 UTC on 2024-06-14
+Source last modified at 21:23 UTC on 2024-06-18
 
 

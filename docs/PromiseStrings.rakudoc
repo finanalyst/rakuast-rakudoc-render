@@ -1,6 +1,7 @@
 =begin rakudoc
 =TITLE PromiseStrings for templates
-=SUBTITLE How RakuAsT-RakuDoc-Render handles forward references or placement
+=begin SUBTITLE
+How RakuAsT-RakuDoc-Render handles forward references or placement
 material that has not yet been rendered
 
 When C<=place toc:*> is given in a RakuDoc source (eg at the top of a source),
@@ -9,6 +10,12 @@ typically the source has not yet been completely rendered.
 The renderer actually renders a source into C<PStr> or B<PromiseStrings> rather
 than C<Str>. As forward references become known, they are included in the
 text.
+=end SUBTITLE
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+
+=for VERSION :hidden
+v0.2.1
 
 =head1 PCell and PStr classes
 
@@ -111,4 +118,10 @@ Typically, B<PCell> instances are converted to Str as soon as possible.
 =head3 debug
 
 Provides information about a B<PCell>.
+
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
+
 =end rakudoc

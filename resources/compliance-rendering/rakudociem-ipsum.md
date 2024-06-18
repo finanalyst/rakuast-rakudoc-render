@@ -57,7 +57,7 @@ Several *mistakes* have been included where the RakuDoc v2 specification indicat
 The the end of the rendering of this source file, a number of warning messages should be included. 
 
 
-----
+<div id="The_table_of_contents"> </div>----
 
 ## Table of Contents
 <a href="#SYNOPSIS">SYNOPSIS</a>   
@@ -92,7 +92,7 @@ The the end of the rendering of this source file, a number of warning messages s
 
 
 
-----
+<div id="A_short_index"> </div>----
 
 ## Index
 <span style="background-color: antiquewhite; font-weight: 600;">elements to be placed</span>:  <a href="#index-entry-elements_to_be_placed">This is third level heading</a>
@@ -382,7 +382,7 @@ but may have a different styling
 The following semantic block was included at the beginning in source, but it is now included here. 
 
 
-----
+<div id="Unrelenting_hype"> </div>----
 
 ## AUTHORS<div id="AUTHORS"> </div>
 Richard Hainsworth, aka finanalyst
@@ -460,7 +460,7 @@ Did I mention before that: Do not consider this a disquisition of possible combi
 Text finishes after version number 
 
 
-----
+<div id="Placement"> </div>----
 
 ## VERSION<div id="VERSION"> </div>
 v0.1.2
@@ -503,9 +503,9 @@ v0.1.2
 
 ----
 
-Rendered from ./rakudociem-ipsum.rakudoc at 17:08 UTC on 2024-06-18
+Rendered from ./rakudociem-ipsum.rakudoc at 21:34 UTC on 2024-06-18
 
-Source last modified at 17:06 UTC on 2024-06-18
+Source last modified at 21:31 UTC on 2024-06-18
 
 
 

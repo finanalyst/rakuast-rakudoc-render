@@ -4,8 +4,15 @@ use experimental :rakuast;
 my %docs = 'docs'.IO.dir(test => *.ends-with('.rakudoc')).map({ .extension('').basename => .modified });
 my %rendered = dir(test => *.ends-with('.md')).map({ .extension('').basename => .modified });
 my @to-be-rendered = %docs.pairs.grep({
-    %rendered{.key}:exists.not ||(%rendered{.key} > .value)
-})>>.key;
+        %rendered{.key}:exists.not || (%rendered{.key} < .value)
+    })>>.key;
+#for %docs.sort {
+#    print .key => sprintf("docs: %d:%02d on %s", .value.DateTime.hour, .value.DateTime.minute, .value.DateTime.yyyy-mm-dd);
+#    my $sel = ( %rendered{.key} && .value > %rendered{.key} ) ?? 'Select' !! 'Dont';
+#    say sprintf(" rend: %d:%02d on %s [%s]", .DateTime.hour, .DateTime.minute, .DateTime.yyyy-mm-dd, $sel) with %rendered{ .key };
+#    say "rend: None [Select]" without %rendered{ .key };
+#}
+#say @to-be-rendered;
 say 'Documents with .md in CWD, but not in docs/ : ', (%rendered.keys (-) %docs.keys).keys;
 for @to-be-rendered.sort {
     say "Processing ｢docs/$_.rakudoc｣ to ｢$_.md｣";

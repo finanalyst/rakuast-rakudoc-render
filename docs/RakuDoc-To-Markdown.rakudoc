@@ -59,4 +59,8 @@ Markdown output, then the Markdown file is updated.
 Usage
     bin/RenderDocs
 
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
+
 =end rakudoc

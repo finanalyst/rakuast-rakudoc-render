@@ -1,5 +1,10 @@
 =begin rakudoc
 =TITLE Minimal documentation of RakuDoc::Render Module
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+
+=for VERSION :hidden
+v0.2.1
 
 =head1 Overview
 
@@ -213,5 +218,9 @@ wrapped to the value.
 
 WIDTH by default is set at 80 chars. To set at 70, use:
     POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 
 =end rakudoc

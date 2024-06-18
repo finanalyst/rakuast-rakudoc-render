@@ -1,5 +1,10 @@
 =begin rakudoc
 =TITLE The ScopeData module
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+
+=for VERSION :hidden
+v0.2.1
 
 =head1 Purpose
 
@@ -105,5 +110,9 @@ Increment the defn numeration, only one level
 =head2 C<< multi method defn-reset()>>
 
 Reset the defn numeration
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 
 =end rakudoc
