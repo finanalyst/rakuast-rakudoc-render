@@ -1,12 +1,5 @@
 #!/usr/bin/env raku
 use v6.d;
 run <<rm -rf .precomp>>;
-use lib '.';
-use RakuDoc::PromiseStrings;
-use RakuDoc::MarkupMeta;
-use RakuDoc::Numeration;
-use RakuDoc::ScopedData;
-use RakuDoc::Templates;
-use RakuDoc::Processed;
-use RakuDoc::Render;
+run <<prove6 -I.>>;
 say 'force recompiled dependencies';

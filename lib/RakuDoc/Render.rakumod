@@ -1278,7 +1278,10 @@ class RakuDoc::Processor {
                 @headers = @rows.shift for ^($_+1);
             }
         }
-        $*prs.body ~= %!templates<table>.( %( :$procedural, :$caption, :$id, :$header-rows, :@headers, :@rows, :@grid, %config ) );
+        $*prs.body ~= %!templates<table>.( %(
+            :$procedural, :$caption, :$id, :$target, :$level,
+            :$header-rows, :@headers, :@rows, :@grid,
+            %config ) );
     }
     #| A lower case block generates a warning
     #| DEPARSED Str is rendered with 'unknown' template
@@ -1323,23 +1326,25 @@ class RakuDoc::Processor {
                 $hidden = True; # hide by default
                 $hidden = $_ with %config<hidden>;
                 $!current.title = $contents.Str;
+                my $target = $!current.title-target = $.name-id( $contents.Str);
                 # allows for TITLE to have its own template
                 if %!templates<TITLE>:exists {
-                    $rv = %!templates<TITLE>( %( :$level, :$contents, :$caption, %config ) )
+                    $rv = %!templates<TITLE>( %( :$level, :$contents, :$caption, :$target, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, %config ) )
                 }
             }
             when 'SUBTITLE' {
                 $hidden = True; # hide by default
                 $hidden = $_ with %config<hidden>;
                 $!current.subtitle = $contents.Str;
+                my $target = $.name-id($contents.Str);
                 if %!templates<SUBTITLE>:exists {
-                    $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, %config ) )
+                    $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, :$target, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, %config ) )
                 }
             }
             default {

@@ -12,7 +12,7 @@ method render($ast) {
         path     => $fn.dirname
     );
     my $rdp = RakuDoc::Processor.new;
-    $rdp.add-templates( $.markdown-templates, :source<RakuDoc::To::MarkDown> );
+    $rdp.add-templates( $.markdown-templates, :source<RakuDoc::To::Markdown> );
     $rdp.render( $ast, :%source-data  )
 }
 
@@ -41,7 +41,7 @@ method markdown-templates {
 #    my constant CURL-UNDERLINE-OFF = "\e[4:0m";
     my constant REPLACE-ON = "**__";
     my constant REPLACE-OFF = "__**";
-    my constant INDEXED-ON = '<span style="color:green; background-color: antiquewhite">';
+    my constant INDEXED-ON = '<span style="color:green; background-color: antiquewhite;">';
     my constant INDEXED-OFF = '</span>';
     my constant INDEX-ENTRY-ON = '<span style="background-color: antiquewhite; font-weight: 600;">';
     my constant INDEX-ENTRY-OFF = '</span>';
@@ -55,11 +55,11 @@ method markdown-templates {
     my constant LINK-TEXT-OFF = "]";
     my constant LINK-ON = "(";
     my constant LINK-OFF = ")";
-    my constant DEPR-TEXT-ON = '<span style="color:red; background-color: pink">';
+    my constant DEPR-TEXT-ON = '<span style="color:red; background-color: pink;">';
     my constant DEPR-TEXT-OFF = '</span>';
-    my constant DEPR-ON = '<span style="background-color: pink">**';
+    my constant DEPR-ON = '<span style="background-color: pink;">**';
     my constant DEPR-OFF = "</span>";
-    my constant DEFN-TEXT-ON = '<span style="background-color: lightgrey">';
+    my constant DEFN-TEXT-ON = '<span style="background-color: lightgrey;">';
     my constant DEFN-TEXT-OFF = '</span>';
     my constant BAD-MARK-ON = "`";
     my constant BAD-MARK-OFF = "`";
@@ -148,7 +148,7 @@ method markdown-templates {
             "\n\n"
         },#| renders =defn block
         defn => -> %prm, $tmpl {
-            BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "  \n" ~
+            BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "  \n\n" ~
             "\t" ~ %prm<contents> ~ "\n\n"
         },
         #| renders =numdefn block
@@ -164,14 +164,14 @@ method markdown-templates {
         #| renders =item block
         item => -> %prm, $tmpl {
             my $num = %prm<level> - 1;
-            my $indent = '  ' x %prm<level>;
+            my $indent = '&nbsp;&nbsp;' x %prm<level>;
             $num = @bullets.elems - 1 if $num >= @bullets.elems;
-            my $bullet = %prm<bullet> // '-';
+            my $bullet = %prm<bullet> // @bullets[$num];
             $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "  \n"
         },
         #| special template to render an item list data structure
         item-list => -> %prm, $tmpl {
-            "\n" ~ [~] %prm<item-list>
+            "\n\n" ~ [~] %prm<item-list>
         },
         #| renders =numitem block
         numitem => -> %prm, $tmpl {
@@ -179,11 +179,11 @@ method markdown-templates {
         },
         #| special template to render a numbered item list data structure
         numitem-list => -> %prm, $tmpl {
-            "\n" ~ [~] %prm<numitem-list>
+            "\n\n" ~ [~] %prm<numitem-list>
         },
         #| renders =nested block
         nested => -> %prm, $tmpl {
-            PStr.new: "\t" ~ %prm<contents> ~ "\n\n"
+            PStr.new: ">" ~ %prm<contents> ~ "\n\n"
         },
         #| renders =para block
         para => -> %prm, $tmpl { %prm<contents> ~ "\n\n" },
@@ -207,7 +207,7 @@ method markdown-templates {
             my $del = %prm<delta> // '';
             # using level + 1 so that TITLE is always larger
             # a line above heading level one to separate sections
-            ('----' if %prm<level> == 1) ~
+            PStr.new: ('----' if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
             %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
@@ -221,12 +221,51 @@ method markdown-templates {
             my $del = %prm<delta> // '';
             # using level + 1 so that TITLE is always larger
             # a line above heading level one to separate sections
-            my $rv = ('----' if %prm<level> == 1) ~
+            my $rv = PStr.new: ('----' if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
             %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
             "\n" ;
                 if %prm<procedural> {
+                    # Markdown appears to only allow, but require one header row
+                    # so insert header separator once after first row
+                    my Bool $separator = False;
+                    # counters for colspan
+                    my $skip = 0;
+                    my $prev = 0;
+                    my $post = 0;
+                    for %prm<grid>.list -> @row {
+                        $rv ~= [~] gather for @row {
+                            if .<no-cell> and $skip {
+                                --$skip
+                            }
+                            elsif .<no-cell> {
+                                take ' | &nbsp;'
+                            }
+                            else {
+                                # only handle col-span
+                                # row-span no-cell just replace with nbsp
+                                with .<span> {
+                                    if .[0] > 1 {
+                                        $skip = .[0] - 1;
+                                        $prev = $skip div 2;
+                                        $post = $skip - $prev;
+                                    }
+                                }
+                                take ' | ' ~ '&nbsp; | ' x $prev ~
+                                    ( '**' if .<label> or .<header>) ~
+                                    .<data>.trim ~
+                                    ( '**' if .<label> or .<header>) ~
+                                    ' | &nbsp;' x $post;
+                                $prev = $post = 0
+                            }
+                        }
+                        $rv ~= " |\n";
+                        unless $separator {
+                                $separator = True;
+                                $rv ~= '| :---: ' x @row.elems ~ "|\n";
+                        }
+                    }
 #                    # calculate column widths naively, will include possible markup, and
 #                    # will fail if embedded tables
 #                    # TODO comply with justification, now right-justify col-head, top-justify row labels.
@@ -284,6 +323,9 @@ method markdown-templates {
 #                   ;
                 }
                 else {
+                    $rv ~= '| **' ~ %prm<headers>[0]>>.trim.join( '** | **') ~ "** |\n";
+                    $rv ~= [~] (( 1 .. %prm<headers>[0].elems ).map({ '| :----: ' })) ~ "|\n";
+                    $rv ~= [~] %prm<rows>.map({ '| ' ~ .join(' | ') ~ " |\n" }) ~ "\n"
 #                    my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - $cap-width ) div 2;
 #                    my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
 #                    $cap-shift = 0 if $cap-shift <= 0;
@@ -297,6 +339,7 @@ method markdown-templates {
 #                            '| ' ~ $_.join(' | ') ~ " |\n"
 #                        }).join('') ~ "\n\n"
                 }
+                $rv
         },
         #| renders =custom block
         custom => -> %prm, $tmpl {
@@ -321,7 +364,7 @@ method markdown-templates {
         #| special template to encapsulate all the output to save to a file
         final => -> %prm, $tmpl {
             "\n# " ~ %prm<title> ~ "\n\n" ~
-            (%prm<subtitle> ?? ( '> ' ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
+            (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
             ( %prm<rendered-toc> if %prm<rendered-toc> ) ~
             %prm<body>.Str ~ "\n" ~
             %prm<footnotes>.Str ~ "\n" ~
@@ -373,7 +416,7 @@ method markdown-templates {
             PStr.new: "----\n\n## Footnotes\n" ~
                 %prm<footnotes>.map({
                     .<fnNumber> ~
-                    qq[<a href="#{ .<retTarget> }"> |^| </a>] ~
+                    qq[<a id=".<fnTarget>" href="#{ .<retTarget> }"> |^| </a>] ~
                     .<contents>.Str
                 }).join("\n") ~ "\n\n"
             }
@@ -427,7 +470,11 @@ method markdown-templates {
         markup-R => -> %prm, $tmpl { REPLACE-ON ~ %prm<contents> ~ REPLACE-OFF },
         #| S< DISPLAY-TEXT >
         #| Space characters to be preserved
-        markup-S => -> %prm, $tmpl { %prm<contents> },
+        markup-S => -> %prm, $tmpl {
+            $tmpl<escaped>
+                .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
+                .subst(/ \v /, '<br>', :g)
+        },
         #| T< DISPLAY-TEXT >
         #| Terminal output (typically rendered fixed-width)
         markup-T => -> %prm, $tmpl { TERMINAL-ON ~ %prm<contents> ~ TERMINAL-OFF },
@@ -436,7 +483,11 @@ method markdown-templates {
         markup-U => -> %prm, $tmpl { UNDERLINE-ON ~ %prm<contents> ~ UNDERLINE-OFF },
         #| V< DISPLAY-TEXT >
         #| Verbatim (internal markup instructions ignored)
-        markup-V => -> %prm, $tmpl { %prm<contents> },
+        markup-V => -> %prm, $tmpl {
+            $tmpl<escaped>
+                .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
+                .subst(/ \v /, '<br>', :g)
+        },
 
         ##| Markup codes, optional display and meta data
 
@@ -460,9 +511,9 @@ method markdown-templates {
         markup-P => -> %prm, $tmpl {
             given %prm<schema> {
                 when 'defn' {
-                    BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ "\n\n\x29DB  " ~
+                    "\n\n&#x29DB;  " ~
                     DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
-                    "\n\x29DA"
+                    "\n&#x29DA;"
                 }
                 default { %prm<contents> }
             }
