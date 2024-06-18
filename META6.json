@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "perl": "6.e",
   "authors": [
     "Richard Hainsworth"
@@ -16,7 +16,8 @@
     "URI",
     "Digest::SHA1::Native",
     "Text::MiscUtils",
-    "OO::Monitors"
+    "OO::Monitors",
+    "Test::Run"
   ],
   "test-depends": [
     "Test",
@@ -34,7 +35,9 @@
     "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
     "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
   },
-  "resources": [],
+  "resources": [
+    "example-new-markdown-templates.raku"
+  ],
   "support": {
     "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",
     "email": "richard@hainsworth.wales",
@@ -43,8 +46,10 @@
   "license": "Artistic-2.0",
   "source-url": "git://github.com/finanalyst/rakuast-rakudoc-render.git",
   "bin": [
-    "bin/RenderTextify.raku",
-    "bin/gen-default-template-info.raku"
+    "bin/RenderTextify",
+    "bin/gen-default-template-info.raku",
+    "bin/force-compile",
+    "bin/get-compliance-document"
   ],
   "docs": [
     "README.md",
@@ -55,6 +60,7 @@
     "Render.md",
     "ScopedData.md",
     "Templates.md",
+    "RakuDoc-To-Markdown.md",
     "docs/README.rakudoc",
     "docs/MarkUpMeta.rakudoc",
     "docs/Numeration.rakudoc",
@@ -62,7 +68,8 @@
     "docs/PromiseStrings.rakudoc",
     "docs/Render.rakudoc",
     "docs/ScopedData.rakudoc",
-    "docs/Templates.rakudoc"
+    "docs/Templates.rakudoc",
+    "docs/RakuDoc-To-Markdown.rakudoc"
   ],
   "source-type": "git"
 }

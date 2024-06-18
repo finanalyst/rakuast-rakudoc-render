@@ -1,0 +1,62 @@
+=begin rakudoc
+=TITLE Rendering RakuDoc v2 to MarkDown
+=for AUTHORS :hidden
+Richard Hainsworth, aka finanalyst
+=for VERSION :hidden
+v0.1.0
+=begin SUBTITLE
+Simple and customisable module for rendering RakuDoc v2 to Markdown.
+
+Markdown representation of documentation is widespread, but some of the
+features of RakuDoc v2 need HTML representation.
+
+The module can be customised by setting an Environment variable to a template file.
+L<More detail on customising|Customising templates>.
+
+The general L<README file should be read first|README>.
+
+Currently, it is assumed that the distribution is B<NOT> installed using zef.
+Consequently, all commands are assumed to be inside the repo directory root.
+=end SUBTITLE
+=begin SYNOPSIS
+To render a RakuDoc source, eg. I<some-docs.rakudoc>, into I<some-docs.md>, use the
+terminal command
+    RAKUDO_RAKUAST=1 raku --rakudoc=Markdown some-docs.rakudoc > some-docs.md
+
+There is a section on Troubleshooting in the general README file if this fails.
+=end SYNOPSIS
+
+=head Customising templates
+
+All output from I<Rakuast::RakuDoc::Render> modules is generated through templates.
+These templates can be added to, without overriding the previous templates.
+
+If a file exists in the local directory called I<new-temp.raku> and conforms to
+the requirements described in L<Templates|Templates>, then the templates in it will be
+added to the generic Markdown templates as follows:
+    MORE_MARKDOWN=new-temp.raku RAKUDO_RAKUAST=1 raku --rakudoc=Markdown some-docs.rakudoc > store.md
+
+For instance if the contents of I<new-temp.raku> is
+    %(
+        final => -> %prm, $tmpl { "# Customisation message\n\n" ~ $tmpl.prev }
+    )
+
+Then after running the command above, B<store.md> will contain a new title at the top, followed
+by the remainder of the Markdown as rendered before the new template was added.
+
+Some notes:
+=item The template C<final> is the last one that I<glues> all the documentation together into a string.
+=item C<$tmpl.prev> is call to the previous version of C<final> with all the parameters passed on.
+=item All the generic templates are L<tabulated with comments|default-text-templates>.
+
+=head RenderDocs utility
+
+A utility called B<RenderDocs> accompanies the distribution. It is assumed that documentation sources
+in RakuDoc are contained in the sub-directory C<docs/> and that Markdown versions are required in the
+working directory. If any RakuDoc source has a modified date later than the current version of the
+Markdown output, then the Markdown file is updated.
+
+Usage
+    bin/RenderDocs
+
+=end rakudoc

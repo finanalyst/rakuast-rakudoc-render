@@ -1,0 +1,17 @@
+#!/usr/bin/env raku
+use experimental :rakuast;
+
+my %docs = 'docs'.IO.dir(test => *.ends-with('.rakudoc')).map({ .extension('').basename => .modified });
+my %rendered = dir(test => *.ends-with('.md')).map({ .extension('').basename => .modified });
+my @to-be-rendered = %docs.pairs.grep({
+    %rendered{.key}:exists.not ||(%rendered{.key} > .value)
+})>>.key;
+say 'Documents with .md in CWD, but not in docs/ : ', (%rendered.keys (-) %docs.keys).keys;
+for @to-be-rendered.sort {
+    say "Processing ｢docs/$_.rakudoc｣ to ｢$_.md｣";
+    my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '--rakudoc=Markdown', "docs/$_.rakudoc"), :err, :out;
+    my $err = $p.err.slurp(:close);
+    $err.say if $err;
+    my $out = $p.out.slurp(:close);
+    "$_.md".IO.spurt($out) if $out;
+}

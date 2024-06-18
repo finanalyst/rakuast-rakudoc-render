@@ -13,6 +13,15 @@ method render($ast) {
     );
     my $rdp = RakuDoc::Processor.new;
     $rdp.add-templates( $.markdown-templates, :source<RakuDoc::To::Markdown> );
+    if %*ENV<MORE_MARKDOWN>:exists {
+        exit note( "｢{%*ENV<MORE_MARKDOWN>}｣ is not a file" ) unless %*ENV<MORE_MARKDOWN>.IO ~~ :e & :f;
+        try {
+            $rdp.add-templates( EVALFILE( %*ENV<MORE_MARKDOWN> ), :source<User-supplied-markdown> );
+            CATCH {
+                default { exit note "Could not utilise ｢{%*ENV<MORE_MARKDOWN>}｣ " ~ .message }
+            }
+        }
+    }
     $rdp.render( $ast, :%source-data  )
 }
 
@@ -192,6 +201,8 @@ method markdown-templates {
             my $del = %prm<delta> // '';
             my $rv = PStr.new;
             $rv ~= $del ~ "\n";
+            $rv ~= qq[<div id="{ %prm<target> }"> </div>];
+            $rv ~= qq[<div id="{ %prm<id> }"> </div>] if %prm<id>;
             $rv ~= %prm<contents> ;
             $rv ~= "\n\n";
         },
@@ -210,7 +221,9 @@ method markdown-templates {
             PStr.new: ('----' if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
+            %prm<caption> ~
+            qq[<div id="{ %prm<target> }"> </div>] ~
+            ( qq[<div id="{ %prm<id> }"> </div>] if %prm<id> ) ~
             "\n" ~
             %prm<contents> ~ "\n\n"
         },
@@ -224,122 +237,54 @@ method markdown-templates {
             my $rv = PStr.new: ('----' if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
-            "\n" ;
-                if %prm<procedural> {
-                    # Markdown appears to only allow, but require one header row
-                    # so insert header separator once after first row
-                    my Bool $separator = False;
-                    # counters for colspan
-                    my $skip = 0;
-                    my $prev = 0;
-                    my $post = 0;
-                    for %prm<grid>.list -> @row {
-                        $rv ~= [~] gather for @row {
-                            if .<no-cell> and $skip {
-                                --$skip
-                            }
-                            elsif .<no-cell> {
-                                take ' | &nbsp;'
-                            }
-                            else {
-                                # only handle col-span
-                                # row-span no-cell just replace with nbsp
-                                with .<span> {
-                                    if .[0] > 1 {
-                                        $skip = .[0] - 1;
-                                        $prev = $skip div 2;
-                                        $post = $skip - $prev;
-                                    }
-                                }
-                                take ' | ' ~ '&nbsp; | ' x $prev ~
-                                    ( '**' if .<label> or .<header>) ~
-                                    .<data>.trim ~
-                                    ( '**' if .<label> or .<header>) ~
-                                    ' | &nbsp;' x $post;
-                                $prev = $post = 0
-                            }
+            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~ "\n" ;
+            if %prm<procedural> {
+                # Markdown appears to only allow, but require one header row
+                # so insert header separator once after first row
+                my Bool $separator = False;
+                # counters for colspan
+                my $skip = 0;
+                my $prev = 0;
+                my $post = 0;
+                for %prm<grid>.list -> @row {
+                    $rv ~= [~] gather for @row {
+                        if .<no-cell> and $skip {
+                            --$skip
                         }
-                        $rv ~= " |\n";
-                        unless $separator {
-                                $separator = True;
-                                $rv ~= '| :---: ' x @row.elems ~ "|\n";
+                        elsif .<no-cell> {
+                            take ' | &nbsp;'
+                        }
+                        else {
+                            # only handle col-span
+                            # row-span no-cell just replace with nbsp
+                            with .<span> {
+                                if .[0] > 1 {
+                                    $skip = .[0] - 1;
+                                    $prev = $skip div 2;
+                                    $post = $skip - $prev;
+                                }
+                            }
+                            take ' | ' ~ '&nbsp; | ' x $prev ~
+                                ( '**' if .<label> or .<header>) ~
+                                .<data>.trim ~
+                                ( '**' if .<label> or .<header>) ~
+                                ' | &nbsp;' x $post;
+                            $prev = $post = 0
                         }
                     }
-#                    # calculate column widths naively, will include possible markup, and
-#                    # will fail if embedded tables
-#                    # TODO comply with justification, now right-justify col-head, top-justify row labels.
-#                    my @col-wids;
-#                    my $wid;
-#                    for %prm<grid>.list -> @row {
-#                        for @row.kv -> $n, %cell {
-#                            next if %cell<no-cell>;
-#                            $wid = duospace-width(%cell<data>.Str) + 2;
-#                            @col-wids[$n] = $wid if $wid > (@col-wids[$n] // 0)
-#                        }
-#                    }
-#                    my $table-wid = (+@col-wids * 3) + 4 + [+] @col-wids;
-#                    my @rendered-grid;
-#                    my $col-count;
-#                    for %prm<grid>.kv -> $r, @row {
-#                        $col-count = 0;
-#                        for @row.kv -> $n, %cell {
-#                            next if %cell<no-cell>;
-#                            my $data = %cell<data>.Str.trim;
-#                            my $chars = duospace-width($data);
-#                            my $col-wid = @col-wids[$n];
-#                            if %cell<span>:exists {
-#                                #for the col-span
-#                                if %cell<span>[0] > 1 {
-#                                    for ^( %cell<span>[0] - 1) {
-#                                        $col-wid += @col-wids[ $n + $_ + 1] + 2
-#                                    }
-#                                }
-#                                #for the row-span
-#                                if %cell<span>[1] > 1 {
-#                                    for ^ (%cell<span>[1] - 1 ) {
-#                                        @rendered-grid[$r + $_ + 1][$n] ~= ' ' x $col-wid ~ ' |'
-#                                    }
-#                                }
-#                            }
-#                            my $pref = ( $col-wid - $chars ) div 2;
-#                            my $post = $col-wid - $pref - $chars;
-#                            @rendered-grid[ $r ][ $n ] ~=
-#                                ' ' x $pref ~
-#                                (%cell<header> || %cell<label> ?? BOLD-ON !! '') ~
-#                                $data ~
-#                                (%cell<header> || %cell<label> ?? BOLD-OFF !! '')
-#                                ~ ' ' x $post ~ ' |';
-#                        }
-#                    }
-#                    my $cap-shift = ( $table-wid - $cap-width ) div 2;
-#                    my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
-#                    $cap-shift = 0 if $cap-shift <= 0;
-#                    PStr.new: $del ~
-#                        "\n" ~ ' ' x $cap-shift ~ $caption ~"\n" ~
-#                        @rendered-grid.map({
-#                        ' ' x $row-shift ~ '| ' ~ $_.grep( *.isa(Str) ).join('') ~ "\n"
-#                        }).join('') ~ "\n\n"
-#                   ;
+                    $rv ~= " |\n";
+                    unless $separator {
+                            $separator = True;
+                            $rv ~= '| :---: ' x @row.elems ~ "|\n";
+                    }
                 }
-                else {
-                    $rv ~= '| **' ~ %prm<headers>[0]>>.trim.join( '** | **') ~ "** |\n";
-                    $rv ~= [~] (( 1 .. %prm<headers>[0].elems ).map({ '| :----: ' })) ~ "|\n";
-                    $rv ~= [~] %prm<rows>.map({ '| ' ~ .join(' | ') ~ " |\n" }) ~ "\n"
-#                    my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - $cap-width ) div 2;
-#                    my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
-#                    $cap-shift = 0 if $cap-shift <= 0;
-#                    PStr.new: $del ~
-#                        ' ' x $cap-shift ~
-#                        $caption ~ "\n" ~
-#                        ' ' x $row-shift ~
-#                        '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n" ~
-#                        %prm<rows>.map({
-#                            ' ' x $row-shift ~
-#                            '| ' ~ $_.join(' | ') ~ " |\n"
-#                        }).join('') ~ "\n\n"
-                }
-                $rv
+            }
+            else {
+                $rv ~= '| **' ~ %prm<headers>[0]>>.trim.join( '** | **') ~ "** |\n";
+                $rv ~= [~] (( 1 .. %prm<headers>[0].elems ).map({ '| :----: ' })) ~ "|\n";
+                $rv ~= [~] %prm<rows>.map({ '| ' ~ .join(' | ') ~ " |\n" }) ~ "\n"
+            }
+            $rv
         },
         #| renders =custom block
         custom => -> %prm, $tmpl {
@@ -503,8 +448,10 @@ method markdown-templates {
         #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
         #| Link ( L<display text|destination URI> )
         markup-L => -> %prm, $tmpl {
+            my $target = %prm<target>;
+            $target ~= '.md' if %prm<type> eq 'local';
             LINK-TEXT-ON ~ %prm<link-label> ~ LINK-TEXT-OFF ~
-            LINK-ON ~ %prm<target> ~ LINK-OFF
+            LINK-ON ~ $target ~ LINK-OFF
          },
         #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
         #| Placement link

@@ -490,8 +490,6 @@ class RakuDoc::Processor {
                     %( :$contents, %config )
                 );
             }
-
-
             # F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             # Formula inline content ( F<ALT|LaTex notation> )
             # At a minimum, only the ALT text should be rendered. But the metadata is passed to the
@@ -899,7 +897,7 @@ class RakuDoc::Processor {
         $*prs.toc.push(
             { :$caption, :$target, :$level, :$numeration }
         ) if $toc;
-        $*prs.body ~= %!templates<formula>(%(:$formula, :$alt, :$target, :$caption, :$level, :$numeration, %config ) )
+        $*prs.body ~= %!templates<formula>(%(:$formula, :$alt, :$target, :$caption, :$level, :$numeration, :$id, %config ) )
     }
     #| generates a single item and adds it to the item structure
     #| nothing is added to the .body string
@@ -990,11 +988,10 @@ class RakuDoc::Processor {
         my $caption = %config<caption>;
         my $level = %config<headlevel> // 1;
         $!scoped-data.last-title($caption);
-        my $target = $.name-id($caption);
-        my $id = '';
+        my $target = %config<target> = $.name-id($caption);
         with %config<id> {
             if self.is-target-unique( $_ ) {
-                $id = self.register-target( $_ );
+                %config<id> = self.register-target( $_ )
             }
             else {
                 $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣";
@@ -1103,7 +1100,19 @@ class RakuDoc::Processor {
         # render any tailing lists
         $contents ~= $.complete-item-list ~ $.complete-defn-list
         ~ $.complete-numitem-list ~ $.complete-numdefn-list;
-        $*prs.body ~= %!templates<section>( %( :$contents, %config ) )
+        my $id = '';
+        with %config<id> {
+            if self.is-target-unique( $_ ) {
+                self.register-target( $_ );
+                $id = $_
+            }
+            else {
+                $*prs.warnings.push:
+                    "Attempt to register already existing id ｢$_｣ as new target in ｢section｣"
+                    ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+            }
+        }
+        $*prs.body ~= %!templates<section>( %( :$contents, :$id, %config ) )
     }
     #| Table is added to ToC with level 1 as TABLE unless overriden by toc/headlevel/caption
     #| contents is processed and rendered using table template
@@ -1389,6 +1398,18 @@ class RakuDoc::Processor {
         my $level = %config<headlevel>:delete // 1;
         $level = 1 unless $level >= 1;
         my $numeration = '';
+        my $id = '';
+        with %config<id> {
+            if self.is-target-unique( $_ ) {
+                self.register-target( $_ );
+                $id = $_
+            }
+            else {
+                $*prs.warnings.push:
+                    "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣"
+                    ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+            }
+        }
         my $target = %config<id>:delete // $.name-id($caption);
         unless %config<toc> {
             $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target )
@@ -1396,7 +1417,7 @@ class RakuDoc::Processor {
         if %!templates{ $block-name }:exists {
             my $contents = $.contents( $ast, $parify );
             my $raw = $ast.paragraphs.Str.join;
-            $*prs.body ~= %!templates{ $block-name }( %( :$contents, :$raw, :$level, :$target, :$caption, %config ) )
+            $*prs.body ~= %!templates{ $block-name }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, %config ) )
         }
         else {
             # by spec, the name of an unrecognised Custom is treated like =head1

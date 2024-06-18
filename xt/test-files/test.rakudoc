@@ -1,0 +1,5 @@
+=begin rakudoc
+=TITLE Just a test
+=head First header
+Text
+=end rakudoc

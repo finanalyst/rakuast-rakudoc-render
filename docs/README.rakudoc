@@ -2,14 +2,19 @@
 =TITLE RakuDoc renderer
 
 =SUBTITLE Renders RakuDoc sources into an output format dependent on templates
-=AUTHOR Richard Hainsworth aka finanalyst
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+
+=for VERSION :hidden
+v0.2.1
 
 =head1 Overview
 
 This module is intended to provide a generic renderer from RakuDoc v2 into text, but
 is designed to be easily extended to other output formats by subclassing.
 
-Two other formats, namely HTML and MarkDown, are (to be) provided in the distribution.
+Two other formats, namely HTML and MarkDown, are ( & to be) provided in the distribution,
+see L<RakuDoc::To::Markdown|RakuDoc-To-Markdown>, B<to be written>.
 
 This is software using bleeding edge Rakudo, so look (L<at troubleshooting below|#Troubleshooting>).
 
@@ -115,5 +120,9 @@ production version of Rakudo does not allow for extensive Unicode entities.
 However, this will compile C<RakuDoc::Render> and its dependencies.
 
 Then run the command again but with 'RAKUDO_RAKUAST=1'.
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 
 =end rakudoc

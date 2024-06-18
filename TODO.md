@@ -1,8 +1,7 @@
 # list of things to do
 
 - [ ] Templates
-  - [ ] MarkDown, different id naming conventions
-  - [ ] HTML, need to add CSS and Javascript
+  - [ ] HTML, need to add CSS and Javascript?
   - [ ] Epub, need to add extra metadata pages 
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
 - [ ] Implement new numbering extensions, 
