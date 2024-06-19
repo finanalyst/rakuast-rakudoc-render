@@ -613,21 +613,30 @@ class RakuDoc::Processor {
             when 'Δ' {
                 my $contents = self.markup-contents($ast);
                 my $meta = '';
+                my $note = '';
+                my $versions = '';
                 if $ast.meta {
-                    $meta = $ast.meta
+                    $meta = $ast.meta.Str
                 }
                 elsif $contents ~~ / ^ (<-[|]>+) \| (.+) $ / {
                     $contents = ~$0;
                     $meta = ~$1
                 }
-                if $contents ~~ / ^ 'v' / {
+                if $meta {
+                    if $meta ~~ / ^ (<-[;]>+) ';' (.+) $ / {
+                        $versions = ~$0;
+                        $note = ~$1
+                    }
+                    else { $versions = $meta }
                     $*prs.body ~=  %!templates{"markup-Δ"}(
-                        %( :$contents, :$meta, %config)
+                        %( :$contents, :$versions, :$note, %config)
                     )
                 }
                 else {
-                    $*prs.warnings.push: "Δ<> markup ignored because it has no version content ｢{ ~$ast.DEPARSE }｣"
+                    $*prs.warnings.push: "Δ<> markup ignored because it has no version/note content ｢{ ~$ast.DEPARSE }｣"
                         ~ " in block ｢$context｣ with heading ｢$place｣.";
+                    # treat as verbatim text
+                    $*prs.body ~= %!templates<markup-V>( %( :$contents, %config ))
                 }
             }
             # M< DISPLAY-TEXT |  METADATA = WHATEVER >
@@ -1558,15 +1567,13 @@ class RakuDoc::Processor {
     method merged-config( $ast, $block-name --> Hash ) {
         my %config;
         %config = .resolved-config with $ast;
-#        say "@ $?LINE ast ", $ast if $ast and $ast.type and $ast.type eq 'item';
-#        say "@ $?LINE merged config ", %config if $ast and $ast.type and $ast.type eq 'item';
         my %scoped = $!scoped-data.config;
         %scoped{ $block-name }.pairs.map({
             %config{ .key } = .value unless %config{ .key }:exists
         });
         if %config<delta>:exists {
             my $contents = %config<delta>:delete;
-            if $contents.join(' ') ~~ / (<-[|]>+) '|'? ( .* ) $ / {
+            if $contents.join(' ') ~~ / (<-[;]>+) ';'? ( .* ) $ / {
                 %config<delta> = %!templates<delta>(%( :note( ~$1.trim), :versions(~$0.trim) ));
             }
             else {
@@ -1660,11 +1667,15 @@ class RakuDoc::Processor {
     my constant LINK-TEXT-OFF = "\e[39;49m";
     my constant LINK-ON = "\e[38;5;227m\e[48;5;0m";
     my constant LINK-OFF = "\e[39;49m";
-    my constant DEPR-TEXT-ON = "\e[48;5;216m\e[38;5;0m";
-    my constant DEPR-TEXT-OFF = "\e[39;49m";
-    my constant DEPR-ON = "\e[38;5;196m\e[48;5;216m";
-    my constant DEPR-OFF = "\e[39;49m";
-    my constant DEFN-TEXT-ON = "\e[38;5;197m\e[48;5;0m";
+    my constant DEVEL-TEXT-ON = "\e[48;5;216m\e[38;5;0m";
+    my constant DEVEL-TEXT-OFF = "\e[39;49m";
+    my constant DEVEL-VERSION-ON = "\e[38;5;196m\e[48;5;17m";
+    my constant DEVEL-VERSION-OFF = "\e[39;49m";
+    my constant DEVEL-NOTE-ON = "\e[38;5;161m\e[48;5;17m";
+    my constant DEVEL-NOTE-OFF = "\e[39;49m";
+    my constant DEFN-TERM-ON = "\e[1m";
+    my constant DEFN-TERM-OFF = "\e[22m";
+    my constant DEFN-TEXT-ON = "  \e[48;5;243m";
     my constant DEFN-TEXT-OFF = "\e[39;49m";
     my constant BAD-MARK-ON = "\e[38;5;117m\e[48;5;0m";
     my constant BAD-MARK-OFF = "\e[39;49m";
@@ -1732,25 +1743,27 @@ class RakuDoc::Processor {
             #| rendering the content from the :delta option
             #| see inline variant markup-Δ
             delta => -> %prm, $tmpl {
-                DEPR-TEXT-ON ~
-                %prm<note> ~ DEPR-TEXT-OFF ~
+                ( %prm<note> ??
+                       DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF
+                    !! ''
+                ) ~
+                DEVEL-VERSION-ON ~
                 " for " ~
-                DEPR-ON ~
-                %prm<versions> ~ DEPR-OFF ~
+                %prm<versions> ~ DEVEL-VERSION-OFF ~
                 "\n\n"
             },
             #| renders =defn block
             defn => -> %prm, $tmpl {
-                BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
-                "\t" ~ %prm<contents> ~ "\n"
+                DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
+                DEFN-TEXT-ON ~ %prm<contents>.trim ~ DEFN-TEXT-OFF ~ "\n"
             },
             #| renders =numdefn block
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { [~] %prm<defn-list> },
             #| special template to render a numbered defn list data structure
             numdefn => -> %prm, $tmpl {
-                BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "\n" ~
-                "\t" ~ %prm<contents> ~ "\n"
+                DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
+                DEFN-TEXT-ON ~ %prm<contents>.trim ~ DEFN-TEXT-OFF ~ "\n"
             },
             #| special template to render a numbered item list data structure
             numdefn-list => -> %prm, $tmpl { [~] %prm<numdefn-list> },
@@ -2045,9 +2058,9 @@ class RakuDoc::Processor {
 			markup-P => -> %prm, $tmpl {
 			    given %prm<schema> {
 			        when 'defn' {
-			            BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ "\n\x29DB" ~
-			            DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
-			            "\n\x29DA"
+			            DEFN-TERM-ON ~ %prm<contents> ~ DEFN-TERM-OFF ~ "\n\x2997" ~
+			            %prm<defn-expansion> ~
+			            "\n\x2998"
 			        }
 			        default { %prm<contents> }
 			    }
@@ -2056,12 +2069,13 @@ class RakuDoc::Processor {
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
             #| Definition inline ( D<term being defined|synonym1; synonym2> )
-			markup-D => -> %prm, $tmpl {  BOLD-ON ~ %prm<contents> ~ BOLD-OFF },
+			markup-D => -> %prm, $tmpl {  DEFN-TERM-ON ~ %prm<contents> ~ DEFN-TERM-OFF },
             #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
             #| Delta note ( Δ<visible text|version; Notification text> )
             markup-Δ => -> %prm, $tmpl {
-                DEPR-TEXT-ON ~ %prm<meta> ~ DEPR-TEXT-OFF ~
-                '[for ' ~ DEPR-ON ~ %prm<contents> ~ DEPR-OFF ~ ']'
+                DEVEL-TEXT-ON ~ %prm<contents> ~ DEVEL-TEXT-OFF ~
+                (%prm<note> ?? DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF !! '') ~
+                DEVEL-VERSION-ON ~ '[for ' ~ %prm<versions> ~ ']' ~ DEVEL-VERSION-OFF
             },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)

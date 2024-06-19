@@ -110,7 +110,7 @@ text
 
 
     [21m[1mThis is third level heading[22m[24m
-[48;5;216m[38;5;0mdevelopers can note deprecated things[39;49m for [38;5;196m[48;5;216mv2[39;49m
+[38;5;161m[48;5;17mdevelopers can attach notes to blocks associated with versions[39;49m[38;5;196m[48;5;17m for v2[39;49m
 
 A paragraph to illustrate [1mBasis type[22m formatting. 
 
@@ -146,9 +146,9 @@ This is an example of an Alias where A<DECLARATION> was replaced by the contents
 
 We can also make an inline [1mdefinition[22m. This whole paragraph will be referenced later. 
 
-A developer note [48;5;216m[38;5;0mcan be attached[39;49m[for [38;5;196m[48;5;216mv1.2.3 ^.. v2.0.0[39;49m] to text. A renderer may show the text or only show it for contexts compliant with the version. 
+A developer note [48;5;216m[38;5;0mcan be attached[39;49m[38;5;161m[48;5;17m highly deprecated[39;49m[38;5;196m[48;5;17m[for v1.2.3 ^.. v2.0.0][39;49m to text. A renderer may show the text or only show it for contexts compliant with the version. 
 
-But a note without meta  is ignored and a warning generated. 
+But a note without meta no versioning here is ignored and a warning generated. 
 
 When we want a formula [7m\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}[27m use F<> markup. 
 
@@ -159,14 +159,14 @@ A renderer should provide the opportunity to customise text using M<...|..,..;..
 A note [48;5;214m[38;5;0m[1][39;49m will not itself be rendered inline, but the text will be rendered in a footnote or popup. A marker or number will be rendered to point to the text. 
 
 Suppose we want to place the definition [1mIm-a-doppelganger[22m
-⧛[38;5;197m[48;5;0mWe can also make an inline [1mdefinition[22m. This whole paragraph will be referenced later. 
+⦗We can also make an inline [1mdefinition[22m. This whole paragraph will be referenced later. 
 
-[39;49m
-⧚ here. And to confound pedants, here is a definition [1mHappy[22m
-⧛[38;5;197m[48;5;0m[1mHappy[22m
-	when not blue 
-[39;49m
-⧚ defined using a [7m=defn[27m block. 
+
+⦘ here. And to confound pedants, here is a definition [1mHappy[22m
+⦗[1mHappy[22m
+  [48;5;243mwhen not blue[39;49m
+
+⦘ defined using a [7m=defn[27m block. 
 
 Normally extra spaces are removed with paragraphs, but sometimes we truly dot dot dot   dash dash dash       want them. 
 
@@ -234,29 +234,29 @@ to put space between lists, probably a [7m=para[27m without text is needed.
 
 
 [1mDefinitions[22m
-	can be placed in lists 
+  [48;5;243mcan be placed in lists[39;49m
 [1mHappy[22m
-	when not blue 
+  [48;5;243mwhen not blue[39;49m
 [1mBlue[22m
-	when not happy 
+  [48;5;243mwhen not happy[39;49m
 [1mBeing assertive[22m
-	Just [1mshout[22m why don't you? 
+  [48;5;243mJust [1mshout[22m why don't you? 
 
-
+[39;49m
 
 
 This is an ordinary paragraph 
 
-[1m1. Lemma 1[22m
-	do not make trouble 
-[1m2. Lemma 2[22m
-	do not shout at people 
-[1m3. Lemma 3[22m
-	just phone the SWAT team 
+[1m1.Lemma 1[22m
+  [48;5;243mdo not make trouble[39;49m
+[1m2.Lemma 2[22m
+  [48;5;243mdo not shout at people[39;49m
+[1m3.Lemma 3[22m
+  [48;5;243mjust phone the SWAT team[39;49m
 An ordinary paragraph creates the definition list. 
 
-[1m4. Lemma 4[22m
-	Claim you are the victim here 
+[1m4.Lemma 4[22m
+  [48;5;243mClaim you are the victim here[39;49m
 
   [21m[1mTaking a bullet[22m[24m
 The project originally consisted of five phases, of which two are already complete and two have been abandoned: 
@@ -388,7 +388,7 @@ Text finishes after version number
 
 
 [21m[1mVERSION[22m[24m
-v0.1.2
+v0.2.0
 
 
 
@@ -414,8 +414,8 @@ v0.1.2
 
 
 ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-Rendered from rakudociem-ipsum.rakudoc/rakudociem-ipsum at 21:33 UTC on 2024-06-18
-Source last modified at 21:31 UTC on 2024-06-18
+Rendered from rakudociem-ipsum.rakudoc/rakudociem-ipsum.rakudoc at 14:47 UTC on 2024-06-19
+Source last modified at 14:42 UTC on 2024-06-19
 
 ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
 [21mWARNINGS[24m
@@ -424,7 +424,7 @@ Source last modified at 21:31 UTC on 2024-06-18
 3: ｢W｣ is not defined, but is reserved for future use in block ｢rakudoc｣ with heading ｢This is third level heading｣.
 4: ｢Y｣ is not defined, but is reserved for future use in block ｢rakudoc｣ with heading ｢This is third level heading｣.
 5: Unknown or as yet undeclared alias ｢XXX｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣ over-riden by ｢an undeclared｣
-6: Δ<> markup ignored because it has no version content ｢Δ<no versioning here>｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.
+6: Δ<> markup ignored because it has no version/note content ｢Δ<no versioning here>｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.
 7: Markup-M failed: template ｢PayMeMoreApp｣ does not exist. Got ｢M<should not recognise this functionality|PayMeMoreApp; user-id>｣
 8: No template exists for custom block ｢MyBlock｣. It has been rendered as unknown in block ｢MyBlock｣ with heading ｢MyBlock｣.
 
