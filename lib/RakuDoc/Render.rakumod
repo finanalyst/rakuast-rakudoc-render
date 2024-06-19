@@ -819,7 +819,8 @@ class RakuDoc::Processor {
             $level = 1 unless $level >= 1;
             my $numeration = '';
             my $target = %config<id> // $.name-id($caption);
-            $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target )
+            $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target );
+            %config<target> = $target;
         }
         my %*ALLOW;
         $!scoped-data.start-scope(:starter($template), :verbatim )
