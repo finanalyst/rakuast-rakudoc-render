@@ -21,6 +21,7 @@
   - <a href="#`_multi_method_item-reset()`">` multi method item-reset()`</a>   
   - <a href="#`_multi_method_defn-inc(_-->_Str_)`">` multi method defn-inc( --> Str )`</a>   
   - <a href="#`_multi_method_defn-reset()`">` multi method defn-reset()`</a>   
+<a href="#Credits">Credits</a>   
 
 
 ----
@@ -132,7 +133,27 @@ Increment the defn numeration, only one level
 
 
 ### ` multi method defn-reset()`<div id="`_multi_method_defn-reset()`"> </div>
-Reset the defn numeration
+Reset the defn numeration 
+
+
+----
+<div id="Credits"> </div>
+----
+
+## AUTHOR<div id="AUTHOR"> </div>
+Richard Hainsworth aka finanalyst
+
+
+
+
+----
+<div id="Placement"> </div>
+----
+
+## VERSION<div id="VERSION"> </div>
+v0.2.1
+
+
 
 
 
@@ -140,8 +161,8 @@ Reset the defn numeration
 
 ----
 
-Rendered from docs/docs/ScopedData.rakudoc at 17:55 UTC on 2024-06-18
+Rendered from docs/docs/ScopedData.rakudoc at 15:33 UTC on 2024-06-19
 
-Source last modified at 22:35 UTC on 2024-06-04
+Source last modified at 15:32 UTC on 2024-06-19
 
 

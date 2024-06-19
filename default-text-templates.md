@@ -104,8 +104,8 @@
 
 ----
 
-Rendered from docs/docs/default-text-templates.rakudoc at 21:26 UTC on 2024-06-18
+Rendered from docs/docs/default-text-templates.rakudoc at 15:33 UTC on 2024-06-19
 
-Source last modified at 20:48 UTC on 2024-06-18
+Source last modified at 15:32 UTC on 2024-06-19
 
 

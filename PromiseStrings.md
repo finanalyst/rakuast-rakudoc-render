@@ -1,7 +1,11 @@
 
 # PromiseStrings for templates
 
-	How RakuAsT-RakuDoc-Render handles forward references or placement material that has not yet been rendered
+	How RakuAsT-RakuDoc-Render handles forward references or placement material that has not yet been rendered 
+
+When `=place toc:*` is given in a RakuDoc source (eg at the top of a source), typically the source has not yet been completely rendered. 
+
+The renderer actually renders a source into `PStr` or **PromiseStrings** rather than `Str`. As forward references become known, they are included in the text.
 
 ----
 
@@ -18,11 +22,8 @@
     - <a href="#Methods_`_lead(_-->Str_)_`_and_`_tail(_-->_Str_)_`">Methods ` lead( -->Str ) ` and ` tail( --> Str ) `</a>   
   - <a href="#PCell_methods">PCell methods</a>   
     - <a href="#debug">debug</a>   
+<a href="#Credits">Credits</a>   
 
-
-When `=place toc:*` is given in a RakuDoc source (eg at the top of a source), typically the source has not yet been completely rendered. 
-
-The renderer actually renders a source into `PStr` or **PromiseStrings** rather than `Str`. As forward references become known, they are included in the text. 
 
 ----
 
@@ -107,7 +108,27 @@ Typically, **PCell** instances are converted to Str as soon as possible.
 
 
 #### debug<div id="debug"> </div>
-Provides information about a **PCell**.
+Provides information about a **PCell**. 
+
+
+----
+<div id="Credits"> </div>
+----
+
+## AUTHOR<div id="AUTHOR"> </div>
+Richard Hainsworth aka finanalyst
+
+
+
+
+----
+<div id="Placement"> </div>
+----
+
+## VERSION<div id="VERSION"> </div>
+v0.2.1
+
+
 
 
 
@@ -115,8 +136,8 @@ Provides information about a **PCell**.
 
 ----
 
-Rendered from docs/docs/PromiseStrings.rakudoc at 17:55 UTC on 2024-06-18
+Rendered from docs/docs/PromiseStrings.rakudoc at 15:33 UTC on 2024-06-19
 
-Source last modified at 10:52 UTC on 2024-06-04
+Source last modified at 15:32 UTC on 2024-06-19
 
 

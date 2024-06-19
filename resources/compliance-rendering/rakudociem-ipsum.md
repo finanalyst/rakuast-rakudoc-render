@@ -57,7 +57,9 @@ Several *mistakes* have been included where the RakuDoc v2 specification indicat
 The the end of the rendering of this source file, a number of warning messages should be included. 
 
 
-<div id="The_table_of_contents"> </div>----
+----
+<div id="The_table_of_contents"> </div>
+----
 
 ## Table of Contents
 <a href="#SYNOPSIS">SYNOPSIS</a>   
@@ -92,7 +94,9 @@ The the end of the rendering of this source file, a number of warning messages s
 
 
 
-<div id="A_short_index"> </div>----
+----
+<div id="A_short_index"> </div>
+----
 
 ## Index
 <span style="background-color: antiquewhite; font-weight: 600;">elements to be placed</span>:  <a href="#index-entry-elements_to_be_placed">This is third level heading</a>
@@ -130,7 +134,7 @@ text
 text 
 
 
-<span style="color:red; background-color: pink;">developers can note deprecated things</span> for <span style="background-color: pink;">**v2</span>
+<span style="color: white; background-color: #ff7b25;">developers can attach notes to blocks associated with versions</span><span style="color: white; background-color: #d64161;"> for v2</span>
 
 
 #### This is third level heading<div id="This_is_third_level_heading"> </div>
@@ -166,11 +170,11 @@ In case you have forgotten, here is something aliased at the start: Do not consi
 
 This is an example of an Alias where A&lt;DECLARATION&gt; was replaced by the contents of the =alias directive. Aliases are scoped, see below, but cannot be specified before being used in the document. Here is an undeclared forward reference, which was written as A&lt;an undeclared|XXX&gt;. The use of an undeclared alias causes a warning. 
 
-We can also make an inline **definition**. This whole paragraph will be referenced later. 
+We can also make an inline <span style="font-weight: 600;">definition</span>. This whole paragraph will be referenced later. 
 
-A developer note <span style="color:red; background-color: pink;">can be attached</span><span style="background-color: pink;">**[ for v1.2.3 ^.. v2.0.0]</span> to text. A renderer may show the text or only show it for contexts compliant with the version. 
+A developer note <span style="background-color: #feb236;">can be attached</span><span style="color: white; background-color: #ff7b25;"> highly deprecated</span><span style="color: white; background-color: #d64161;">[for v1.2.3 ^.. v2.0.0]</span> to text. A renderer may show the text or only show it for contexts compliant with the version. 
 
-But a note without meta  is ignored and a warning generated. 
+But a note without meta no versioning here is ignored and a warning generated. 
 
 When we want a formula `\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}` use F&lt;&gt; markup. 
 
@@ -180,19 +184,17 @@ A renderer should provide the opportunity to customise text using M&lt;...|..,..
 
 A note <a id="N<such_as_this_one>" href="#fn_target_N<such_as_this_one>"><sup>[ 1 ]</sup></a> will not itself be rendered inline, but the text will be rendered in a footnote or popup. A marker or number will be rendered to point to the text. 
 
-Suppose we want to place the definition 
+Suppose we want to place the definition <span style="font-weight: 600;">Im-a-doppelganger</span>
+⦗We can also make an inline <span style="font-weight: 600;">definition</span>. This whole paragraph will be referenced later. 
 
-&#x29DB;  <span style="background-color: lightgrey;">We can also make an inline **definition**. This whole paragraph will be referenced later. 
 
-</span>
-&#x29DA; here. And to confound pedants, here is a definition 
+⦘ here. And to confound pedants, here is a definition <span style="font-weight: 600;">Happy</span>
+⦗<span style="font-weight: 600;">Happy</span>
 
-&#x29DB;  <span style="background-color: lightgrey;">**Happy**  
+&nbsp;&nbsp;<span style="background-color: lightgrey;">when not blue </span>
 
-	when not blue 
 
-</span>
-&#x29DA; defined using a `=defn` block. 
+⦘ defined using a `=defn` block. 
 
 Normally extra spaces are removed with paragraphs, but sometimes we truly dot dot dot&nbsp;&nbsp; dash dash dash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; want them. 
 
@@ -282,47 +284,47 @@ to put space between lists, probably a `=para` without text is needed.
 
 
 
-**Definitions**  
+<span style="font-weight: 600;">Definitions</span>
 
-	can be placed in lists 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">can be placed in lists </span>
 
-**Happy**  
+<span style="font-weight: 600;">Happy</span>
 
-	when not blue 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">when not blue </span>
 
-**Blue**  
+<span style="font-weight: 600;">Blue</span>
 
-	when not happy 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">when not happy </span>
 
-**Being assertive**  
+<span style="font-weight: 600;">Being assertive</span>
 
-	Just **shout** why don't you? 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">Just **shout** why don't you? 
 
-
+</span>
 
 
 
 This is an ordinary paragraph 
 
 
-**1. Lemma 1**  
+<span style="font-weight: 600;">1.Lemma 1</span>
 
-	do not make trouble 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">do not make trouble </span>
 
-**2. Lemma 2**  
+<span style="font-weight: 600;">2.Lemma 2</span>
 
-	do not shout at people 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">do not shout at people </span>
 
-**3. Lemma 3**  
+<span style="font-weight: 600;">3.Lemma 3</span>
 
-	just phone the SWAT team 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">just phone the SWAT team </span>
 
 An ordinary paragraph creates the definition list. 
 
 
-**4. Lemma 4**  
+<span style="font-weight: 600;">4.Lemma 4</span>
 
-	Claim you are the victim here 
+&nbsp;&nbsp;<span style="background-color: lightgrey;">Claim you are the victim here </span>
 
 
 
@@ -382,7 +384,9 @@ but may have a different styling
 The following semantic block was included at the beginning in source, but it is now included here. 
 
 
-<div id="Unrelenting_hype"> </div>----
+----
+<div id="Unrelenting_hype"> </div>
+----
 
 ## AUTHORS<div id="AUTHORS"> </div>
 Richard Hainsworth, aka finanalyst
@@ -460,10 +464,12 @@ Did I mention before that: Do not consider this a disquisition of possible combi
 Text finishes after version number 
 
 
-<div id="Placement"> </div>----
+----
+<div id="Placement"> </div>
+----
 
 ## VERSION<div id="VERSION"> </div>
-v0.1.2
+v0.2.0
 
 
 
@@ -503,9 +509,9 @@ v0.1.2
 
 ----
 
-Rendered from ./rakudociem-ipsum.rakudoc at 21:34 UTC on 2024-06-18
+Rendered from ./rakudociem-ipsum.rakudoc at 15:28 UTC on 2024-06-19
 
-Source last modified at 21:31 UTC on 2024-06-18
+Source last modified at 14:42 UTC on 2024-06-19
 
 
 
@@ -525,7 +531,7 @@ Source last modified at 21:31 UTC on 2024-06-18
 
 5: Unknown or as yet undeclared alias ｢XXX｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣ over-riden by ｢an undeclared｣
 
-6: Δ&lt;&gt; markup ignored because it has no version content ｢Δ&lt;no versioning here&gt;｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.
+6: Δ&lt;&gt; markup ignored because it has no version/note content ｢Δ&lt;no versioning here&gt;｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.
 
 7: Markup-M failed: template ｢PayMeMoreApp｣ does not exist. Got ｢M&lt;should not recognise this functionality|PayMeMoreApp; user-id&gt;｣
 

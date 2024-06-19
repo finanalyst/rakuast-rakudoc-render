@@ -17,6 +17,7 @@ Currently, it is assumed that the distribution is **NOT** installed using zef. C
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Customising_templates">Customising templates</a>   
 <a href="#RenderDocs_utility">RenderDocs utility</a>   
+<a href="#Credits">Credits</a>   
 
 
 ----
@@ -49,7 +50,22 @@ Some notes:
 ## RenderDocs utility<div id="RenderDocs_utility"> </div>
 A utility called **RenderDocs** accompanies the distribution. It is assumed that documentation sources in RakuDoc are contained in the sub-directory `docs/` and that Markdown versions are required in the working directory. If any RakuDoc source has a modified date later than the current version of the Markdown output, then the Markdown file is updated. 
 
-Usage bin/RenderDocs
+Usage bin/RenderDocs 
+
+
+----
+<div id="Credits"> </div>
+｢semantic-schema_AUTHOR UNAVAILABLE｣
+
+
+----
+<div id="Placement"> </div>
+----
+
+## VERSION<div id="VERSION"> </div>
+v0.1.0
+
+
 
 
 
@@ -57,8 +73,18 @@ Usage bin/RenderDocs
 
 ----
 
-Rendered from docs/docs/RakuDoc-To-Markdown.rakudoc at 17:55 UTC on 2024-06-18
+Rendered from docs/docs/RakuDoc-To-Markdown.rakudoc at 15:33 UTC on 2024-06-19
 
-Source last modified at 16:30 UTC on 2024-06-18
+Source last modified at 15:32 UTC on 2024-06-19
+
+
+
+----
+
+----
+
+## WARNINGS
+
+1: Still waiting for ｢semantic-schema_AUTHOR｣ to be expanded.
 
 

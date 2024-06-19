@@ -1,6 +1,5 @@
 use v6.d;
 use Test;
-use Test::META;
 
 plan 9;
 

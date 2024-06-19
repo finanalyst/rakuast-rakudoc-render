@@ -18,6 +18,7 @@
   - <a href="#Verbose_output_of_one_template">Verbose output of one template</a>   
   - <a href="#The_`.test`_attribute">The `.test` attribute</a>   
   - <a href="#The_`.pretty`_attribute">The `.pretty` attribute</a>   
+<a href="#Credits">Credits</a>   
 
 
 ----
@@ -222,6 +223,24 @@ For example,
 say %template-dir<aaa>(%( :contents<something>, array => <one two three four>, hash => ( <eight nine ten> Z=> 1..* ).hash, )); # output produced <aaa> array: ｢List=( "one", "two", "three", "four" )｣ contents: ｢something｣ hash: ｢Hash={ :eight(1), :nine(2), :ten(3) }｣ </aaa>
 ```
 
+----
+<div id="Credits"> </div>
+----
+
+## AUTHOR<div id="AUTHOR"> </div>
+Richard Hainsworth aka finanalyst
+
+
+
+
+----
+<div id="Placement"> </div>
+----
+
+## VERSION<div id="VERSION"> </div>
+v0.2.1
+
+
 
 
 
@@ -229,8 +248,8 @@ say %template-dir<aaa>(%( :contents<something>, array => <one two three four>, h
 
 ----
 
-Rendered from docs/docs/Templates.rakudoc at 17:55 UTC on 2024-06-18
+Rendered from docs/docs/Templates.rakudoc at 15:33 UTC on 2024-06-19
 
-Source last modified at 15:30 UTC on 2024-06-11
+Source last modified at 15:32 UTC on 2024-06-19
 
 

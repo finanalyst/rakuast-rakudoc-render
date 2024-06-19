@@ -64,12 +64,16 @@ method markdown-templates {
     my constant LINK-TEXT-OFF = "]";
     my constant LINK-ON = "(";
     my constant LINK-OFF = ")";
-    my constant DEPR-TEXT-ON = '<span style="color:red; background-color: pink;">';
-    my constant DEPR-TEXT-OFF = '</span>';
-    my constant DEPR-ON = '<span style="background-color: pink;">**';
-    my constant DEPR-OFF = "</span>";
-    my constant DEFN-TEXT-ON = '<span style="background-color: lightgrey;">';
+    my constant DEVEL-TEXT-ON = '<span style="background-color: #feb236;">';
+    my constant DEVEL-TEXT-OFF = '</span>';
+    my constant DEVEL-VERSION-ON = '<span style="color: white; background-color: #d64161;">';
+    my constant DEVEL-VERSION-OFF = "</span>";
+    my constant DEVEL-NOTE-ON = '<span style="color: white; background-color: #ff7b25;">';
+    my constant DEVEL-NOTE-OFF = "</span>";
+    my constant DEFN-TEXT-ON = '&nbsp;&nbsp;<span style="background-color: lightgrey;">';
     my constant DEFN-TEXT-OFF = '</span>';
+    my constant DEFN-TERM-ON = '<span style="font-weight: 600;">';
+    my constant DEFN-TERM-OFF = '</span>';
     my constant BAD-MARK-ON = "`";
     my constant BAD-MARK-OFF = "`";
     my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
@@ -149,24 +153,26 @@ method markdown-templates {
         #| rendering the content from the :delta option
         #| see inline variant markup-Δ
         delta => -> %prm, $tmpl {
-            DEPR-TEXT-ON ~
-            %prm<note> ~ DEPR-TEXT-OFF ~
+            ( %prm<note> ??
+                   DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF
+                !! ''
+            ) ~
+            DEVEL-VERSION-ON ~
             " for " ~
-            DEPR-ON ~
-            %prm<versions> ~ DEPR-OFF ~
+            %prm<versions> ~ DEVEL-VERSION-OFF ~
             "\n\n"
         },#| renders =defn block
         defn => -> %prm, $tmpl {
-            BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "  \n\n" ~
-            "\t" ~ %prm<contents> ~ "\n\n"
+            DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| renders =numdefn block
         #| special template to render a defn list data structure
         defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
         #| special template to render a numbered defn list data structure
         numdefn => -> %prm, $tmpl {
-            BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "  \n\n" ~
-            "\t" ~ %prm<contents> ~ "\n\n"
+            DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| special template to render a numbered item list data structure
         numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
@@ -201,8 +207,8 @@ method markdown-templates {
             my $del = %prm<delta> // '';
             my $rv = PStr.new;
             $rv ~= $del ~ "\n";
-            $rv ~= qq[<div id="{ %prm<target> }"> </div>];
-            $rv ~= qq[<div id="{ %prm<id> }"> </div>] if %prm<id>;
+            $rv ~= qq[----\n<div id="{ %prm<target> }"> </div>\n];
+            $rv ~= qq[<div id="{ %prm<id> }"> </div>\n] if %prm<id>;
             $rv ~= %prm<contents> ;
             $rv ~= "\n\n";
         },
@@ -458,9 +464,9 @@ method markdown-templates {
         markup-P => -> %prm, $tmpl {
             given %prm<schema> {
                 when 'defn' {
-                    "\n\n&#x29DB;  " ~
-                    DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
-                    "\n&#x29DA;"
+                    DEFN-TERM-ON ~ %prm<contents> ~ DEFN-TERM-OFF ~ "\n\x2997" ~
+                    %prm<defn-expansion> ~
+                    "\n\x2998"
                 }
                 default { %prm<contents> }
             }
@@ -469,12 +475,13 @@ method markdown-templates {
         ##| Markup codes, mandatory display and meta data
         #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
         #| Definition inline ( D<term being defined|synonym1; synonym2> )
-        markup-D => -> %prm, $tmpl {  BOLD-ON ~ %prm<contents> ~ BOLD-OFF },
+        markup-D => -> %prm, $tmpl {  DEFN-TERM-ON ~ %prm<contents> ~ DEFN-TERM-OFF },
         #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
         #| Delta note ( Δ<visible text|version; Notification text> )
         markup-Δ => -> %prm, $tmpl {
-            DEPR-TEXT-ON ~ %prm<meta> ~ DEPR-TEXT-OFF ~
-            DEPR-ON ~ '[ for ' ~ %prm<contents> ~ ']' ~ DEPR-OFF
+            DEVEL-TEXT-ON ~ %prm<contents> ~ DEVEL-TEXT-OFF ~
+            (%prm<note> ?? DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF !! '') ~
+            DEVEL-VERSION-ON ~ '[for ' ~ %prm<versions> ~ ']' ~ DEVEL-VERSION-OFF
         },
         #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
         #| Markup extra ( M<display text|functionality;param,sub-type;...>)

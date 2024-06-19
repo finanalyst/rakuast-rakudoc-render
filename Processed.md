@@ -32,6 +32,7 @@
     - <a href="#`_Hash_%.links_`">` Hash %.links `</a>   
     - <a href="#`_Str_$.rendered-toc_is_rw_`">` Str $.rendered-toc is rw `</a>   
     - <a href="#`_Str_$.rendered-index_is_rw_`">` Str $.rendered-index is rw `</a>   
+<a href="#Credits">Credits</a>   
 
 
 ----
@@ -195,7 +196,27 @@ Rendered version of the ToC
 
 
 #### ` Str $.rendered-index is rw `<div id="`_Str_$.rendered-index_is_rw_`"> </div>
-Rendered version of the Index
+Rendered version of the Index 
+
+
+----
+<div id="Credits"> </div>
+----
+
+## AUTHOR<div id="AUTHOR"> </div>
+Richard Hainsworth aka finanalyst
+
+
+
+
+----
+<div id="Placement"> </div>
+----
+
+## VERSION<div id="VERSION"> </div>
+v0.2.1
+
+
 
 ----
 
@@ -215,8 +236,8 @@ Rendered version of the Index
 
 ----
 
-Rendered from docs/docs/Processed.rakudoc at 21:26 UTC on 2024-06-18
+Rendered from docs/docs/Processed.rakudoc at 15:33 UTC on 2024-06-19
 
-Source last modified at 11:16 UTC on 2024-06-07
+Source last modified at 15:32 UTC on 2024-06-19
 
 

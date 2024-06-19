@@ -94,7 +94,9 @@ However, this will compile `RakuDoc::Render` and its dependencies.
 Then run the command again but with 'RAKUDO_RAKUAST=1'. 
 
 
-<div id="Credits"> </div>----
+----
+<div id="Credits"> </div>
+----
 
 ## AUTHOR<div id="AUTHOR"> </div>
 Richard Hainsworth aka finanalyst
@@ -102,7 +104,9 @@ Richard Hainsworth aka finanalyst
 
 
 
-<div id="Placement"> </div>----
+----
+<div id="Placement"> </div>
+----
 
 ## VERSION<div id="VERSION"> </div>
 v0.2.1
@@ -115,8 +119,8 @@ v0.2.1
 
 ----
 
-Rendered from docs/docs/README.rakudoc at 17:55 UTC on 2024-06-18
+Rendered from docs/docs/README.rakudoc at 15:33 UTC on 2024-06-19
 
-Source last modified at 17:12 UTC on 2024-06-18
+Source last modified at 15:32 UTC on 2024-06-19
 
 

@@ -1755,7 +1755,7 @@ class RakuDoc::Processor {
             #| renders =defn block
             defn => -> %prm, $tmpl {
                 DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
-                DEFN-TEXT-ON ~ %prm<contents>.trim ~ DEFN-TEXT-OFF ~ "\n"
+                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
             },
             #| renders =numdefn block
             #| special template to render a defn list data structure
@@ -1763,7 +1763,7 @@ class RakuDoc::Processor {
             #| special template to render a numbered defn list data structure
             numdefn => -> %prm, $tmpl {
                 DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
-                DEFN-TEXT-ON ~ %prm<contents>.trim ~ DEFN-TEXT-OFF ~ "\n"
+                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
             },
             #| special template to render a numbered item list data structure
             numdefn-list => -> %prm, $tmpl { [~] %prm<numdefn-list> },
