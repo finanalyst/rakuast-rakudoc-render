@@ -1,10 +1,8 @@
 use v6.d;
 use Test;
-use Test::Output;
-#test-output-verbosity(:on);
 use Test::Run :runs_ok;
 
-plan *;
+plan 5;
 
 use RakuDoc::Render;
 use RakuDoc::To::Markdown;
@@ -12,20 +10,28 @@ my @generic = RakuDoc::Processor.new.default-text-templates.keys.sort;
 my @markdown = RakuDoc::To::Markdown.new.markdown-templates.keys.sort;
 
 ok @generic (<=) @markdown, 'markdown redefines all the keys in generic';
-diag 'RakuDoc::To::Markdown additionally defines: ' ~ (@markdown (-) @generic);
-my @args = <<RAKUDO_RAKUAST=1 raku -I. --rakudoc=Markdown xt/test-files/test.rakudoc>>;
-my $p = shell @args, :err, :out;
-like $p.out.slurp(:close), /^ \s* '# Just a test' / , 'title is first string';
-is $p.err.slurp(:close), '', 'No error issued';
-@args.unshift: 'MORE_MARKDOWN=xt/test-filles/example.raku';
-$p = shell @args, :err, :out;
-like $p.err.slurp(:close), / 'filles' .+ 'not a file'/ , 'Bad file error';
-@args.shift;
-@args.unshift: 'MORE_MARKDOWN=xt/test-files/example.raku';
-$p = shell @args, :err, :out;
-is $p.err.slurp(:close), '', 'No error issued';
-my $rv = $p.out.slurp(:close);
-unlike $rv, /^ \s* '# Just a test' / , 'title is not the first string';
-like $rv, /^ \s* '# A Customisation message' / , 'new text is the first string';
+is (@markdown (-) @generic), ('escaped'), 'RakuDoc::To::Markdown also defines new templates';
+%*ENV<RAKUDO_RAKUAST> = 1;
+my @args = <<$*EXECUTABLE -I. --rakudoc=Markdown xt/test-files/test.rakudoc>>;
+runs_ok(
+    'simple markdown is generated',
+    :@args,
+    :out( /^ \s* '# Just a test' / )
+);
+%*ENV<MORE_MARKDOWN> = 'xt/test-filles/example.raku';
+runs_ok(
+    :@args,
+    :exitcode(1),
+    :err(/ 'filles' .+ 'not a file' /),
+    'Bad file error'
+);
+%*ENV<MORE_MARKDOWN> = 'xt/test-files/markdown-example.raku';
+
+runs_ok(
+    :@args,
+    :exitcode(0),
+    :out(/^ \s* '# A Customisation message' / ),
+    'new text is the first string'
+);
 
 done-testing;

@@ -63,10 +63,10 @@ method html-templates {
     my constant DEVEL-VERSION-OFF = "</span>";
     my constant DEVEL-NOTE-ON = '<span class="developer-note">';
     my constant DEVEL-NOTE-OFF = "</span>";
-    my constant DEFN-TEXT-ON = '<span class="defn-text">';
-    my constant DEFN-TEXT-OFF = '</span>';
-    my constant DEFN-TERM-ON = '<span class="defn-term>';
-    my constant DEFN-TERM-OFF = '</span>';
+    my constant DEFN-TEXT-ON = '<div class="defn-text">';
+    my constant DEFN-TEXT-OFF = '</div>';
+    my constant DEFN-TERM-ON = '<div class="defn-term>';
+    my constant DEFN-TERM-OFF = '</div>';
     my constant BAD-MARK-ON = '<span class="bad-markdown">';
     my constant BAD-MARK-OFF = '</span>';
     my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
@@ -75,10 +75,13 @@ method html-templates {
         _name => -> %, $ { 'markdown templates' },
         # escape contents
         escaped => -> %prm, $tmpl {
-            %prm<contents>.Str.trans(
-               qw｢ <    >    &     "       ｣
-            => qw｢ &lt; &gt; &amp; &quot;  ｣
-            )
+            if %prm<contents> {
+                %prm<contents>.Str.trans(
+                   qw｢ <    >    &     "       ｣
+                => qw｢ &lt; &gt; &amp; &quot;  ｣
+                )
+            }
+            else { '' }
         },
         #| renders =code blocks
         code => -> %prm, $tmpl {
@@ -119,11 +122,10 @@ method html-templates {
             my $title = %prm<caption>;
             my $h = 'h' ~ (%prm<level> // '1');
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
                 qq[[<$h id="$targ" class="raku-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
-                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                 qq[[</a></$h>\n]] ~
                 (%prm<delta> // '')
         },
@@ -132,11 +134,10 @@ method html-templates {
             my $h = 'h' ~ (%prm<level> // '1');
             my $title = %prm<contents>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
                 qq[[<$h id="$targ" class="raku-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
-                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                 qq[[</a></$h>\n]] ~
                 (%prm<delta> // '')
         },
@@ -145,11 +146,10 @@ method html-templates {
             my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
             my $h = 'h' ~ (%prm<level> // '1');
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
                 qq[[<$h id="$targ" class="raku-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
-                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                 qq[[</a></$h>\n]] ~
                 (%prm<delta> // '')
         },
@@ -207,15 +207,15 @@ method html-templates {
         },
         #| renders =nested block
         nested => -> %prm, $tmpl {
-            PStr.new: qq[<div class="nested"{
+            PStr.new: qq[<p class="nested"{
                 %prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! ''
             }>{%prm<contents>}</div>\n]
         },
         #| renders =para block
         para => -> %prm, $tmpl {
-            PStr.new: qq[{
-                %prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! ''
-            }{%prm<contents>}\n]
+            PStr.new: qq[<p{
+                %prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! ''
+            }>{%prm<contents>}</p>\n]
         },
         #| renders =place block
         place => -> %prm, $tmpl {
@@ -239,11 +239,10 @@ method html-templates {
             my $h = 'h' ~ (%prm<level> // '1');
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
                 qq[[<$h id="$targ" class="raku-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
-                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                 qq[[</a></$h>\n]] ~
                 (%prm<delta> // '') ~
                 %prm<contents> ~ "\n\n"
@@ -256,11 +255,10 @@ method html-templates {
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             my $rv = PStr.new:
-                qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+                qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
                     qq[[<$h id="$targ" class="raku-$h">]] ~
                     qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                     $title ~
-                    qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                     qq[[</a></$h>\n]] ~
                     (%prm<delta> // '') ~ '<table>';
             if %prm<procedural> {
@@ -289,18 +287,10 @@ method html-templates {
                 }
             }
             else {
-                $rv ~=
-                    ((%prm<headers>.defined and %prm<headers> ne '') ??
-                        ("\t<thead>\n"
-                        ~ [~] %prm<headers>.map({ "\t\t<tr><th>" ~ .<cells>.join('</th><th>') ~ "</th></tr>\n" })
-                        ~ "\t</thead>"
-                        )
-                      !! '')
-                    ~ "\t<tbody>\n"
-                    ~ ((%prm<rows>.defined and %prm<rows> ne '') ??
-                        [~] %prm<rows>.map({ "\t\t<tr><td>" ~ .<cells>.join('</td><td>') ~ "</td></tr>\n" })
-                      !! '')
-                    ~ "\t</tbody>\n"
+                $rv ~= "\t<thead>\n\t\t<tr><th>" ~ %prm<headers>[0]>>.trim.join( '</th><th>') ~ "</th></tr>\n\t</thead>" ;
+                $rv ~= "\t<tbody>\n\t\t";
+                $rv ~= [~] %prm<rows>.map({ '<tr><td>' ~ .map(*.trim).join('</td><td>') ~ "</td></tr>\n\t\t" });
+                $rv ~= "\t</tbody>\n";
             }
             $rv ~= "</table>\n"
         },
@@ -309,11 +299,10 @@ method html-templates {
             my $h = 'h' ~ (%prm<level> // '1');
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
                 qq[[<$h id="$targ" class="raku-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
-                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                 qq[[</a></$h>\n]] ~
                 (%prm<delta> // '') ~
                 %prm<raw> ~ "\n\n"
@@ -323,11 +312,10 @@ method html-templates {
             my $h = 'h' ~ (%prm<level> // '1');
             my $title = qq[UNKNOWN { %prm<block-name> }];
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
                 qq[[<$h id="$targ" class="raku-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
-                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                 qq[[</a></$h>\n]] ~
                 (%prm<delta> // '') ~
                 $tmpl<escaped>
@@ -342,7 +330,9 @@ method html-templates {
             qq:to/PAGE/
             <!DOCTYPE html>
             <html { $tmpl<html-root> } >
+                <head>
                 { $tmpl<head-block> }
+                </head>
                 <body>
                 { $tmpl<top-of-page> }
                 { $tmpl<main-content> }
@@ -353,15 +343,21 @@ method html-templates {
         },
         ## sections of the final document
         #| root section, what does in the html tab
-        html-root => -> %prm, $tmpl {''},
+        html-root => -> %prm, $tmpl {
+            qq[lang="{%prm<source-data><language>}"\n]
+        },
         #| head-block, what goes in the head tab
-        head-block => -> %prm, $tmpl {''},
+        head-block => -> %prm, $tmpl {
+            qq:to/HEAD/
+                <title>{%prm<title>}</title>
+            HEAD
+        },
         #| the first section of body, including navigation
         top-of-page => -> %prm, $tmpl {
             my $rv = '';
             if %prm<title-target>:exists and %prm<title-target> ne '' {
                 $rv ~= qq[<div id="{
-                    $tmpl('escaped'>, %( :contents(%prm<title-target>), ))
+                    $tmpl('escaped', %( :contents(%prm<title-target>), ))
                 }"></div>]
             }
             $rv ~= %prm<title> ~ "\n\n" ~
@@ -381,7 +377,7 @@ method html-templates {
                 Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}</span>
             <span class="footer-field">{sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
             <span class="footer-field>Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
-            <div class="warnings">( %prm<warnings> if %prm<warnings>)</div>
+            { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }
             </div>
             FOOTER
         },
@@ -413,7 +409,7 @@ method html-templates {
                     }
                     $rv ~= "\n<li>"
                         ~ '<a href="#'
-                        ~ $tmpl('escaped'>, %( :contents(%el.<target>), ))
+                        ~ $tmpl('escaped', %( :contents(%el.<target>), ))
                         ~ '">'
                         ~ (%el.<text> // '')
                         ~ '</a></li>';
@@ -555,18 +551,32 @@ method html-templates {
         #| Link ( L<display text|destination URI> )
         markup-L => -> %prm, $tmpl {
             my $target = %prm<target>;
-            $target ~= '.md' if %prm<type> eq 'local';
-            LINK-TEXT-ON ~ %prm<link-label> ~ LINK-TEXT-OFF ~
-            LINK-ON ~ $target ~ LINK-OFF
-         },
+            my $text = %prm<link-label>;
+            given %prm<type> {
+                when 'local' {
+                    if %prm<place>:exists {
+                        qq[<a href="$target.html#%prm<place>">$text\</a>]
+                    }
+                    else {
+                        qq[<a href="$target.html">$text\</a>]
+                    }
+                }
+                when 'internal' {
+                    qq[<a href="#$target">$text\</a>]
+                }
+                default {
+                    qq[<a href="$target">$text\</a>]
+                }
+            }
+        },
         #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
         #| Placement link
         markup-P => -> %prm, $tmpl {
             given %prm<schema> {
                 when 'defn' {
-                    "\n\n&#x29DB;  " ~
+                    "\n\n&#x2997;  " ~
                     DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
-                    "\n&#x29DA;"
+                    "\n&#x2998;"
                 }
                 default { %prm<contents> }
             }
@@ -579,8 +589,9 @@ method html-templates {
         #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
         #| Delta note ( Δ<visible text|version; Notification text> )
         markup-Δ => -> %prm, $tmpl {
-            DEPR-TEXT-ON ~ %prm<meta> ~ DEPR-TEXT-OFF ~
-            DEPR-ON ~ '[ for ' ~ %prm<contents> ~ ']' ~ DEPR-OFF
+            DEVEL-TEXT-ON ~ %prm<contents> ~ DEVEL-TEXT-OFF ~
+            (%prm<note> ?? DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF !! '') ~
+            DEVEL-VERSION-ON ~ %prm<versions> ~ DEVEL-VERSION-OFF
         },
         #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
         #| Markup extra ( M<display text|functionality;param,sub-type;...>)

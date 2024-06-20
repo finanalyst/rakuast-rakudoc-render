@@ -1,24 +1,33 @@
 #!/usr/bin/env raku
 use experimental :rakuast;
 
-my %docs = 'docs'.IO.dir(test => *.ends-with('.rakudoc')).map({ .extension('').basename => .modified });
-my %rendered = dir(test => *.ends-with('.md')).map({ .extension('').basename => .modified });
-my @to-be-rendered = %docs.pairs.grep({
-        %rendered{.key}:exists.not || (%rendered{.key} < .value)
+multi sub MAIN(:$docs = 'docs') {
+    my %docs = $docs.IO.dir(test => *.ends-with('.rakudoc')).map({ .extension('').basename => .modified });
+    my %rendered = dir(test => *.ends-with('.md')).map({ .extension('').basename => .modified });
+    my @to-be-rendered = %docs.pairs.grep({
+        %rendered{.key}:exists.not ||(%rendered{.key} < .value)
     })>>.key;
-#for %docs.sort {
-#    print .key => sprintf("docs: %d:%02d on %s", .value.DateTime.hour, .value.DateTime.minute, .value.DateTime.yyyy-mm-dd);
-#    my $sel = ( %rendered{.key} && .value > %rendered{.key} ) ?? 'Select' !! 'Dont';
-#    say sprintf(" rend: %d:%02d on %s [%s]", .DateTime.hour, .DateTime.minute, .DateTime.yyyy-mm-dd, $sel) with %rendered{ .key };
-#    say "rend: None [Select]" without %rendered{ .key };
-#}
-#say @to-be-rendered;
-say 'Documents with .md in CWD, but not in docs/ : ', (%rendered.keys (-) %docs.keys).keys;
-for @to-be-rendered.sort {
-    say "Processing ｢docs/$_.rakudoc｣ to ｢$_.md｣";
-    my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '--rakudoc=Markdown', "docs/$_.rakudoc"), :err, :out;
-    my $err = $p.err.slurp(:close);
-    $err.say if $err;
-    my $out = $p.out.slurp(:close);
-    "$_.md".IO.spurt($out) if $out;
+    #for %docs.sort {
+    #    print .key => sprintf("docs: %d:%02d on %s", .value.DateTime.hour, .value.DateTime.minute, .value.DateTime.yyyy-mm-dd);
+    #    my $sel = ( %rendered{.key} && .value > %rendered{.key} ) ?? 'Select' !! 'Dont';
+    #    say sprintf(" rend: %d:%02d on %s [%s]", .DateTime.hour, .DateTime.minute, .DateTime.yyyy-mm-dd, $sel) with %rendered{ .key };
+    #    say "rend: None [Select]" without %rendered{ .key };
+    #}
+    #say @to-be-rendered;
+    say 'Documents with .md in CWD, but not in docs/ : ', (%rendered.keys (-) %docs.keys).keys;
+    render-files(@to-be-rendered, $docs)
+}
+multi sub MAIN(Str:D $file) {
+    exit note "｢$file.rakudoc｣ does not exist" unless "$file.rakudoc".IO ~~ :e & :f;
+    render-files([$file,], '.')
+}
+sub render-files (@to-be-rendered, $dir) {
+    for @to-be-rendered.sort {
+        say "Processing ｢$dir/$_.rakudoc｣ to ｢$_.md｣";
+        my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '--rakudoc=Markdown', "$dir/$_.rakudoc"), :err, :out;
+        my $err = $p.err.slurp(:close);
+        $err.say if $err;
+        my $out = $p.out.slurp(:close);
+        "$_.md".IO.spurt($out) if $out;
+    }
 }

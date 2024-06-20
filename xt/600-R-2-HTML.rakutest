@@ -1,0 +1,37 @@
+use v6.d;
+use Test;
+use Test::Run :runs_ok;
+
+plan 5;
+
+use RakuDoc::Render;
+use RakuDoc::To::HTML;
+my @generic = RakuDoc::Processor.new.default-text-templates.keys.sort;
+my @markdown = RakuDoc::To::HTML.new.html-templates.keys.sort;
+
+ok @generic (<=) @markdown, 'HTML redefines all the keys in generic';
+cmp-ok (@markdown (-) @generic), '(==)', < footer top-of-page head-block html-root escaped main-content >, 'other templates RakuDoc::To::HTML additionally defines';
+%*ENV<RAKUDO_RAKUAST> = 1;
+my @args = <<$*EXECUTABLE -I. --rakudoc=HTML xt/test-files/test.rakudoc>>;
+runs_ok(
+    'simple html is generated',
+    :@args,
+    :out( / '<html' .+  '<div' .+  'Just a test' / )
+);
+%*ENV<MORE_HTML> = 'xt/test-filles/example.raku';
+runs_ok(
+    :@args,
+    :exitcode(1),
+    :err(/ 'filles' .+ 'not a file' /),
+    'Bad file error'
+);
+%*ENV<MORE_HTML> = 'xt/test-files/html-example.raku';
+
+runs_ok(
+    :@args,
+    :exitcode(0),
+    :out(/ '<head>'  .+ '<meta' .+ 'A Customised description' .+ '/>' .+ '</head>' / ),
+    'customisation in meta of head'
+);
+
+done-testing;
