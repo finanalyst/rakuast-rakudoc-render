@@ -57,16 +57,18 @@ method html-templates {
     my constant FOOTNOTE-OFF = "</sup>";
     my constant LINK-TEXT-ON = "<u>";
     my constant LINK-TEXT-OFF = "</u>";
-#    my constant LINK-ON = "(";
-#    my constant LINK-OFF = ")";
-    my constant DEPR-TEXT-ON = '<span class="developer-note">';
-    my constant DEPR-TEXT-OFF = '</span>';
-    my constant DEPR-ON = '<span class="developer">';
-    my constant DEPR-OFF = "</span>";
+    my constant DEVEL-TEXT-ON = '<span class="developer-text">';
+    my constant DEVEL-TEXT-OFF = '</span>';
+    my constant DEVEL-VERSION-ON = '<span class="developer-version">';
+    my constant DEVEL-VERSION-OFF = "</span>";
+    my constant DEVEL-NOTE-ON = '<span class="developer-note">';
+    my constant DEVEL-NOTE-OFF = "</span>";
     my constant DEFN-TEXT-ON = '<span class="defn-text">';
     my constant DEFN-TEXT-OFF = '</span>';
-    my constant BAD-MARK-ON = "<code>";
-    my constant BAD-MARK-OFF = "</code>>";
+    my constant DEFN-TERM-ON = '<span class="defn-term>';
+    my constant DEFN-TERM-OFF = '</span>';
+    my constant BAD-MARK-ON = '<span class="bad-markdown">';
+    my constant BAD-MARK-OFF = '</span>';
     my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
     %(
         #| special key to name template set
@@ -156,53 +158,65 @@ method html-templates {
         #| rendering the content from the :delta option
         #| see inline variant markup-Δ
         delta => -> %prm, $tmpl {
-            DEPR-TEXT-ON ~
-            %prm<note> ~ DEPR-TEXT-OFF ~
+            ( %prm<note> ??
+                   DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF
+                !! ''
+            ) ~
+            DEVEL-VERSION-ON ~
             " for " ~
-            DEPR-ON ~
-            %prm<versions> ~ DEPR-OFF ~
+            %prm<versions> ~ DEVEL-VERSION-OFF ~
             "\n\n"
         },#| renders =defn block
         defn => -> %prm, $tmpl {
-            BOLD-ON ~ %prm<term> ~ BOLD-OFF ~ "  \n\n" ~
-            "\t" ~ %prm<contents> ~ "\n\n"
+            DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| renders =numdefn block
         #| special template to render a defn list data structure
         defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
         #| special template to render a numbered defn list data structure
         numdefn => -> %prm, $tmpl {
-            BOLD-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ BOLD-OFF ~ "  \n\n" ~
-            "\t" ~ %prm<contents> ~ "\n\n"
+            DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| special template to render a numbered item list data structure
         numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
         #| renders =item block
         item => -> %prm, $tmpl {
-            my $num = %prm<level> - 1;
-            my $indent = '&nbsp;&nbsp;' x %prm<level>;
-            $num = @bullets.elems - 1 if $num >= @bullets.elems;
-            my $bullet = %prm<bullet> // @bullets[$num];
-            $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "  \n"
+#            my $num = %prm<level> - 1;
+#            my $indent = '&nbsp;&nbsp;' x %prm<level>;
+#            $num = @bullets.elems - 1 if $num >= @bullets.elems;
+#            my $bullet = %prm<bullet> // @bullets[$num];
+            qq[<li {
+                    %prm<bullet>:exists ??
+                        'style="list-style:' ~ %prm<bullet> ~ ';"'
+                      !! ' '
+                  }>{%prm<contents>}</li>\n]
         },
         #| special template to render an item list data structure
         item-list => -> %prm, $tmpl {
-            "\n\n" ~ [~] %prm<item-list>
+            "\n<ul>" ~ ([~] %prm<item-list>) ~ "</ul>\n"
         },
         #| renders =numitem block
         numitem => -> %prm, $tmpl {
-            %prm<numeration> ~ ' ' ~ %prm<contents> ~ "  \n\n"
+            qq[<li>{%prm<contents>}</li>\n]
         },
         #| special template to render a numbered item list data structure
         numitem-list => -> %prm, $tmpl {
-            "\n\n" ~ [~] %prm<numitem-list>
+            "\n<ol>" ~ ([~] %prm<numitem-list>) ~ "</ol>\n"
         },
         #| renders =nested block
         nested => -> %prm, $tmpl {
-            PStr.new: ">" ~ %prm<contents> ~ "\n\n"
+            PStr.new: qq[<div class="nested"{
+                %prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! ''
+            }>{%prm<contents>}</div>\n]
         },
         #| renders =para block
-        para => -> %prm, $tmpl { %prm<contents> ~ "\n\n" },
+        para => -> %prm, $tmpl {
+            PStr.new: qq[{
+                %prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! ''
+            }{%prm<contents>}\n]
+        },
         #| renders =place block
         place => -> %prm, $tmpl {
             my $del = %prm<delta> // '';
@@ -222,122 +236,191 @@ method html-templates {
         },
         #| renders =SEMANTIC block, if not otherwise given
         semantic => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            # using level + 1 so that TITLE is always larger
-            # a line above heading level one to separate sections
-            PStr.new: ('----' if %prm<level> == 1) ~
-            "\n" ~ $del ~ "\n" ~
-            '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<caption> ~
-            qq[<div id="{ %prm<target> }"> </div>] ~
-            ( qq[<div id="{ %prm<id> }"> </div>] if %prm<id> ) ~
-            "\n" ~
-            %prm<contents> ~ "\n\n"
+            my $h = 'h' ~ (%prm<level> // '1');
+            my $title = %prm<caption>;
+            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
+            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+                qq[[<$h id="$targ" class="raku-$h">]] ~
+                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
+                $title ~
+                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
+                qq[[</a></$h>\n]] ~
+                (%prm<delta> // '') ~
+                %prm<contents> ~ "\n\n"
         },
         #| renders =pod block
         pod => -> %prm, $tmpl { %prm<contents> },
         #| renders =table block
         table => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            # using level + 1 so that TITLE is always larger
-            # a line above heading level one to separate sections
-            my $rv = PStr.new: ('----' if %prm<level> == 1) ~
-            "\n" ~ $del ~ "\n" ~
-            '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~ "\n" ;
+            my $h = 'h' ~ (%prm<level> // '1');
+            my $title = %prm<caption>;
+            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
+            my $rv = PStr.new:
+                qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+                    qq[[<$h id="$targ" class="raku-$h">]] ~
+                    qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
+                    $title ~
+                    qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
+                    qq[[</a></$h>\n]] ~
+                    (%prm<delta> // '') ~ '<table>';
             if %prm<procedural> {
-                # Markdown appears to only allow, but require one header row
-                # so insert header separator once after first row
-                my Bool $separator = False;
-                # counters for colspan
-                my $skip = 0;
-                my $prev = 0;
-                my $post = 0;
                 for %prm<grid>.list -> @row {
-                    $rv ~= [~] gather for @row {
-                        if .<no-cell> and $skip {
-                            --$skip
-                        }
-                        elsif .<no-cell> {
-                            take ' | &nbsp;'
+                    $rv ~= "\n<tr>";
+                    for @row -> $cell {
+                        next if $cell<no-cell>;
+                        my $content;
+                        $content ~= ' colspan="' ~ $cell<span>[0] ~'"' if $cell<span>:exists and $cell<span>[0] != 1;
+                        $content ~= ' rowspan="' ~ $cell<span>[1] ~'"' if $cell<span>:exists and $cell<span>[1] != 1;
+                        $content ~= ' class="';
+                        with $cell<align> { for .list {
+                            $content ~= "rakudoc-cell-$_ "
+                        } }
+                        $content ~= 'rakudoc-cell-label' if $cell<label>;
+                        with $cell<data> { $content ~= '">' ~ $cell<data> }
+                        else { $content ~= '">' }
+                        if $cell<header> {
+                            $rv ~= "<th$content\</th>"
                         }
                         else {
-                            # only handle col-span
-                            # row-span no-cell just replace with nbsp
-                            with .<span> {
-                                if .[0] > 1 {
-                                    $skip = .[0] - 1;
-                                    $prev = $skip div 2;
-                                    $post = $skip - $prev;
-                                }
-                            }
-                            take ' | ' ~ '&nbsp; | ' x $prev ~
-                                ( '**' if .<label> or .<header>) ~
-                                .<data>.trim ~
-                                ( '**' if .<label> or .<header>) ~
-                                ' | &nbsp;' x $post;
-                            $prev = $post = 0
+                            $rv ~= "<td$content\</td>"
                         }
                     }
-                    $rv ~= " |\n";
-                    unless $separator {
-                            $separator = True;
-                            $rv ~= '| :---: ' x @row.elems ~ "|\n";
-                    }
+                    $rv ~= "</tr>"
                 }
             }
             else {
-                $rv ~= '| **' ~ %prm<headers>[0]>>.trim.join( '** | **') ~ "** |\n";
-                $rv ~= [~] (( 1 .. %prm<headers>[0].elems ).map({ '| :----: ' })) ~ "|\n";
-                $rv ~= [~] %prm<rows>.map({ '| ' ~ .join(' | ') ~ " |\n" }) ~ "\n"
+                $rv ~=
+                    ((%prm<headers>.defined and %prm<headers> ne '') ??
+                        ("\t<thead>\n"
+                        ~ [~] %prm<headers>.map({ "\t\t<tr><th>" ~ .<cells>.join('</th><th>') ~ "</th></tr>\n" })
+                        ~ "\t</thead>"
+                        )
+                      !! '')
+                    ~ "\t<tbody>\n"
+                    ~ ((%prm<rows>.defined and %prm<rows> ne '') ??
+                        [~] %prm<rows>.map({ "\t\t<tr><td>" ~ .<cells>.join('</td><td>') ~ "</td></tr>\n" })
+                      !! '')
+                    ~ "\t</tbody>\n"
             }
-            $rv
+            $rv ~= "</table>\n"
         },
         #| renders =custom block
         custom => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            # using level + 1 so that TITLE is always larger
-            # a line above heading level one to separate sections
-            ('----' if %prm<level> == 1) ~
-            "\n" ~ $del ~ "\n" ~
-            '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
-            "\n" ~
-            %prm<raw> ~ "\n\n"
+            my $h = 'h' ~ (%prm<level> // '1');
+            my $title = %prm<caption>;
+            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
+            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+                qq[[<$h id="$targ" class="raku-$h">]] ~
+                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
+                $title ~
+                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
+                qq[[</a></$h>\n]] ~
+                (%prm<delta> // '') ~
+                %prm<raw> ~ "\n\n"
         },
         #| renders any unknown block minimally
         unknown => -> %prm, $tmpl {
-            "----\n\n## " ~ qq[<div id="{ %prm<target> }">UNKNOWN { %prm<block-name> }</div>\n\n] ~
-            $tmpl<escaped>
-                .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
-                 .subst(/ \v /, '<br>', :g) ~
-                 "\n\n"
+            my $h = 'h' ~ (%prm<level> // '1');
+            my $title = qq[UNKNOWN { %prm<block-name> }];
+            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
+            qq[[\n<div class="raku-id-target id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
+                qq[[<$h id="$targ" class="raku-$h">]] ~
+                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
+                $title ~
+                qq[[\n<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
+                qq[[</a></$h>\n]] ~
+                (%prm<delta> // '') ~
+                $tmpl<escaped>
+                    .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
+                    .subst(/ \v /, '<br>', :g) ~
+                     "\n\n"
         },
         #| special template to encapsulate all the output to save to a file
+        #| These sub-templates should allow sub-classes of RakuDoc::To::HTML
+        #| to provide replacement templates on a more granular basis
         final => -> %prm, $tmpl {
-            "\n# " ~ %prm<title> ~ "\n\n" ~
+            qq:to/PAGE/
+            <!DOCTYPE html>
+            <html { $tmpl<html-root> } >
+                { $tmpl<head-block> }
+                <body>
+                { $tmpl<top-of-page> }
+                { $tmpl<main-content> }
+                { $tmpl<footer> }
+            </body>
+            </html>
+            PAGE
+        },
+        ## sections of the final document
+        #| root section, what does in the html tab
+        html-root => -> %prm, $tmpl {''},
+        #| head-block, what goes in the head tab
+        head-block => -> %prm, $tmpl {''},
+        #| the first section of body, including navigation
+        top-of-page => -> %prm, $tmpl {
+            my $rv = '';
+            if %prm<title-target>:exists and %prm<title-target> ne '' {
+                $rv ~= qq[<div id="{
+                    $tmpl('escaped'>, %( :contents(%prm<title-target>), ))
+                }"></div>]
+            }
+            $rv ~= %prm<title> ~ "\n\n" ~
             (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
-            ( %prm<rendered-toc> if %prm<rendered-toc> ) ~
-            %prm<body>.Str ~ "\n" ~
+            ( %prm<rendered-toc> if %prm<rendered-toc> )
+        },
+        #| the main section of body
+        main-content => -> %prm, $tmpl {
+            %prm<body>.Str ~
             %prm<footnotes>.Str ~ "\n" ~
-            ( %prm<rendered-index> if %prm<rendered-index> ) ~
-            "\n----\n\n----\n" ~
-            "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
-            (sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
-            "\n\nSource last modified " ~ (sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime) ~
-            "\n\n" ~
-            ( %prm<warnings> if %prm<warnings>)
+            ( %prm<rendered-index> if %prm<rendered-index> )
+        },
+        #| the last section of body
+        footer => -> %prm, $tmpl {
+            qq:to/FOOTER/;
+            \n<div class="footer">
+                Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}</span>
+            <span class="footer-field">{sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
+            <span class="footer-field>Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
+            <div class="warnings">( %prm<warnings> if %prm<warnings>)</div>
+            </div>
+            FOOTER
         },
         #| renders a single item in the toc
         toc-item => -> %prm, $tmpl {
-            my $pref = ' ' x ( %prm<toc-entry><level> > 4 ?? 4 !! (%prm<toc-entry><level> - 1) * 2 )
-                ~ (%prm<toc-entry><level> > 1 ?? '- ' !! '');
-            PStr.new: qq[$pref\<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a>   \n]
+            PStr.new: qq[<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a>]
         },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            PStr.new: "----\n\n## " ~ %prm<caption> ~ "\n" ~
-            ([~] %prm<toc-list>) ~ "\n\n"
+            my $rv = qq[<div class="toc">{%prm<caption>}</div>];
+            if %prm<toc>.defined and %prm<toc>.keys {
+                $rv = "<ul class=\"menu-list\">\n";
+                my $last-level = 1;
+                for %prm<toc>.list -> %el {
+                    my $lev = %el<level>;
+                    given $last-level {
+                        when $_ > $lev {
+                            while $last-level > $lev {
+                                $rv ~= "\n</ul>\n";
+                                $last-level--;
+                            }
+                        }
+                        when $_ < $lev {
+                            while $lev > $last-level {
+                                $last-level++;
+                                $rv ~= "\n<ul>\n";
+                            }
+                        }
+                    }
+                    $rv ~= "\n<li>"
+                        ~ '<a href="#'
+                        ~ $tmpl('escaped'>, %( :contents(%el.<target>), ))
+                        ~ '">'
+                        ~ (%el.<text> // '')
+                        ~ '</a></li>';
+                }
+                $rv ~= "\n</ul>\n";
+            }
+            $rv
         },
         #| renders a single item in the index
         index-item => -> %prm, $tmpl {
@@ -359,28 +442,44 @@ method html-templates {
         },
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
-            PStr.new: "----\n\n## " ~ %prm<caption> ~"\n" ~
-            ([~] %prm<index-list>) ~ "\n\n"
+            qq[<div class="index">
+            <div class="index-caption">{%prm<caption>}</div>
+            {[~] %prm<index-list>}
+            </div>\n]
         },
         #| special template to render the footnotes data structure
         footnotes => -> %prm, $tmpl {
             if %prm<footnotes>.elems {
-            PStr.new: "----\n\n## Footnotes\n" ~
-                %prm<footnotes>.map({
-                    .<fnNumber> ~
-                    qq[<a id=".<fnTarget>" href="#{ .<retTarget> }"> |^| </a>] ~
-                    .<contents>.Str
-                }).join("\n") ~ "\n\n"
+                qq:to/FOOTNOTES/
+                    <div class="footnotes">
+                    <div class="footnote-caption">Footnotes</div>
+                    { [~] %prm<footnotes>.map({
+                        qq:to/FOOTNOTE/
+                            <div class="footnote">.<fnNumber>
+                            <a id=".<fnTarget>" href="#{ .<retTarget> }"> |^| </a>
+                            .<contents>.Str ~
+                            </div>
+                        FOOTNOTE
+                    }) }
+                    </div>
+                FOOTNOTES
             }
             else { '' }
         },
         #| special template to render the warnings data structure
         warnings => -> %prm, $tmpl {
             if %prm<warnings>.elems {
-                PStr.new: "\n\n----\n\n----\n\n## WARNINGS\n\n" ~
-                %prm<warnings>.kv.map( -> $n, $val {
-                    $n + 1 ~ ': ' ~ $tmpl( 'escaped', %( :contents( $val ) ) )
-                }).join("\n\n") ~ "\n\n"
+                qq:to/WARNINGS/
+                    <div class="footnotes">
+                    <div class="footnote-caption">Warnings</div>
+                        <ol>
+                        { [~] %prm<warnings>.map({
+                            '<li>' ~ $tmpl( 'escaped', %( :contents( $_ ) ) ) ~ "</li>\n"
+                            })
+                        }
+                        </ol>
+                    </div>
+                WARNINGS
             }
             else { '' }
         },
