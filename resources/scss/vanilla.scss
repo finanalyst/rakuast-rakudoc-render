@@ -10,6 +10,10 @@ span.unusual {
 }
 span.code {
 	font-weight: 500;
+	background-color: linen;
+	display:inline-block;
+	margin: 2px;
+	padding: 2px;
 }
 span.overstrike {
 	text-decoration: line-through;
@@ -109,25 +113,13 @@ div.footer-field {
 div.toc {
 	
 }
-div.toc-caption {
-	font-weight: bold;
+h1.toc-caption {
 }
 div.ul toc-list {
 	
 }
 div.index-section {
-    [data-index-level="1"] {
-        margin-left: 10px;
-    }
-    [data-index-level="2"] {
-        margin-left: 20px;
-    }
-    [data-index-level="3"] {
-        margin-left: 30px;
-    }
-    [data-index-level = "4"] {
-        margin-left: 40px;
-    }
+    margin-left: calc(var(--level) * 1rem);
 	> a.index-ref {
 	    white-space: nowrap;
 	    display:inline-block;
@@ -148,30 +140,29 @@ div.index-section {
 	    }
 	}
 }
-div.index-caption {
-	font-weight: bold
+h2.index-caption {
 }
-.delta {
+span.developer-note {
+    display: none;
+    width: 0;
+    color: blue;
+    text-shadow: 2px 2px 5px green;
+}
+span.developer-version {
+    display: none;
+    width: 0;
+    color: red;
+    text-shadow: 2px 2px 5px green;
+}
+.delta, span.developer-text {
     &::before {
         content: "\2139";
         vertical-align: super;
 	}
-	span.developer-note {
-	    display: none;
-	    width: 0;
-	    color: blue;
-        text-shadow: 2px 2px 5px green;
-	}
-	span.developer-version {
-	    display: none;
-	    width: 0;
-	    color: red;
-        text-shadow: 2px 2px 5px green;
-	}
 	&:hover .developer-version {
 	    display: inline-block;
         position: absolute;
-        width: 20rem;
+        width: 100%;
         z-index: 5;
         transform: translate(0.5rem,-1rem);
 	}
@@ -180,8 +171,11 @@ div.index-caption {
         position: absolute;
         width: auto;
         z-index: 5;
-        transform: translate(0.5rem,-1rem);
+        margin-left: 1rem;
 	}
+}
+span.developer-text:hover {
+    text-decoration: overline;
 }
 
 div.footnotes {
@@ -193,12 +187,23 @@ div.footnote {
 div.warnings {
 	
 }
-div.warnings-caption {
-	font-weight: bold
+div.footer {
+    border-top: 2px dashed;
+    margin: 1rem 0;
+    padding: 2rem;
+    .footer-field {
+        display:inline-block;
+    }
+    .footer-line {
+        display: block;
+    }
+}
+h2.warnings-caption {
 }
 
-h1.heading {
-	
+.heading > a {
+	color: maroon;
+	text-decoration: none;
 }
 h.title {
 	font-size: larger;
@@ -231,4 +236,11 @@ table, th, td {
 }
 .procedural-cell-label {
 	font-weight: bold;
+}
+li.item {
+    padding-left: 0.4rem;
+    margin-left: calc(var(--level) * 1rem);
+    &::marker {
+        content: attr(data-bullet);
+    }
 }

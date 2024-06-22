@@ -1479,7 +1479,7 @@ class RakuDoc::Processor {
             take %!templates<toc-item>( %( :$toc-entry , ) )
         }
         my $payload = '';
-        $payload = %!templates<toc>( %(:@toc-list, :caption( $!current.source-data<toc-caption>) ) )
+        $payload = %!templates<toc>( %(:@toc-list, :toc( $!current.toc), :caption( $!current.source-data<toc-caption>) ) )
             if @toc-list.elems;
         $!register.add-payload( :$payload, :id('toc-schema') );
         $!current.rendered-toc = $payload

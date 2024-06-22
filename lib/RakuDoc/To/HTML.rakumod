@@ -124,7 +124,7 @@ method html-templates {
             my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading-$h">]] ~
+                qq[[<$h id="$targ" class="heading">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -150,7 +150,7 @@ method html-templates {
             my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading-$h">]] ~
+                qq[[<$h id="$targ" class="heading">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -185,15 +185,10 @@ method html-templates {
         numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
         #| renders =item block
         item => -> %prm, $tmpl {
-#            my $num = %prm<level> - 1;
-#            my $indent = '&nbsp;&nbsp;' x %prm<level>;
-#            $num = @bullets.elems - 1 if $num >= @bullets.elems;
-#            my $bullet = %prm<bullet> // @bullets[$num];
-            qq[<li {
-                    %prm<bullet>:exists ??
-                        'style="list-style:' ~ %prm<bullet> ~ ';"'
-                      !! ' '
-                  }>{%prm<contents>}</li>\n]
+            my $n = %prm<level> - 1;
+            $n = @bullets.elems - 1 if $n >= @bullets.elems;
+            my $bullet = %prm<bullet> // @bullets[$n];
+            qq[<li class="item" data-bullet="$bullet" style="--level:$n;"> {%prm<contents>}</li>\n]
         },
         #| special template to render an item list data structure
         item-list => -> %prm, $tmpl {
@@ -201,7 +196,8 @@ method html-templates {
         },
         #| renders =numitem block
         numitem => -> %prm, $tmpl {
-            qq[<li>{%prm<contents>}</li>\n]
+            my $n = %prm<level> - 1;
+            qq[<li class="item" data-bullet="{%prm<numeration>}" style="--level:$n;"> {%prm<contents>}</li>\n]
         },
         #| special template to render a numbered item list data structure
         numitem-list => -> %prm, $tmpl {
@@ -209,15 +205,15 @@ method html-templates {
         },
         #| renders =nested block
         nested => -> %prm, $tmpl {
-            PStr.new: qq[<p class="nested"{
-                %prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! ''
-            }>{%prm<contents>}</div>\n]
+            PStr.new: '<p class="nested"' ~
+                (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
+                '>' ~ %prm<contents> ~ "</p>\n"
         },
         #| renders =para block
         para => -> %prm, $tmpl {
-            PStr.new: qq[<p{
-                %prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! ''
-            }>{%prm<contents>}</p>\n]
+            PStr.new: '<p' ~
+                (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
+            '>' ~ %prm<contents> ~ "</p>\n"
         },
         #| renders =place block
         place => -> %prm, $tmpl {
@@ -242,7 +238,7 @@ method html-templates {
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading-$h">]] ~
+                qq[[<$h id="$targ" class="heading">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -258,7 +254,7 @@ method html-templates {
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             my $rv = PStr.new:
                 qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                    qq[[<$h id="$targ" class="heading-$h">]] ~
+                    qq[[<$h id="$targ" class="heading">]] ~
                     qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                     $title ~
                     qq[[</a></$h>\n]] ~
@@ -302,7 +298,7 @@ method html-templates {
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading-$h">]] ~
+                qq[[<$h id="$targ" class="heading">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -315,7 +311,7 @@ method html-templates {
             my $title = qq[UNKNOWN { %prm<block-name> }];
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading-$h">]] ~
+                qq[[<$h id="$targ" class="heading">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -382,20 +378,18 @@ method html-templates {
             \n<div class="footer">
                 Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}</span>
             <span class="footer-field">{sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
-            <span class="footer-field>Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
+            <span class="footer-line">Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
             { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }
             </div>
             FOOTER
         },
         #| renders a single item in the toc
-        toc-item => -> %prm, $tmpl {
-            PStr.new: qq[<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a>]
-        },
+        toc-item => -> %prm, $tmpl { '' }, # HTML uses toc structure directly
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            my $rv = qq[<div class="toc"><div class="toc-caption">{%prm<caption>}</div>];
-            if %prm<toc>.defined and %prm<toc>.keys {
-                $rv = "<ul class=\"toc-list\">\n";
+            if %prm<toc>.elems {
+                my $rv = qq[<div class="toc"><h2 class="toc-caption">{ %prm<caption> }</h2>
+                <ul class="toc-list">\n];
                 my $last-level = 1;
                 for %prm<toc>.list -> %el {
                     my $lev = %el<level>;
@@ -417,19 +411,21 @@ method html-templates {
                         ~ '<a href="#'
                         ~ $tmpl('escaped', %( :contents(%el.<target>), ))
                         ~ '">'
-                        ~ (%el.<text> // '')
+                        ~ (%el.<caption> // '')
                         ~ '</a></li>';
                 }
-                $rv ~= "\n</ul>\n";
+                $rv ~= qq[\n\</ul>\n\</div>]
             }
-            $rv ~= "\n</div>"
+            else {
+                ''
+            }
         },
         #| renders a single item in the index
         index-item => -> %prm, $tmpl {
             sub si( %h, $n ) {
                 my $rv = '';
                 for %h.sort( *.key )>>.kv -> ( $k, %v ) {
-                    $rv ~= qq[<div class="index-section" data-index-level="{$n}">\n<span class="index-name">{$k}: </span>] ~
+                    $rv ~= qq[<div class="index-section" style="--level:{$n};">\n<span class="index-name">{$k}: </span>] ~
                         %v<refs>.map({ qq[<a class="index-ref" href="#{ .<target> }">{ .<place> }</a><span>{ .<place> }</span>] }).join(', ') ~
                         si( %v<sub-index>, $n + 1 ) ~
                         "</div>\n"
@@ -449,7 +445,7 @@ method html-templates {
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
             qq[<div class="index">
-            <div class="index-caption">{%prm<caption>}</div>
+            <h2 class="index-caption">{%prm<caption>}</h2>
             {[~] %prm<index-list>}
             </div>\n]
         },
@@ -458,7 +454,7 @@ method html-templates {
             if %prm<footnotes>.elems {
                 PStr.new: qq:to/FOOTNOTES/
                     <div class="footnotes">
-                    <div class="footnote-caption">Footnotes</div>
+                    <h2 class="footnote-caption">Footnotes</h2>
                     { [~] %prm<footnotes>.map({
                         PStr.new:
                             '<div class="footnote">' ~ .<fnNumber> ~
@@ -478,7 +474,7 @@ method html-templates {
             if %prm<warnings>.elems {
                 qq:to/WARNINGS/
                     <div class="warnings">
-                    <div class="warnings-caption">Warnings</div>
+                    <h2 class="warnings-caption">Warnings</h2>
                         <ol>
                         { [~] %prm<warnings>.map({
                             '<li>' ~ $tmpl( 'escaped', %( :contents( $_ ) ) ) ~ "</li>\n"
@@ -600,9 +596,10 @@ method html-templates {
         #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
         #| Delta note ( Δ<visible text|version; Notification text> )
         markup-Δ => -> %prm, $tmpl {
-            DEVEL-TEXT-ON ~ %prm<contents> ~ DEVEL-TEXT-OFF ~
+            DEVEL-TEXT-ON ~ %prm<contents> ~
+            DEVEL-VERSION-ON ~ %prm<versions> ~
             (%prm<note> ?? DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF !! '') ~
-            DEVEL-VERSION-ON ~ %prm<versions> ~ DEVEL-VERSION-OFF
+            DEVEL-VERSION-OFF ~ DEVEL-TEXT-OFF
         },
         #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
         #| Markup extra ( M<display text|functionality;param,sub-type;...>)

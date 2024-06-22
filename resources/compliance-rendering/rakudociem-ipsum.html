@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en"
+ >
+    <head>
+        <title>Proving a renderer</title>
+    <style>span.basis{font-weight:800}span.important{font-style:italic}span.unusual{text-decoration:underline}span.code{font-weight:500;background-color:linen;display:inline-block;margin:2px;padding:2px}span.overstrike{text-decoration:line-through}span.high{vertical-align:super}span.junior{vertical-align:sub}span.replace{font-style:small-caps;text-shadow:-1px 1px}span.indexed{text-shadow:1px 1px orange}span.index-entry{text-shadow:1px 1px orange}span.keyboard{text-shadow:1px 1px}span.terminal{text-decoration:overline underline}span.footnote{vertical-align:super}span.developer-version{display:none;color:red}span.developer-version span.developer-note{font-family:"Brush Script MT",cursive}span.developer-version:hover{display:inline-block;transform:translate(50px, 100px);z-index:5}span.bad-markdown{text-shadow:1px 1px red}pre.code-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block::before{content:"--- input ---";display:block;text-shadow:-2px -2px 4px #000;color:#fff;padding-bottom:1rem}pre.output-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.output-block::before{content:"--- output ---";display:block;text-shadow:2px 2px 4px #000;color:#fff;padding-bottom:1rem}div.defn-text{margin-left:1rem}div.defn-term{font-weight:bold}div.id-target{display:none}div.nested{margin-left:5 em}div.index-section{margin-left:calc(var(--level)*1rem)}div.index-section>a.index-ref{white-space:nowrap;display:inline-block;width:5em;overflow:hidden;text-overflow:ellipsis}div.index-section>a.index-ref+span{display:none;width:0}div.index-section>a.index-ref:hover+span{display:inline-block;position:absolute;width:auto;z-index:5;background-color:#fff5ee;transform:translate(-5em, -1em)}span.developer-note{display:none;width:0;color:blue;text-shadow:2px 2px 5px green}span.developer-version{display:none;width:0;color:red;text-shadow:2px 2px 5px green}.delta::before,span.developer-text::before{content:"ℹ";vertical-align:super}.delta:hover .developer-version,span.developer-text:hover .developer-version{display:inline-block;position:absolute;width:100%;z-index:5;transform:translate(0.5rem, -1rem)}.delta:hover .developer-note,span.developer-text:hover .developer-note{display:inline-block;position:absolute;width:auto;z-index:5;margin-left:1rem}span.developer-text:hover{text-decoration:overline}div.footer{border-top:2px dashed;margin:1rem 0;padding:2rem}div.footer .footer-field{display:inline-block}div.footer .footer-line{display:block}.heading>a{color:maroon;text-decoration:none}h.title{font-size:larger}table,th,td{border:1px solid;border-collapse:collapse}.procedural-cell-left{text-align:left}.procedural-cell-centre{text-align:center}.procedural-cell-center{text-align:center}.procedural-cell-right{text-align:right}.procedural-cell-top{vertical-align:text-top}.procedural-cell-middle{vertical-align:baseline}.procedural-cell-bottom{vertical-align:text-bottom}.procedural-cell-label{font-weight:bold}li.item{padding-left:.4rem;margin-left:calc(var(--level)*1rem)}li.item::marker{content:attr(data-bullet)}/*# sourceMappingURL=vanilla.css.map */
+</style>
+
+    </head>
+    <body>
+    <div id="Proving_a_renderer"></div><h1 class="title">Proving a renderer</h1>
+
+	A file with many RakuDoc components and some idea about what is expected.
+
+<div class="toc"><h2 class="toc-caption">Table of Contents</h2>
+                <ul class="toc-list">
+
+<li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+<li><a href="#Purpose">Purpose</a></li>
+<li><a href="#The_table_of_contents">The table of contents</a></li>
+<li><a href="#A_short_index">A short index</a></li>
+<li><a href="#This_is_a_first_heading">This is a first heading</a></li>
+<ul>
+
+<li><a href="#This_is_a_second_level_heading">This is a second level heading</a></li>
+<ul>
+
+<li><a href="#This_is_third_level_heading">This is third level heading</a></li>
+</ul>
+
+</ul>
+
+<li><a href="#This_is_a_numbered_heading,_level_1">This is a numbered heading, level 1</a></li>
+<ul>
+
+<li><a href="#This_is_a_second_level_heading_0">This is a second level heading</a></li>
+<ul>
+
+<li><a href="#A_third_level">A third level</a></li>
+<li><a href="#Another_third_level">Another third level</a></li>
+</ul>
+
+<li><a href="#Back_to_second">Back to second</a></li>
+<ul>
+
+<li><a href="#A_third_level_0">A third level</a></li>
+<li><a href="#Another_third_level_0">Another third level</a></li>
+</ul>
+
+</ul>
+
+<li><a href="#Lists">Lists</a></li>
+<ul>
+
+<li><a href="#Taking_a_bullet">Taking a bullet</a></li>
+</ul>
+
+<li><a href="#Blocks_that_are_processed_differently">Blocks that are processed differently</a></li>
+<ul>
+
+<li><a href="#Unrelenting_hype">Unrelenting hype</a></li>
+</ul>
+
+<li><a href="#Formula_cannot_be_rendered">Fabulous identity</a></li>
+<ul>
+
+<li><a href="#A_customised_block">A customised block</a></li>
+</ul>
+
+<li><a href="#This_is_an_extraordinary_paragraph">This is an extraordinary paragraph</a></li>
+<li><a href="#Some_tables">Some tables</a></li>
+<ul>
+
+<li><a href="#A_visual_table">A visual table</a></li>
+<li><a href="#A_visual_table_with_a_stupendously_long_caption">A visual table with a stupendously long caption</a></li>
+<li><a href="#A_procedural_table">A procedural table</a></li>
+</ul>
+
+<li><a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a></li>
+<li><a href="#Scoping_examples">Scoping examples</a></li>
+</ul>
+</div>
+    
+<div class="id-target" id=""></div><h2 id="SYNOPSIS" class="heading"><a href="#" title="go to top of document">SYNOPSIS</a></h2>
+<p id="b57619170f863dbbc46187376a373d2aa4c4dada">Assuming a new renderer has been developed and installed (eg using <span class="important">zef</span>) at <span class="basis">Rakudoc::To::MyRender</span>, the render this file using a <span class="code">raku --rakudoc=MyRenderer</span> terminal command. The renderer will be consistent with the RakuDoc v2 specification if all the blocks are rendered appropriately, and warnings are generated by the statements marked as incorrect below. </p>
+
+
+
+<div class="id-target" id=""></div><h2 id="Purpose" class="heading "><a href="#" title="go to top of document">Purpose</a></h2>
+<p id="8829f8cb03e15ebcbfcdffc0a7a5b9508289b7b1">This file is intended to prove a RakuDoc v2 renderer. It can be used in several ways: </p>
+
+<ul><li class="item" data-bullet="•" style="--level:0;"> to generate the AST representation of all the RakuDoc components in the specification</li>
+<li class="item" data-bullet="•" style="--level:0;"> to prove a renderer that a new renderer should be able to process this file</li>
+<li class="item" data-bullet="•" style="--level:0;"> to visualise how the final output of a RakuDoc source will look after processing</li>
+</ul>
+<p id="d6034c1a9ee031a2aaab4c92e5170a07aa1f56c2">An attempt has been made to utilise all RakuDoc components, it is not an exhaustive test of all components in all possible combinations. Please suggest additional combinations if they turn out to have unusual effects. </p>
+<p id="ce754b60e2331c8c84197cd2b6816101d198d613">Several <span class="important">mistakes</span> have been included where the RakuDoc v2 specification indicates how inconsistent behaviours or unknown components should be handled. </p>
+<p id="9d9135b34eb1e7dc2f593fbb4c9c6dbb9d6a1df2">The the end of the rendering of this source file, a number of warning messages should be included. </p>
+
+<div id="The_table_of_contents"> </div><div class="toc"><h2 class="toc-caption">Table of Contents</h2>
+                <ul class="toc-list">
+
+<li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+<li><a href="#Purpose">Purpose</a></li>
+<li><a href="#The_table_of_contents">The table of contents</a></li>
+<li><a href="#A_short_index">A short index</a></li>
+<li><a href="#This_is_a_first_heading">This is a first heading</a></li>
+<ul>
+
+<li><a href="#This_is_a_second_level_heading">This is a second level heading</a></li>
+<ul>
+
+<li><a href="#This_is_third_level_heading">This is third level heading</a></li>
+</ul>
+
+</ul>
+
+<li><a href="#This_is_a_numbered_heading,_level_1">This is a numbered heading, level 1</a></li>
+<ul>
+
+<li><a href="#This_is_a_second_level_heading_0">This is a second level heading</a></li>
+<ul>
+
+<li><a href="#A_third_level">A third level</a></li>
+<li><a href="#Another_third_level">Another third level</a></li>
+</ul>
+
+<li><a href="#Back_to_second">Back to second</a></li>
+<ul>
+
+<li><a href="#A_third_level_0">A third level</a></li>
+<li><a href="#Another_third_level_0">Another third level</a></li>
+</ul>
+
+</ul>
+
+<li><a href="#Lists">Lists</a></li>
+<ul>
+
+<li><a href="#Taking_a_bullet">Taking a bullet</a></li>
+</ul>
+
+<li><a href="#Blocks_that_are_processed_differently">Blocks that are processed differently</a></li>
+<ul>
+
+<li><a href="#Unrelenting_hype">Unrelenting hype</a></li>
+</ul>
+
+<li><a href="#Formula_cannot_be_rendered">Fabulous identity</a></li>
+<ul>
+
+<li><a href="#A_customised_block">A customised block</a></li>
+</ul>
+
+<li><a href="#This_is_an_extraordinary_paragraph">This is an extraordinary paragraph</a></li>
+<li><a href="#Some_tables">Some tables</a></li>
+<ul>
+
+<li><a href="#A_visual_table">A visual table</a></li>
+<li><a href="#A_visual_table_with_a_stupendously_long_caption">A visual table with a stupendously long caption</a></li>
+<li><a href="#A_procedural_table">A procedural table</a></li>
+</ul>
+
+<li><a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a></li>
+<li><a href="#Scoping_examples">Scoping examples</a></li>
+</ul>
+</div>
+
+
+<div id="A_short_index"> </div><div class="index">
+            <h2 class="index-caption">Index</h2>
+            <div class="index-section" data-index-level="0"><span class="index-entry">elements to be placed:  </span><a class="index-ref" href="#index-entry-elements_to_be_placed">This is third level heading</a><span>This is third level heading</span>
+
+</div><div class="index-section" data-index-level="0"><span class="index-entry">formatting code:  </span><a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+
+</div><div class="index-section" data-index-level="0"><span class="index-entry">index:  </span><a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+
+<div class="index-section" style="--level:1;">
+<span class="index-name">entry: </span><a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span><div class="index-section" style="--level:2;">
+<span class="index-name">nested: </span><a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+</div>
+<div class="index-section" style="--level:1;">
+<span class="index-name">multiple entries: </span><a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+<div class="index-section" style="--level:1;">
+<span class="index-name">subentry: </span><a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span><div class="index-section" style="--level:2;">
+<span class="index-name">multilevel: </span><a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+<div class="index-section" style="--level:2;">
+<span class="index-name">rendering: </span><a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+</div>
+</div><div class="index-section" data-index-level="0"><span class="index-entry">inline formatting:  </span><a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+
+</div>
+            </div>
+
+
+
+<div class="id-target" id=""></div><h2 id="This_is_a_first_heading" class="heading "><a href="#" title="go to top of document">This is a first heading</a></h2>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h3 id="This_is_a_second_level_heading" class="heading "><a href="#" title="go to top of document">This is a second level heading</a></h3>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h4 id="This_is_third_level_heading" class="heading delta"><span class="developer-version">v2<span class="developer-note">developers can attach notes to blocks associated with versions</span></span>
+
+<a href="#" title="go to top of document">This is third level heading</a></h4>
+<p id="a141d40755d450894b7386aa2614fa2f36f28794">A paragraph to illustrate <span class="basis">Basis type</span> formatting. </p>
+<p id="307b2b98ca66eeece847d10ade17f673991b6460">A paragraph to illustrate <span class="important">Important type</span> formatting. </p>
+<p id="82aa6664b7a856dafe1c2b89199a7276fa219505">A paragraph to illustrate <span class="unusual">Unusual type</span> formatting. </p>
+<p id="c256bb1bfe2071a27f52d11be149e952a8b7807f">A paragraph to illustrate <span class="overstrike">Strikethrough type</span> formatting. </p>
+<p id="047b9cf3c7b2366273e7ccf8396e7c03a6c77298">A paragraph to illustrate <span class="high">Superscript type</span> formatting. (For text output, many terminals do not support superscript/subscript font positions, so consider using a colouration as well.) </p>
+<p id="54a781d179994a2871a3222a9869d4d41b71b308">A paragraph to illustrate <span class="junior">Subscript type</span> formatting. </p>
+<p id="d1c2fbb61a8e41b7f48c5a6fcde9de35b96d9528">A paragraph to illustrate <span class="code">Code type</span> formatting. It can contain other markup, eg. <span class="code">A<> markup</span>. </p>
+<p id="1b858c612388d64388b397bd8b118a77be1dc119">A paragraph to illustrate Verbatim type formatting. It can contain other RakuDoc, eg. P&lt;defn:Happy&gt; without executing it. </p>
+<p id="67fa1eae635a552619d0e938256ae8b7abf63079">A paragraph to illustrate some >< formatting (in the source has Z&lt;Zero width&gt; between >< ). </p>
+<p id="ab3201cbc27c98a87beb4dcbb704aa14fa3a0780">A paragraph to illustrate <span class="keyboard">Keyboard</span> formatting. </p>
+<p id="70180fda520febafe30d0ea7d0c6a04986dd251b">A paragraph to illustrate <span class="replace">Replacement</span> formatting. </p>
+<p id="ce9fd0bec5b0fb1e95940c2921aecfc014839274">A paragraph to illustrate <span class="terminal">Terminal</span> formatting. </p>
+<p id="ef9b2d8361e345345a5947dbd0fd75b96d1cea2c">A paragraph to illustrate several <span class="bad-markdown">G&lt;G undefined type&gt;</span>, <span class="bad-markdown">Q&lt;Q undefined type&gt;</span>, <span class="bad-markdown">W&lt;W undefined type&gt;</span>, <span class="bad-markdown">Y&lt;Y undefined type&gt;</span> formatting; warnings are expected. </p>
+<p id="13096095a761637bd435c3aed1dd2f53c55df88f">Various entities are possible such as « or the same thing using unicode «. Entities can be double unicodes, such as 🇺🇦, which is the Ukrainian flag. </p>
+<p id="e1b8e847bc72eaea83a200d39cda35ca21c04399">In case you have forgotten, here is something aliased at the start: Do not consider this a disquisition of possible combinations. </p>
+<p id="ba1e73ad51b841da267b2eef062065ec80c2d15c">This is an example of an Alias where A&lt;DECLARATION&gt; was replaced by the contents of the =alias directive. Aliases are scoped, see below, but cannot be specified before being used in the document. Here is an undeclared forward reference, which was written as A&lt;an undeclared|XXX&gt;. The use of an undeclared alias causes a warning. </p>
+<p id="6f7d533e2d4eacbce2880ab3f6f9ff56219ff975">We can also make an inline <span class="basis">definition</span>. This whole paragraph will be referenced later. </p>
+<p id="bda1c905c0e73f91ae0203d80bb2205fc9858a53">A developer note <span class="developer-text">can be attached<span class="developer-version">v1.2.3 ^.. v2.0.0<span class="developer-note"> highly deprecated</span></span></span> to text. A renderer may show the text or only show it for contexts compliant with the version. </p>
+<p id="f917dccfe3e36943818cbfb22779da9483f70975">But a note without meta no versioning here is ignored and a warning generated. </p>
+<p id="a3ee84403af32259c71f3aafdcf8699442613d38">When we want a formula <span class="code">\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}</span> use F&lt;&gt; markup. </p>
+<p id="6124a47750a54c729f96701ec7787ae8cbf10a46">Links can be made internally <a href="#This_is_a_first_heading">say to the first heading</a> or externally <a href="https://docs.raku.org">say to the raku documentation site</a>. </p>
+<p id="3a6f630000b3f213bc90132c6b5e675f21551c4d">A renderer should provide the opportunity to customise text using M&lt;...|..,..;...&gt; markup. The renderer <span class="code">should not recognise this functionality</span> and issue a warning. </p>
+<p id="8b16b44dadbf383c091f33cb691b849d1da3d4cb">A note <a id="N<such_as_this_one>" href="#fn_target_N<such_as_this_one>"><span class="footnote">[ 1 ]</span></a> will not itself be rendered inline, but the text will be rendered in a footnote or popup. A marker or number will be rendered to point to the text. </p>
+<p id="1a9498271bd323a31767d488a9884cf2395ad842">Suppose we want to place the definition 
+
+&#x2997;  <div class="defn-text"><p id="6f7d533e2d4eacbce2880ab3f6f9ff56219ff975">We can also make an inline <span class="basis">definition</span>. This whole paragraph will be referenced later. </p>
+</div>
+&#x2998; here. And to confound pedants, here is a definition 
+
+&#x2997;  <div class="defn-text"><div class="defn-term">Happy</div>
+
+<div class="defn-text">when not blue </div>
+
+</div>
+&#x2998; defined using a <span class="code">=defn</span> block. </p>
+<p id="1ea08664bf2aacebda45b5fc581dc9655839cb63">Normally extra spaces are removed with paragraphs, but sometimes we truly dot dot dot&nbsp;&nbsp; dash dash dash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; want them. </p>
+<p id="2e2ca6d997c181385df6e3bbf5b33cbf76a58af6">Good text will contain <span id="index-entry-elements_to_be_placed"><span class="indexed">elements to be placed</span></span> in an index. The index has already been placed at the start of the document, although content is generated here. </p>
+
+<div class="id-target" id=""></div><h2 id="This_is_a_numbered_heading,_level_1" class="heading"><a href="#" title="go to top of document">1. This is a numbered heading, level 1</a></h2>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h3 id="This_is_a_second_level_heading_0" class="heading"><a href="#" title="go to top of document">1.1. This is a second level heading</a></h3>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h4 id="A_third_level" class="heading"><a href="#" title="go to top of document">1.1.1. A third level</a></h4>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h4 id="Another_third_level" class="heading"><a href="#" title="go to top of document">1.1.2. Another third level</a></h4>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h3 id="Back_to_second" class="heading"><a href="#" title="go to top of document">1.2. Back to second</a></h3>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h4 id="A_third_level_0" class="heading"><a href="#" title="go to top of document">1.2.1. A third level</a></h4>
+<p id="dcb2dabbd66421c17fdf091cfa32aea8bd834d1b">Although this heading has the same text in the heading, the Table of Contents should provide a unique target for it (this may not be possible in some formats such as MarkDown) </p>
+
+<div class="id-target" id=""></div><h4 id="Another_third_level_0" class="heading"><a href="#" title="go to top of document">1.2.2. Another third level</a></h4>
+<p id="70ad9d467776969c23717c7f56a00f439170d167">text </p>
+
+<div class="id-target" id=""></div><h2 id="Lists" class="heading "><a href="#" title="go to top of document">Lists</a></h2>
+<p id="5764bb12f6783a80248bf4ab5a841f38755bb607">Unnumbered up to four levels of bulleting are required, a renderer can offer more. </p>
+
+<ul><li class="item" data-bullet="•" style="--level:0;"> The start of a unnumbered item list</li>
+<li class="item" data-bullet="•" style="--level:0;"> Next item</li>
+<li class="item" data-bullet="▹" style="--level:1;"> now next level</li>
+<li class="item" data-bullet="▹" style="--level:1;"> another at two</li>
+<li class="item" data-bullet="‣" style="--level:2;"> a third level</li>
+<li class="item" data-bullet="⁃" style="--level:3;"> fourth level</li>
+<li class="item" data-bullet="⁃" style="--level:3;"> fourth level</li>
+<li class="item" data-bullet="∙" style="--level:4;"> level five</li>
+<li class="item" data-bullet="∙" style="--level:4;"> level six</li>
+<li class="item" data-bullet="∙" style="--level:4;"> level seven</li>
+<li class="item" data-bullet="•" style="--level:0;"> reset to level one</li>
+<li class="item" data-bullet="‣" style="--level:2;"> jump levels</li>
+</ul>
+<p></p>
+<p><p id="83e19fdc54d0f1f4496ec56b8a25245c97831d5d">to put space between lists, probably a <span class="code">=para</span> without text is needed. </p>
+</p>
+
+<ol><li class="item" data-bullet="1." style="--level:0;"> The start of a numbered item list</li>
+<li class="item" data-bullet="2." style="--level:0;"> Next item</li>
+<li class="item" data-bullet="2.1." style="--level:1;"> now next level</li>
+<li class="item" data-bullet="2.2." style="--level:1;"> another at two</li>
+<li class="item" data-bullet="2.2.1." style="--level:2;"> a third level</li>
+<li class="item" data-bullet="3." style="--level:0;"> reset to level one</li>
+<li class="item" data-bullet="3.0.1." style="--level:2;"> jump levels</li>
+</ol>
+
+<ul><li class="item" data-bullet="•" style="--level:0;"> an unnumbered item</li>
+</ul>
+
+<ol><li class="item" data-bullet="3.1." style="--level:1;"> but we can resume after a break</li>
+</ol>
+<p></p>
+
+<div class="defn-term">Definitions</div>
+
+<div class="defn-text">can be placed in lists </div>
+
+<div class="defn-term">Happy</div>
+
+<div class="defn-text">when not blue </div>
+
+<div class="defn-term">Blue</div>
+
+<div class="defn-text">when not happy </div>
+
+<div class="defn-term">Being assertive</div>
+
+<div class="defn-text"><p id="f97cc899e007dbcc76fe7996cdc5a1ed80280481">Just <span class="basis">shout</span> why don't you? </p>
+</div>
+
+<p></p>
+<p id="247bfbf7af283c4b6ba3d4760a4265c789cbaca5">This is an ordinary paragraph </p>
+
+<div class="defn-term">1.Lemma 1</div>
+
+<div class="defn-text">do not make trouble </div>
+
+<div class="defn-term">2.Lemma 2</div>
+
+<div class="defn-text">do not shout at people </div>
+
+<div class="defn-term">3.Lemma 3</div>
+
+<div class="defn-text">just phone the SWAT team </div>
+
+<p id="a3fd33b6d94b490c4752017a89487b54784e6def">An ordinary paragraph creates the definition list. </p>
+
+<div class="defn-term">4.Lemma 4</div>
+
+<div class="defn-text">Claim you are the victim here </div>
+
+
+<div class="id-target" id=""></div><h3 id="Taking_a_bullet" class="heading "><a href="#" title="go to top of document">Taking a bullet</a></h3>
+<p id="14c56bd902b40af2dc13b1cc12e673ca393c18bc">The project originally consisted of five phases, of which two are already complete and two have been abandoned: </p>
+
+<ul><li class="item" data-bullet="☑" style="--level:0;"> Investigate existing solutions</li>
+<li class="item" data-bullet="☑" style="--level:0;"> Define a minimal initial feature set</li>
+<li class="item" data-bullet="☐" style="--level:0;"> Implement this minimal set of features</li>
+<li class="item" data-bullet="☒" style="--level:0;"> Secure 100 million in venture capital</li>
+<li class="item" data-bullet="☒" style="--level:0;"> Abscond to the Bahamas with the cash</li>
+</ul>
+<p id="dce92f1d585e7137bb432d2e9f5c610e0ff4b3ca">The major sources of sustainable energy are: </p>
+
+<ul><li class="item" data-bullet="🌍" style="--level:0;"> wind</li>
+<li class="item" data-bullet="🌍" style="--level:0;"> hydroelectric</li>
+<li class="item" data-bullet="🌍" style="--level:0;"> solar</li>
+<li class="item" data-bullet="🌍" style="--level:0;"> geothermal</li>
+<li class="item" data-bullet="🌍" style="--level:0;"> fusion</li>
+<li class="item" data-bullet="🤞" style="--level:1;"> (eventually)</li>
+</ul>
+
+
+<div class="id-target" id=""></div><h2 id="Blocks_that_are_processed_differently" class="heading "><a href="#" title="go to top of document">Blocks that are processed differently</a></h2>
+<pre class="code-block">my $x = 2;
+# a brilliant program!
+</pre>
+<pre class="code-block">my $x = 3;
+# a renderer <span class="basis">should</span> observe the basis markup
+# and the <span class="keyboard">markup</span> but render R<markup> verbatim
+</pre>
+<pre class="code-block"><p id="b2f69bed1d6198372eb1b7db810d679a8590e5d6"># indenting causes an implicit code block my $raku = 'fantastic'; </p>
+
+</pre>
+<pre class="input-block">This is a text with <span class="basis">basis</span> markup that conserves
+all spacing      when trying    to get column
+just using       white spaces   naively
+better           to             use tables
+</pre>
+<pre class="output-block">This is almost the same as input
+but may have a different styling
+</pre>
+<p class="nested"><p id="6e9b6e59515b8743ca9ecc09b39aedd2e72145a8">Occasionally some text that is inset from the margin is required. So enclose it in a nested block. </p>
+</p>
+<p id="17965ac10461dfed4208425b8d6df63a2ccd64b2">The following semantic block was included at the beginning in source, but it is now included here. </p>
+
+<div id="Unrelenting_hype"> </div>
+<div class="id-target" id=""></div><h2 id="AUTHORS" class="heading"><a href="#" title="go to top of document">AUTHORS</a></h2>
+Richard Hainsworth, aka finanalyst
+
+
+
+
+<div class="id-target" id=""></div><h2 id="Formula_cannot_be_rendered" class="heading"><a href="#" title="go to top of document">Fabulous identity</a></h2>
+
+<div class="id-target" id=""></div><h2 id="A_customised_block" class="heading"><a href="#" title="go to top of document">UNKNOWN MyBlock</a></h2>
+=begin MyBlock :caption&lt;A customised block&gt; :headlevel(2)<br>Actually it fails because no customisation has been made.<br>It<br>should<br>be<br>rendered without spaces&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;being chewed up.<br>=end MyBlock<br><br>
+
+<p id="This_is_an_extraordinary_paragraph"><p id="b5c181919c1a67165a2e16473d326defb4c10339">Some silly text which will have its own <span class="basis">extraordinary</span> ToC entry </p>
+</p>
+<p id="67ef6b8164c2b738324d09e43db9bffa1b660fd8">You are reminded that: Do not consider this a disquisition of possible combinations. </p>
+
+<div class="id-target" id=""></div><h2 id="Some_tables" class="heading "><a href="#" title="go to top of document">Some tables</a></h2>
+
+<div class="id-target" id=""></div><h3 id="A_visual_table" class="heading"><a href="#" title="go to top of document">A visual table</a></h3>
+<table>	<thead>
+		<tr><th>Animal</th><th>Legs</th><th>Eats</th></tr>
+	</thead>	<tbody>
+		<tr><td>Zebra</td><td>4</td><td>Cookies</td></tr>
+		<tr><td>Human</td><td>2</td><td>Pizza</td></tr>
+		<tr><td>Shark</td><td>0</td><td>Fish</td></tr>
+			</tbody>
+</table>
+
+<div class="id-target" id=""></div><h3 id="A_visual_table_with_a_stupendously_long_caption" class="heading"><a href="#" title="go to top of document">A visual table with a stupendously long caption</a></h3>
+<table>	<thead>
+		<tr><th>Animal</th><th>Legs</th><th>Eats</th></tr>
+	</thead>	<tbody>
+		<tr><td>Zebra</td><td>4</td><td>Cookies</td></tr>
+		<tr><td>Human</td><td>2</td><td>Pizza</td></tr>
+		<tr><td>Shark</td><td>0</td><td>Fish</td></tr>
+			</tbody>
+</table>
+
+<div class="id-target" id=""></div><h3 id="A_procedural_table" class="heading"><a href="#" title="go to top of document">A procedural table</a></h3>
+<table>
+<tr><th rowspan="2" class="">Date</th><th colspan="3" class="">Samples</th><th rowspan="2" class="">Mean</th></tr>
+<tr><th class=""><p id="7ba56a085b9b49416ac884e601f87ddb8be4f23a"><span class="important">Sample 1</span> </p>
+</th><th class=""><p id="87a309f2877c6003797320f92f1222072ea75ec8"><span class="important">Sample 2</span> </p>
+</th><th class=""><p id="1c3168f40f13da821749433173e69225e7932f80"><span class="important">Sample 3</span> </p>
+</th></tr>
+<tr><td class="">2023-03-08</td><td class="">0.4</td><td class="">0.1</td><td class="">0.3</td><td class="">0.26667</td></tr>
+<tr><td class="">2023-04-14</td><td class="">0.8</td><td class="">0.6</td><td class="">0.5</td><td class="">0.63333</td></tr>
+<tr><td class="">2023-06-23</td><td class="">0.2</td><td class="">0.9</td><td class="">0.0</td><td class="">0.36667</td></tr>
+<tr><td class="procedural-cell-label">Mean:</td><td class="">0.46667</td><td class="">0.53333</td><td class="">0.26667</td><td class="">0.42222</td></tr></table>
+
+<div class="id-target" id=""></div><h2 id="Adding_index_entries_to_your_text" class="heading "><a href="#" title="go to top of document">Adding index entries to your text</a></h2>
+<p id="1ecdb5397ed9587a66ddabeee82226575703539a">An <span id="index-entry-index_entry"><span class="indexed">index entry</span></span> is an inline <span id="index-entry-formatting_code"><span class="indexed">formatting code</span></span> that is rendered normally (i.e. with no special identifying styling) within the text, but which is also added to the <span id="index-entry-index"><span class="indexed">index</span></span>. <span id="index-entry-Index_entries"><span class="indexed">Index entries</span></span> may be specified with <span id="index-entry-subentries"><span class="indexed">subentries</span></span>, including <span id="index-entry-multilevel_subentries"><span class="indexed">multilevel subentries</span></span>, though a renderer is not required to represent anything more than the <span id="index-entry-first_level"><span class="indexed">first level</span></span>. A single index entry can specify <span id="index-entry-two_or_more_separate_entries_in_the_index"><span class="indexed">two or more separate entries in the index</span></span>, all of which will refer back to the same point in the text. </p>
+
+<div class="id-target" id=""></div><h2 id="Scoping_examples" class="heading "><a href="#" title="go to top of document">Scoping examples</a></h2>
+<p id="34232ffd55c5cac6f98d36702e827373b6019325">Configuration and aliases are scoped. </p>
+<p id="79b14975340b0a1a7e8ce32c07650ec7d27f38f5">Without configuration <span class="code">embedded B<markup> is rendered</span> verbatim. </p>
+<p id="9c7a58aeccf2d25545a68a4b895848fe60b14cdb">With configuration <span class="code">embedded <span class="basis">basis</span> markup</span> is rendered. </p>
+<p id="563610be1005b896b11338edf3da77fa577125d7">How short the season when roses are red. </p>
+
+<p id="822cf251698471e6e812828b614e7cd383fe2990">But configuration directives <span class="code">only B<apply> inside</span> a block scope. </p>
+<p id="b7646246b67898513ef4e960660428e6bfda2c59">Did I mention before that: Do not consider this a disquisition of possible combinations. </p>
+<p id="a6d2bdecb50d713f96430f8d601ad30a98ec3517">Text finishes after version number </p>
+
+<div id="Placement"> </div>
+<div class="id-target" id=""></div><h2 id="VERSION" class="heading"><a href="#" title="go to top of document">VERSION</a></h2>
+v0.2.0
+
+
+    <div class="footnotes">
+    <h2 class="footnote-caption">Footnotes</h2>
+    <div class="footnote">1<a id="fn_target_N<such_as_this_one>" href="#N<such_as_this_one>"> |^| </a>such as this one</div>
+    </div>
+
+<div class="index">
+            <h2 class="index-caption">Index</h2>
+            <div class="index-section" data-index-level="0"><span class="index-entry">elements to be placed:  </span><a class="index-ref" href="#index-entry-elements_to_be_placed">This is third level heading</a><span>This is third level heading</span>
+
+</div><div class="index-section" data-index-level="0"><span class="index-entry">formatting code:  </span><a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+
+</div><div class="index-section" data-index-level="0"><span class="index-entry">index:  </span><a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+
+<div class="index-section" style="--level:1;">
+<span class="index-name">entry: </span><a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span><div class="index-section" style="--level:2;">
+<span class="index-name">nested: </span><a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+</div>
+<div class="index-section" style="--level:1;">
+<span class="index-name">multiple entries: </span><a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+<div class="index-section" style="--level:1;">
+<span class="index-name">subentry: </span><a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span><div class="index-section" style="--level:2;">
+<span class="index-name">multilevel: </span><a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+<div class="index-section" style="--level:2;">
+<span class="index-name">rendering: </span><a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
+</div>
+</div><div class="index-section" data-index-level="0"><span class="index-entry">inline formatting:  </span><a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+
+</div>
+            </div>
+
+    
+<div class="footer">
+    Rendered from <span class="footer-field">./rakudociem-ipsum.rakudoc</span>
+<span class="footer-field"> at 23:31 UTC on 2024-06-22</span>
+<span class="footer-line">Source last modified at 14:42 UTC on 2024-06-19</span>
+<div class="warnings">    <div class="warnings">
+    <h2 class="warnings-caption">Warnings</h2>
+        <ol>
+        <li>｢G｣ is not defined, but is reserved for future use in block ｢rakudoc｣ with heading ｢This is third level heading｣.</li>
+<li>｢Q｣ is not defined, but is reserved for future use in block ｢rakudoc｣ with heading ｢This is third level heading｣.</li>
+<li>｢W｣ is not defined, but is reserved for future use in block ｢rakudoc｣ with heading ｢This is third level heading｣.</li>
+<li>｢Y｣ is not defined, but is reserved for future use in block ｢rakudoc｣ with heading ｢This is third level heading｣.</li>
+<li>Unknown or as yet undeclared alias ｢XXX｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣ over-riden by ｢an undeclared｣</li>
+<li>Δ&lt;&gt; markup ignored because it has no version/note content ｢Δ&lt;no versioning here&gt;｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.</li>
+<li>Markup-M failed: template ｢PayMeMoreApp｣ does not exist. Got ｢M&lt;should not recognise this functionality|PayMeMoreApp; user-id&gt;｣</li>
+<li>No template exists for custom block ｢MyBlock｣. It has been rendered as unknown in block ｢MyBlock｣ with heading ｢MyBlock｣.</li>
+
+        </ol>
+    </div>
+</div>
+</div>
+
+</body>
+</html>
+
