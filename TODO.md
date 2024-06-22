@@ -1,8 +1,13 @@
 # list of things to do
 
 - [ ] Templates
-  - [ ] HTML, need to add CSS and Javascript?
+  - [ ?] HTML, need to add CSS and Javascript?
   - [ ] Epub, need to add extra metadata pages 
+- Fix HTML
+  - [ ] footnote/definition promises failing
+  - [ ] bullets / item list failed
+  - [ ] toc failed
+  - [ ] footer / warnings - margin / borders
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
 - [ ] Implement new numbering extensions, 
   - [ ] :number

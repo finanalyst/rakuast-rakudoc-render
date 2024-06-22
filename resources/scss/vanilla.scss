@@ -1,0 +1,226 @@
+
+span.basis {
+	font-weight: 800;
+}
+span.important {
+	font-style: italic;
+}
+span.unusual {
+	text-decoration: underline;
+}
+span.code {
+	font-weight: 500;
+}
+span.overstrike {
+	text-decoration: line-through;
+}
+span.high {
+	vertical-align: super;
+}
+span.junior {
+	vertical-align: sub;
+}
+span.replace {
+	font-style: small-caps;
+	text-shadow: -1px 1px;
+}
+span.indexed {
+	text-shadow: 1px 1px orange;
+}
+span.index-entry {
+	text-shadow: 1px 1px orange;
+}
+span.keyboard {
+	text-shadow: 1px 1px;
+}
+span.terminal {
+	text-decoration: overline underline;
+}
+span.footnote {
+	vertical-align: super;
+}
+span.developer-text {
+
+}
+span.developer-version {
+    display: none;
+	color: red;
+    span.developer-note {
+        font-family: 'Brush Script MT', cursive;
+    }
+    &:hover {
+        display: inline-block;
+        transform: translate(50px, 100px);
+        z-index: 5;
+    }
+}
+span.bad-markdown {
+	text-shadow: 1px 1px red;
+}
+
+pre.code-block {
+	background-color: lightgrey;
+}
+pre.input-block {
+	background-color: lightgrey;
+	&::before {
+	    content: '--- input ---';
+        display: block;
+        text-shadow: -2px -2px 4px black;
+        color: white;
+	}
+}
+pre.output-block {
+	background-color: lightgrey;
+	&::before {
+        content: '--- output ---';
+        display: block;
+        text-shadow: -2px -2px 4px black;
+        color: white;
+	}
+}
+
+div.defn-text {
+    margin-left: 1rem;
+}
+div.defn-term {
+	font-weight: bold;
+}
+div.id-target {
+	display: none;
+}
+div.nested {
+	margin-left: 5 em;
+}
+div.footer {
+	
+}
+div.footer-field {
+	
+}
+div.toc {
+	
+}
+div.toc-caption {
+	font-weight: bold;
+}
+div.ul toc-list {
+	
+}
+div.index-section {
+    [data-index-level="1"] {
+        margin-left: 10px;
+    }
+    [data-index-level="2"] {
+        margin-left: 20px;
+    }
+    [data-index-level="3"] {
+        margin-left: 30px;
+    }
+    [data-index-level = "4"] {
+        margin-left: 40px;
+    }
+	> a.index-ref {
+	    white-space: nowrap;
+	    display:inline-block;
+	    width: 5em;
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    + span {
+	        display: none;
+	        width: 0;
+	    }
+	    &:hover+span {
+	        display: inline-block;
+	        position: absolute;
+	        width: auto;
+	        z-index: 5;
+	        background-color: seashell;
+	        transform: translate(-5em,-1em);
+	    }
+	}
+}
+div.index-caption {
+	font-weight: bold
+}
+.delta {
+    &::before {
+        content: "\2139";
+        vertical-align: super;
+	}
+	span.developer-note {
+	    display: none;
+	    width: 0;
+	    color: blue;
+        text-shadow: 2px 2px 5px green;
+	}
+	span.developer-version {
+	    display: none;
+	    width: 0;
+	    color: red;
+        text-shadow: 2px 2px 5px green;
+	}
+	&:hover .developer-version {
+	    display: inline-block;
+        position: absolute;
+        width: 20rem;
+        z-index: 5;
+        transform: translate(0.5rem,-1rem);
+	}
+	&:hover .developer-note {
+	    display: inline-block;
+        position: absolute;
+        width: auto;
+        z-index: 5;
+        transform: translate(0.5rem,-1rem);
+	}
+}
+
+div.footnotes {
+	
+}
+div.footnote {
+	
+}
+div.warnings {
+	
+}
+div.warnings-caption {
+	font-weight: bold
+}
+
+h1.heading {
+	
+}
+h.title {
+	font-size: larger;
+}
+
+table, th, td {
+  border: 1px solid;
+  border-collapse: collapse;
+}
+.procedural-cell-left {
+	text-align: left;
+}
+.procedural-cell-centre {
+	text-align: center;
+}
+.procedural-cell-center {
+	text-align: center;
+}
+.procedural-cell-right {
+	text-align: right;
+}
+.procedural-cell-top {
+	vertical-align: text-top;
+}
+.procedural-cell-middle {
+	vertical-align: baseline;
+}
+.procedural-cell-bottom {
+	vertical-align: text-bottom;
+}
+.procedural-cell-label {
+	font-weight: bold;
+}

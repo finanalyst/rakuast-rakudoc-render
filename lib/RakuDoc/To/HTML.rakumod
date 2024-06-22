@@ -22,6 +22,8 @@ method render($ast) {
             }
         }
     }
+    my $css = 'resources/css/vanilla.css'.IO.slurp;
+    $rdp.add-data('css', $css);
     $rdp.render( $ast, :%source-data  )
 }
 
@@ -29,20 +31,20 @@ method render($ast) {
 method postprocess( $final ) { $final };
 
 method html-templates {
-    my constant BOLD-ON = "<strong>";
-    my constant BOLD-OFF = "</strong>";
-    my constant ITALIC-ON = "<i>";
-    my constant ITALIC-OFF = "</i>";
-    my constant UNDERLINE-ON = "<u>";
-    my constant UNDERLINE-OFF = "</u>";
-    my constant CODE-ON = "<code>";
-    my constant CODE-OFF = "</code>";
-    my constant STRIKE-ON = "<s>";
-    my constant STRIKE-OFF = "</s>";
-    my constant SUPERSCR-ON = "<sup>";
-    my constant SUPERSCR-OFF = "</sup>";
-    my constant SUBSCR-ON = "<sub>";
-    my constant SUBSCR-OFF = "</sub>";
+    my constant BASIS-ON = '<span class="basis">';
+    my constant BASIS-OFF = '</span>';
+    my constant IMPORTANT-ON = '<span class="important">';
+    my constant IMPORTANT-OFF = '</span>';
+    my constant UNUSUAL-ON = '<span class="unusual">';
+    my constant UNUSUAL-OFF = '</span>';
+    my constant CODE-ON = '<span class="code">';
+    my constant CODE-OFF = '</span>';
+    my constant OVERSTRIKE-ON = '<span class="overstrike">';
+    my constant OVERSTRIKE-OFF = '</span>';
+    my constant HIGH-ON = '<span class="high">';
+    my constant HIGH-OFF = '</span>';
+    my constant JUNIOR-ON = '<span class="junior">';
+    my constant JUNIOR-OFF = '</span>';
     my constant REPLACE-ON = '<span class="replace">';
     my constant REPLACE-OFF = '</span>';
     my constant INDEXED-ON = '<span class="indexed">';
@@ -53,10 +55,8 @@ method html-templates {
     my constant KEYBOARD-OFF = '</span>';
     my constant TERMINAL-ON = '<span class="terminal">';
     my constant TERMINAL-OFF = '</span>';
-    my constant FOOTNOTE-ON = "<sup>";
-    my constant FOOTNOTE-OFF = "</sup>";
-    my constant LINK-TEXT-ON = "<u>";
-    my constant LINK-TEXT-OFF = "</u>";
+    my constant FOOTNOTE-ON = '<span class="footnote">';
+    my constant FOOTNOTE-OFF = '</span>';
     my constant DEVEL-TEXT-ON = '<span class="developer-text">';
     my constant DEVEL-TEXT-OFF = '</span>';
     my constant DEVEL-VERSION-ON = '<span class="developer-version">';
@@ -65,7 +65,7 @@ method html-templates {
     my constant DEVEL-NOTE-OFF = "</span>";
     my constant DEFN-TEXT-ON = '<div class="defn-text">';
     my constant DEFN-TEXT-OFF = '</div>';
-    my constant DEFN-TERM-ON = '<div class="defn-term>';
+    my constant DEFN-TERM-ON = '<div class="defn-term">';
     my constant DEFN-TERM-OFF = '</div>';
     my constant BAD-MARK-ON = '<span class="bad-markdown">';
     my constant BAD-MARK-OFF = '</span>';
@@ -86,44 +86,45 @@ method html-templates {
         #| renders =code blocks
         code => -> %prm, $tmpl {
             my $del = %prm<delta> // '';
-            PStr.new: q[<div class="code-block">] ~
-            $del ~
+            PStr.new: ('<div class="delta">' ~ $del if $del) ~
+            q[<pre class="code-block">] ~
             %prm<contents> ~
-            "\n</div>\n"
+            "\n</pre>\n" ~
+            (</div> if $del)
         },
         #| renders implicit code from an indented paragraph
         implicit-code => -> %prm, $tmpl {
             my $del = %prm<delta> // '';
-            PStr.new: q[<div class="code-block">] ~
+            PStr.new: q[<pre class="code-block">] ~
             $del ~
             %prm<contents> ~
-            "\n</div>\n"
+            "\n</pre>\n"
         },
         #| renders =input block
         input => -> %prm, $tmpl {
             my $del = %prm<delta> // '';
-            PStr.new: q[<div class="input-block">] ~
+            PStr.new: q[<pre class="input-block">] ~
             $del ~
             %prm<contents> ~
-            "\n</div>\n"
+            "\n</pre>\n"
         },
         #| renders =output block
         output => -> %prm, $tmpl {
             my $del = %prm<delta> // '';
-            PStr.new: q[<div class="output-block">] ~
+            PStr.new: q[<pre class="output-block">] ~
             $del ~
             %prm<contents> ~
-            "\n</div>\n"
+            "\n</pre>\n"
          },
         #| renders =comment block
         comment => -> %prm, $tmpl { '' },
         #| renders =formula block
         formula => -> %prm, $tmpl {
             my $title = %prm<caption>;
-            my $h = 'h' ~ (%prm<level> // '1');
+            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
-                qq[[<$h id="$targ" class="raku-$h">]] ~
+            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                qq[[<$h id="$targ" class="heading-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -131,23 +132,25 @@ method html-templates {
         },
         #| renders =head block
         head => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1');
+            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $title = %prm<contents>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
-                qq[[<$h id="$targ" class="raku-$h">]] ~
+            my $del = %prm<delta> // '';
+            PStr.new:
+                qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                qq[[<$h id="$targ" class="heading {'delta' if $del}">]] ~
+                ($del if $del) ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
-                qq[[</a></$h>\n]] ~
-                (%prm<delta> // '')
+                qq[[</a></$h>\n]]
         },
         #| renders =numhead block
         numhead => -> %prm, $tmpl {
             my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
-            my $h = 'h' ~ (%prm<level> // '1');
+            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
-                qq[[<$h id="$targ" class="raku-$h">]] ~
+            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                qq[[<$h id="$targ" class="heading-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -158,17 +161,16 @@ method html-templates {
         #| rendering the content from the :delta option
         #| see inline variant markup-Δ
         delta => -> %prm, $tmpl {
+            DEVEL-VERSION-ON ~ %prm<versions> ~
             ( %prm<note> ??
                    DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF
                 !! ''
             ) ~
-            DEVEL-VERSION-ON ~
-            " for " ~
-            %prm<versions> ~ DEVEL-VERSION-OFF ~
+            DEVEL-VERSION-OFF ~
             "\n\n"
         },#| renders =defn block
         defn => -> %prm, $tmpl {
-            DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            PStr.new: DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
             DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| renders =numdefn block
@@ -176,7 +178,7 @@ method html-templates {
         defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
         #| special template to render a numbered defn list data structure
         numdefn => -> %prm, $tmpl {
-            DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            PStr.new: DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
             DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| special template to render a numbered item list data structure
@@ -236,11 +238,11 @@ method html-templates {
         },
         #| renders =SEMANTIC block, if not otherwise given
         semantic => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1');
+            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
-                qq[[<$h id="$targ" class="raku-$h">]] ~
+            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                qq[[<$h id="$targ" class="heading-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -251,12 +253,12 @@ method html-templates {
         pod => -> %prm, $tmpl { %prm<contents> },
         #| renders =table block
         table => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1');
+            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             my $rv = PStr.new:
-                qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
-                    qq[[<$h id="$targ" class="raku-$h">]] ~
+                qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                    qq[[<$h id="$targ" class="heading-$h">]] ~
                     qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                     $title ~
                     qq[[</a></$h>\n]] ~
@@ -271,9 +273,9 @@ method html-templates {
                         $content ~= ' rowspan="' ~ $cell<span>[1] ~'"' if $cell<span>:exists and $cell<span>[1] != 1;
                         $content ~= ' class="';
                         with $cell<align> { for .list {
-                            $content ~= "rakudoc-cell-$_ "
+                            $content ~= "procedural-cell-$_ "
                         } }
-                        $content ~= 'rakudoc-cell-label' if $cell<label>;
+                        $content ~= 'procedural-cell-label' if $cell<label>;
                         with $cell<data> { $content ~= '">' ~ $cell<data> }
                         else { $content ~= '">' }
                         if $cell<header> {
@@ -296,11 +298,11 @@ method html-templates {
         },
         #| renders =custom block
         custom => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1');
+            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $title = %prm<caption>;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
-                qq[[<$h id="$targ" class="raku-$h">]] ~
+            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                qq[[<$h id="$targ" class="heading-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -309,11 +311,11 @@ method html-templates {
         },
         #| renders any unknown block minimally
         unknown => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1');
+            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $title = qq[UNKNOWN { %prm<block-name> }];
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="raku-id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }">]] ~
-                qq[[<$h id="$targ" class="raku-$h">]] ~
+            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                qq[[<$h id="$targ" class="heading-$h">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
@@ -350,6 +352,10 @@ method html-templates {
         head-block => -> %prm, $tmpl {
             qq:to/HEAD/
                 <title>{%prm<title>}</title>
+                {$tmpl.globals.data<css>:exists ??
+                   '<style>' ~ $tmpl.globals.data<css> ~ '</style>'
+                !! ''
+                }
             HEAD
         },
         #| the first section of body, including navigation
@@ -360,7 +366,7 @@ method html-templates {
                     $tmpl('escaped', %( :contents(%prm<title-target>), ))
                 }"></div>]
             }
-            $rv ~= %prm<title> ~ "\n\n" ~
+            $rv ~= '<h1 class="title">' ~ %prm<title> ~ "</h1>\n\n" ~
             (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
             ( %prm<rendered-toc> if %prm<rendered-toc> )
         },
@@ -387,9 +393,9 @@ method html-templates {
         },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            my $rv = qq[<div class="toc">{%prm<caption>}</div>];
+            my $rv = qq[<div class="toc"><div class="toc-caption">{%prm<caption>}</div>];
             if %prm<toc>.defined and %prm<toc>.keys {
-                $rv = "<ul class=\"menu-list\">\n";
+                $rv = "<ul class=\"toc-list\">\n";
                 my $last-level = 1;
                 for %prm<toc>.list -> %el {
                     my $lev = %el<level>;
@@ -416,25 +422,29 @@ method html-templates {
                 }
                 $rv ~= "\n</ul>\n";
             }
-            $rv
+            $rv ~= "\n</div>"
         },
         #| renders a single item in the index
         index-item => -> %prm, $tmpl {
             sub si( %h, $n ) {
                 my $rv = '';
                 for %h.sort( *.key )>>.kv -> ( $k, %v ) {
-                    $rv ~= "  " x $n ~ "- $k : "
-                        ~ %v<refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
-                        ~ "\n\n"
-                        ~ si( %v<sub-index>, $n + 1 );
+                    $rv ~= qq[<div class="index-section" data-index-level="{$n}">\n<span class="index-name">{$k}: </span>] ~
+                        %v<refs>.map({ qq[<a class="index-ref" href="#{ .<target> }">{ .<place> }</a><span>{ .<place> }</span>] }).join(', ') ~
+                        si( %v<sub-index>, $n + 1 ) ~
+                        "</div>\n"
+                        ;
                 }
                 $rv
             }#qq[<div id="{ %prm<target> }"> </div>] ~
             PStr.new:
-                INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ':  ' ~
-                %prm<entry-data><refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
+                '<div class="index-section" data-index-level="0">' ~
+                INDEX-ENTRY-ON ~ %prm<entry> ~ ':  ' ~ INDEX-ENTRY-OFF ~
+                %prm<entry-data><refs>.map({
+                    qq[<a class="index-ref" href="#{ .<target> }">{ .<place> }</a><span>{ .<place> }</span>] }).join(', ')
                 ~ "\n\n"
-                ~ si( %prm<entry-data><sub-index>, 1 );
+                ~ si( %prm<entry-data><sub-index>, 1 ) ~
+                '</div>'
         },
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
@@ -446,16 +456,17 @@ method html-templates {
         #| special template to render the footnotes data structure
         footnotes => -> %prm, $tmpl {
             if %prm<footnotes>.elems {
-                qq:to/FOOTNOTES/
+                PStr.new: qq:to/FOOTNOTES/
                     <div class="footnotes">
                     <div class="footnote-caption">Footnotes</div>
                     { [~] %prm<footnotes>.map({
-                        qq:to/FOOTNOTE/
-                            <div class="footnote">.<fnNumber>
-                            <a id=".<fnTarget>" href="#{ .<retTarget> }"> |^| </a>
-                            .<contents>.Str ~
-                            </div>
-                        FOOTNOTE
+                        PStr.new:
+                            '<div class="footnote">' ~ .<fnNumber> ~
+                            '<a id="' ~ .<fnTarget> ~
+                            '" href="#' ~ .<retTarget> ~
+                            '"> |^| </a>' ~
+                             ~ .<contents>.Str ~
+                             ~ '</div>'
                     }) }
                     </div>
                 FOOTNOTES
@@ -466,8 +477,8 @@ method html-templates {
         warnings => -> %prm, $tmpl {
             if %prm<warnings>.elems {
                 qq:to/WARNINGS/
-                    <div class="footnotes">
-                    <div class="footnote-caption">Warnings</div>
+                    <div class="warnings">
+                    <div class="warnings-caption">Warnings</div>
                         <ol>
                         { [~] %prm<warnings>.map({
                             '<li>' ~ $tmpl( 'escaped', %( :contents( $_ ) ) ) ~ "</li>\n"
@@ -484,20 +495,20 @@ method html-templates {
         #| B< DISPLAY-TEXT >
         #| Basis/focus of sentence (typically rendered bold)
         markup-B => -> %prm, $ {
-            BOLD-ON ~ %prm<contents> ~ BOLD-OFF
+            BASIS-ON ~ %prm<contents> ~ BASIS-OFF
         },
         #| C< DISPLAY-TEXT >
         #| Code (typically rendered fixed-width)
         markup-C => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
         #| H< DISPLAY-TEXT >
         #| High text (typically rendered superscript)
-        markup-H => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
+        markup-H => -> %prm, $tmpl { HIGH-ON ~ %prm<contents> ~ HIGH-OFF },
         #| I< DISPLAY-TEXT >
         #| Important (typically rendered in italics)
-        markup-I => -> %prm, $tmpl { ITALIC-ON ~ %prm<contents> ~ ITALIC-OFF },
+        markup-I => -> %prm, $tmpl { IMPORTANT-ON ~ %prm<contents> ~ IMPORTANT-OFF },
         #| J< DISPLAY-TEXT >
         #| Junior text (typically rendered subscript)
-        markup-J => -> %prm, $tmpl { SUBSCR-ON ~ %prm<contents> ~ SUBSCR-OFF },
+        markup-J => -> %prm, $tmpl { JUNIOR-ON ~ %prm<contents> ~ JUNIOR-OFF },
         #| K< DISPLAY-TEXT >
         #| Keyboard input (typically rendered fixed-width)
         markup-K => -> %prm, $tmpl { KEYBOARD-ON ~ %prm<contents> ~ KEYBOARD-OFF },
@@ -511,7 +522,7 @@ method html-templates {
         },
         #| O< DISPLAY-TEXT >
         #| Overstrike or strikethrough
-        markup-O => -> %prm, $tmpl { STRIKE-ON ~ %prm<contents> ~ STRIKE-OFF },
+        markup-O => -> %prm, $tmpl { OVERSTRIKE-ON ~ %prm<contents> ~ OVERSTRIKE-OFF },
         #| R< DISPLAY-TEXT >
         #| Replaceable component or metasyntax
         markup-R => -> %prm, $tmpl { REPLACE-ON ~ %prm<contents> ~ REPLACE-OFF },
@@ -527,7 +538,7 @@ method html-templates {
         markup-T => -> %prm, $tmpl { TERMINAL-ON ~ %prm<contents> ~ TERMINAL-OFF },
         #| U< DISPLAY-TEXT >
         #| Unusual (typically rendered with underlining)
-        markup-U => -> %prm, $tmpl { UNDERLINE-ON ~ %prm<contents> ~ UNDERLINE-OFF },
+        markup-U => -> %prm, $tmpl { UNUSUAL-ON ~ %prm<contents> ~ UNUSUAL-OFF },
         #| V< DISPLAY-TEXT >
         #| Verbatim (internal markup instructions ignored)
         markup-V => -> %prm, $tmpl {
@@ -585,7 +596,7 @@ method html-templates {
         ##| Markup codes, mandatory display and meta data
         #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
         #| Definition inline ( D<term being defined|synonym1; synonym2> )
-        markup-D => -> %prm, $tmpl {  BOLD-ON ~ %prm<contents> ~ BOLD-OFF },
+        markup-D => -> %prm, $tmpl {  BASIS-ON ~ %prm<contents> ~ BASIS-OFF },
         #| Δ< DISPLAY-TEXT |  METADATA = VERSION-ETC >
         #| Delta note ( Δ<visible text|version; Notification text> )
         markup-Δ => -> %prm, $tmpl {

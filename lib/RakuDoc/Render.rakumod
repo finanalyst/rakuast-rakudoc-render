@@ -62,6 +62,9 @@ class RakuDoc::Processor {
     method pretty( $flag ){ # hook onto $!templates
         %!templates.pretty = $flag
     }
+    method add-data( $key, $object ) {
+        %!templates.data{ $key } = $object;
+    }
 
     multi submethod TWEAK(:$!output-format = 'txt',
      :$test = False,
