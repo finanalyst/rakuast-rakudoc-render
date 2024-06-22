@@ -40,12 +40,12 @@
     "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.test.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.text",
-    "compliance-rendering/rakudociem-ipsum.md",
     "scss/vanilla.scss",
     "css/vanilla.css",
     "css/vanilla.css.map",
     "html-example.raku",
-    "markdown-example.raku"
+    "markdown-example.raku",
+    "compliance-rendering/rakudociem-ipsum.md"
   ],
   "support": {
     "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",

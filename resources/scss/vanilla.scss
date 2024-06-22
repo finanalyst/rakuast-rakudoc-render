@@ -59,24 +59,32 @@ span.bad-markdown {
 }
 
 pre.code-block {
-	background-color: lightgrey;
+	background-color: #eee;
+	margin: 1rem;
+	padding: 0 1rem 1rem 1rem;
 }
 pre.input-block {
-	background-color: lightgrey;
+	background-color: #eee;
+	margin: 1rem;
+	padding: 0 1rem 1rem 1rem;
 	&::before {
 	    content: '--- input ---';
         display: block;
         text-shadow: -2px -2px 4px black;
         color: white;
+        padding-bottom: 1rem;
 	}
 }
 pre.output-block {
-	background-color: lightgrey;
+	background-color: #eee;
+	margin: 1rem;
+	padding: 0 1rem 1rem 1rem;
 	&::before {
         content: '--- output ---';
         display: block;
-        text-shadow: -2px -2px 4px black;
+        text-shadow: 2px 2px 4px black;
         color: white;
+        padding-bottom: 1rem;
 	}
 }
 

@@ -198,15 +198,15 @@ method markdown-templates {
         },
         #| renders =nested block
         nested => -> %prm, $tmpl {
-            PStr.new: qq[> {
-                %prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! ''
-            }{%prm<contents>}\n\n]
+            PStr.new: '> ' ~
+                (%prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! '') ~
+                %prm<contents> ~ "\n\n"
         },
         #| renders =para block
         para => -> %prm, $tmpl {
-            PStr.new: qq[{
-                %prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! ''
-            }{%prm<contents>}\n\n]
+            PStr.new:
+                (%prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! '') ~
+                %prm<contents> ~ "\n\n"
         },
         #| renders =place block
         place => -> %prm, $tmpl {
