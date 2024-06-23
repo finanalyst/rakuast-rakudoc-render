@@ -1,0 +1,80 @@
+=begin rakudoc
+=TITLE Rendering RakuDoc v2 to HTML
+=for AUTHORS :hidden
+Richard Hainsworth, aka finanalyst
+=for VERSION :hidden
+v0.1.0
+
+=SUBTITLE RakuDoc v2 is rendered to minimal HTML.
+C<RakuAST::RakuDoc::Render> on which this module is based uses the RakuAST parser.
+A rendering of the L<compliance|#Compliance testing> document can be
+L<found online|https://htmlpreview.github.io/?https://github.com/finanalyst/rakuast-rakudoc-render/blob/main/resources/compliance-rendering/rakudociem-ipsum.html>.
+
+=SYNOPSIS
+
+Currently, the module is difficult to install using I<zef>, so the instructions below
+are relative to local repo of L<RakuDoc::Render repo|https://github.com/finanalyst/rakuast-rakudoc-render.git>.
+
+Use the utility B<force-recompile> with the current working directory being the root of
+the C<RakuDoc::Render> repo
+    bin/force-recompile
+
+Assuming (the assumptions are for clarity and can be changed):
+=item there is a RakuDoc source C<new-doc.rakudoc> in the current working directory,
+=item the current working directory is the root directory of the repo, C</home/me/rakuast-rakudoc-render>
+=item the distribution has been tested on Ubuntu B<6.5.0-35-generic #35~22.04.1-Ubuntu>
+=item2 [feedback of testing on other OS, and tweaks to improve, would be appreciated !]
+=item a recent Rakudo build is needed; B<v2024.05-34-g5dd0ad6f5> works.
+
+Then:
+    RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+
+generates B<new-doc.html> in the current working directory.
+
+=head Vanilla HTML and CSS
+
+The aim of C<RakuDoc::To::HTML> is to produce a minimal HTML output with minimal styling,
+and that the file can be directly viewed in a modern browser with the URL
+C<file:///home/me/rakuast-rakudoc-render/new-doc.html>.
+=nested Unfortunately some systems for opening HTML files in a browser will HTML-escape
+Unicode characters used for delimiting texts. So, just open the file  in a browser.
+
+The styling is generated from C<resources/scss/vanilla.scss> to produce
+C<resources/css/vanilla.css>, which is slurped into the HTML output file (eg. new-doc.html).
+
+By the design of the C<RakuDoc::Render> module, all output is generated using templates.
+The module C<RakuDoc::To::HTML> attaches a minimum set of templates. It is possible
+to override any or all of the templates by adding the C<MORE_HTML> environment variable.
+Assuming the file C<my_new_html.raku> exists in the current working directory, and
+the file follows the L<Template specification|Templates>, then
+    MORE_HTML=my_new_html.raku RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+
+will utilise the new templates. An example can be seen in C<xt/600-R-2-HTML.rakutest>.
+The intention of each template can be found in the comments within C<lib.RakuDoc/To/HTML.rakumod>.
+
+To tweak the styling:
+=item install L<sass is available|https://sass-lang.com/guide/>
+=item copy the file C</home/me/rakuast-rakudoc-render/resources/scss/vanilla.scss> to a new file,
+eg. C<~/tweaks/strawberry.scss>
+=item tweak the styling (many classes used in the HTML output have zero styling)
+=item run C<sass ~/tweaks/strawberry.scss> to generate C<~/tweaks/strawberry.css>
+=item2 the C<sass> command is usefully run as C<--update -s compressed ~/tweaks/strawberry.scss>
+=item use the C<ALT_CSS> environment variable to load the new CSS.
+
+    ALT_CSS=~/tweaks/strawberry.sss RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+
+Both C<ALT_CSS> and C<MORE_HTML> can be used, adding new HTML tags, or changing class names, then
+including CSS definitions in the file accessed by C<ALT_CSS>.
+
+Note that there is a difference between how the CSS and Template files are used.
+=item By design, new Raku closure
+templates, eg, those defined in files given to C<MORE_HTML>, are placed at the head of a chain of
+templates, and so are I<in addition> to those previously defined.
+
+=item The alternate CSS file (eg ~/tweaks/strawberry.css) is used B<instead> of the default
+C<vanilla.css>.
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
+=end rakudoc

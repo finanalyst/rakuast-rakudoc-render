@@ -23,6 +23,10 @@ method render($ast) {
         }
     }
     my $css = 'resources/css/vanilla.css'.IO.slurp;
+    if %*ENV<ALT_CSS>:exists {
+        exit note( "｢{%*ENV<ALT_CSS>}｣ is not a file" ) unless %*ENV<ALT_CSS>.IO ~~ :e & :f;
+        $css = %*ENV<ALT_CSS>.IO.slurp
+    }
     $rdp.add-data('css', $css);
     $rdp.render( $ast, :%source-data  )
 }

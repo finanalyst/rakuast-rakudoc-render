@@ -6,15 +6,15 @@
 Richard Hainsworth aka finanalyst
 
 =for VERSION :hidden
-v0.2.1
+v0.3.0
 
 =head1 Overview
 
 This module is intended to provide a generic renderer from RakuDoc v2 into text, but
 is designed to be easily extended to other output formats by subclassing.
 
-Two other formats, namely HTML and MarkDown, are ( & to be) provided in the distribution,
-see L<RakuDoc::To::Markdown|RakuDoc-To-Markdown>, B<to be written>.
+Two other formats, namely HTML and Markdown, are provided in the distribution,
+see L<RakuDoc::To::Markdown|RakuDoc-To-HTML> and L<RakuDoc::To::Markdown|RakuDoc-To-Markdown>.
 
 This is software using bleeding edge Rakudo, so look (L<at troubleshooting below|#Troubleshooting>).
 
