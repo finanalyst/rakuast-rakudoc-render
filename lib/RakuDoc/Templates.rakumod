@@ -127,6 +127,7 @@ class Template-directory does Associative {
     }
     method prior($name, $depth) {
         if $depth >= 1 {
+            %!fields{$name}[$depth - 1].[* - 1].globals = self;
             %!fields{$name}[$depth - 1].debug = $!debug ;
             %!fields{$name}[$depth - 1]
         }

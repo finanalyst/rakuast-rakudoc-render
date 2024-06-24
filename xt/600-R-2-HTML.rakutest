@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use Test::Run :runs_ok;
 
-plan 5;
+plan 6;
 
 use RakuDoc::Render;
 use RakuDoc::To::HTML;
@@ -26,12 +26,18 @@ runs_ok(
     'Bad file error'
 );
 %*ENV<MORE_HTML> = 'xt/test-files/html-example.raku';
-
 runs_ok(
     :@args,
     :exitcode(0),
     :out(/ '<head>'  .+ '<meta' .+ 'A Customised description' .+ '/>' .+ '</head>' / ),
     'customisation in meta of head'
+);
+%*ENV<ALT_CSS> = 'xt/test-files/strawberry.css';
+runs_ok(
+    :@args,
+    :exitcode(0),
+    :out(/ 'h.title{font-size:larger;color:red' / ),
+    'CSS customisation occurs'
 );
 
 done-testing;
