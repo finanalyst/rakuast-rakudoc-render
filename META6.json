@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "perl": "6.e",
   "authors": [
     "Richard Hainsworth"
@@ -33,6 +33,7 @@
     "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",
     "RakuDoc::To::Generic": "lib/RakuDoc/To/Generic.rakumod",
     "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
+    "RakuDoc::To::HTML-Extra": "lib/RakuDoc/To/HTML-Extra.rakumod",
     "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
   },
   "resources": [

@@ -27,7 +27,6 @@ method render($ast) {
         exit note( "｢{%*ENV<ALT_CSS>}｣ is not a file" ) unless %*ENV<ALT_CSS>.IO ~~ :e & :f;
         $css = %*ENV<ALT_CSS>.IO.slurp
     }
-    say "@ $?LINE in html $css \n\n", ;
     $rdp.add-data('css', $css);
     $rdp.render( $ast, :%source-data  )
 }
