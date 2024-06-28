@@ -101,13 +101,13 @@ class Template-directory does Associative {
     has Bool $.pretty is rw = False;
     has Str $.verbose is rw = '';
     multi method AT-KEY ($key) is rw {
-        with %!fields{$key} {
-            .[* - 1].globals = self;
-            .[* - 1].debug = $!debug;
-            .[* - 1].test = $!test;
-            .[* - 1].pretty = $!pretty;
-            .[* - 1].verbose = $.verbose eq $key;
-            .[* - 1]
+        with %!fields{$key}.tail {
+            .globals = self;
+            .debug = $!debug;
+            .test = $!test;
+            .pretty = $!pretty;
+            .verbose = $.verbose eq $key;
+            $_
         }
         else {
             X::Unexpected-Template.new(:$key).throw

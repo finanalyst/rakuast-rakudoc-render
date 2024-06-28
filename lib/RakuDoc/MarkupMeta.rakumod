@@ -32,11 +32,10 @@ grammar RakuDoc::MarkupMeta {
 class RMActions {
     method TOP( $/ ) {
         my $type = $/.keys[0];
-        my $value;
+        my $value = $/{$type}.made;
         given $type {
-            when 'plain-string' { $value = [ [$/{ $_ }.made , ], ] }
-            when 'plain-string-array' { $value = [$/{ $_ }.made , ] }
-            default { $value = $/{ $_ }.made }
+            when 'plain-string' { $value = [ [$value , ], ] }
+            when 'plain-string-array' { $value = [$value , ] }
         }
         make {
             :$type,

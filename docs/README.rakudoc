@@ -6,7 +6,7 @@
 Richard Hainsworth aka finanalyst
 
 =for VERSION :hidden
-v0.3.0
+v0.3.1
 
 =head1 Overview
 
@@ -17,6 +17,9 @@ Two other formats, namely HTML and Markdown, are provided in the distribution,
 see L<RakuDoc::To::Markdown|RakuDoc-To-HTML> and L<RakuDoc::To::Markdown|RakuDoc-To-Markdown>.
 
 This is software using bleeding edge Rakudo, so look (L<at troubleshooting below|#Troubleshooting>).
+For the time being:
+=item clone the repo
+=item run C<prove6 -I.> which will compile the submodules and dependences in the correct order.
 
 The B<canonical method> for generating rendered text is possible (which sends output to STDOUT, so pipe
 to a file), namely
@@ -80,11 +83,7 @@ WIDTH by default is set at 80 chars. To set at 70, use:
 =head1 Troubleshooting
 
 In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recent
-version of the Rakudoc compiler is needed:
-    $ raku -v
-    Welcome to Rakudo™ v2024.05-32-g5b44a64b2.
-    Implementing the Raku® Programming Language v6.d.
-    Built on MoarVM version 2024.05-5-gf48abb710.
+version of the Rakudoc compiler is needed, after v2024.06.
 
 If the cannonical command above fails, perhaps with a message such as
     ===SORRY!===

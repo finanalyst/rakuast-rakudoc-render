@@ -4,7 +4,7 @@
 Richard Hainsworth aka finanalyst
 
 =for VERSION :hidden
-v0.2.1
+v0.3.0
 
 =head1 Overview
 
@@ -218,6 +218,23 @@ wrapped to the value.
 
 WIDTH by default is set at 80 chars. To set at 70, use:
     POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
+
+=head1 Paragraph id
+
+Since sometimes it is necessary to target a specific paragraph, some
+paragraphs get an automated id based on the last Seven hex chars of
+the SHA1 encoding of its contents.
+
+Seven chars should be adequate so long as the number of paragraphs
+in a single document is below 16,000.
+
+=nested Based on the expectation that we
+would see collision in a repository with 2^(2N) objects when using object
+names shortened to first N bits
+L<Stackoverflow question|https://stackoverflow.com/questions/18134627/how-much-of-a-git-sha-is-generally-considered-necessary-to-uniquely-identify-a>
+
+Long texts or books will probably need more to avoid a conflict. This can be done by setting C<paragraph-id-length>
+in the %structure-data to the required number of hex digits.
 
 =place semantic:AUTHOR :caption<Credits>
 

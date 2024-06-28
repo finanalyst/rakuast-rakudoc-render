@@ -7,16 +7,16 @@ submethod TWEAK {
     @!counters = Nil
 };
 method Str () { @!counters>>.Str.join('.') ~ '.' }
-method inc ($level) {
-    @!counters[+$level - 1]++;
-    @!counters.splice(+$level);
+method inc (Int() $level) {
+    @!counters[$level - 1]++;
+    @!counters.splice($level);
     self
 }
 method reset () {
     @!counters = Nil;
     self
 }
-method set ( $level, $value ) {
+method set (Int() $level, $value ) {
     @!counters[ $level - 1 ] = $value;
     self
 }

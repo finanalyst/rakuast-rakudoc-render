@@ -10,7 +10,7 @@ has @!config = {}, ; #an array of hashes, with empty hash at start
 has @!aliases = {}, ;
 has @!starters;
 has @!titles;
-has @!save-spacer = 'None' but False, ;
+has @!save-spacer = 'None' but False ;
 #| the last item numeration
 has Numeration @.items-numeration = Numeration.new , ;
 #| the last defn numeration
@@ -25,16 +25,16 @@ method diagnostic {
 method start-scope(:$starter!, :$title, :$verbatim ) {
     @!starters.push: $starter;
     @!titles.push: $title // 'Block # ' ~ @!starters.elems;
-    @!config.push: @!config[*-1].pairs.hash;
-    @!aliases.push: @!aliases[*-1].pairs.hash;
-    with $verbatim and @!save-spacer[*-1].not {
+    @!config.push: @!config.tail.pairs.hash;
+    @!aliases.push: @!aliases.tail.pairs.hash;
+    with $verbatim and @!save-spacer.tail.not {
         @!save-spacer.push: $starter
     }
     else {
-        @!save-spacer.push: @!save-spacer[*-1]
+        @!save-spacer.push: @!save-spacer.tail
     }
-    @!items-numeration.push: @!items-numeration[ * - 1 ];
-    @!defns-numeration.push: @!defns-numeration[ * - 1 ];
+    @!items-numeration.push: @!items-numeration.tail;
+    @!defns-numeration.push: @!defns-numeration.tail;
     say 'New scope started. ', $.diagnostic if $!debug
 }
 #| ends the current scope, forgets new data
@@ -47,44 +47,44 @@ method end-scope {
     say 'Scope ended. ', $.diagnostic if $!debug
 }
 multi method config(%h) {
-    @!config[*-1]{ .key } = .value for %h;
+    @!config.tail{ .key } = .value for %h;
 }
 multi method config( --> Hash ) {
-    @!config[*-1]
+    @!config.tail
 }
 multi method aliases(%h) {
-    @!aliases[*-1]{ .key } = .value for %h;
+    @!aliases.tail{ .key } = .value for %h;
 }
 multi method aliases( --> Hash ) {
-    @!aliases[*-1]
+    @!aliases.tail
 }
 method last-starter {
-    if +@!starters { @!starters[*-1] }
+    if +@!starters { @!starters.tail }
     else { 'original level' }
 }
 multi method last-title() {
-    if +@!titles { @!titles[* - 1] }
+    if +@!titles { @!titles.tail }
     else { 'No starter yet' }
 }
 multi method last-title( $s ) {
-    if +@!titles { @!titles[* - 1] = $s }
+    if +@!titles { @!titles.tail = $s }
 }
 multi method verbatim() {
-    @!save-spacer[ * - 1 ].so
+    @!save-spacer.tail.so
 }
 multi method verbatim( :called-by($)! ) {
-    @!save-spacer[ * - 1 ]
+    @!save-spacer.tail
 }
 multi method item-inc( $level --> Str ) {
-    @!items-numeration[ * - 1 ].inc($level).Str
+    @!items-numeration.tail.inc($level).Str
 }
 multi method item-reset() {
-    @!items-numeration[ * - 1 ].reset
+    @!items-numeration.tail.reset
 }
 multi method defn-inc( --> Str ) {
-    @!defns-numeration[ * - 1 ].inc(1).Str
+    @!defns-numeration.tail.inc(1).Str
 }
 multi method defn-reset() {
-    @!defns-numeration[ * - 1 ].reset
+    @!defns-numeration.tail.reset
 }
 

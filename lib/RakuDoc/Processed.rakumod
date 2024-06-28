@@ -136,7 +136,7 @@ class RakuDoc::Processed is ProcessedState {
     has $.rendered-index is rw;
 
     submethod TWEAK( :%source-data, :$name, :$output-format ) {
-        %!source-data = %(
+        %!source-data =
             name => 'Unnamed-source',
             path => '.',
             language => 'en',
@@ -144,7 +144,9 @@ class RakuDoc::Processed is ProcessedState {
             toc-caption => 'Table of Contents',
             index-caption => 'Index',
             rakudoc-title => 'Preface', # used to name sections before first title
-        );
+            paragraph-id-length => 7,
+            |%source-data,  # let arguments override the above
+        ;
         %!source-data{ .key } = .value for %source-data.pairs;
         $!output-format = $_ with $output-format;
         # if name is set on new, then it will be defined by TWEAK, else undefined, so take it from

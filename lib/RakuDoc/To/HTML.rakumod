@@ -3,32 +3,35 @@ use RakuDoc::Render;
 use RakuDoc::PromiseStrings;
 
 unit class RakuDoc::To::HTML;
+has RakuDoc::Processor $.rdp .=new;
 
+submethod TWEAK {
+    $!rdp.add-templates( self.html-templates, :source<RakuDoc::To::HTML> );
+    my $css = 'resources/css/vanilla.css'.IO.slurp;
+    $!rdp.add-data('css', $css);
+}
 method render($ast) {
     my $fn = $*PROGRAM;
     my %source-data = %(
         name     => ~$fn,
         modified => $fn.modified,
-        path     => $fn.dirname
+        path     => $fn.dirname,
     );
-    my $rdp = RakuDoc::Processor.new;
-    $rdp.add-templates( $.html-templates, :source<RakuDoc::To::HTML> );
+    my $r2html = self.new;
     if %*ENV<MORE_HTML>:exists {
         exit note( "｢{%*ENV<MORE_HTML>}｣ is not a file" ) unless %*ENV<MORE_HTML>.IO ~~ :e & :f;
         try {
-            $rdp.add-templates( EVALFILE( %*ENV<MORE_HTML> ), :source<User-supplied-markdown> );
+            $r2html.rdp.add-templates( EVALFILE( %*ENV<MORE_HTML> ), :source<User-supplied-markdown> );
             CATCH {
                 default { exit note "Could not utilise ｢{%*ENV<MORE_HTML>}｣ " ~ .message }
             }
         }
     }
-    my $css = 'resources/css/vanilla.css'.IO.slurp;
     if %*ENV<ALT_CSS>:exists {
         exit note( "｢{%*ENV<ALT_CSS>}｣ is not a file" ) unless %*ENV<ALT_CSS>.IO ~~ :e & :f;
-        $css = %*ENV<ALT_CSS>.IO.slurp
+        $r2html.rdp.add-data('css', %*ENV<ALT_CSS>.IO.slurp);
     }
-    $rdp.add-data('css', $css);
-    $rdp.render( $ast, :%source-data  )
+    $r2html.rdp.render( $ast, :%source-data  )
 }
 
 # no post processing needed
