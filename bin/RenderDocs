@@ -17,17 +17,19 @@ multi sub MAIN(:$docs = 'docs') {
     say 'Documents with .md in CWD, but not in docs/ : ', (%rendered.keys (-) %docs.keys).keys;
     render-files(@to-be-rendered, $docs)
 }
-multi sub MAIN(Str:D $file) {
+multi sub MAIN(Str:D $file, :$to) {
     exit note "｢$file.rakudoc｣ does not exist" unless "$file.rakudoc".IO ~~ :e & :f;
-    render-files([$file,], '.')
+    render-files([$file,], '.', :$to)
 }
-sub render-files (@to-be-rendered, $dir) {
+sub render-files (@to-be-rendered, $dir, :$to) {
     for @to-be-rendered.sort {
-        say "Processing ｢$dir/$_.rakudoc｣ to ｢$_.md｣";
-        my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '--rakudoc=Markdown', "$dir/$_.rakudoc"), :err, :out;
+        my $dest = $_;
+        $dest = $_ with $to;
+        say "Processing ｢$dir/$_.rakudoc｣ to ｢$dest.md｣";
+        my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '-MRakuDoc::Render', '--rakudoc=Markdown', "$dir/$_.rakudoc"), :err, :out;
         my $err = $p.err.slurp(:close);
         $err.say if $err;
         my $out = $p.out.slurp(:close);
-        "$_.md".IO.spurt($out) if $out;
+        "$dest.md".IO.spurt($out) if $out;
     }
 }

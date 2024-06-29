@@ -741,13 +741,16 @@ class RakuDoc::Processor {
             }
         }
     }
-    # This block is created by the parser when a text has embedded markup
-    # Also ordinary strings in an extended block are coerced into one
-    multi method handle(RakuAST::Doc::Paragraph:D $ast) {
+    #| This block is created by the parser when a text has embedded markup
+    #| Also ordinary strings in an extended block are coerced into one
+    #| Sometimes, eg for a table cell, the paragraph should not be
+    #| ended with a newline.
+    multi method handle(RakuAST::Doc::Paragraph:D $ast ) {
         if $!scoped-data.verbatim {
             $ast.atoms.map({ $.handle($_) });
             return
         }
+        my $inline = $!scoped-data.last-starter eq "table";
         my %config = $.merged-config($, 'para' );
         my $rem = $.complete-item-list ~ $.complete-defn-list
         ~ $.complete-numitem-list ~ $.complete-numdefn-list;
@@ -760,7 +763,7 @@ class RakuDoc::Processor {
             my $target = %config<id> // $.para-target($contents);
             $prs.body .= new( $rem );
             my $rv = %!templates<para>(
-                %( :$contents, :$target, %config)
+                %( :$contents, :$target, :$inline, %config)
             );
             # deal with possible inline definitions
             if $prs.inline-defns.elems {

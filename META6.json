@@ -26,6 +26,7 @@
   "provides": {
     "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
     "RakuDoc::Numeration": "lib/RakuDoc/Numeration.rakumod",
+    "RakuDoc::Plugin::LeafletMaps": "lib/RakuDoc/Plugin/LeafletMaps.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
     "RakuDoc::PromiseStrings": "lib/RakuDoc/PromiseStrings.rakumod",
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",

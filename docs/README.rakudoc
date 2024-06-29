@@ -8,32 +8,64 @@ Richard Hainsworth aka finanalyst
 =for VERSION :hidden
 v0.3.1
 
-=head1 Overview
+=begin SYNOPSIS
+=item Clone the repository
+=item Install using zef as follows (flag is important)
+=code zef install . -/precompile-install
+=end SYNOPSIS
 
-This module is intended to provide a generic renderer from RakuDoc v2 into text, but
-is designed to be easily extended to other output formats by subclassing.
+=head Overview
 
-Two other formats, namely HTML and Markdown, are provided in the distribution,
-see L<RakuDoc::To::Markdown|RakuDoc-To-HTML> and L<RakuDoc::To::Markdown|RakuDoc-To-Markdown>.
+This distribution is intended to provide several renderers from RakuDoc v2 into commonly used
+output formats.
 
-This is software using bleeding edge Rakudo, so look (L<at troubleshooting below|#Troubleshooting>).
-For the time being:
-=item clone the repo
-=item run C<prove6 -I.> which will compile the submodules and dependences in the correct order.
+The basic render engine is C<RakuDoc::Render>, which renders into Text. It
+is designed to be extended to other output formats by subclassing.
 
-The B<canonical method> for generating rendered text is possible (which sends output to STDOUT, so pipe
-to a file), namely
-   RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
+Currently, the other renderers in this distribution are:
+=begin table :caption<Table of outputs and renderers> :headlevel(2)
+=row :header
+=cell Output
+=cell Renderer
+=cell Documentation
+=row
+=cell Text
+=cell C<RakuDoc::To::Generic>
+=cell L<a wrapper for I<RakuDoc::Render>|Render>
+=row
+=cell Markdown
+=cell C<RakuDoc::To::Markdown>
+=cell L<Markdown|RakuDoc-To-Markdown>
+=row
+=cell HTML
+=cell C<RakuDoc::To::HTML>
+=cell L<A minimal, single file, 'all in' HTML|RakuDoc-To-HTML>
+=row
+=cell HTML-Extra
+=cell in development
+=cell HTML output using Bulma CSS, Graphviz, Leaflet-Maps, Latex, assumes internet
+=end table
+
+This is software using bleeding edge Rakudo, so look L<at troubleshooting below|#Troubleshooting>.
+
+Using the I<Generic> renderer, the B<canonical method> for generating rendered text is possible
+(which sends output to STDOUT, so pipe to a file), namely
+=code   RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
+
+Some L<naive wrapping and width modification|#Wrapping> is possible using environment variables.
 
 The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc>
 is the file for testing RakuDoc v2 compliance. It can be obtained with:
-    bin/get-compliance-document
+=code   bin/get-compliance-document
 
-Another (easier?) way to render a RakuDoc file is using L<RenderTextify|RenderTextify utility>,
-which avoids some installation problems, stores the output and offers some other output options, eg.
-    bin/RenderTextify rakudociem-ipsum
+In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered
+to Text using the L<RenderTextify|#RenderTextify utility>. It
+avoids some installation problems, stores the output and offers some other output options, eg.
+=code bin/RenderTextify rakudociem-ipsum
 
 (the .rakudoc extension may be omitted if desired)
+
+=head Documentation
 
 The two main documentation sources are:
 =item L<An overview of the generic renderer|Render>
@@ -47,38 +79,46 @@ Other modules are also documented:
 =item L<a grammar for parsing the meta data of a Markup code|MarkUpMeta>
 =item L<an object for numerating items headings|Numeration>
 
-=head1 RenderTextify utility
+=head RenderTextify utility
 
 The utility C<bin/RenderTexify> can be called with a RakuDoc source and it saves the
 result directly to a file, rather than to STDOUT.
 
 For example,
-    bin/RenderTextify rakudociem-ipsum
+=code bin/RenderTextify rakudociem-ipsum
 
 will produce the file
-    rakudociem-ipsum.rakudoc.text
+=code rakudociem-ipsum.rakudoc.text
 
 The executable C<bin/RenderTexify> can also be called with the flags C<test> and C<pretty>
-and the name of a file to render. The file is output to text files with the flag and C<.text>
+and the name of a file to render. The use case of these options is to see what templates
+receive from the rendering engine when developing new templates.
+
+The file is output to text files with the flag and C<.text>
 appended to the name. The file format C<.rakudoc> is assumed, and added if missing.
 
 For example,
-    bin/RenderTextify --pretty rakudociem-ipsum
+=code bin/RenderTextify --pretty rakudociem-ipsum
 
 will produce the file
-    rakudociem-ipsum.rakudoc.pretty.text
+=code rakudociem-ipsum.rakudoc.pretty.text
 
-By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped.
-This option is still being developed.
+=head Wrapping
 
+The text output will be naively wrapped (the algorithm is still being developed), either
+by setting the environment variable POSTPROCESSING=1 or using RenderTextify.
 For example,
-    POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
+=code POSTPROCESSING=1 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
 
-If the environment variable WIDTH is also set, the text output will be
-wrapped to the value.
+or
+=code bin/RenderTextify --post-processing doc
 
-WIDTH by default is set at 80 chars. To set at 70, use:
-    POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
+If the environment variable WIDTH (--width) is also set, the text output will be
+wrapped to the value. WIDTH by default is set at 80 chars. To set at 70, use:
+=code POSTPROCESSING=1 WIDTH=70 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
+
+or
+=code bin/RenderTextify --post-processing --width=70 doc
 
 =head1 Troubleshooting
 
@@ -86,39 +126,30 @@ In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recen
 version of the Rakudoc compiler is needed, after v2024.06.
 
 If the cannonical command above fails, perhaps with a message such as
-    ===SORRY!===
+=code     ===SORRY!===
     This element has not been resolved. Type: RakuAST::Type::Simple
 
-but there is a local version of C<RakuDoc::To::Generic> available, then try
-    RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
+then try
+=code RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
 The command above may also generate an error, such as
+=begin code
     ===SORRY!=== Error while compiling ..... (OO::Monitors)
     Variable '$cond' is not declared.  Perhaps you forgot a 'sub' if this
     was intended to be part of a signature?
     at ....
     ------> macro wait-condition(⏏$cond) is export {
 because the RakuAST compiler does not yet handle macros, and (OO::Monitors) uses them.
+=end code
 
 The first step is to re-run the test files, eg.,
-    prove6 -I.
+=code prove6 -I.
 
 This causes a  recompilation of the modules in this distribution to be recompiled
-because the tests run `isa-ok` on each module.
+because the tests run C<isa-ok> on each module.
 
 This is sometimes not sufficient. The next step is to use the utility C<bin/force-compile> in the root of the repo.
-It deletes the C<.precomp> files in the current directory, then recompiles the
-modules in the repo.
-
-Again try running the basic tests.
-
-Another method might be to run the C<raku --rakudoc=...> command, but without 'RAKUDO_RAKUAST=1'.
-Expect errors because the current
-production version of Rakudo does not allow for extensive Unicode entities.
-
-However, this will compile C<RakuDoc::Render> and its dependencies.
-
-Then run the command again but with 'RAKUDO_RAKUAST=1'.
+It deletes the C<.precomp> files in the current directory, and runs C<prove6 -I.>.
 
 =place semantic:AUTHOR :caption<Credits>
 

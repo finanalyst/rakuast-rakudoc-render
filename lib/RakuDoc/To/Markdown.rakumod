@@ -130,7 +130,7 @@ method markdown-templates {
             my $del = %prm<delta> // '';
             # using level + 1 so that TITLE is always larger
             # a line above heading level one to separate sections
-            ('----' if %prm<level> == 1) ~
+            ("\n----" if %prm<level> == 1) ~
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
             %prm<contents> ~ qq[<div id="{ %prm<target> }"> </div>] ~
@@ -199,24 +199,21 @@ method markdown-templates {
         #| renders =nested block
         nested => -> %prm, $tmpl {
             PStr.new: '> ' ~
-                (%prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! '') ~
-                %prm<contents> ~ "\n\n"
+                (%prm<target> ?? '<span class="nested" id="' ~ %prm<target> ~ '"></span>' !! '') ~
+                %prm<contents> ~ ("\n\n" unless %prm<inline>)
         },
         #| renders =para block
         para => -> %prm, $tmpl {
             PStr.new:
-                (%prm<target> ?? '<span id="' ~ %prm<target> ~ '"></span>' !! '') ~
-                %prm<contents> ~ "\n\n"
+                (%prm<target> ?? '<span class="para" id="' ~ %prm<target> ~ '"></span>' !! '') ~
+                %prm<contents> ~ ("\n\n" unless %prm<inline>)
         },
         #| renders =place block
         place => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            my $rv = PStr.new;
-            $rv ~= $del ~ "\n";
-            $rv ~= qq[----\n<div id="{ %prm<target> }"> </div>\n];
-            $rv ~= qq[<div id="{ %prm<id> }"> </div>\n] if %prm<id>;
-            $rv ~= %prm<contents> ;
-            $rv ~= "\n\n";
+            PStr.new: '<div id="' ~ %prm<target> ~ '"> </div>' ~ "\n\n" ~
+                ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
+                %prm<contents> ~
+                "\n\n";
         },
         #| renders =rakudoc block
         rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
@@ -231,7 +228,7 @@ method markdown-templates {
             # using level + 1 so that TITLE is always larger
             # a line above heading level one to separate sections
             PStr.new: ('----' if %prm<level> == 1) ~
-            "\n" ~ $del ~ "\n" ~
+            "  \n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
             %prm<caption> ~
             qq[<div id="{ %prm<target> }"> </div>] ~
@@ -335,7 +332,7 @@ method markdown-templates {
         },
         #| renders a single item in the toc
         toc-item => -> %prm, $tmpl {
-            my $pref = ' ' x ( %prm<toc-entry><level> > 4 ?? 4 !! (%prm<toc-entry><level> - 1) * 2 )
+            my $pref = '&nbsp;' x ( %prm<toc-entry><level> > 4 ?? 4 !! (%prm<toc-entry><level> - 1) * 2 )
                 ~ (%prm<toc-entry><level> > 1 ?? '- ' !! '');
             PStr.new: qq[$pref\<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a>   \n]
         },
@@ -462,6 +459,7 @@ method markdown-templates {
         markup-L => -> %prm, $tmpl {
             my $target = %prm<target>;
             $target ~= '.md' if %prm<type> eq 'local';
+            $target = '#' ~ $target if %prm<type> eq 'internal';
             LINK-TEXT-ON ~ %prm<link-label> ~ LINK-TEXT-OFF ~
             LINK-ON ~ $target ~ LINK-OFF
          },

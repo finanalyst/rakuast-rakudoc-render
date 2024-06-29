@@ -1,9 +1,11 @@
 #!/usr/bin/env -S raku -I/home/richard/development/rakuast-rakudoc-render
 use experimental :rakuast;
 use RakuDoc::Render;
-sub MAIN( $fn, :$test = False, :$pretty = False ) {
+sub MAIN( $fn, :$test = False, :$pretty = False, :$post-processing, :$width ) {
     my $f = $fn.ends-with('.rakudoc') ?? $fn !! $fn ~ '.rakudoc';
     exit note "$f doesn't exist" unless $f.IO ~~ :e & :f;
+    %*ENV<POSTPROCESSING> = $_ with $post-processing;
+    %*ENV<WIDTH> = $_ with $width;
     my $ast = $f.IO.slurp.AST;
     my %source-data = %(
         name     => $fn,
