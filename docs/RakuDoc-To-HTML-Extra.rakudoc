@@ -1,0 +1,70 @@
+=begin rakudoc
+=TITLE The RakuDoc to HTML-Extra renderer
+=SUBTITLE Based on RakuAST-RakuDoc-Render engine, HTML with plugins and Bulma CSS
+=for AUTHOR :hidden
+Richard Hainsworth, aka finanalyst
+=for VERSION :hidden
+v0.1.0
+=begin SYNOPSIS In a I<clean> directory containing only a RakuDoc source, eg C<wp.rakudoc>
+use the terminal command
+=code RAKUDO_RAKUAST=1 raku -MRakuDoc::Render -MRakuDoc::To::HTML --rakudoc=HTML-Extra wp.rakudoc > wp.html
+
+Easier (once the distribution has been installed, see L<README|README>)
+=code RakuDoc wp
+
+Both will cause the file C<wp.html> to be generated in the current working directory, together with
+a new subdirectory I<assets/> in which other CSS and Javascript files will be placed.
+
+To view this file, see L<small Cro app|#Small Cro app>.
+=end SYNOPSIS
+=head Overview
+
+This renderer allows for more customisability than the L<minimal HTML renderer|RakuDoc-To-HMTL>
+in this distribution.
+
+By default, the following plugins are provided, and more can be added by the user (see L<Plugins|Extra-HTML-Plugins>).
+=begin table :caption<Plugins and their sources> :headlevel(2)
+=row :header
+=cell Plugin
+=cell Source
+=cell Use
+=cell License
+=row
+=cell Bulma CSS
+=cell L<Bulma Home|https://bulma.io>
+=cell The output page is styled into panels, is responsive, has themes
+=cell MIT
+=row
+=cell Leaflet Maps
+=cell L<Home page|https://leafletjs.com/>
+=cell Puts a map in a web page, with tiles from multiple providers
+=cell 2-clause BSD
+=row
+=cell Leaflet providers
+=cell L<Github repo|https://github.com/leaflet-extras/leaflet-providers>
+=cell Easy way to access tile providers
+=cell 2-clause BSD
+=end table
+
+=head RakuDoc::Render plugins
+
+Customisation is provided by plugins. These are essentially classes of the form
+C<RakuDoc::Plugins::XXX>, where B<XXX> is the name of a plugin.
+
+The plugin class B<does> the I<RakuDoc::Plugin> role.
+
+Each RP class must have a C<%.config> attribute, which has keys needed for the plugin,
+but it also has some mandatory meta data:
+=item license, typically Artistic-2.0 (same as Raku), but may need to change if
+the plugin relies on software that has another license.
+
+=item credits, a source for the software, and the license its developers use.
+=item version, a version number for the plugin.
+=item author, the author(s) of the plugin
+
+Some typical config fields are
+=item block-name, the custom block that activates the plugin (a plugin may need only replace
+existing templates)
+
+
+=end rakudoc
