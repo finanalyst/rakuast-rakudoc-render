@@ -328,68 +328,6 @@ method html-templates {
                     .subst(/ \v /, '<br>', :g) ~
                      "\n\n"
         },
-        #| special template to encapsulate all the output to save to a file
-        #| These sub-templates should allow sub-classes of RakuDoc::To::HTML
-        #| to provide replacement templates on a more granular basis
-        final => -> %prm, $tmpl {
-            qq:to/PAGE/
-            <!DOCTYPE html>
-            <html { $tmpl<html-root> } >
-                <head>
-                { $tmpl<head-block> }
-                </head>
-                <body>
-                { $tmpl<top-of-page> }
-                { $tmpl<main-content> }
-                { $tmpl<footer> }
-            </body>
-            </html>
-            PAGE
-        },
-        ## sections of the final document
-        #| root section, what does in the html tab
-        html-root => -> %prm, $tmpl {
-            qq[lang="{%prm<source-data><language>}"\n]
-        },
-        #| head-block, what goes in the head tab
-        head-block => -> %prm, $tmpl {
-            qq:to/HEAD/
-                <title>{%prm<title>}</title>
-                {$tmpl.globals.data<css>:exists ??
-                   '<style>' ~ $tmpl.globals.data<css> ~ '</style>'
-                !! ''
-                }
-            HEAD
-        },
-        #| the first section of body, including navigation
-        top-of-page => -> %prm, $tmpl {
-            my $rv = '';
-            if %prm<title-target>:exists and %prm<title-target> ne '' {
-                $rv ~= qq[<div id="{
-                    $tmpl('escaped', %( :contents(%prm<title-target>), ))
-                }"></div>]
-            }
-            $rv ~= '<h1 class="title">' ~ %prm<title> ~ "</h1>\n\n" ~
-            (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
-            ( %prm<rendered-toc> if %prm<rendered-toc> )
-        },
-        #| the main section of body
-        main-content => -> %prm, $tmpl {
-            %prm<body>.Str ~
-            %prm<footnotes>.Str ~ "\n" ~
-            ( %prm<rendered-index> if %prm<rendered-index> )
-        },
-        #| the last section of body
-        footer => -> %prm, $tmpl {
-            qq:to/FOOTER/;
-            \n<div class="footer">
-                Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}</span>
-            <span class="footer-field">{sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
-            <span class="footer-line">Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
-            { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }
-            </div>
-            FOOTER
-        },
         #| renders a single item in the toc
         toc-item => -> %prm, $tmpl { '' }, # HTML uses toc structure directly
         #| special template to render the toc list
@@ -620,5 +558,67 @@ method html-templates {
         },
         #| Unknown markup, render minimally
         markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl<escaped> ~ BAD-MARK-OFF },
+        #| special template to encapsulate all the output to save to a file
+        #| These sub-templates should allow sub-classes of RakuDoc::To::HTML
+        #| to provide replacement templates on a more granular basis
+        final => -> %prm, $tmpl {
+            qq:to/PAGE/
+            <!DOCTYPE html>
+            <html { $tmpl<html-root> } >
+                <head>
+                { $tmpl<head-block> }
+                </head>
+                <body>
+                { $tmpl<top-of-page> }
+                { $tmpl<main-content> }
+                { $tmpl<footer> }
+            </body>
+            </html>
+            PAGE
+        },
+        ## sections of the final document
+        #| root section, what does in the html tab
+        html-root => -> %prm, $tmpl {
+            qq[lang="{%prm<source-data><language>}"\n]
+        },
+        #| head-block, what goes in the head tab
+        head-block => -> %prm, $tmpl {
+            qq:to/HEAD/
+                <title>{%prm<title>}</title>
+                {$tmpl.globals.data<css>:exists ??
+                   '<style>' ~ $tmpl.globals.data<css> ~ '</style>'
+                !! ''
+                }
+            HEAD
+        },
+        #| the first section of body, including navigation
+        top-of-page => -> %prm, $tmpl {
+            my $rv = '';
+            if %prm<title-target>:exists and %prm<title-target> ne '' {
+                $rv ~= qq[<div id="{
+                    $tmpl('escaped', %( :contents(%prm<title-target>), ))
+                }"></div>]
+            }
+            $rv ~= '<h1 class="title">' ~ %prm<title> ~ "</h1>\n\n" ~
+            (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
+            ( %prm<rendered-toc> if %prm<rendered-toc> )
+        },
+        #| the main section of body
+        main-content => -> %prm, $tmpl {
+            %prm<body>.Str ~
+            %prm<footnotes>.Str ~ "\n" ~
+            ( %prm<rendered-index> if %prm<rendered-index> )
+        },
+        #| the last section of body
+        footer => -> %prm, $tmpl {
+            qq:to/FOOTER/;
+            \n<div class="footer">
+                Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}</span>
+            <span class="footer-field">{sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
+            <span class="footer-line">Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
+            { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }
+            </div>
+            FOOTER
+        },
     ); # END OF TEMPLATES (this comment is to simplify documentation generation)
 }

@@ -53,18 +53,37 @@ C<RakuDoc::Plugins::XXX>, where B<XXX> is the name of a plugin.
 
 The plugin class B<does> the I<RakuDoc::Plugin> role.
 
-Each RP class must have a C<%.config> attribute, which has keys needed for the plugin,
-but it also has some mandatory meta data:
-=item license, typically Artistic-2.0 (same as Raku), but may need to change if
+Each RP class must have a C<%.config> attribute containing the information needed
+for the plugin. These are divided into mandatory keys, which will be tested for,
+and plugin-specific.
+
+The mandatory key-value Pairs are:
+=item B<license>, typically Artistic-2.0 (same as Raku), but may need to change if
 the plugin relies on software that has another license.
 
-=item credits, a source for the software, and the license its developers use.
-=item version, a version number for the plugin.
-=item author, the author(s) of the plugin
+=item B<credits>, a source for the software, and the license its developers use.
+=item B<version>, a version number for the plugin.
+=item B<authors>, the author(s) of the plugin.
+=item B<name-space>, the name of the plugin's name-space within the RakuDoc-Processor
+instance.
 
 Some typical config fields are
 =item block-name, the custom block that activates the plugin (a plugin may need only replace
 existing templates)
+
+=item js-link, a list of C<Str, Int $order> arrays. The string is placed in script tag
+in the head container of the web-page, the order is to ensure that when one js library
+must appear before another, that relation is created. Libraries with the same order
+appear in alphabetic order.
+
+=item css-link, a list of C<Str, Int $order> arrays. As above, but for CSS. Typically,
+CSS files must appear before the JS files they are associated with. All CSS files appear
+in head before JS files.
+
+All the elements of %.config are transferred to the RakuDoc::Processor object, and can
+be accessed in a template or callable, as C<$tmpl.globals.data<plugin-name-space> > (assuming
+that the plugin's config has C<namespace => plugin-name-space>).
+
 
 
 =end rakudoc

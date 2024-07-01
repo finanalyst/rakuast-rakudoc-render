@@ -1,20 +1,19 @@
 use v6.d;
-use OO::Monitors;
+use Method::Protected;
 
-monitor CompletedCells {
+class CompletedCells {
     has %.cell-list;
-    method add-payload( :$payload, :$id ) {
+    method add-payload( :$payload, :$id ) is protected {
         %!cell-list{ $id } = $payload;
     }
-    method is-present( $id --> Bool ) {
+    method is-present( $id --> Bool ) is protected {
         %!cell-list{ $id }:exists
     }
-    method get( $id ) {
+    method get( $id ) is protected {
         if %!cell-list{ $id }:exists { %!cell-list{ $id } }
         else { '' }
     }
 }
-
 class PCell {
     has CompletedCells $.archive;
     has Str $!text;
