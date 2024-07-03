@@ -26,6 +26,7 @@
   "provides": {
     "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
     "RakuDoc::Numeration": "lib/RakuDoc/Numeration.rakumod",
+    "RakuDoc::Plugin::Latex": "lib/RakuDoc/Plugin/Latex.rakumod",
     "RakuDoc::Plugin::LeafletMaps": "lib/RakuDoc/Plugin/LeafletMaps.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
     "RakuDoc::PromiseStrings": "lib/RakuDoc/PromiseStrings.rakumod",
@@ -42,13 +43,16 @@
     "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.test.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.text",
+    "scss/latex-render.scss",
+    "css/latex-render.css",
     "scss/vanilla.scss",
     "css/vanilla.css",
     "css/vanilla.css.map",
     "html-example.raku",
     "markdown-example.raku",
     "compliance-rendering/rakudociem-ipsum.md",
-    "compliance-rendering/rakudociem-ipsum.html"
+    "compliance-rendering/rakudociem-ipsum.html",
+    "css/latex-render.css"
   ],
   "support": {
     "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",
@@ -84,7 +88,9 @@
     "docs/ScopedData.rakudoc",
     "docs/Templates.rakudoc",
     "docs/RakuDoc-To-Markdown.rakudoc",
-    "docs/default-text-templates.rakudoc"
+    "docs/default-text-templates.rakudoc",
+    "docs/plugins/Latex.rakudoc",
+    "docs/plugins/LeafletMaps.rakudoc"
   ],
   "source-type": "git"
 }

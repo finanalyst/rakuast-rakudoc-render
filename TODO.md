@@ -1,10 +1,11 @@
 # list of things to do
 
 - [ ] Templates
-  - [ ] HTML-Extra, need to add CSS and Javascript & custom blocks
+  - [ ] HTML-Extra, need to add CSS and Javascript & custom blocks, plugins:
+    - [ ] Bulma
+    - [ ] Latex
+    - [ ] GraphViz
   - [ ] Epub, need to add extra metadata pages 
-- Fix MarkDown HTML?
-  - [ ] implicit code blocks not being rendered as ordinary code blocks.
   
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
 - [ ] Implement new numbering extensions, 

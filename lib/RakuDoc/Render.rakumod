@@ -896,6 +896,7 @@ class RakuDoc::Processor {
     method gen-formula($ast) {
         my %config = $.merged-config( $ast, 'formula' );
         my $formula = $.contents( $ast, False ); # do not treat strings paragraphs
+        my $raw = $ast.paragraphs.Str.join; # also create a raw version for other renderers
         my $prs := $*prs;
         my $alt = %config<alt>:delete // 'Formula cannot be rendered';
         my $caption = %config<caption>:delete // 'Formula';
@@ -919,7 +920,7 @@ class RakuDoc::Processor {
         $prs.toc.push(
             { :$caption, :$target, :$level, :$numeration }
         ) if $toc;
-        $prs.body ~= %!templates<formula>(%(:$formula, :$alt, :$target, :$caption, :$level, :$numeration, :$id, %config ) )
+        $prs.body ~= %!templates<formula>(%(:$raw, :$formula, :$alt, :$target, :$caption, :$level, :$numeration, :$id, %config ) )
     }
     #| generates a single item and adds it to the item structure
     #| nothing is added to the .body string

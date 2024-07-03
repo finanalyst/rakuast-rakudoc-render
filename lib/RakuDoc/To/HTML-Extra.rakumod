@@ -6,11 +6,13 @@ unit class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML;
 #| keys reserved for assets in HTML page, so Plugins may not claim any as a name-space.
 has @!reserved = <css css-link js js-link>;
 use RakuDoc::Plugin::LeafletMaps;
+use RakuDoc::Plugin::Latex;
 
 submethod TWEAK {
     my $rdp := self.rdp;
     $rdp.add-templates(self.templates);
     RakuDoc::Plugin::LeafletMaps.new.enable($rdp);
+    RakuDoc::Plugin::Latex.new.enable($rdp);
     self.gather-flatten($rdp, 'css-link');
     self.gather-flatten($rdp, 'js-link');
 }

@@ -1,0 +1,44 @@
+=begin rakudoc
+=TITLE LatexFormula
+=SUBTITLE RakuDoc::Plugin::Latex
+
+=head Introduction
+
+This plugin block sends the Latex-style markup to the CodeCogs online equation editor. For example,
+
+=begin code
+=for LatexFormula :headlevel(2) :caption<Simple formula>
+\begin{align*}
+\sum_{i=1}^{k+1} i^{3}
+&= \biggl(\sum_{i=1}^{n} i^{3}\biggr) +  i^3\\
+&= \frac{k^{2}(k+1)^{2}}{4} + (k+1)^3 \\
+&= \frac{k^{2}(k+1)^{2} + 4(k+1)^3}{4}\\
+&= \frac{(k+1)^{2}(k^{2} + 4k + 4)}{4}\\
+&= \frac{(k+1)^{2}(k+2)^{2}}{4}
+\end{align*}
+=end code
+
+=for LatexFormula :headlevel(2) :caption<Simple formula>
+\begin{align*}
+\sum_{i=1}^{k+1} i^{3}
+&= \biggl(\sum_{i=1}^{n} i^{3}\biggr) +  i^3\\
+&= \frac{k^{2}(k+1)^{2}}{4} + (k+1)^3 \\
+&= \frac{k^{2}(k+1)^{2} + 4(k+1)^3}{4}\\
+&= \frac{(k+1)^{2}(k^{2} + 4k + 4)}{4}\\
+&= \frac{(k+1)^{2}(k+2)^{2}}{4}
+\end{align*}
+
+=head RakuDoc v2
+
+The RakuDoc v2 specification has a builtin block C<=formula> and the recommended formula
+markup is Latex. This plugin overrides the formula template, effectively aliasing it
+to LatexFormula. So the following will work too:
+=begin code
+    =for formula :caption<Fabulous identity>
+    e^{i\pi}+1=0
+=end code
+
+=for formula :caption<Fabulous identity>
+e^{i\pi}+1=0
+
+=end rakudoc
