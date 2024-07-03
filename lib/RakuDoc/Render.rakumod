@@ -834,7 +834,7 @@ class RakuDoc::Processor {
         }
         my %*ALLOW;
         $!scoped-data.start-scope(:starter($template), :verbatim )
-            if $template ~~ any(<code input output>);
+            if $template ~~ any(<code implicit-code input output>);
         if $template eq 'code' {
             %*ALLOW = %config<allow>:exists
                 ?? %config<allow>.map({ $_ => True }).hash
@@ -844,7 +844,7 @@ class RakuDoc::Processor {
         $*prs.body ~= %!templates{ $template }(
             %( :$contents, %config)
         );
-        $!scoped-data.end-scope if $template ~~ any( <code input output> )
+        $!scoped-data.end-scope if $template ~~ any( <code implicit-code input output> )
     }
     #| A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption
     #| These can be set by a config directive

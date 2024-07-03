@@ -376,9 +376,8 @@ my $x = 3;
 ```
 
 ```
-<span class="para" id="590e5d6"></span># indenting causes an implicit code block my $raku = 'fantastic'; 
-
-
+# indenting causes an implicit code block
+my $raku = 'fantastic';
 ```
 
 ```
@@ -533,7 +532,7 @@ v0.2.0
 
 ----
 
-Rendered from ././rakudociem-ipsum.rakudoc at 22:14 UTC on 2024-06-29
+Rendered from ././rakudociem-ipsum.rakudoc at 16:41 UTC on 2024-07-03
 
 Source last modified at 14:42 UTC on 2024-06-19
 

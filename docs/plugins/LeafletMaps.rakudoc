@@ -1,0 +1,129 @@
+=begin rakudoc
+
+
+=head1 LeafletMap
+
+The leafletmap plugin inserts a map as defined by a custom RakuDoc v2 block called C<=LeafletMap>.
+The plugin uses the fabulous
+L<Leaflet JS library|https://leafletjs.com>. The map MUST have a fixed height, so this is specified
+in the config attribute.
+
+By default, the map will point at Cardiff Castle in Cardiff, Wales with a 200px height and 16 unit magnification,
+using OpenStreetMap as the tile provider. So
+=begin code
+=LeafletMap
+=end code
+
+produces:
+
+=LeafletMap
+
+The simplest customisation is to centre the map by specifying the lattitude
+and longitude, and to change the starting zoom level (smaller numbers are larger views).
+It is also possible to change the height of the map. Each map on a page must
+have its own id. Additionally, when developing a page, not setting a width is tiresome.
+Note another very underutilised feature of Rakudoc, the ability to spread meta-data accross
+lines. The first virtual column must start in a C<=> and there must be at least one
+horizontal whitespace character. Thus
+
+=begin code
+=for LeafletMap
+=  :lat<55.948595> :long<-3.199913>
+=  :zoom(13) :height<300px>
+=  :map-id<new-map>
+=  :headlevel(2)
+=  :width<50vw>
+Edinburgh Castle
+=end code
+
+will produce
+=for LeafletMap
+=  :lat<55.948595> :long<-3.199913>
+=  :zoom(13) :height<300px>
+=  :map-id<new-map>
+=  :headlevel(2)
+=  :width<50vw>
+Edinburgh Castle
+
+Maps are generated from tiles and the information can be rendered in many ways. There
+are multiple tile providers,
+collected in a github resource L<leaflet-extras|https://github.com/leaflet-extras/leaflet-providers>.
+"Leaflet-providers provides tile layers from different providers, including OpenStreetMap, Stamen, Esri and OpenWeatherMap.
+The full listing of free to use layers can be previewed." (from README of leaflet-providers)
+
+Some providers have map types that do not need registration, most types need registration.
+L<Here are all|http://leaflet-extras.github.io/leaflet-providers/preview/index.html> the providers
+and variants.
+
+For example, this is a map with the Esri.WorldImagery provider[.variant] string.
+=begin code
+=for LeafletMap :provider<Esri.WorldImagery> :map-id<third-map> :width<50vw>
+=end code
+=for LeafletMap :provider<Esri.WorldImagery> :map-id<third-map> :width<50vw>
+
+Registration offers more variety and more complex maps, but goes beyond this simple
+RakuDoc::Plugin. However, the Plugin can itself be subclassed and more data included
+in the config attribute.
+
+Another common need is to put markers on a map. This can be done using C<=LeafMarker> blocks. The
+map-id of the map the markers are to be associated with has to be supplied if there are more than
+one maps on a page, otherwise the default map id is used.
+
+C<:popup<text>> associated the I<text> with the marker but the user needs to click in it to see.
+
+C<:title<text>> allows for the I<text> to be visible with a mouseover.
+
+C<:fa-icon> will work if the C<FontAwesome> plugin has been configured for rendering
+(see above for detail on extra commands).
+
+C<:headlevel(0)> is set so that the Table of Contents is not affected.
+
+=begin code
+=for LeafletMap :map-id<map-four> :height<600px> :zoom(12) :width<50vw>
+
+=for LeafMarker
+=    :map-id<map-four> :name<mk1>
+=    :lat<51.48160> :long<-3.18070>
+=    :headlevel(0)
+=    :title<Cardiff Castle>
+
+=for LeafMarker
+=    :map-id<map-four>
+=    :lat<51.529269> :long<-3.188109>
+=    :fa-icon<fas fa-cutlery fa-spin fa-3x fa-fw>
+=    :headlevel(0)
+=    :title<Fintans Fish & Chip Co>
+
+=for LeafMarker
+=    :map-id<map-four>
+=    :lat<51.502576> :long<-3.190222>
+=    :fa-icon<fas fa-cutlery>
+=    :headlevel(0)
+=    :popup<Yan’s Fish Bar>
+
+=end code
+Thus for two chippies judged the best in Cardiff at the time of writing:
+
+=for LeafletMap :map-id<map-four> :height<600px> :zoom(12) :width<50vw>
+
+=for LeafMarker
+=    :map-id<map-four>
+=    :lat(51.48160) :long(-3.18070)
+=    :headlevel(0)
+=    :title<Cardiff Castle>
+
+=for LeafMarker
+=    :map-id<map-four>
+=    :lat<51.529269> :long<-3.188109>
+=    :fa-icon<fa-solid fa-utensils fa-spin fa-3x fa-fw>
+=    :headlevel(0)
+=    :title<Fintans Fish & Chip Co, Llanishen>
+
+=for LeafMarker
+=    :map-id<map-four>
+=    :lat<51.502576> :long<-3.190222>
+=    :fa-icon<fa-solid fa-utensils>
+=    :headlevel(0)
+=    :popup<Yan’s Fish Bar>
+
+=end rakudoc

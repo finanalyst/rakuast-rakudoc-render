@@ -135,7 +135,8 @@ method html-templates {
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]] ~
-                (%prm<delta> // '')
+                (%prm<delta> // '') ~
+                qq[[<div class="formula">{%prm<formula>}</div>]]
         },
         #| renders =head block
         head => -> %prm, $tmpl {
@@ -212,9 +213,7 @@ method html-templates {
         },
         #| renders =nested block
         nested => -> %prm, $tmpl {
-            PStr.new: '<p class="nested"' ~
-                (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
-                '>' ~ %prm<contents> ~ "</p>\n"
+            PStr.new: '<div class="nested">' ~ %prm<contents> ~ "</div>\n"
         },
         #| renders =para block
         para => -> %prm, $tmpl {
@@ -566,6 +565,7 @@ method html-templates {
             <!DOCTYPE html>
             <html { $tmpl<html-root> } >
                 <head>
+                <meta charset="UTF-8" />
                 { $tmpl<head-block> }
                 </head>
                 <body>
