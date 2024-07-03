@@ -1,8 +1,8 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.4.2",
-  "perl": "6.e",
+  "version": "0.4.3",
+  "perl": "6.d",
   "authors": [
     "Richard Hainsworth"
   ],
@@ -26,6 +26,7 @@
   "provides": {
     "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
     "RakuDoc::Numeration": "lib/RakuDoc/Numeration.rakumod",
+    "RakuDoc::Plugin::Graphviz": "lib/RakuDoc/Plugin/Graphviz.rakumod",
     "RakuDoc::Plugin::Latex": "lib/RakuDoc/Plugin/Latex.rakumod",
     "RakuDoc::Plugin::LeafletMaps": "lib/RakuDoc/Plugin/LeafletMaps.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
@@ -90,7 +91,8 @@
     "docs/RakuDoc-To-Markdown.rakudoc",
     "docs/default-text-templates.rakudoc",
     "docs/plugins/Latex.rakudoc",
-    "docs/plugins/LeafletMaps.rakudoc"
+    "docs/plugins/LeafletMaps.rakudoc",
+    "docs/plugins/Graphviz.rakudoc"
   ],
   "source-type": "git"
 }

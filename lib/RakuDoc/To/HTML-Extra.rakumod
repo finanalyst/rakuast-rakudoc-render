@@ -7,12 +7,14 @@ unit class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML;
 has @!reserved = <css css-link js js-link>;
 use RakuDoc::Plugin::LeafletMaps;
 use RakuDoc::Plugin::Latex;
+use RakuDoc::Plugin::Graphviz;
 
 submethod TWEAK {
     my $rdp := self.rdp;
     $rdp.add-templates(self.templates);
     RakuDoc::Plugin::LeafletMaps.new.enable($rdp);
     RakuDoc::Plugin::Latex.new.enable($rdp);
+    RakuDoc::Plugin::Graphviz.new.enable($rdp);
     self.gather-flatten($rdp, 'css-link');
     self.gather-flatten($rdp, 'js-link');
 }

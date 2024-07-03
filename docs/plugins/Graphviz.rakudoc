@@ -1,0 +1,42 @@
+=begin rakudoc
+=TITLE GraphViz
+=SUBTITLE RakuDoc::Plugin::Graphviz
+
+=head Introduction
+
+The GraphViz block introduces a directed graph in the dot language. It is rendered into HTML as an svg using the
+dot program. Since a graph data is require, only the delimited form of the block (starting with =begin/=end)
+will be used.
+
+The following digraph comes from the C<dot> documentation. The following Rakudoc
+=begin code
+=begin Graphviz :headlevel(2) :caption<Simple example>
+    digraph G {
+        main -> parse -> execute;
+        main -> init;
+        main -> cleanup;
+        execute -> make_string;
+        execute -> printf
+        init -> make_string;
+        main -> printf;
+        execute -> compare;
+    }
+=end Graphviz
+=end code
+
+produces
+
+=begin Graphviz :headlevel(2) :caption<Simple example>
+    digraph G {
+        main -> parse -> execute;
+        main -> init;
+        main -> cleanup;
+        execute -> make_string;
+        execute -> printf
+        init -> make_string;
+        main -> printf;
+        execute -> compare;
+    }
+=end Graphviz
+
+=end rakudoc
