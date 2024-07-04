@@ -1,7 +1,10 @@
 =begin rakudoc
 =TITLE LatexFormula
-=SUBTITLE RakuDoc::Plugin::Latex
-
+=SUBTITLE Using CodeCogs editor to process Latex formula markup
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+=for VERSION :hidden
+v0.1.0
 =head Introduction
 
 This plugin block sends the Latex-style markup to the CodeCogs online equation editor. For example,
@@ -41,4 +44,8 @@ to LatexFormula. So the following will work too:
 =for formula :caption<Fabulous identity>
 e^{i\pi}+1=0
 
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 =end rakudoc

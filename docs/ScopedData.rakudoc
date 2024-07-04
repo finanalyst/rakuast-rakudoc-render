@@ -1,5 +1,6 @@
 =begin rakudoc
 =TITLE The ScopeData module
+=SUBTITLE Handling RakuDoc v2 block scope concept.
 =for AUTHOR :hidden
 Richard Hainsworth aka finanalyst
 

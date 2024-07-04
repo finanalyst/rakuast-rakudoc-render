@@ -1,6 +1,11 @@
 =begin rakudoc
 =TITLE GraphViz
 =SUBTITLE RakuDoc::Plugin::Graphviz
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+
+=for VERSION :hidden
+v0.1.0
 
 =head Introduction
 
@@ -39,4 +44,8 @@ produces
     }
 =end Graphviz
 
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 =end rakudoc

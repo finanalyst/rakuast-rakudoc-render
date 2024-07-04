@@ -1,9 +1,9 @@
 =begin rakudoc
+=TITLE LeafletMap
+=SUBTITLE The leafletmap plugin inserts a map in place of a custom C<=LeafletMap>.
 
+=head Overview
 
-=head1 LeafletMap
-
-The leafletmap plugin inserts a map as defined by a custom RakuDoc v2 block called C<=LeafletMap>.
 The plugin uses the fabulous
 L<Leaflet JS library|https://leafletjs.com>. The map MUST have a fixed height, so this is specified
 in the config attribute.
@@ -126,4 +126,8 @@ Thus for two chippies judged the best in Cardiff at the time of writing:
 =    :headlevel(0)
 =    :popup<Yan’s Fish Bar>
 
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
 =end rakudoc

@@ -1,16 +1,7 @@
 =begin rakudoc
 =TITLE PromiseStrings for templates
-=begin SUBTITLE
-How RakuAsT-RakuDoc-Render handles forward references or placement
-material that has not yet been rendered
-
-When C<=place toc:*> is given in a RakuDoc source (eg at the top of a source),
-typically the source has not yet been completely rendered.
-
-The renderer actually renders a source into C<PStr> or B<PromiseStrings> rather
-than C<Str>. As forward references become known, they are included in the
-text.
-=end SUBTITLE
+=SUBTITLE How RakuAsT-RakuDoc-Render handles forward references or placement
+material that has not yet been rendered.
 =for AUTHOR :hidden
 Richard Hainsworth aka finanalyst
 
@@ -22,6 +13,13 @@ v0.2.1
 RakuDoc statements that make references to structures or data that have not
 been completely rendered embed the references in B<PCells>, which
 will interpolate the rendering once known.
+
+For instance, when C<=place toc:*> is given in a RakuDoc source (eg at the top of a source),
+typically the source has not yet been completely rendered.
+
+The renderer actually renders a source into C<PStr> or B<PromiseStrings> rather
+than C<Str>. As forward references become known, they are included in the
+text.
 
 Consequently, parameters to a template may contain a mixture of Raku I<Str> and I<PCells>, in
 an object of type called B<PStr>.

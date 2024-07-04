@@ -1,5 +1,6 @@
 =begin rakudoc
 =TITLE Minimal documentation of RakuDoc::Render Module
+=SUBTITLE Overview of rendering engine.
 =for AUTHOR :hidden
 Richard Hainsworth aka finanalyst
 

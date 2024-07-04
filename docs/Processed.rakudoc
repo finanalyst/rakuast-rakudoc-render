@@ -1,5 +1,6 @@
 =begin rakudoc
 =TITLE ProcessState and RakuDoc::Processed
+=SUBTITLE Collecting data to be used for rendering
 =for AUTHOR :hidden
 Richard Hainsworth aka finanalyst
 

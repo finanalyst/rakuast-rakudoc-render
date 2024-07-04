@@ -5,7 +5,8 @@
 Richard Hainsworth, aka finanalyst
 =for VERSION :hidden
 v0.1.0
-=begin SYNOPSIS In a I<clean> directory containing only a RakuDoc source, eg C<wp.rakudoc>
+=begin SYNOPSIS
+In a I<clean> directory containing only a RakuDoc source, eg C<wp.rakudoc>
 use the terminal command
 =code RAKUDO_RAKUAST=1 raku -MRakuDoc::Render -MRakuDoc::To::HTML --rakudoc=HTML-Extra wp.rakudoc > wp.html
 
@@ -85,5 +86,7 @@ be accessed in a template or callable, as C<$tmpl.globals.data<plugin-name-space
 that the plugin's config has C<namespace => plugin-name-space>).
 
 
+=place semantic:AUTHOR :caption<Credits>
 
+=place semantic:VERSION :!toc
 =end rakudoc

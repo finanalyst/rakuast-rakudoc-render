@@ -512,17 +512,17 @@ method html-templates {
             given %prm<type> {
                 when 'local' {
                     if %prm<place>:exists {
-                        qq[<a href="$target.html#%prm<place>">$text\</a>]
+                        qq[<a href="{$target.trim}.html#%prm<place>">$text\</a>]
                     }
                     else {
-                        qq[<a href="$target.html">$text\</a>]
+                        qq[<a href="{$target.trim}.html">$text\</a>]
                     }
                 }
                 when 'internal' {
-                    qq[<a href="#$target">$text\</a>]
+                    qq[<a href="#{$target.trim}">$text\</a>]
                 }
                 default {
-                    qq[<a href="$target">$text\</a>]
+                    qq[<a href="{$target.trim}">$text\</a>]
                 }
             }
         },
