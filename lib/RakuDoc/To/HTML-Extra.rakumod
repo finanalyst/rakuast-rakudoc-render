@@ -8,6 +8,7 @@ has @!reserved = <css css-link js js-link>;
 use RakuDoc::Plugin::LeafletMaps;
 use RakuDoc::Plugin::Latex;
 use RakuDoc::Plugin::Graphviz;
+use RakuDoc::Plugin::Bulma;
 
 submethod TWEAK {
     my $rdp := self.rdp;
@@ -15,17 +16,18 @@ submethod TWEAK {
     RakuDoc::Plugin::LeafletMaps.new.enable($rdp);
     RakuDoc::Plugin::Latex.new.enable($rdp);
     RakuDoc::Plugin::Graphviz.new.enable($rdp);
+    RakuDoc::Plugin::Bulma.new.enable($rdp);
     self.gather-flatten($rdp, 'css-link');
     self.gather-flatten($rdp, 'js-link');
 }
 
 method render($ast) {
     my $fn = $*PROGRAM;
-    my %source-data = %(
+    my %source-data =
         name     => ~$fn,
         modified => $fn.modified,
         path     => $fn.dirname,
-    );
+    ;
     self.new.rdp.render( $ast, :%source-data  )
 }
 #| plugins provide config information about css/js & cdn as arrays of Str/order arrays

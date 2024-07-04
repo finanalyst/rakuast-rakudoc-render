@@ -93,7 +93,7 @@ class RakuDoc::Processor {
 
     #| renders to a String by default,
     #| but returns ProcessedState object if pre-finalised = True
-    multi method render( $ast, :%source-data, :pre-finalize(:$pre-finalised) = False ) {
+    multi method render( $ast, :%source-data, :pre-finalized(:$pre-finalised) = False ) {
         $!current .= new(:%source-data, :$!output-format );
         $!register .= new;
         $!scoped-data .= new;

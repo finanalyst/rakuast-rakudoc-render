@@ -26,6 +26,7 @@
   "provides": {
     "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
     "RakuDoc::Numeration": "lib/RakuDoc/Numeration.rakumod",
+    "RakuDoc::Plugin::Bulma": "lib/RakuDoc/Plugin/Bulma.rakumod",
     "RakuDoc::Plugin::Graphviz": "lib/RakuDoc/Plugin/Graphviz.rakumod",
     "RakuDoc::Plugin::Latex": "lib/RakuDoc/Plugin/Latex.rakumod",
     "RakuDoc::Plugin::LeafletMaps": "lib/RakuDoc/Plugin/LeafletMaps.rakumod",
@@ -48,7 +49,6 @@
     "css/latex-render.css",
     "scss/vanilla.scss",
     "css/vanilla.css",
-    "css/vanilla.css.map",
     "html-example.raku",
     "markdown-example.raku",
     "compliance-rendering/rakudociem-ipsum.md",

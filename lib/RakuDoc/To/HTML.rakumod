@@ -7,7 +7,13 @@ has RakuDoc::Processor $.rdp .=new;
 
 submethod TWEAK {
     $!rdp.add-templates( self.html-templates, :source<RakuDoc::To::HTML> );
-    my $css = 'resources/css/vanilla.css'.IO.slurp;
+    my $css;
+    if 'resources/css/vanilla.css'.IO ~~ :e & :f { # use local value if available
+        $css = 'resources/css/vanilla.css'.IO.slurp;
+    }
+    else {
+        $css = %?RESOURCES<css/vanilla.css>.slurp(:close)
+    }
     $!rdp.add-data('css', $css);
 }
 method render($ast) {

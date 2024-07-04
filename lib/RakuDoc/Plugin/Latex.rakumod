@@ -5,6 +5,7 @@ use RakuDoc::Render;
 unit class RakuDoc::Plugin::Latex;
 has %.config =
     :name-space<latexformula>,
+	:version<0.1.0>,
     :block-name('LatexFormula'),
 	:license<Artistic-2.0>,
 	:credit<https://editor.codecogs.com/ fair use provision with link-back>,

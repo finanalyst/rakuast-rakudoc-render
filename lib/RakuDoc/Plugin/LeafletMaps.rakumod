@@ -8,6 +8,7 @@ has %.config =
     :block-name('LeafletMap'),
 	:license<Artistic-2.0>,
 	:credit<https://leafletjs.com/ & https://github.com/leaflet-extras/leaflet-providers, both use BSD-2>,
+	:version<0.1.0>,
     :js-link([q:to/DATA/, 1],[q:to/DATA2/, 2]),
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="

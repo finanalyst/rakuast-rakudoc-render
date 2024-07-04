@@ -8,6 +8,7 @@ has %.config =
     :block-name('Graphviz'),
 	:license<Artistic-2.0>,
 	:credit<https://graphviz.org/credits/ Common Public License Version 1.0>,
+	:version<0.1.0>,
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
