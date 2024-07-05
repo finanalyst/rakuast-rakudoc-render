@@ -5,18 +5,15 @@ use RakuDoc::PromiseStrings;
 unit class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML;
 #| keys reserved for assets in HTML page, so Plugins may not claim any as a name-space.
 has @!reserved = <css css-link js js-link>;
-use RakuDoc::Plugin::LeafletMaps;
-use RakuDoc::Plugin::Latex;
-use RakuDoc::Plugin::Graphviz;
-use RakuDoc::Plugin::Bulma;
-
 submethod TWEAK {
     my $rdp := self.rdp;
     $rdp.add-templates(self.templates);
-    RakuDoc::Plugin::LeafletMaps.new.enable($rdp);
-    RakuDoc::Plugin::Latex.new.enable($rdp);
-    RakuDoc::Plugin::Graphviz.new.enable($rdp);
-    RakuDoc::Plugin::Bulma.new.enable($rdp);
+    for <LeafletMaps Latex Graphviz Bulma> {
+        my $ok = True;
+        require ::("RakuDoc::Plugin::$_");
+        CATCH { $ok = False; .resume }
+        ::("RakuDoc::Plugin::$_").new.enable( $rdp )
+    }
     self.gather-flatten($rdp, 'css-link');
     self.gather-flatten($rdp, 'js-link');
 }
