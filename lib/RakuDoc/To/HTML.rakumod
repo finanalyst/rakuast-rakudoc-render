@@ -270,7 +270,7 @@ method html-templates {
                     qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                     $title ~
                     qq[[</a></$h>\n]] ~
-                    (%prm<delta> // '') ~ '<table>';
+                    (%prm<delta> // '') ~ '<table class="table">';
             if %prm<procedural> {
                 for %prm<grid>.list -> @row {
                     $rv ~= "\n<tr>";
@@ -585,7 +585,7 @@ method html-templates {
         ## sections of the final document
         #| root section, what does in the html tab
         html-root => -> %prm, $tmpl {
-            qq[lang="{%prm<source-data><language>}"\n]
+            qq[lang="{%prm<source-data><language>}"]
         },
         #| head-block, what goes in the head tab
         head-block => -> %prm, $tmpl {

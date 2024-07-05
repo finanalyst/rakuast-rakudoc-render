@@ -1,6 +1,10 @@
 =begin rakudoc
 =TITLE LeafletMap
 =SUBTITLE The leafletmap plugin inserts a map in place of a custom C<=LeafletMap>.
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+=for VERSION :hidden
+v0.1.0
 
 =head Overview
 
@@ -128,6 +132,5 @@ Thus for two chippies judged the best in Cardiff at the time of writing:
 
 
 =place semantic:AUTHOR :caption<Credits>
-
 =place semantic:VERSION :!toc
 =end rakudoc

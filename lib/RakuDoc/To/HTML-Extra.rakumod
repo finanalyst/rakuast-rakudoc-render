@@ -52,7 +52,7 @@ method gather-flatten( $rdp, $key ) {
     }
     %d{ $key } = @p-tuples.sort({ .[1], .[0] }).map( *.[0] ).list;
 }
-my @allowed = <p span h div li ul ol>.map({ ($_, '/'~$_).Slip});
+my @allowed = ('span',).map({ ($_, '/'~$_ ).Slip });
 method templates {
     %( # replace the template that governs where CSS and JS go
         #| head-block, what goes in the head tab
@@ -61,6 +61,7 @@ method templates {
             # handle css first
             qq:to/HEAD/
             <title>{%prm<title>}</title>
+            { $tmpl<favicon> }
             {%g-data<css>:exists ??
                '<style>' ~ %g-data<css> ~ '</style>'
             !! ''
@@ -83,6 +84,7 @@ method templates {
                 while $cont ~~ m:c/ '<' <!before @allowed> (.+? ) '>' / {
                     $cont = $/.replace-with( '&lt;' ~ $0 ~ '&gt;')
                 }
+                $cont .= trans( qw｢ < > ｣ => qw｢ &lt; &gt; ｣ );
                 $cont
             }
             elsif $cont {
@@ -129,6 +131,10 @@ method templates {
             $del ~
             $tmpl('escaped', %(:html-tags, %prm) ) ~
             "\n</pre>\n"
-         },
+        },
+        #| download the Camelia favicon
+        favicon => -> %prm, $tmpl {
+            q[<link rel="icon" href="https://irclogs.raku.org/favicon.ico">]
+        }
     )
 }

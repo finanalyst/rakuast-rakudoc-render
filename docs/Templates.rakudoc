@@ -268,7 +268,6 @@ For example,
     </aaa>
 
 =place semantic:AUTHOR :caption<Credits>
-
 =place semantic:VERSION :!toc
 
 =end rakudoc

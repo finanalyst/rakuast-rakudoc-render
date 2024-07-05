@@ -51,7 +51,7 @@ String of rendered source, may contain Promises during rendering
 
 =head3 C<%.index >
 
-    Index (from X<> markup)
+    Index (from V«X<>» markup)
     Hash entry => Hash of :refs, :sub-index
      :sub-index (maybe empty) is Hash of sub-entry => :refs, :sub-index
      :refs is Array of (Hash :target, :place, :is-header)
@@ -60,7 +60,7 @@ String of rendered source, may contain Promises during rendering
 
 =head3 C<@.footnotes >
 
-    Footnotes (from N<> markup)
+    Footnotes (from V«N<>» markup)
     Ordered Array of :$text, :$retTarget, :$fnNumber, :$fnTarget
     text is content of footnote, fnNumber is footNote number
     fnTarget is link to rendered footnote
