@@ -19,6 +19,7 @@ submethod TWEAK {
     RakuDoc::Plugin::Bulma.new.enable($rdp);
     self.gather-flatten($rdp, 'css-link');
     self.gather-flatten($rdp, 'js-link');
+    self.gather-flatten($rdp, 'js');
 }
 
 method render($ast) {
@@ -72,6 +73,10 @@ method templates {
             }
             {%g-data<js-link>:exists && %g-data<js-link>.elems ??
                 [~] %g-data<js-link>.map({ '<script ' ~ $_ ~ "></script>\n" })
+            !! ''
+            }
+            {%g-data<js>:exists && %g-data<js>.elems ??
+                [~] %g-data<js>.map({ '<script>' ~ $_ ~ "</script>\n" })
             !! ''
             }
             HEAD
