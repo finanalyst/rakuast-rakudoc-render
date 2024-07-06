@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<fundamental>
 =TITLE The ScopeData module
 =SUBTITLE Handling RakuDoc v2 block scope concept.
 =for AUTHOR :hidden

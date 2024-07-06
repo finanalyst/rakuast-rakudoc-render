@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<plugin>
 =TITLE GraphViz
 =SUBTITLE RakuDoc::Plugin::Graphviz
 =for AUTHOR :hidden

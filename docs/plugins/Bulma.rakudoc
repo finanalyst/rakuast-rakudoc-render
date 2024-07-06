@@ -1,0 +1,25 @@
+=begin rakudoc :type<plugin>
+=TITLE Bulma CSS
+=SUBTITLE Use the Bulma CSS framework for styling HTML output. This file
+only describes utilisation.
+=for AUTHOR :hidden
+Richard Hainsworth, aka finanalyst
+=for VERSION :hidden
+v0.1.0
+=head Overview
+
+The L<Bulma CSS framework|https://bulma.io> allows for easy styling of
+HTML files and has built-in support for themes, with dark and light themes
+included by default.
+
+This plugin also injects a JS script aid in the selection of panels,
+and switch themes.
+
+The plugin mostly modifies the C<final> template, introducing the classes
+for styling the page.
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
+
+=end rakudoc

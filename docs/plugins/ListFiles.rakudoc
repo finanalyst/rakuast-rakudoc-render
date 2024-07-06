@@ -1,0 +1,62 @@
+=begin rakudoc :type<plugin>
+=TITLE Grouping files in an index
+=SUBTITLE The plugin takes data collected from other
+Rakudoc files, selects them according to criteria,
+and outputs the filename and descriptions.
+=for AUTHOR :hidden
+Richard Hainsworth, aka finanalyst
+=for VERSION :hidden
+v0.1.0
+=head Overview
+
+When a group of Rakudoc files are rendered using a
+C<RakuDoc::Processor> object (RPO), the data from
+the processing can be collected before the final output
+is stored.
+
+If this processed file meta data is injected back into the RPO before a RakuDoc
+source with a C<=ListFiles> block, then the block will
+output the files in the meta data cache according to
+selector criteria.
+
+=head Selectors
+
+At the start of a RakuDoc source is a C<=begin rakudoc> instruction.
+It can be given metadata options, which describe the file.
+
+For example, the documentation files for the C<RakuAST::RakuDoc::Render>
+distribution all contain the option C<:type>, eg.
+=begin code
+    =begin rakudoc :type<plugin>
+=end code
+In the distribution, the I<type> option is given the values:
+B<plugin>, B<renderer>, B<fundamental>, and B<minor>.
+
+Using the C<ListFiles> block, an index source can be written
+so that the files are sorted according to the type values, eg.
+=begin code
+The documentation can be split as follows:
+=for ListFiles :select<type=fundamental> :caption<Fundamental>
+Sources containing key concepts and information
+
+=for ListFiles :select<type=renderer> :caption<Renderers in distribution>
+Descriptions of the Renderer classes
+
+...
+
+=for ListFiles :select<type=!> :caption<Files without type options>
+File from other sources or automatically generated
+=end code
+
+The last example shows how to capture files that do not have a
+type option. A file not matching any of the select criteria are
+not listed, so having a catchall syntax ensures all the
+RakuDoc source files in a collection are listed.
+
+When more meta options are available, for example the Raku
+documentation suite, with about 700 source files, has three
+metadata options for each file.
+
+=place semantic:AUTHOR :caption<Credits>
+=place semantic:VERSION :!toc
+=end rakudoc

@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<plugin>
 =TITLE LatexFormula
 =SUBTITLE Using CodeCogs editor to process Latex formula markup
 =for AUTHOR :hidden

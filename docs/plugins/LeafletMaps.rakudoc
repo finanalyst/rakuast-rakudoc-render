@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<plugin>
 =TITLE LeafletMap
 =SUBTITLE The leafletmap plugin inserts a map in place of a custom C<=LeafletMap>.
 =for AUTHOR :hidden

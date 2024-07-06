@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<fundamental>
 =TITLE PromiseStrings for templates
 =SUBTITLE How RakuAsT-RakuDoc-Render handles forward references or placement
 material that has not yet been rendered.

@@ -37,6 +37,10 @@ method templates {
         formula => -> %prm, $tmpl {
             my $formula = $tmpl<LatexFormula>;
             $tmpl.prev( %(%prm, :$formula, ) )
-        }
+        },
+        markup-F => -> %prm, $tmpl {
+            my $formula = $tmpl('LatexFormula', %(:raw(%prm<formula>),));
+            $tmpl.prev( %( %prm, :$formula) )
+        },
     )
 }

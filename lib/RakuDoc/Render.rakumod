@@ -64,7 +64,6 @@ class RakuDoc::Processor {
     }
     method add-data( $key, $object ) {
         %!templates.data{ $key } = $object;
-        %!templates.data{ $key } ;
     }
 
     multi submethod TWEAK(:$!output-format = 'txt',

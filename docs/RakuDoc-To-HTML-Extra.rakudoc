@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<renderer>
 =TITLE The RakuDoc to HTML-Extra renderer
 =SUBTITLE Based on RakuAST-RakuDoc-Render engine, HTML with plugins and Bulma CSS
 =for AUTHOR :hidden

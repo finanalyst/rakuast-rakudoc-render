@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<fundamental>
 =TITLE ProcessState and RakuDoc::Processed
 =SUBTITLE Collecting data to be used for rendering
 =for AUTHOR :hidden

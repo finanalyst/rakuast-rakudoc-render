@@ -9,6 +9,7 @@ use RakuDoc::Plugin::LeafletMaps;
 use RakuDoc::Plugin::Latex;
 use RakuDoc::Plugin::Graphviz;
 use RakuDoc::Plugin::Bulma;
+use RakuDoc::Plugin::ListFiles;
 
 submethod TWEAK {
     my $rdp := self.rdp;
@@ -17,6 +18,7 @@ submethod TWEAK {
     RakuDoc::Plugin::Latex.new.enable($rdp);
     RakuDoc::Plugin::Graphviz.new.enable($rdp);
     RakuDoc::Plugin::Bulma.new.enable($rdp);
+    RakuDoc::Plugin::ListFiles.new.enable($rdp);
     self.gather-flatten($rdp, 'css-link');
     self.gather-flatten($rdp, 'js-link');
     self.gather-flatten($rdp, 'js');

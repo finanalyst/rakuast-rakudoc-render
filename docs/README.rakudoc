@@ -1,4 +1,4 @@
-=begin rakudoc
+=begin rakudoc :type<fundamental>
 =TITLE RakuDoc renderer
 
 =SUBTITLE Renders RakuDoc sources into an output format dependent on templates
