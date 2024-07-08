@@ -1,17 +1,15 @@
 use v6.d;
 use Test;
+my @modules = <MarkupMeta Numeration PromiseStrings ScopedData Templates Processed
+    Render To::Generic To::Markdown To::HTML
+    Plugin::Bulma Plugin::Graphviz Plugin::Latex Plugin::LeafletMaps
+    Plugin::ListFiles Plugin::FontAwesome
+    To::HTML-Extra>;
 
-plan 10;
+plan @modules.elems;
 
-use-ok 'RakuDoc::MarkupMeta', 'MarkupMeta can be used';
-use-ok 'RakuDoc::Numeration', 'Numeration can be used';
-use-ok 'RakuDoc::PromiseStrings', 'PromiseStrings can be used';
-use-ok 'RakuDoc::ScopedData', 'ScopedData can be used';
-use-ok 'RakuDoc::Templates', 'Template sanity can be used';
-use-ok 'RakuDoc::Processed', 'Processed Object sanity can be used';
-use-ok 'RakuDoc::Render', 'Render sanity can be used';
-use-ok 'RakuDoc::To::Generic', 'To::Generic can be used';
-use-ok 'RakuDoc::To::Markdown', 'To::Markdown can be used';
-use-ok 'RakuDoc::To::HTML', 'To::Markdown can be used';
+for @modules {
+    use-ok "RakuDoc::$_", "Module $_ can be used";
+}
 
 done-testing;

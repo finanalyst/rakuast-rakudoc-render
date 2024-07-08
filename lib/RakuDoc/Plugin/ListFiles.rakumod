@@ -12,19 +12,22 @@ has %.config =
 	:authors<finanalyst>,
     :css(['',1],),
 ;
+submethod TWEAK {
+    %!config<css>[0][0] = self.add-css;
+}
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
 }
 method templates {
     my regex s-pair {
-        (\S+?) \s* \= \s* (\S+)
+        (<-[=]>+) \= (.+)
     };
     my regex select {
         ^ <s-pair>+ % [\,\s] $
     };
     %(
-        ListFiles => => sub (%prm, $tmpl) {
+        ListFiles => sub (%prm, $tmpl) {
             return qq:to/ERROR/ unless %prm<select>:exists;
                 <div class=\"listf-error\">ListFiles needs :select key with criteria.
                 </div>
@@ -33,7 +36,7 @@ method templates {
             my $sel = %prm<select>;
             my %criteria;
             if $sel ~~ / <select> / {
-                for $/<select><s-pair> { %criteria{~$_[0]} = ~$_[1] }
+                for $/<select><s-pair> { %criteria{~$_[0].trim} = ~$_[1] }
             }
             else {
                 return qq:to/ERROR/
@@ -46,18 +49,18 @@ method templates {
 
                  }
             # check meta data exists
-            return q:to/ERROR/ unless %prm<listfiles><meta>:exists;
+            return q:to/ERROR/ unless $tmpl.globals.data<listfiles><meta>:exists;
                 <div class="listf-error">ListFiles has no collected data
                 </div>
                 ERROR
 
             my @sel-files;
-            for %prm<listfiles><meta>.kv -> $fn, %data {
+            for $tmpl.globals.data<listfiles><meta>.kv -> $fn, %data {
                 # data is config, title, desc
                 my Bool $ok;
                 for %criteria.kv -> $k, $v {
                     if $v eq '!' {
-                        $ok = ! %data<config>{$k}:exists;
+                        $ok = %data<config>{$k}:!exists;
                     }
                     else {
                         $ok = (%data<config>{$k}:exists and ?(%data<config>{$k} ~~ / <$v> /));
@@ -72,26 +75,78 @@ method templates {
                 ];
             }
             my $rv = qq:to/FIRST/;
-                    <div class="listf-container" { %prm<target> ?? ('id="' ~ $tmpl<escaped>( %( :contents(%prm<target>),)) ~ '"') !! '' }>
+                    <div class="listf-container" id="{ $tmpl('escaped', %( :contents(%prm<target>),)) }">
                     FIRST
             my $cap = qq:to/CAP/;
-                    <p class="listf-caption">{ %prm<raw> // '' }</p>
+                    <p class="listf-caption">{ %prm<raw>.trim }</p>
                     CAP
             for  @sel-files.sort(*.[0]) -> ($nm, $desc, $path) {
-                $rv ~= '<div class="listf-file">'
-                        ~ ($cap // '')
-                        ~ '<a class="listf-link" href="' ~ $path ~ '">' ~ $nm ~ '</a>'
-                        ~ $desc ~ '</div>';
-                $cap = Nil;
+                $rv ~= qq:to/NOFL/;
+                    <div class="listf-file">
+                    $cap
+                    <a class="listf-link" href="$path">$nm\</a>
+                    $desc\</div>
+                    NOFL
+                $cap = '';
             }
             unless +@sel-files {
-                $rv ~= '<div class="listf-file">'
-                        ~ ($cap // '')
-                        ~ (%prm<no-files> ?? %prm<no-files> !! ('No files meet the criteria: ' ~ %criteria.raku ))
-                        ~ '</div>';
-                $cap = Nil;
+                $rv ~= qq:to/NOFL/;
+                    <div class="listf-file">
+                    $cap
+                    No files meet the criteria: {%criteria.raku}
+                    </div>
+                    NOFL
             }
             $rv ~= '</div>'
         },
     )
+}
+method add-css {
+    q:to/CSS/;
+    .listf-container {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1.25rem;
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      border: 1px solid #cccccc;
+      border-bottom: 5px solid #d9d9d9;
+      box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.07);
+    }
+    .listf-container .listf-caption {
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      background: #f2f2f2;
+      border-bottom: 1px solid #cccccc;
+      color: #83858D;
+    }
+    .listf-container .listf-file {
+      display: inline-block;
+      border-top: 1px solid #cccccc;
+      border-bottom: 1px solid #cccccc;
+      break-inside: avoid;
+    }
+    .listf-container .listf-file .listf-link {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      padding-top: 0.25rem;
+    }
+    .listf-container .listf-file p {
+      font-size: 1rem;
+      font-weight: 500;
+      line-height: 1.5;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .listf-error {
+      color: red;
+      font-size: xlarge;
+    }
+    CSS
 }

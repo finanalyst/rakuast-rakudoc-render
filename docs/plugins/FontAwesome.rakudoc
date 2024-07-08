@@ -1,0 +1,71 @@
+=begin rakudoc :type<plugin>
+=TITLE FontAwesome
+=SUBTITLE Adds the fonts and utilities for FontAwesom v5.15.4. Includes V<ℱ<>> markup code.
+=for AUTHOR :hidden
+Richard Hainsworth, aka finanalyst
+=for VERSION :hidden
+v0.1.0
+=head Overview
+
+This plugin provides the CDN link for FontAwesome v5-15-4.
+See the L<official documentation|https://docs.fontawesome.com/v5/web/setup/get-started/>.
+
+The templates also provides for ℱ<>, where ℱ is U+2131.
+
+The code only uses the free icons. See L<font search page|https://fontawesome.com/icons>.
+Make sure to filter for the free icons.
+
+=begin code
+Some FontAwesome icons
+
+ℱ<fas fa-ambulance> Example of ambulance
+
+ℱ<fas fa-car> Example of automobile
+
+ℱ<fas fa-bicycle> Example of bicycle
+
+ℱ<fas fa-bus> Example of bus
+
+ℱ<fas fa-truck> Example of truck
+
+ℱ<fas fa-wheelchair> Example of wheelchair
+
+ℱ<fas fab-accessible-icon> Example of accessible-icon (was wheelchair-alt in fontawesom v4)
+=end code
+
+Generates
+Some FontAwesome icons
+
+ℱ<fas fa-ambulance> Example of ambulance
+
+ℱ<fas fa-car> Example of automobile
+
+ℱ<fas fa-bicycle> Example of bicycle
+
+ℱ<fas fa-bus> Example of bus
+
+ℱ<fas fa-truck> Example of truck
+
+ℱ<fas fa-wheelchair> Example of wheelchair
+
+ℱ<fab fa-accessible-icon> Example of accessible-icon (was wheelchair-alt in fontawesome v4)
+
+FontAwesome has some other options.
+=begin code
+
+Train normal size ℱ<fas fa-train> Triple size train ℱ<fas fa-train fa-3x>
+
+An animated spinner ℱ<fas fa-sync fa-spin fa-3x fa-fw>
+=end code
+Generates
+
+Train normal size ℱ<fas fa-train> Triple size train ℱ<fas fa-train fa-3x>
+
+An animated spinner ℱ<fas fa-sync fa-spin fa-3x fa-fw>
+
+The FontAwesome plugin leverages the RakuDoc v2 specification that any Unicode character with
+the property I<upper> may be a custom markup code.
+
+=place semantic:AUTHOR :caption<Credits>
+=place semantic:VERSION :!toc
+=end rakudoc

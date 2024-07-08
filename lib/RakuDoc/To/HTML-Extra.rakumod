@@ -10,6 +10,7 @@ use RakuDoc::Plugin::Latex;
 use RakuDoc::Plugin::Graphviz;
 use RakuDoc::Plugin::Bulma;
 use RakuDoc::Plugin::ListFiles;
+use RakuDoc::Plugin::FontAwesome;
 
 submethod TWEAK {
     my $rdp := self.rdp;
@@ -19,9 +20,11 @@ submethod TWEAK {
     RakuDoc::Plugin::Graphviz.new.enable($rdp);
     RakuDoc::Plugin::Bulma.new.enable($rdp);
     RakuDoc::Plugin::ListFiles.new.enable($rdp);
+    RakuDoc::Plugin::FontAwesome.new.enable($rdp);
     self.gather-flatten($rdp, 'css-link');
     self.gather-flatten($rdp, 'js-link');
     self.gather-flatten($rdp, 'js');
+    self.gather-flatten($rdp, 'css');
 }
 
 method render($ast) {
@@ -53,6 +56,9 @@ method gather-flatten( $rdp, $key ) {
         }
         else { note "Config attribute ｢$key｣ for plugin ｢$k｣ must be a Positional, but got ｢$tuple-list｣"}
     }
+    if %d{ $key }:exists { # this is true for css from HTML, add it with zero order.
+        @p-tuples.push: [ %d{ $key }, 0]
+    }
     %d{ $key } = @p-tuples.sort({ .[1], .[0] }).map( *.[0] ).list;
 }
 my @allowed = ('span',).map({ ($_, '/'~$_ ).Slip });
@@ -65,8 +71,8 @@ method templates {
             qq:to/HEAD/
             <title>{%prm<title>}</title>
             { $tmpl<favicon> }
-            {%g-data<css>:exists ??
-               '<style>' ~ %g-data<css> ~ '</style>'
+            {%g-data<css>:exists && %g-data<css>.elems ??
+                [~] %g-data<css>.map({ '<style>' ~ $_ ~ "</style>\n" })
             !! ''
             }
             {%g-data<css-link>:exists && %g-data<css-link>.elems ??
