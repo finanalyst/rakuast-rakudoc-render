@@ -10,7 +10,7 @@ v0.1.0
 This plugin provides the CDN link for FontAwesome v5-15-4.
 See the L<official documentation|https://docs.fontawesome.com/v5/web/setup/get-started/>.
 
-The templates also provides for ℱ<>, where ℱ is U+2131.
+The templates also provides for ℱV«<»>, where ℱ is U+2131.
 
 The code only uses the free icons. See L<font search page|https://fontawesome.com/icons>.
 Make sure to filter for the free icons.

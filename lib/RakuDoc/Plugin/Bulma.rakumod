@@ -11,9 +11,11 @@ has %.config = %(
 	:version<0.1.0>,
 	:css-link(['href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"',1],),
     :js(['',1],),
+    :css(['',1],),
 );
 submethod TWEAK {
     %!config<js>[0][0] = self.js-text;
+    %!config<css>[0][0] = self.chyron-css;
 }
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
@@ -76,9 +78,9 @@ method templates {
             </div>
             <div id="pageNavigation" class="navbar-menu">
                 <div class="navbar-start">
-                    <label class="checkbox">
+                    <label class="chyronToggle">
                       <input id="navbar-toc-toggle" type="checkbox" />
-                      Show contents
+                      <span class="checkmark"> </span>
                     </label>
                 </div>
                 <div class="navbar-end">
@@ -267,4 +269,43 @@ method js-text {
         document.getElementById( activate + '-menu').classList.remove('is-hidden');
     }
     SCRIPT
+}
+method chyron-css {
+    q:to/CHYRON/;
+    // Chyron Toggle checkbox
+    label.chyronToggle input#navbar-toc-toggle {
+    opacity: 0;
+    height: 0;
+    width: 0;
+    }
+    label.chyronToggle span.checkmark {
+    top: 1rem;
+    position: relative;
+    cursor: pointer;
+    }
+    label.chyronToggle input[type="checkbox"]{
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+    }
+    label.chyronToggle span.checkmark::before {
+    content: '[\21e8';
+    color: grey;
+    font-weight: 800;
+    line-height: 0.5rem;
+    font-size: 1.75rem;
+    margin-right: 0.25rem;
+    }
+    label.chyronToggle:hover span.checkmark::before {
+    content: '[ \21e8';
+    }
+    label.chyronToggle input[type="checkbox"]:checked + .checkmark::before {
+    content: '[ \21e6';
+    }
+    label.chyronToggle:hover input[type="checkbox"]:checked + .checkmark::before {
+    content: '[\21e6';
+    }
+    CHYRON
 }
