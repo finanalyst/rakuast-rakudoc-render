@@ -1053,11 +1053,18 @@ class RakuDoc::Processor {
                 $contents =  PCell.new( :$!register, :id( "semantic-schema_$body" ) );
             }
             when 'http' | 'https' {
-                my LibCurl::Easy $curl;
-                $curl .= new(:URL($uri), :followlocation, :failonerror );
+                my LibCurl::Easy $curl .= new(:URL($uri), :followlocation, :failonerror );
                 try {
                     $curl.perform;
-                    $contents = $curl.perform.content;
+                    %config<content-type> = $curl.Content-Type;
+                    if %config<content-type>.contains('text') {
+                        $contents = $curl.perform.content;
+                        %config<html> = so $contents ~~ / '<html' .+ '</html>'/;
+                        $contents = ~$/ if %config<html>; # strip off any chars before & after the <html> container if it exists
+                    }
+                    else {
+                        $contents = $curl.perform.buf;
+                    }
                     CATCH {
                         default {
                             my $error = "Link ｢$uri｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
@@ -1098,9 +1105,6 @@ class RakuDoc::Processor {
                         ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
             }
         }
-        %config<html> = so $contents ~~ / '<html' .+ '</html>'/;
-        $contents = ~$/ if %config<html>;
-        # strip off any chars before & after the <html> container if there is one
         $prs.body ~= %!templates{ $template }(
             %( :$contents, :$keep-format, :$schema, %config )
         )
@@ -1828,7 +1832,12 @@ class RakuDoc::Processor {
                 my $del = %prm<delta> // '';
                 my $rv = PStr.new;
                 $rv ~= $del;
-                $rv ~= %prm<contents> ;
+                if %prm<content-type>.contains('text') {
+                    $rv ~= %prm<contents>
+                }
+                else {
+                    $rv ~= "Link returned {%prm<content-type>}, which cannot be rendered"
+                }
                 $rv ~= "\n\n";
             },
             #| renders =rakudoc block
