@@ -1033,6 +1033,8 @@ class RakuDoc::Processor {
         my $schema = 'file';
         my $body = $uri;
         my $contents;
+        #defaults to text type of contents, could be blob from https
+        %config<content-type> = 'text';
         my $prs := $*prs;
         if $uri ~~ / ^ $<sch> = (\w+) ':' $<body> = (.+) $ / {
             $schema = $/<sch>.Str;
@@ -1105,13 +1107,31 @@ class RakuDoc::Processor {
                         ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
             }
         }
+        # trap contents that have RakuDoc, could be from https, or file and attempt to process it.
+        if %config<content-type>.contains('text') && $contents ~~ /^ '=begin rakudoc' / {
+             do {
+                my ProcessedState $*prs .= new;
+                $contents.AST.map( { $.handle( $_ ) } );
+                my $prs := $*prs;
+                $contents = $prs.body.trim-trailing;
+                $prs.body .= new;
+                CALLERS::<$*prs> += $prs;
+             }
+        }
         $prs.body ~= %!templates{ $template }(
             %( :$contents, :$keep-format, :$schema, %config )
         )
     }
     #| The rakudoc block should encompass the output
     #| Config data associated with block is provided to overall process state
+    #| If a rakudoc file is embedded via place, then another rakudoc block
+    #| will be called. Only allow embedding to three levels to avoid circularity.
     method gen-rakudoc($ast, $parify) {
+        state $embedding-level;
+        if ++$embedding-level > 3 {
+            $*prs.warnings.push: 'Attempting to embed more than three rakudoc sources. Contents of deeper rakudoc blocks ignored.';
+            return
+        }
         my %config = $ast.resolved-config;
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);

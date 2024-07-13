@@ -234,7 +234,12 @@ method html-templates {
             $rv ~= $del ~ "\n";
             $rv ~= qq[<div id="{ %prm<target> }"> </div>];
             $rv ~= qq[<div id="{ %prm<id> }"> </div>] if %prm<id>;
-            $rv ~= %prm<contents> ;
+            if %prm<content-type>.contains('text') {
+                $rv ~= %prm<contents>
+            }
+            else {
+                $rv ~= qq[<p>Placement of {%prm<content-type>} Not yet implemented</p> ]
+            }
             $rv ~= "\n\n";
         },
         #| renders =rakudoc block
