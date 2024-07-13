@@ -1,12 +1,14 @@
 # list of things to do
 
-- [ ] Templates
-  - [ ] HTML-Extra, need to add CSS and Javascript & custom blocks, plugins:
-    - [ ] Bulma
-    - [ ] Latex
-    - [ ] GraphViz
+- [? ] Templates
   - [ ] Epub, need to add extra metadata pages 
-  
+
+- [ ] Outputs needing change
+  - [ ] Md don't change file format extension if link explicit 
+  - [ ] HTML, ditto
+  - [ ] HTML, include binary data into output, eg images.
+  - 
+
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
 - [ ] Implement new numbering extensions, 
   - [ ] :number
