@@ -333,10 +333,22 @@ class RakuDoc::Processor {
             }
             # =rakudoc
             # No "ambient" blocks inside
+            # could be called if P<> embeds a RakuDoc file
             when 'rakudoc' | 'pod' {
-                $!scoped-data.start-scope(:starter($_), :title( $!current.source-data<rakudoc-title> ));
-                $.gen-rakudoc($ast, $parify);
+                my $rak-level := $!current.source-data<rakudoc-level>;
+                if $!scoped-data.last-starter eq 'original level' {
+                    $!scoped-data.start-scope(:starter($_), :title( $!current.source-data<rakudoc-title> ));
+                     $rak-level = 1;
+                }
+                else {
+                    $!scoped-data.start-scope(:starter($_), :title( 'embed RakuDoc' ));
+                    if ++$rak-level > 5 {
+                        $*prs.warnings.push: 'Attempting to embed more than five levels of rakudoc sources. Contents of deeper rakudoc blocks ignored.';
+                    }
+                }
+                $.gen-rakudoc($ast, $parify) unless $rak-level > 5;
                 $!scoped-data.end-scope;
+                $rak-level -= 1;
             }
             # =pod
             # Legacy version of rakudoc
@@ -1127,11 +1139,6 @@ class RakuDoc::Processor {
     #| If a rakudoc file is embedded via place, then another rakudoc block
     #| will be called. Only allow embedding to three levels to avoid circularity.
     method gen-rakudoc($ast, $parify) {
-        state $embedding-level;
-        if ++$embedding-level > 3 {
-            $*prs.warnings.push: 'Attempting to embed more than three rakudoc sources. Contents of deeper rakudoc blocks ignored.';
-            return
-        }
         my %config = $ast.resolved-config;
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);
