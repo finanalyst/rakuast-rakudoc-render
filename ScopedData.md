@@ -1,45 +1,76 @@
 
 # The ScopeData module
 
+	Handling RakuDoc v2 block scope concept.
+
 ----
 
 ## Table of Contents
 <a href="#Purpose">Purpose</a>   
-  - <a href="#Method_diagnostic()">Method diagnostic()</a>   
-  - <a href="#Method_`_start-scope(_:$starter!,_:$title,_:$verbatim_)_`">Method ` start-scope( :$starter!, :$title, :$verbatim ) `</a>   
-  - <a href="#Method_end-scope">Method end-scope</a>   
-  - <a href="#`_multi_method_config(%h)`">` multi method config(%h)`</a>   
-  - <a href="#`_multi_method_config(_-->_Hash_)`">` multi method config( --> Hash )`</a>   
-  - <a href="#`_multi_method_aliases(%h)`">` multi method aliases(%h)`</a>   
-  - <a href="#`_multi_method_aliases(_-->_Hash_)`">` multi method aliases( --> Hash )`</a>   
-  - <a href="#`_method_last-starter_`">` method last-starter `</a>   
-  - <a href="#`_multi_method_last-title()_`">` multi method last-title() `</a>   
-  - <a href="#`_multi_method_last-title(_$s_)`">` multi method last-title( $s )`</a>   
-  - <a href="#`_multi_method_verbatim()`">` multi method verbatim()`</a>   
-  - <a href="#`_multi_method_verbatim(_:called-by($)!_)`">` multi method verbatim( :called-by($)! )`</a>   
-  - <a href="#`_multi_method_item-inc(_$level_-->_Str_)`">` multi method item-inc( $level --> Str )`</a>   
-  - <a href="#`_multi_method_item-reset()`">` multi method item-reset()`</a>   
-  - <a href="#`_multi_method_defn-inc(_-->_Str_)`">` multi method defn-inc( --> Str )`</a>   
-  - <a href="#`_multi_method_defn-reset()`">` multi method defn-reset()`</a>   
+&nbsp;&nbsp;- <a href="#Method_diagnostic()">Method diagnostic()</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="d274ce7"></span>Method_`_start-scope(_:$starter!,_:$title,_:$verbatim_)_`"><span class="para" id="d274ce7"></span>Method ` start-scope( :$starter!, :$title, :$verbatim ) ` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#Method_end-scope">Method end-scope</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="d31aef8"></span>`_multi_method_config(%h)`"><span class="para" id="d31aef8"></span>` multi method config(%h)` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="1e2a459"></span>`_multi_method_config(_-->_Hash_)`"><span class="para" id="1e2a459"></span>` multi method config( --> Hash )` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="a51c3cd"></span>`_multi_method_aliases(%h)`"><span class="para" id="a51c3cd"></span>` multi method aliases(%h)` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="9d61991"></span>`_multi_method_aliases(_-->_Hash_)`"><span class="para" id="9d61991"></span>` multi method aliases( --> Hash )` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="1534183"></span>`_method_last-starter_`"><span class="para" id="1534183"></span>` method last-starter ` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="698cf07"></span>`_multi_method_last-title()_`"><span class="para" id="698cf07"></span>` multi method last-title() ` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="ebe5b26"></span>`_multi_method_last-title(_$s_)`"><span class="para" id="ebe5b26"></span>` multi method last-title( $s )` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="015f39e"></span>`_multi_method_verbatim()`"><span class="para" id="015f39e"></span>` multi method verbatim()` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="c003b05"></span>`_multi_method_verbatim(_:called-by($)!_)`"><span class="para" id="c003b05"></span>` multi method verbatim( :called-by($)! )` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="6df8b7c"></span>`_multi_method_item-inc(_$level_-->_Str_)`"><span class="para" id="6df8b7c"></span>` multi method item-inc( $level --> Str )` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="b7235a6"></span>`_multi_method_item-reset()`"><span class="para" id="b7235a6"></span>` multi method item-reset()` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="a75664f"></span>`_multi_method_defn-inc(_-->_Str_)`"><span class="para" id="a75664f"></span>` multi method defn-inc( --> Str )` 
+
+</a>   
+&nbsp;&nbsp;- <a href="#<span_class="para"_id="6f49046"></span>`_multi_method_defn-reset()`"><span class="para" id="6f49046"></span>` multi method defn-reset()` 
+
+</a>   
 <a href="#Credits">Credits</a>   
+
 
 
 ----
 
 ## Purpose<div id="Purpose"> </div>
-RakuDoc v2 introduces the concept of a block scope. The choice of terminology is to avoid some of the complexities of Raku's 'lexical scope'. 
+<span class="para" id="22e11ec"></span>RakuDoc v2 introduces the concept of a block scope. The choice of terminology is to avoid some of the complexities of Raku's 'lexical scope'. 
 
-Basically a block scope is started by a `=begin BLOCKNAME` and ended by a `=end BLOCKNAME`. 
+<span class="para" id="be873ba"></span>Basically a block scope is started by a `=begin BLOCKNAME` and ended by a `=end BLOCKNAME`. 
 
-Within a block scope, several directives may affect other RakuDoc features within the same block, such as `=config` and `=alias`. 
+<span class="para" id="533aa8f"></span>Within a block scope, several directives may affect other RakuDoc features within the same block, such as `=config` and `=alias`. 
 
-Once the block has ended, the effect of such directives end. 
+<span class="para" id="1406b45"></span>Once the block has ended, the effect of such directives end. 
 
-The ScopedData class was written to track and handle this sort of behaviour. 
+<span class="para" id="f4d4293"></span>The ScopedData class was written to track and handle this sort of behaviour. 
 
-Typically only one ScopedData object is instantiated. 
+<span class="para" id="53256c7"></span>Typically only one ScopedData object is instantiated. 
 
-The following pieces of information are tracked: 
+<span class="para" id="69440e2"></span>The following pieces of information are tracked: 
 
 
 
@@ -54,101 +85,127 @@ The following pieces of information are tracked:
 
 
 ### Method diagnostic()<div id="Method_diagnostic()"> </div>
-Provides information about all block scopes. A ScopeData object has an attribute `debug`. If set to True then diagnostic is called by `start-scope` and `end-scope`. 
+<span class="para" id="325852f"></span>Provides information about all block scopes. A ScopeData object has an attribute `debug`. If set to True then diagnostic is called by `start-scope` and `end-scope`. 
 
 
 
-### Method ` start-scope( :$starter!, :$title, :$verbatim ) `<div id="Method_`_start-scope(_:$starter!,_:$title,_:$verbatim_)_`"> </div>
-Starts a new scope. When a scope is started, all the previous information is copied. 
+### <span class="para" id="d274ce7"></span>Method ` start-scope( :$starter!, :$title, :$verbatim ) ` 
 
-This information can be changed within the scope. 
+<div id="<span_class="para"_id="d274ce7"></span>Method_`_start-scope(_:$starter!,_:$title,_:$verbatim_)_`"> </div>
+<span class="para" id="dc30c3a"></span>Starts a new scope. When a scope is started, all the previous information is copied. 
 
-If `verbatim` is set, then all strings will be rendered without removing spaces or new lines. 
+<span class="para" id="c974347"></span>This information can be changed within the scope. 
+
+<span class="para" id="6d35097"></span>If `verbatim` is set, then all strings will be rendered without removing spaces or new lines. 
 
 
 
 ### Method end-scope<div id="Method_end-scope"> </div>
-Changes to items tracked by the object are forgotten. 
+<span class="para" id="e036cf7"></span>Changes to items tracked by the object are forgotten. 
 
 
 
-### ` multi method config(%h)`<div id="`_multi_method_config(%h)`"> </div>
-Add key/value pair to the existing scope's config 
+### <span class="para" id="d31aef8"></span>` multi method config(%h)` 
+
+<div id="<span_class="para"_id="d31aef8"></span>`_multi_method_config(%h)`"> </div>
+<span class="para" id="c859a2b"></span>Add key/value pair to the existing scope's config 
 
 
 
-### ` multi method config( --> Hash )`<div id="`_multi_method_config(_-->_Hash_)`"> </div>
-Get the current scope's config 
+### <span class="para" id="1e2a459"></span>` multi method config( --> Hash )` 
+
+<div id="<span_class="para"_id="1e2a459"></span>`_multi_method_config(_-->_Hash_)`"> </div>
+<span class="para" id="28d670f"></span>Get the current scope's config 
 
 
 
-### ` multi method aliases(%h)`<div id="`_multi_method_aliases(%h)`"> </div>
-Add key/value pair to the existing scope's aliases 
+### <span class="para" id="a51c3cd"></span>` multi method aliases(%h)` 
+
+<div id="<span_class="para"_id="a51c3cd"></span>`_multi_method_aliases(%h)`"> </div>
+<span class="para" id="cd745fe"></span>Add key/value pair to the existing scope's aliases 
 
 
 
-### ` multi method aliases( --> Hash )`<div id="`_multi_method_aliases(_-->_Hash_)`"> </div>
-Get the current scope's aliases 
+### <span class="para" id="9d61991"></span>` multi method aliases( --> Hash )` 
+
+<div id="<span_class="para"_id="9d61991"></span>`_multi_method_aliases(_-->_Hash_)`"> </div>
+<span class="para" id="80cf22d"></span>Get the current scope's aliases 
 
 
 
-### ` method last-starter `<div id="`_method_last-starter_`"> </div>
-Return the last starter block 
+### <span class="para" id="1534183"></span>` method last-starter ` 
+
+<div id="<span_class="para"_id="1534183"></span>`_method_last-starter_`"> </div>
+<span class="para" id="2da6349"></span>Return the last starter block 
 
 
 
-### ` multi method last-title() `<div id="`_multi_method_last-title()_`"> </div>
-Return the most recent title 
+### <span class="para" id="698cf07"></span>` multi method last-title() ` 
+
+<div id="<span_class="para"_id="698cf07"></span>`_multi_method_last-title()_`"> </div>
+<span class="para" id="b1d8fab"></span>Return the most recent title 
 
 
 
-### ` multi method last-title( $s )`<div id="`_multi_method_last-title(_$s_)`"> </div>
-Change the title for the current block 
+### <span class="para" id="ebe5b26"></span>` multi method last-title( $s )` 
+
+<div id="<span_class="para"_id="ebe5b26"></span>`_multi_method_last-title(_$s_)`"> </div>
+<span class="para" id="2d32bfd"></span>Change the title for the current block 
 
 
 
-### ` multi method verbatim()`<div id="`_multi_method_verbatim()`"> </div>
-Change the state of the verbatim flag to True 
+### <span class="para" id="015f39e"></span>` multi method verbatim()` 
+
+<div id="<span_class="para"_id="015f39e"></span>`_multi_method_verbatim()`"> </div>
+<span class="para" id="3a5fb49"></span>Change the state of the verbatim flag to True 
 
 
 
-### ` multi method verbatim( :called-by($)! )`<div id="`_multi_method_verbatim(_:called-by($)!_)`"> </div>
-Which block set the verbatim flag 
+### <span class="para" id="c003b05"></span>` multi method verbatim( :called-by($)! )` 
+
+<div id="<span_class="para"_id="c003b05"></span>`_multi_method_verbatim(_:called-by($)!_)`"> </div>
+<span class="para" id="4519a04"></span>Which block set the verbatim flag 
 
 
 
-### ` multi method item-inc( $level --> Str )`<div id="`_multi_method_item-inc(_$level_-->_Str_)`"> </div>
-Increment the item numeration at the required level, returns the result. See [Numeration module](Numeration.md) for more detail 
+### <span class="para" id="6df8b7c"></span>` multi method item-inc( $level --> Str )` 
+
+<div id="<span_class="para"_id="6df8b7c"></span>`_multi_method_item-inc(_$level_-->_Str_)`"> </div>
+<span class="para" id="fffd3c8"></span>Increment the item numeration at the required level, returns the result. See [Numeration module](Numeration.md) for more detail 
 
 
 
-### ` multi method item-reset()`<div id="`_multi_method_item-reset()`"> </div>
-Reset the item numeration altogether 
+### <span class="para" id="b7235a6"></span>` multi method item-reset()` 
+
+<div id="<span_class="para"_id="b7235a6"></span>`_multi_method_item-reset()`"> </div>
+<span class="para" id="6dd75d3"></span>Reset the item numeration altogether 
 
 
 
-### ` multi method defn-inc( --> Str )`<div id="`_multi_method_defn-inc(_-->_Str_)`"> </div>
-Increment the defn numeration, only one level 
+### <span class="para" id="a75664f"></span>` multi method defn-inc( --> Str )` 
+
+<div id="<span_class="para"_id="a75664f"></span>`_multi_method_defn-inc(_-->_Str_)`"> </div>
+<span class="para" id="37a8eea"></span>Increment the defn numeration, only one level 
 
 
 
-### ` multi method defn-reset()`<div id="`_multi_method_defn-reset()`"> </div>
-Reset the defn numeration 
+### <span class="para" id="6f49046"></span>` multi method defn-reset()` 
 
+<div id="<span_class="para"_id="6f49046"></span>`_multi_method_defn-reset()`"> </div>
+<span class="para" id="b75a9fe"></span>Reset the defn numeration 
 
-----
 <div id="Credits"> </div>
-----
+
+----  
 
 ## AUTHOR<div id="AUTHOR"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-
-----
 <div id="Placement"> </div>
-----
+
+----  
 
 ## VERSION<div id="VERSION"> </div>
 v0.2.1
@@ -157,12 +214,14 @@ v0.2.1
 
 
 
-----
+
 
 ----
 
-Rendered from docs/docs/ScopedData.rakudoc at 15:33 UTC on 2024-06-19
+----
 
-Source last modified at 15:32 UTC on 2024-06-19
+Rendered from docs/docs/ScopedData.rakudoc at 23:08 UTC on 2024-07-14
+
+Source last modified at 20:48 UTC on 2024-07-06
 
 

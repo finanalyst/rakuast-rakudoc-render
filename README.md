@@ -27,6 +27,7 @@ zef install . -/precompile-install
 ```
 
 
+
 ----
 
 ## Overview<div id="Overview"> </div>
@@ -69,6 +70,7 @@ bin/RenderTextify rakudociem-ipsum
 ```
 <span class="para" id="416d7d2"></span>(the .rakudoc extension may be omitted if desired) 
 
+
 ----
 
 ## Documentation<div id="Documentation"> </div>
@@ -104,6 +106,7 @@ bin/RenderTextify rakudociem-ipsum
 &nbsp;&nbsp;• <span class="para" id="2fa4035"></span>[an object for numerating items headings](Numeration.md) 
 
   
+
 ----
 
 ## RenderTextify utility<div id="RenderTextify_utility"> </div>
@@ -137,6 +140,7 @@ bin/RenderTextify --pretty rakudociem-ipsum
 ```
 rakudociem-ipsum.rakudoc.pretty.text
 ```
+
 ----
 
 ## Wrapping<div id="Wrapping"> </div>
@@ -164,6 +168,7 @@ POSTPROCESSING=1 WIDTH=70 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > 
 ```
 bin/RenderTextify --post-processing --width=70 doc
 ```
+
 ----
 
 ## Troubleshooting<div id="Troubleshooting"> </div>
@@ -229,8 +234,8 @@ v0.3.1
 
 ----
 
-Rendered from ./docs/./docs/README.rakudoc at 21:43 UTC on 2024-06-29
+Rendered from docs/docs/README.rakudoc at 23:07 UTC on 2024-07-14
 
-Source last modified at 21:27 UTC on 2024-06-29
+Source last modified at 20:48 UTC on 2024-07-06
 
 

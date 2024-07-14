@@ -1,6 +1,8 @@
 
 # MarkUpMeta module
 
+	Short grammar
+
 ----
 
 ## Table of Contents
@@ -8,25 +10,24 @@
 <a href="#Credits">Credits</a>   
 
 
+
 ----
 
 ## Purpose<div id="Purpose"> </div>
-A grammar to handle the content of the meta portion of a MarkUp code. 
+<span class="para" id="dc9524b"></span>A grammar to handle the content of the meta portion of a MarkUp code. 
 
-
-----
 <div id="Credits"> </div>
-----
+
+----  
 
 ## AUTHOR<div id="AUTHOR"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-
-----
 <div id="Placement"> </div>
-----
+
+----  
 
 ## VERSION<div id="VERSION"> </div>
 v0.2.1
@@ -35,12 +36,14 @@ v0.2.1
 
 
 
-----
+
 
 ----
 
-Rendered from docs/docs/MarkUpMeta.rakudoc at 15:33 UTC on 2024-06-19
+----
 
-Source last modified at 15:32 UTC on 2024-06-19
+Rendered from docs/docs/MarkUpMeta.rakudoc at 23:08 UTC on 2024-07-14
+
+Source last modified at 20:48 UTC on 2024-07-06
 
 

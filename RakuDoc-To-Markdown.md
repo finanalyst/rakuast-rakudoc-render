@@ -113,7 +113,7 @@ Richard Hainsworth, aka finanalyst
 ----  
 
 ## VERSION<div id="VERSION"> </div>
-v0.1.0
+v0.4.0
 
 
 
@@ -125,8 +125,8 @@ v0.1.0
 
 ----
 
-Rendered from ./docs/./docs/RakuDoc-To-Markdown.rakudoc at 22:06 UTC on 2024-06-29
+Rendered from docs/docs/RakuDoc-To-Markdown.rakudoc at 23:08 UTC on 2024-07-14
 
-Source last modified at 22:06 UTC on 2024-06-29
+Source last modified at 20:48 UTC on 2024-07-06
 
 
