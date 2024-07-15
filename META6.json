@@ -43,7 +43,6 @@
     "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
   },
   "resources": [
-    "compliance-rendering/rakudociem-ipsum.rakudoc",
     "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.test.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.text",
