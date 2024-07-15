@@ -9,9 +9,15 @@ Richard Hainsworth aka finanalyst
 v0.3.1
 
 =begin SYNOPSIS
-=item Clone the repository
+=item Clone the repository and submodule
+=item2 C<git clone https://github.com/finanalyst/rakuast-rakudoc-render.git rrr>
+=item2 C<cd rrr && git submodule init>
+=item2 C<git submodule update>
 =item Install using zef as follows (flag is important)
-=code zef install . -/precompile-install
+=item2 C<zef install . -/precompile-install>
+
+Note that C<zef> runs the tests in C<t/>, and those cause compilation of the
+modules in the distribution.
 =end SYNOPSIS
 
 =head Overview
@@ -57,6 +63,9 @@ Some L<naive wrapping and width modification|#Wrapping> is possible using enviro
 The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc>
 is the file for testing RakuDoc v2 compliance. It can be obtained with:
 =code   bin/get-compliance-document
+
+C<rakudociem-ipsum.rakudoc> is contained in the submodule C<rakudoc-compliance> with
+a link in C<resources/compliance>.
 
 In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered
 to Text using the L<RenderTextify|#RenderTextify utility>. It

@@ -19,12 +19,22 @@
 ----  
 
 ## SYNOPSIS<div id="SYNOPSIS"> </div>
-&nbsp;&nbsp;• Clone the repository  
-&nbsp;&nbsp;• Install using zef as follows (flag is important)  
+&nbsp;&nbsp;• Clone the repository and submodule  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="e52a3a8"></span>`git clone https://github.com/finanalyst/rakuast-rakudoc-render.git rrr` 
 
-```
-zef install . -/precompile-install
-```
+  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="1fa8ad9"></span>`cd rrr && git submodule init` 
+
+  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="e4ec964"></span>`git submodule update` 
+
+  
+&nbsp;&nbsp;• Install using zef as follows (flag is important)  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="8f021ca"></span>`zef install . -/precompile-install` 
+
+  
+<span class="para" id="351913a"></span>Note that `zef` runs the tests in `t/`, and those cause compilation of the modules in the distribution. 
+
 
 
 
@@ -62,6 +72,8 @@ RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 ```
 bin/get-compliance-document
 ```
+<span class="para" id="7599a17"></span>`rakudociem-ipsum.rakudoc` is contained in the submodule `rakudoc-compliance` with a link in `resources/compliance`. 
+
 <span class="para" id="8278045"></span>In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered to Text using the [RenderTextify](#RenderTextify_utility). It avoids some installation problems, stores the output and offers some other output options, eg. 
 
 
@@ -234,8 +246,8 @@ v0.3.1
 
 ----
 
-Rendered from docs/docs/README.rakudoc at 23:07 UTC on 2024-07-14
+Rendered from docs/docs/README.rakudoc at 08:53 UTC on 2024-07-15
 
-Source last modified at 20:48 UTC on 2024-07-06
+Source last modified at 08:51 UTC on 2024-07-15
 
 
