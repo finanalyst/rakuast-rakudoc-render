@@ -6,40 +6,41 @@ class PCellTracker {
     method add-payload( :$payload, :$id ) is protected {
         %!cell-list{ $id }[0] = $payload;
     }
-    method is-present( $id --> Bool ) is protected {
-        %!cell-list{ $id }:exists
-    }
     method get( $id ) is protected {
-        if %!cell-list{ $id }:exists { %!cell-list{ $id } }
-        else { '' }
+        %!cell-list{ $id }[0]
     }
-    method track( Str $id, Str $spec --> Str ) {
-        if %!cell-list{ $id }:exists {
-
-        }
+    #| starts tracking a new id with spec. Uniqueness of id depends on user
+    method track( Str $id, Str :$spec --> Str ) {
+        %!cell-list{ $id } = [ Nil, $spec ] unless %!cell-list{ $id }:exists;
+        $id
+    }
+    multi method list-unexpanded( --> Hash ) is protected {
+        %!cell-list.pairs
+                    .grep( *.value[0].defined.not )
+                    .map({ .key => .value[1] }).hash
+    }
+    multi method list-unexpanded( $filter --> Hash ) is protected {
+        %!cell-list.pairs
+                    .grep( *.value[0].defined.not )
+                    .grep({ .value[1] ~~ / ^ $filter \: / })
+                    .map({ .key => .value[1] }).hash
     }
 }
 class PCell {
     has PCellTracker $.archive;
-    has Str $!text;
     has Str $.id;
     method Str {
-        if $!archive.is-present( $!id ) {
-            $!text = ~$!archive.get( $!id )
-        }
-        $!text // "｢$!id UNAVAILABLE｣"
+        $!archive.get( $!id ) // "｢$!id UNAVAILABLE｣"
     }
-    submethod BUILD(:$register, :$!id) {
-        $!archive := $register
+    method is-expanded( --> Bool ) { $!archive.get($!id).defined }
+    submethod BUILD(:$register, :$id, :$spec = '') {
+        $!archive := $register;
+        $!id = $!archive.track( $id, :$spec )
     }
     method debug {
-        $.Str;
+        my $text = $!archive.get( $!id );
         "\x3018 PCell, "
-                ~ ($!text.defined ?? "Expanded to: $!text \x3019" !! "Waiting for: $.id \x3019")
-    }
-    method is-expanded( --> Bool ) {
-        $.Str;
-        $!text.defined
+                ~ ($text.defined ?? "Expanded to: $text \x3019" !! "Waiting for: $.id \x3019")
     }
 }
 

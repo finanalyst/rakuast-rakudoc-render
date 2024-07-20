@@ -5,7 +5,7 @@ use RakuDoc::PromiseStrings;
 use Test::Deeply::Relaxed;
 
 use PrettyDump;
-my $register = CompletedCells.new;
+my $register = PCellTracker.new;
 
 plan 16;
 

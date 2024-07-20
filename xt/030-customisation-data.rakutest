@@ -5,7 +5,7 @@ use RakuDoc::PromiseStrings;
 
 plan 4;
 
-my $register = CompletedCells.new;
+my $register = PCellTracker.new;
 
 my %td is Template-directory = %(
     aaa => -> %prm, $tmpl {

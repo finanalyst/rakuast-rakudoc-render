@@ -2,9 +2,9 @@ use v6.d;
 use Test;
 use RakuDoc::PromiseStrings;
 
-plan 43;
+plan 45;
 
-my $register = CompletedCells.new;
+my $register = PCellTracker.new;
 my $payload;
 
 #tests of PCell
@@ -14,6 +14,7 @@ my PCell $pc2 .= new(:$register, :id<FFF>);
 nok $pc.is-expanded, 'PCell not expanded yet';
 is $pc.Str, '｢FFF UNAVAILABLE｣', 'stringifies with an unavailable message';
 is $pc2.Str, '｢FFF UNAVAILABLE｣', 'duplicate stringifies with an unavailable message';
+is-deeply $register.list-unexpanded, %( FFF => '', ), 'lists one unexpanded PCell';
 like $pc.debug, / 'Waiting for: FFF' /,'debug string with id';
 $payload = 'some stuff';
 $register.add-payload(:$payload, :id<FFF>);
@@ -21,6 +22,7 @@ like $pc.debug, / 'Expanded to:' /,'Expanding changes debug str';
 is $pc.Str, 'some stuff', 'stringifies with payload';
 is $pc2.Str, 'some stuff', 'duplicate stringifies with payload';
 ok $pc.is-expanded, 'PCell now expanded';
+is-deeply $register.list-unexpanded, %(), 'lists no unexpanded PCell';
 # create PCell with id thats been emitted
 $pc2 .= new(:$register, :id<FFF>);
 is $pc2.Str, 'some stuff', 'stringifies with payload after id emitted';

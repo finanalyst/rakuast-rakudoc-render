@@ -14,7 +14,7 @@ enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
 
 class RakuDoc::Processor {
     has %.templates is Template-directory;
-    has CompletedCells $.register .= new;
+    has PCellTracker $.register .= new;
     has RakuDoc::Processed $.current;
     has $.output-format;
     has RakuDoc::ScopedData $!scoped-data .= new;
