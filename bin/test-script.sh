@@ -15,3 +15,6 @@ apt-get install -y build-essential
 
 zef install --deps-only .
 
+zef install -/precompile-install .
+
+
