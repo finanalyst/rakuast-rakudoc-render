@@ -1,10 +1,10 @@
 use v6.d;
 use Method::Protected;
 
-class PCellTracker {
+class CompletedCells {
     has %.cell-list;
     method add-payload( :$payload, :$id ) is protected {
-        %!cell-list{ $id }[0] = $payload;
+        %!cell-list{ $id } = $payload;
     }
     method is-present( $id --> Bool ) is protected {
         %!cell-list{ $id }:exists
@@ -13,14 +13,9 @@ class PCellTracker {
         if %!cell-list{ $id }:exists { %!cell-list{ $id } }
         else { '' }
     }
-    method track( Str $id, Str $spec --> Str ) {
-        if %!cell-list{ $id }:exists {
-
-        }
-    }
 }
 class PCell {
-    has PCellTracker $.archive;
+    has CompletedCells $.archive;
     has Str $!text;
     has Str $.id;
     method Str {
