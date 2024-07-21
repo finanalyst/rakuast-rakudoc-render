@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::PromiseStrings;
 
-plan 45;
+plan 46;
 
 my $register = PCellTracker.new;
 my $payload;
@@ -34,6 +34,7 @@ ok $s.has-PCells, 'finds PCells in string';
 lives-ok { $s ~= "Some stuff " }, 'right concatenation of Str lives';
 $s ~= PCell.new(:$register, :id<BBB>);
 is $s.Str, '｢AAA UNAVAILABLE｣Some stuff ｢BBB UNAVAILABLE｣', 'still UNAVAILABLE';
+like ([~] $s.has-PCells), / 'Waiting for' .+ 'AAA' .+ 'BBB' /, 'got debug messsages of two PCells in string';
 $payload = 'second value first';
 $register.add-payload(:$payload, :id<BBB>);
 like $s.Str, / 'AAA' .+ $payload /, 'AAA is still unavailable, payload now in stringification';

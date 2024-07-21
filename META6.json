@@ -43,6 +43,7 @@
     "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
   },
   "resources": [
+    "compliance-rendering/rakudociem-ipsum.rakudoc",
     "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.test.text",
     "compliance-rendering/rakudociem-ipsum.rakudoc.text",
@@ -68,7 +69,8 @@
     "bin/gen-default-template-info.raku",
     "bin/force-compile",
     "bin/get-compliance-document",
-    "bin/RenderDocs"
+    "bin/RenderDocs",
+    "bin/test-script.sh"
   ],
   "docs": [
     "README.md",

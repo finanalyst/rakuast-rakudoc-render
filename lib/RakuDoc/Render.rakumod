@@ -122,8 +122,13 @@ class RakuDoc::Processor {
 #        await.allof( @leaves );
 #        $!current += $*prs;
         # placed semantic blocks now need triggering
-        for $!current.semantics.kv -> $block, @vals {
-            $!register.add-payload( :payload( @vals.join ), :id("semantic-schema_$block") )
+        for $!register.list-unexpanded('semantic').kv -> $id, $spec {
+            if $!current.semantics{$spec}:exists {
+                $!register.add-payload( :payload( $!current.semantics{$spec}.join ), :id("semantic_$spec") )
+            }
+            else {
+                $!current.warnings.push: "Placement of undefined semantic block $spec"
+            }
         }
         # Since the footnote order may only be known at the end
         # footnote numbers are PCells, which need triggering
@@ -132,28 +137,48 @@ class RakuDoc::Processor {
         # so ToC and Index need to be rendered and any other PCells triggered
         # toc may contain numbered captions, so the heading-numbers need to be calculated
         self.complete-heading-numerations;
-        # All PCells should be triggered by this point
-        self.complete-toc;
-        if $!current.rendered-toc ~~ PStr && $!current.rendered-toc.has-PCells {
-            while $!current.rendered-toc.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
-                $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded in ToC." )
-            }
-            $!current.rendered-toc .= Str
+        $!current.rendered-toc = self.complete-toc;
+        my @pcells = $!current.rendered-toc.has-PCells;
+        if @pcells.elems {
+            $!current.warnings.push( 'In ToC: ' ~ $_ ) for @pcells
         }
-        self.complete-index;
-        if $!current.rendered-index ~~ PStr && $!current.rendered-index.has-PCells {
-            while $!current.rendered-index.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
-                $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded in Index." )
+        $!current.rendered-toc .= Str;
+        #render filtered toc, if any
+        for $!register.list-unexpanded('toc').kv -> $id, $spec {
+            if $spec eq '*' {
+                $!register.add-payload(:payload( self.complete-toc.strip ) , :$id);
+                next
             }
-            $!current.rendered-index .= Str
+            my Set $levels .= new: $spec.EVAL.list;
+            my @toc-list = gather for $!current.toc -> $toc-entry {
+                take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ $toc-entry<level> }
+            }
+            my $payload = %!templates<toc>( %(:@toc-list, ) ).strip
+                if @toc-list.elems;
+            $!register.add-payload(:$payload, :$id)
+        }
+        # render indices
+        $!current.rendered-index = self.complete-index;
+        @pcells = $!current.rendered-index.has-PCells;
+        if @pcells.elems {
+            $!current.warnings.push( 'In Index: ' ~ $_ ) for @pcells
+        }
+        $!current.rendered-index .= Str;
+        # place for rendering filtered index
+        # no filter apart from index:* specified, so only that is implemented here
+        # everything else is considered to be *
+        for $!register.list-unexpanded('index').kv -> $id, $spec {
+        #     if $spec eq '*' {
+                $!register.add-payload(:payload( self.complete-toc.strip ) , :$id);
+        #         next
+        #     }
         }
         $!current.body.strip; # replace expanded PCells with Str
         # all suspended PCells should have been replaced by Str
         # Remaining PCells should trigger warnings
-        if $!current.body.has-PCells {
-            while $!current.body.debug ~~ m :c / 'PCell' .+? 'Waiting for: ' $<id> = (.+?) \s \x3019 / {
-                $!current.warnings.push( "Still waiting for ｢{ $/<id> }｣ to be expanded." )
-            }
+        @pcells = $!current.body.has-PCells;
+        if @pcells.elems {
+            $!current.warnings.push( $_ ) for @pcells
         }
         $pre-finalised ?? $.current !! $.finalise
     }
@@ -161,7 +186,7 @@ class RakuDoc::Processor {
     method finalise( --> Str ) {
         $.post-process(
             %!templates<final>( %(
-                :body($!current.body),
+                :body($!current.body.Str),
                 :source-data($!current.source-data),
                 :front-matter($!current.front-matter),
                 :name($!current.name),
@@ -1055,16 +1080,16 @@ class RakuDoc::Processor {
         given $schema {
             when 'toc' {
                 # TODO add the constraints for toc: in RakuDoc v2.
-                $contents = PCell.new( :$!register, :id<toc-schema> );
+                $contents = PCell.new( :$!register, :id("toc_$body"), :spec($body) );
                 $keep-format = True;
             }
             when 'index' {
-                $contents = PCell.new( :$!register, :id<index-schema> );
+                $contents = PCell.new( :$!register, :id("index_$body"), :spec($body) );
                 $keep-format = True;
             }
             when 'semantic' {
                 $keep-format = True;
-                $contents =  PCell.new( :$!register, :id( "semantic-schema_$body" ) );
+                $contents =  PCell.new( :$!register, :id( "semantic_$body" ), :spec($body) );
             }
             when 'http' | 'https' {
                 my LibCurl::Easy $curl .= new(:URL($uri), :followlocation, :failonerror );
@@ -1510,27 +1535,21 @@ class RakuDoc::Processor {
     }
     #| completes the index by rendering each key
     #| triggers the 'index-schema' id, which may be placed by a P<>
-    method complete-index {
+    method complete-index( --> PStr ) {
         my @index-list = gather for $!current.index.sort( *.key )>>.kv
             -> ( $entry, %entry-data ) {
             take %!templates<index-item>( %( :$entry, :%entry-data , ) )
         }
-        my $payload = '';
-        $payload = %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ))
-            if @index-list.elems;
-        $!register.add-payload( :$payload, :id('index-schema') );
-        $!current.rendered-index = $payload
+        PStr.new( @index-list.elems ?? %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ))
+                                    !! '')
     }
-    #| renders the toc and triggers the 'toc-schema' id for P<>
+    #| renders the complete toc
     method complete-toc {
         my @toc-list = gather for $!current.toc -> $toc-entry {
             take %!templates<toc-item>( %( :$toc-entry , ) )
         }
-        my $payload = '';
-        $payload = %!templates<toc>( %(:@toc-list, :toc( $!current.toc), :caption( $!current.source-data<toc-caption>) ) )
-            if @toc-list.elems;
-        $!register.add-payload( :$payload, :id('toc-schema') );
-        $!current.rendered-toc = $payload
+        PStr.new( @toc-list.elems ?? %!templates<toc>( %(:@toc-list, :toc( $!current.toc), :caption( $!current.source-data<toc-caption>) ) )
+                                  !! '' )
     }
     #| finalises all the heading numerations
     method complete-heading-numerations() {
@@ -2004,8 +2023,8 @@ class RakuDoc::Processor {
             },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
-                PStr.new: HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n" ~
-                ([~] %prm<toc-list>) ~ "\n\n"
+                my $cap = %prm<caption>:exists ?? (HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n") !! '';
+                PStr.new:  $cap ~ ([~] %prm<toc-list>) ~ "\n\n"
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {

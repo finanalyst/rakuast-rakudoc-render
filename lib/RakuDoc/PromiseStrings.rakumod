@@ -22,7 +22,7 @@ class PCellTracker {
     multi method list-unexpanded( $filter --> Hash ) is protected {
         %!cell-list.pairs
                     .grep( *.value[0].defined.not )
-                    .grep({ .value[1] ~~ / ^ $filter \: / })
+                    .grep({ .key ~~ / ^ $filter '_' / })
                     .map({ .key => .value[1] }).hash
     }
 }
@@ -126,11 +126,9 @@ class PStr {
         @!string = @new if +@new;
         self
     }
-    #| return whether there are PCells in the string
-    method has-PCells( --> Bool ) {
-        my Bool $has = False;
-        $has ||= ($_ ~~ PCell).so for @!string;
-        $has
+    #| return the debug strings of PCells remaining
+    method has-PCells( --> Array ) {
+        @!string.grep( *.isa(PCell) ).map( *.debug ).Array
     }
     #| return how many segments (elems of string array)
     method segments( --> Int ) {
