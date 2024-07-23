@@ -7,14 +7,13 @@
   - [ ] Md don't change file format extension if link explicit 
   - [ ] HTML, ditto
   - [ ] HTML, include binary data into output, eg images.
-  - 
+  - [x] HTML, fix embedded rakudoc
+  - [ ] improve theme, and create SCSS processing
 
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
 - [ ] Implement new numbering extensions, 
   - [ ] :number
   - [ ] :numberalias
-- [ ] Fix Generic renderer
-  - [ ] P<> toc: schema envisages short forms, such as toc:1,2
 - [ ] Fix default text templates
   - [ ] improve wrapping postprocessing
   - [ ] when lines are wrapped, Esc codes 'leak' accross line boundaries

@@ -111,7 +111,8 @@ For example, the post-processing should be done as follows:
 B<PCells> should be invisible to the end user. However, if references are made
 that are not expanded, then a PCell will become visible.
 
-Typically, B<PCell> instances are converted to Str as soon as possible.
+Typically, B<PCell> instances are converted to Str once a future block has provided
+the payload needed for the cell.
 
 =head3 debug
 

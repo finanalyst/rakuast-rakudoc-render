@@ -6,11 +6,11 @@ plan 6;
 
 use RakuDoc::Render;
 use RakuDoc::To::HTML;
-my @generic = RakuDoc::Processor.new.default-text-templates.keys.sort;
-my @markdown = RakuDoc::To::HTML.new.html-templates.keys.sort;
+my @generic = RakuDoc::Processor.new.default-text-templates.keys;
+my @html = RakuDoc::To::HTML.new.html-templates.keys;
 
-ok @generic (<=) @markdown, 'HTML redefines all the keys in generic';
-cmp-ok (@markdown (-) @generic), '(==)', < footer top-of-page head-block html-root escaped main-content >, 'other templates RakuDoc::To::HTML additionally defines';
+ok @generic (<=) @html, 'HTML redefines all the keys in generic';
+cmp-ok (@html (-) @generic), '(==)', < footer top-of-page head-block html-root escaped main-content >, 'other templates RakuDoc::To::HTML additionally defines';
 %*ENV<RAKUDO_RAKUAST> = 1;
 my @args = <<$*EXECUTABLE -I. --rakudoc=HTML xt/test-files/test.rakudoc>>;
 runs_ok(

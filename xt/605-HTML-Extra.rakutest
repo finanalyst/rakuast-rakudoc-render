@@ -1,0 +1,70 @@
+use v6.d;
+use Test;
+
+plan 3;
+
+use RakuDoc::Render;
+use RakuDoc::To::HTML-Extra;
+my @generic = RakuDoc::Processor.new.default-text-templates.keys;
+my $html-extra-instance = RakuDoc::To::HTML-Extra.new;
+my @html-extra = $html-extra-instance.html-templates.keys.Slip, $html-extra-instance.templates.keys.Slip;
+
+ok @generic (<=) @html-extra, 'HTML redefines all the keys in generic';
+cmp-ok (@html-extra (-) @generic), '(==)', < footer top-of-page head-block html-root escaped main-content favicon>, 'other templates RakuDoc::To::HTML & ::HTML-Extra additionally defines';
+
+my RakuDoc::Processor $rdp := $html-extra-instance.rdp;
+my $internet = run <<curl -s --head  --request GET www.google.com>>, :err, :out, :merge;
+subtest 'live internet tests', sub {
+    plan( :skip-all<no internet connection> )
+        unless $internet.out.slurp(:close).contains('200 OK');
+    plan *;
+    my $ast;
+    my $rv;
+    $ast = Q:to/QAST/.AST;
+        =begin rakudoc
+        =TITLE Test document
+        =head Item testing
+
+        Some text
+        =end rakudoc
+        QAST
+    $rv = $rdp.render( $ast );
+    like $rv, /
+        '<title>Test document</title>'
+    /, 'got simple render';
+#    $ast = Q:to/QAST/.AST;
+#        =begin rakudoc
+#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/fanciful-disclaimer.txt :caption<Text placement> :headlevel(2)
+#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/bootiful-disclaimer.rakudoc :caption<RakuDoc placement> :headlevel(2)
+#        =head separate
+#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg :caption<JPEG image placement> :headlevel(2)
+#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png :caption<Png image placement> :headlevel(2)
+#        =end rakudoc
+#        QAST
+    $ast = Q:to/QAST/.AST;
+        =begin rakudoc
+        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/fanciful-disclaimer.txt :caption<Text placement> :headlevel(2)
+        =end rakudoc
+        QAST
+    $rv = $rdp.render( $ast );
+    like $rv, /
+        'ABSOLUTELY NO WARRANTY IS IMPLIED. NOT EVEN OF ANY KIND.'
+        /, 'compliance text file obtained';
+    $ast = Q:to/QAST/.AST;
+        =begin rakudoc
+
+        some prior text
+
+        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/bootiful-disclaimer.rakudoc :caption<RakuDoc placement> :headlevel(2)
+        =end rakudoc
+        QAST
+    $rv = $rdp.render( $ast );
+    like $rv, /
+        'Not even of any kind'
+        /, 'rakdoc included and rendered';
+    unlike $rv, /
+        'Not even of any kind' .+ 'Not even of any kind'
+        /, 'rakdoc included and rendered only once';
+}
+
+done-testing;

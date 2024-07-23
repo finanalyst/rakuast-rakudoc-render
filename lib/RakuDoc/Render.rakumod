@@ -1148,7 +1148,7 @@ class RakuDoc::Processor {
         if %config<content-type>.contains('text') && $contents ~~ /^ '=begin rakudoc' / {
              do {
                 my ProcessedState $*prs .= new;
-                $contents.AST.map( { $.handle( $_ ) } );
+                $contents.AST.rakudoc.map( { $.handle( $_ ) } );
                 my $prs := $*prs;
                 $contents = $prs.body.trim-trailing;
                 $prs.body .= new;
