@@ -238,7 +238,7 @@ method html-templates {
                 $rv ~= %prm<contents>
             }
             else {
-                $rv ~= qq[<p>Placement of {%prm<content-type>} Not yet implemented</p> ]
+                $rv ~= qq[<p>Placement of {%prm<content-type>} requires internet or is not yet implemented</p> ]
             }
             $rv ~= "\n\n";
         },
@@ -540,7 +540,14 @@ method html-templates {
                     DEFN-TEXT-ON ~ %prm<defn-expansion> ~ DEFN-TEXT-OFF ~
                     "\n&#x2998;"
                 }
-                default { %prm<contents> }
+                default {
+                    if %prm<content-type>.contains('text') {
+                        %prm<contents>
+                    }
+                    else {
+                        qq[<span class="error">Placement of {%prm<content-type>} requires internet or is not yet implemented</span> ]
+                    }
+                }
             }
         },
 

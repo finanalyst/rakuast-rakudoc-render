@@ -148,6 +148,50 @@ method templates {
         #| download the Camelia favicon
         favicon => -> %prm, $tmpl {
             q[<link rel="icon" href="https://irclogs.raku.org/favicon.ico">]
-        }
+        },
+        #| renders =place block
+        place => -> %prm, $tmpl {
+            my $del = %prm<delta> // '';
+            my $rv = PStr.new;
+            $rv ~= $del ~ "\n";
+            $rv ~= qq[<div id="{ %prm<target> }"> </div>];
+            $rv ~= qq[<div id="{ %prm<id> }"> </div>] if %prm<id>;
+            given %prm<content-type> {
+                when .contains('text') {
+                    $rv ~= %prm<contents>
+                }
+                when .contains('image') {
+                    $rv ~= qq[<img src="{ %prm<uri> }">%prm<caption>\</img> ]
+                }
+                default {
+                    $rv ~= qq[<p>Placement of {%prm<content-type>} is not yet implemented</p> ]
+                }
+            }
+            $rv ~= "\n\n";
+        },
+        #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
+        #| Placement link
+        markup-P => -> %prm, $tmpl {
+            given %prm<schema> {
+                when 'defn' {
+                    "\n\n&#x2997;  " ~
+                    '<span class="developer-note">' ~ %prm<defn-expansion> ~
+                    "</span>\n&#x2998;"
+                }
+                default {
+                    given %prm<content-type> {
+                        when .contains('text') {
+                            %prm<contents>
+                        }
+                        when .contains('img') {
+                            qq[<img src="{ %prm<uri> }">%prm<caption>\</img> ]
+                        }
+                        default {
+                            qq[<p>Placement of {%prm<content-type>} is not yet implemented</p> ]
+                        }
+                }
+                }
+            }
+        },
     )
 }

@@ -1156,7 +1156,7 @@ class RakuDoc::Processor {
              }
         }
         $prs.body ~= %!templates{ $template }(
-            %( :$contents, :$keep-format, :$schema, %config )
+            %( :$contents, :$keep-format, :$schema, :$uri, %config )
         )
     }
     #| The rakudoc block should encompass the output
