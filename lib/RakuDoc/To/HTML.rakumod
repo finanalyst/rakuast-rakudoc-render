@@ -15,6 +15,7 @@ submethod TWEAK {
         $css = %?RESOURCES<css/vanilla.css>.slurp(:close)
     }
     $!rdp.add-data('css', $css);
+    $!rdp.debug( %*ENV<RAKURENDEROPTS>.list ) if %*ENV<RAKURENDEROPTS>:exists
 }
 method render($ast) {
     my $fn = $*PROGRAM;
@@ -24,10 +25,11 @@ method render($ast) {
         path     => $fn.dirname,
     );
     my $r2html = self.new;
+    my $rdp := $r2html.rdp;
     if %*ENV<MORE_HTML>:exists {
         exit note( "｢{%*ENV<MORE_HTML>}｣ is not a file" ) unless %*ENV<MORE_HTML>.IO ~~ :e & :f;
         try {
-            $r2html.rdp.add-templates( EVALFILE( %*ENV<MORE_HTML> ), :source<User-supplied-markdown> );
+            $rdp.add-templates( EVALFILE( %*ENV<MORE_HTML> ), :source<User-supplied-markdown> );
             CATCH {
                 default { exit note "Could not utilise ｢{%*ENV<MORE_HTML>}｣ " ~ .message }
             }
@@ -35,9 +37,9 @@ method render($ast) {
     }
     if %*ENV<ALT_CSS>:exists {
         exit note( "｢{%*ENV<ALT_CSS>}｣ is not a file" ) unless %*ENV<ALT_CSS>.IO ~~ :e & :f;
-        $r2html.rdp.add-data('css', %*ENV<ALT_CSS>.IO.slurp);
+        $rdp.add-data('css', %*ENV<ALT_CSS>.IO.slurp);
     }
-    $r2html.rdp.render( $ast, :%source-data  )
+    $rdp.render( $ast, :%source-data  )
 }
 
 # no post processing needed
@@ -342,9 +344,12 @@ method html-templates {
         toc-item => -> %prm, $tmpl { '' }, # HTML uses toc structure directly
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            if %prm<toc>.elems {
-                my $rv = qq[<div class="toc"><h2 class="toc-caption">{ %prm<caption> }</h2>
-                <ul class="toc-list">\n];
+            if %prm<toc>:exists && %prm<toc>.elems {
+                my $rv = qq:to/TOC/;
+                <div class="toc">
+                { "<h2 class=\"toc-caption\">$_\</h2>" with  %prm<caption> }
+                <ul class="toc-list">\n
+                TOC
                 my $last-level = 1;
                 for %prm<toc>.list -> %el {
                     my $lev = %el<level>;
@@ -372,7 +377,7 @@ method html-templates {
                 $rv ~= qq[\n\</ul>\n\</div>]
             }
             else {
-                ''
+                PStr.new: ''
             }
         },
         #| renders a single item in the index

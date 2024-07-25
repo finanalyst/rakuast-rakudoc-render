@@ -6,7 +6,7 @@ use Test::Output;
 
 use RakuDoc::Render;
 
-plan 28;
+plan 32;
 
 my $ast;
 my $rv;
@@ -83,6 +83,16 @@ $rdp.debug(AstBlock, BlockType, Templates);
 $output = output-from {
     $rv = $rdp.render( $ast, :pre-finalised )
     };
+like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling message';
+like $output, / 'Doc::Block type: rakudoc' /, 'got block message';
+unlike $output, / 'Scope levels' /, 'didnt get scoping message';
+like $output, / 'Template' .+ 'source:' /, 'got template message';
+
+$rdp  .= new(:test);
+$rdp.debug('AstBlock BlockType Templates');
+$output = output-from {
+    $rv = $rdp.render( $ast, :pre-finalised )
+};
 like $output, / 'Handling: RakuAST::Doc::Block' /, 'got a handling message';
 like $output, / 'Doc::Block type: rakudoc' /, 'got block message';
 unlike $output, / 'Scope levels' /, 'didnt get scoping message';

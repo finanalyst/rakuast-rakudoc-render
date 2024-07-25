@@ -1,13 +1,13 @@
 use v6.d;
 use Test;
 use Test::Run :runs_ok;
-
-plan 6;
+plan 7;
 
 use RakuDoc::Render;
 use RakuDoc::To::HTML;
+my $html-instance = RakuDoc::To::HTML.new;
 my @generic = RakuDoc::Processor.new.default-text-templates.keys;
-my @html = RakuDoc::To::HTML.new.html-templates.keys;
+my @html = $html-instance.html-templates.keys;
 
 ok @generic (<=) @html, 'HTML redefines all the keys in generic';
 cmp-ok (@html (-) @generic), '(==)', < footer top-of-page head-block html-root escaped main-content >, 'other templates RakuDoc::To::HTML additionally defines';
@@ -38,6 +38,16 @@ runs_ok(
     :exitcode(0),
     :out(/ 'h.title{font-size:larger;color:red' / ),
     'CSS customisation occurs'
+);
+
+%*ENV<MORE_HTML>:delete;
+%*ENV<ALT_CSS>:delete;
+%*ENV<RAKURENDEROPTS> = 'AstBlock';
+runs_ok(
+    :@args,
+    :exitcode(0),
+    :out(/ 'Handling: RakuAST::Doc::Block' / ),
+    'outputs debug info on AstBlock'
 );
 
 done-testing;

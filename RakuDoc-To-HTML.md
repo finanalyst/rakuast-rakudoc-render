@@ -10,6 +10,7 @@
 ## Table of Contents
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Vanilla_HTML_and_CSS">Vanilla HTML and CSS</a>   
+<a href="#Debug_options">Debug options</a>   
 <a href="#Credits">Credits</a>   
 
 
@@ -93,9 +94,19 @@ ALT_CSS=~/tweaks/strawberry.sss RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --ra
 &nbsp;&nbsp;• <span class="para" id="62fe5cd"></span>The alternate CSS file (eg ~/tweaks/strawberry.css) is used **instead** of the default `vanilla.css`. 
 
   
+
+----
+
+## Debug options<div id="Debug_options"> </div>
+<span class="para" id="ffe5326"></span>The debug options described in [Render](Render.md) can be invoked using , eg., 
+
+
+```
+RAKURENDEROPTS='Templates BlockType' RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+```
 <div id="Credits"> </div>
 
-｢semantic-schema_AUTHOR UNAVAILABLE｣
+｢semantic_AUTHOR UNAVAILABLE｣
 
 <div id="Placement"> </div>
 
@@ -114,8 +125,18 @@ v0.1.0
 
 ----
 
-Rendered from docs/docs/RakuDoc-To-HTML.rakudoc at 23:08 UTC on 2024-07-14
+Rendered from docs/docs/RakuDoc-To-HTML.rakudoc at 21:21 UTC on 2024-07-25
 
-Source last modified at 20:48 UTC on 2024-07-06
+Source last modified at 20:37 UTC on 2024-07-24
+
+
+
+----
+
+----
+
+## WARNINGS
+
+1: Placement of undefined semantic block AUTHOR
 
 

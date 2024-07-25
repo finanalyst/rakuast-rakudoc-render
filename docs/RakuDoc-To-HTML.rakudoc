@@ -74,6 +74,13 @@ templates, and so are I<in addition> to those previously defined.
 =item The alternate CSS file (eg ~/tweaks/strawberry.css) is used B<instead> of the default
 C<vanilla.css>.
 
+=head Debug options
+
+The debug options described in L<Render|Render> can be invoked using , eg.,
+
+    RAKURENDEROPTS='Templates BlockType' RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+
+
 =place semantic:AUTHOR :caption<Credits>
 
 =place semantic:VERSION :!toc

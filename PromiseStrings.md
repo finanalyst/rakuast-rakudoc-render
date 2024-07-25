@@ -138,7 +138,7 @@ table => -> %prm, $tmpl {
 ### PCell methods<div id="PCell_methods"> </div>
 <span class="para" id="a3e0d24"></span>**PCells** should be invisible to the end user. However, if references are made that are not expanded, then a PCell will become visible. 
 
-<span class="para" id="a984476"></span>Typically, **PCell** instances are converted to Str as soon as possible. 
+<span class="para" id="d6a9542"></span>Typically, **PCell** instances are converted to Str once a future block has provided the payload needed for the cell. 
 
 
 
@@ -171,8 +171,8 @@ v0.2.1
 
 ----
 
-Rendered from docs/docs/PromiseStrings.rakudoc at 23:08 UTC on 2024-07-14
+Rendered from docs/docs/PromiseStrings.rakudoc at 21:21 UTC on 2024-07-25
 
-Source last modified at 20:48 UTC on 2024-07-06
+Source last modified at 21:19 UTC on 2024-07-21
 
 

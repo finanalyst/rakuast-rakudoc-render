@@ -210,9 +210,21 @@ method markdown-templates {
         },
         #| renders =place block
         place => -> %prm, $tmpl {
+            my $rv = PStr.new;
+            given %prm<content-type> {
+                when .contains('text') {
+                    $rv ~= %prm<contents>
+                }
+                when .contains('image') {
+                    $rv ~=  '[' ~ %prm<caption> ~ '](' ~ %prm<uri> ~ ')'
+                }
+                default {
+                    $rv ~= qq[Placement of {%prm<content-type>} is not yet implemented\n\n ]
+                }
+            }
             PStr.new: '<div id="' ~ %prm<target> ~ '"> </div>' ~ "\n\n" ~
                 ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
-                %prm<contents> ~
+                $rv ~
                 "\n\n";
         },
         #| renders =rakudoc block
@@ -338,7 +350,7 @@ method markdown-templates {
         },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            PStr.new: "----\n\n## " ~ %prm<caption> ~ "\n" ~
+            PStr.new: "----\n\n## " ~ %prm<caption>:e ~ "\n" ~
             ([~] %prm<toc-list>) ~ "\n\n"
         },
         #| renders a single item in the index

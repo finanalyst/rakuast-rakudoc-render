@@ -45,6 +45,15 @@ class RakuDoc::Processor {
             }
         }
     }
+    multi method debug( Str $type --> Nil ) {
+        with RDProcDebug::{$type} {
+            self.debug( $_ )
+        }
+        elsif $type ~~ / \s / {
+            self.debug( $type.split(/ \s+ /) )
+        }
+        else { Nil }
+    }
     multi method debug( *@types --> Nil ) {
         for @types {
             $.debug( $_ )

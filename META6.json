@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "perl": "6.d",
   "authors": [
     "Richard Hainsworth"
@@ -55,7 +55,8 @@
     "markdown-example.raku",
     "compliance-rendering/rakudociem-ipsum.md",
     "compliance-rendering/rakudociem-ipsum.html",
-    "css/latex-render.css"
+    "css/latex-render.css",
+    "compliance-rendering/rakudocium-ipsum.html"
   ],
   "support": {
     "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",

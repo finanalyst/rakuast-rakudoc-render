@@ -8,7 +8,7 @@
 ## Table of Contents
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Purpose">Purpose</a>   
-<a href="#The_table_of_contents">The table of contents</a>   
+<a href="#Short_table_of_contents">Short table of contents</a>   
 <a href="#A_short_index">A short index</a>   
 <a href="#This_is_a_first_heading">This is a first heading</a>   
 &nbsp;&nbsp;- <a href="#This_is_a_second_level_heading">This is a second level heading</a>   
@@ -33,6 +33,16 @@
 &nbsp;&nbsp;- <a href="#A_procedural_table">A procedural table</a>   
 <a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a>   
 <a href="#Scoping_examples">Scoping examples</a>   
+<a href="#Placements">Placements</a>   
+&nbsp;&nbsp;- <a href="#Text_placement">Text placement</a>   
+&nbsp;&nbsp;- <a href="#RakuDoc_placement">RakuDoc placement</a>   
+<a href="#A_ware">A ware</a>   
+<a href="#B_ware">B ware</a>   
+&nbsp;&nbsp;- <a href="#HTML_placement">HTML placement</a>   
+&nbsp;&nbsp;- <a href="#JPEG_image_placement">JPEG image placement</a>   
+&nbsp;&nbsp;- <a href="#Png_image_placement">Png image placement</a>   
+<a href="#Credits">Credits</a>   
+<a href="#Placement">Placement</a>   
 
 
 ----  
@@ -59,19 +69,41 @@
 
 <span class="para" id="d6a1df2"></span>The the end of the rendering of this source file, a number of warning messages should be included. 
 
-<div id="The_table_of_contents"> </div>
+<div id="Short_table_of_contents"> </div>
+
+----
+
+## 
+<a href="#SYNOPSIS">SYNOPSIS</a>   
+<a href="#Purpose">Purpose</a>   
+<a href="#Short_table_of_contents">Short table of contents</a>   
+<a href="#A_short_index">A short index</a>   
+<a href="#This_is_a_first_heading">This is a first heading</a>   
+<a href="#This_is_a_numbered_heading,_level_1">This is a numbered heading, level 1</a>   
+<a href="#Lists">Lists</a>   
+<a href="#Blocks_that_are_processed_differently">Blocks that are processed differently</a>   
+<a href="#Formula_cannot_be_rendered">Fabulous identity</a>   
+<a href="#This_is_an_extraordinary_paragraph">This is an extraordinary paragraph</a>   
+<a href="#Some_tables">Some tables</a>   
+<a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a>   
+<a href="#Scoping_examples">Scoping examples</a>   
+<a href="#Placements">Placements</a>   
+<a href="#A_ware">A ware</a>   
+<a href="#B_ware">B ware</a>   
+<a href="#Credits">Credits</a>   
+<a href="#Placement">Placement</a>   
 
 
-# Proving a renderer
 
-	A file with many RakuDoc components and some idea about what is expected.
+
+<div id="A_short_index"> </div>
 
 ----
 
 ## Table of Contents
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Purpose">Purpose</a>   
-<a href="#The_table_of_contents">The table of contents</a>   
+<a href="#Short_table_of_contents">Short table of contents</a>   
 <a href="#A_short_index">A short index</a>   
 <a href="#This_is_a_first_heading">This is a first heading</a>   
 &nbsp;&nbsp;- <a href="#This_is_a_second_level_heading">This is a second level heading</a>   
@@ -96,35 +128,16 @@
 &nbsp;&nbsp;- <a href="#A_procedural_table">A procedural table</a>   
 <a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a>   
 <a href="#Scoping_examples">Scoping examples</a>   
-
-
-
-
-<div id="A_short_index"> </div>
-
-----
-
-## Index
-<span style="background-color: antiquewhite; font-weight: 600;">elements to be placed</span>:  <a href="#index-entry-elements_to_be_placed">This is third level heading</a>
-
-<span style="background-color: antiquewhite; font-weight: 600;">formatting code</span>:  <a href="#index-entry-formatting_code">Adding index entries to your text</a>
-
-<span style="background-color: antiquewhite; font-weight: 600;">index</span>:  <a href="#index-entry-index_entry">Adding index entries to your text</a>, <a href="#index-entry-index">Adding index entries to your text</a>, <a href="#index-entry-Index_entries">Adding index entries to your text</a>, <a href="#index-entry-subentries">Adding index entries to your text</a>, <a href="#index-entry-multilevel_subentries">Adding index entries to your text</a>, <a href="#index-entry-first_level">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
-
-  - entry : <a href="#index-entry-index_entry">Adding index entries to your text</a>, <a href="#index-entry-Index_entries">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
-
-    - nested : <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
-
-  - multiple entries : <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
-
-  - subentry : <a href="#index-entry-subentries">Adding index entries to your text</a>, <a href="#index-entry-multilevel_subentries">Adding index entries to your text</a>, <a href="#index-entry-first_level">Adding index entries to your text</a>
-
-    - multilevel : <a href="#index-entry-multilevel_subentries">Adding index entries to your text</a>
-
-    - rendering : <a href="#index-entry-first_level">Adding index entries to your text</a>
-
-<span style="background-color: antiquewhite; font-weight: 600;">inline formatting</span>:  <a href="#index-entry-formatting_code">Adding index entries to your text</a>
-
+<a href="#Placements">Placements</a>   
+&nbsp;&nbsp;- <a href="#Text_placement">Text placement</a>   
+&nbsp;&nbsp;- <a href="#RakuDoc_placement">RakuDoc placement</a>   
+<a href="#A_ware">A ware</a>   
+<a href="#B_ware">B ware</a>   
+&nbsp;&nbsp;- <a href="#HTML_placement">HTML placement</a>   
+&nbsp;&nbsp;- <a href="#JPEG_image_placement">JPEG image placement</a>   
+&nbsp;&nbsp;- <a href="#Png_image_placement">Png image placement</a>   
+<a href="#Credits">Credits</a>   
+<a href="#Placement">Placement</a>   
 
 
 
@@ -483,14 +496,100 @@ e^{i\pi}+1=0
 
 <span class="para" id="fda2c59"></span>Did I mention before that: Do not consider this a disquisition of possible combinations. 
 
+
+----
+
+## Placements<div id="Placements"> </div>
+<span class="para" id="bef1786"></span>Renderers are required to place text and RakuDoc sources, but may fallback to text messages for other formats. 
+
+<div id="Text_placement"> </div>
+
+ABSOLUTELY NO WARRANTY IS IMPLIED. NOT EVEN OF ANY KIND. WE HAVE SOLD
+YOU THIS SOFTWARE WITH NO HINT OF A SUGGESTION THAT IT IS EITHER USEFUL
+OR USABLE. AS FOR GUARANTEES OF CORRECTNESS...DON'T MAKE US LAUGH! AT
+SOME TIME IN THE FUTURE WE MIGHT DEIGN TO SELL YOU UPGRADES THAT PURPORT
+TO ADDRESS SOME OF THE APPLICATION'S MANY DEFICIENCIES, BUT NO PROMISES
+THERE EITHER. WE HAVE MORE LAWYERS ON STAFF THAN YOU HAVE TOTAL
+EMPLOYEES, SO DON'T EVEN *THINK* ABOUT SUING US. HAVE A NICE DAY.
+
+
+<div id="RakuDoc_placement"> </div>
+
+
+----
+
+## A ware<div id="A_ware"> </div>
+<span class="para" id="c36d969"></span>Absolutely no warranty is implied. **Not even of any kind**. We have sold you this `software` with no hint of a suggestion that it is either useful or usable. As for guarantees of correctness...don't make us laugh! 
+
+
+----
+
+## B ware<div id="B_ware"> </div>
+<span class="para" id="3c2fb22"></span>At __some__ time in the future we might deign to sell you upgrades that purport to address some of the application's many deficiencies, but no promises there either. We have more lawyers on staff than you have total employees, so don't even ***think*** about suing us. 
+
+<span class="para" id="573ec25"></span>Have a nice day. ☺ 
+
+
+
+<div id="HTML_placement"> </div>
+
+<html>
+<head>
+    <meta content-type="text/html; charset=utf-8" />
+    <title>Complete disclaimer</title>
+</head>
+<body>
+<h1>A ware</h1>
+
+Absolutely no warranty is implied. <B>Not even of any kind</B>. We have sold
+you this <code>software</code> with no hint of a suggestion that it is either useful
+or usable. As for guarantees of correctness...don't make us laugh!
+
+<h1>B ware</h1>
+
+At <U>some</U> time in the future we might deign to sell you upgrades that purport
+to address some of the application's many deficiencies, but no promises
+there either. We have more lawyers on staff than you have total
+employees, so don't even <B>think</B> about suing us.
+
+Have a nice day. &#x263A;
+</body>
+</html>
+
+<div id="JPEG_image_placement"> </div>
+
+![JPEG image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg)
+
+<div id="Png_image_placement"> </div>
+
+![Png image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png)
+
 <span class="para" id="8ec3517"></span>Text finishes after version number 
+
+<div id="Credits"> </div>
+
+----  
+
+## AUTHORS<div id="AUTHORS"> </div>
+Richard Hainsworth, aka finanalyst
+
+
 
 <div id="Placement"> </div>
 
 ----  
 
+## LICENSE<div id="LICENSE"> </div>
+Artistic-2.0
+
+
+
+<div id="Placement_0"> </div>
+
+----  
+
 ## VERSION<div id="VERSION"> </div>
-v0.2.0
+v0.2.1
 
 
 
@@ -532,9 +631,9 @@ v0.2.0
 
 ----
 
-Rendered from ././rakudociem-ipsum.rakudoc at 16:41 UTC on 2024-07-03
+Rendered from resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc at 21:38 UTC on 2024-07-25
 
-Source last modified at 14:42 UTC on 2024-06-19
+Source last modified at 20:36 UTC on 2024-07-25
 
 
 
