@@ -350,7 +350,7 @@ method markdown-templates {
         },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            PStr.new: "----\n\n## " ~ %prm<caption>:e ~ "\n" ~
+            PStr.new: "----\n\n## " ~ (%prm<caption>:exists ?? %prm<caption> !! 'Table of Contents') ~ "\n" ~
             ([~] %prm<toc-list>) ~ "\n\n"
         },
         #| renders a single item in the index
