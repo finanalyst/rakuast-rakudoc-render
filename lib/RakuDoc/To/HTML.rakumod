@@ -341,40 +341,18 @@ method html-templates {
                      "\n\n"
         },
         #| renders a single item in the toc
-        toc-item => -> %prm, $tmpl { '' }, # HTML uses toc structure directly
+        toc-item => -> %prm, $tmpl {
+            my $n = %prm<toc-entry><level> > 3 ?? 3 !! (%prm<toc-entry><level> - 1);
+            my $pref = qq[<div class="toc-item" style="--level:$n;" data-bullet="{@bullets[$n]}">];
+            PStr.new: qq[$pref\<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a></div>\n]
+        },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
             if %prm<toc>:exists && %prm<toc>.elems {
-                my $rv = qq:to/TOC/;
-                <div class="toc">
-                { "<h2 class=\"toc-caption\">$_\</h2>" with  %prm<caption> }
-                <ul class="toc-list">\n
-                TOC
-                my $last-level = 1;
-                for %prm<toc>.list -> %el {
-                    my $lev = %el<level>;
-                    given $last-level {
-                        when $_ > $lev {
-                            while $last-level > $lev {
-                                $rv ~= "\n</ul>\n";
-                                $last-level--;
-                            }
-                        }
-                        when $_ < $lev {
-                            while $lev > $last-level {
-                                $last-level++;
-                                $rv ~= "\n<ul>\n";
-                            }
-                        }
-                    }
-                    $rv ~= "\n<li>"
-                        ~ '<a href="#'
-                        ~ $tmpl('escaped', %( :contents(%el.<target>), ))
-                        ~ '">'
-                        ~ (%el.<caption> // '')
-                        ~ '</a></li>';
-                }
-                $rv ~= qq[\n\</ul>\n\</div>]
+                PStr.new: qq[<div class="toc">\n] ~
+                ( "<h2 class=\"toc-caption\">$_\</h2>" with  %prm<caption> ) ~
+                ([~] %prm<toc-list>) ~
+                "</div>\n"
             }
             else {
                 PStr.new: ''

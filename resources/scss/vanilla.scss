@@ -111,12 +111,15 @@ div.footer-field {
 	
 }
 div.toc {
-	
+	.toc-item {
+        padding-left: 0.4rem;
+	    margin-left: calc(var(--level) * 1rem);
+	    &::before {
+	        content: attr(data-bullet);
+	    }
+	}
 }
 h1.toc-caption {
-}
-div.ul toc-list {
-	
 }
 div.index-section {
     margin-left: calc(var(--level) * 1rem);

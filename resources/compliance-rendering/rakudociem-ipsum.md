@@ -73,7 +73,7 @@
 
 ----
 
-## 
+## Table of Contents
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Purpose">Purpose</a>   
 <a href="#Short_table_of_contents">Short table of contents</a>   
@@ -558,11 +558,11 @@ Have a nice day. &#x263A;
 
 <div id="JPEG_image_placement"> </div>
 
-![JPEG image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg)
+[JPEG image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg)
 
 <div id="Png_image_placement"> </div>
 
-![Png image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png)
+[Png image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png)
 
 <span class="para" id="8ec3517"></span>Text finishes after version number 
 
@@ -631,7 +631,7 @@ v0.2.1
 
 ----
 
-Rendered from resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc at 21:38 UTC on 2024-07-25
+Rendered from resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc at 21:49 UTC on 2024-07-25
 
 Source last modified at 20:36 UTC on 2024-07-25
 
