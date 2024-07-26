@@ -112,10 +112,12 @@ div.footer-field {
 }
 div.toc {
 	.toc-item {
-        padding-left: 0.4rem;
 	    margin-left: calc(var(--level) * 1rem);
 	    &::before {
 	        content: attr(data-bullet);
+	    }
+	    a {
+            padding-left: 0.4rem;
 	    }
 	}
 }

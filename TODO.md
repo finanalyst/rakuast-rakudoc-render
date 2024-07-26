@@ -1,14 +1,19 @@
 # list of things to do
 
-- [? ] Templates
+- [-] Templates
   - [ ] Epub, need to add extra metadata pages 
+- [ ] RakuDoc psuedo extensions
 
 - [ ] Outputs needing change
-  - [ ] Md don't change file format extension if link explicit 
+  - [ ] Md pseudo extensions
+  - [ ] text psuedo extensions ??
   - [ ] HTML, ditto
-  - [ ] HTML, include binary data into output, eg images.
-  - [x] HTML, fix embedded rakudoc
-  - [ ] improve theme, and create SCSS processing
+  - [x] HTML, include binary data into output, eg images.
+  - [ ] HTML-Extra create SCSS processing & theme changes 
+    - [ ] rendering info at bottom not flowing
+    - [ ] space between titles
+    - [ ] Toc panel contents should be sticky
+    - [ ] Add filter to ToC
 
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
 - [ ] Implement new numbering extensions, 

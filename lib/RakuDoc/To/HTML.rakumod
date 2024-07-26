@@ -194,7 +194,7 @@ method html-templates {
         defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
         #| special template to render a numbered defn list data structure
         numdefn => -> %prm, $tmpl {
-            PStr.new: DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            PStr.new: DEFN-TERM-ON ~ %prm<numeration> ~ '&nbsp;' ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
             DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| special template to render a numbered item list data structure
@@ -343,7 +343,7 @@ method html-templates {
         #| renders a single item in the toc
         toc-item => -> %prm, $tmpl {
             my $n = %prm<toc-entry><level> > 3 ?? 3 !! (%prm<toc-entry><level> - 1);
-            my $pref = qq[<div class="toc-item" style="--level:$n;" data-bullet="{@bullets[$n]}">];
+            my $pref = qq[<div class="toc-item" style="--level:$n;" data-bullet="{ $n ?? @bullets[$n] !! '' }">];
             PStr.new: qq[$pref\<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a></div>\n]
         },
         #| special template to render the toc list
