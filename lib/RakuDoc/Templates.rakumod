@@ -32,6 +32,7 @@ class Template {
                     when Str { $v .= subst(/ \n /, "\n$indent", :g) }
                     when PStr { sink $indent ~ $v.debug }
                     default {
+                        $v = "Binary object with {$v.bytes} bytes" if $v ~~ Buf;
                         my $sv = $v;
                         try { $v = pretty-dump( $v ).subst(/ \n /, "\n$indent", :g)};
                         if $! { $v = $sv.raku }
@@ -82,9 +83,10 @@ class X::Unexpected-Template is Exception {
 
 sub express-params( %params, $name ) is export {
     my $rv = "<$name>\n";
-    for %params.sort(*.key)>>.kv -> ($k, $v is rw) {
-        $v = 'UNINITIALISED' without $v;
-        $rv ~= $k ~ ': ｢' ~ $v ~ "｣\n";
+    for %params.sort(*.key)>>.kv -> ($k, $v) {
+        my $vi = $v // 'UNINITIALISED';
+        $vi = "Binary object with {$vi.bytes} bytes" if $vi ~~ Buf;
+        $rv ~= $k ~ ': ｢' ~ $vi ~ "｣\n";
     }
     $rv ~= "</$name>\n";
     $rv

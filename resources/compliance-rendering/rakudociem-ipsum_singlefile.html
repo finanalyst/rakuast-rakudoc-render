@@ -1,282 +1,25 @@
 <!DOCTYPE html>
-<html class="theme-light" >
+<html lang="en" >
     <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Proving a renderer</title>
-<link rel="icon" href="https://irclogs.raku.org/favicon.ico">
-<style>span.basis{font-weight:800}span.important{font-style:italic}span.unusual{text-decoration:underline}span.code{font-weight:500;background-color:linen;display:inline-block;margin:2px;padding:2px}span.overstrike{text-decoration:line-through}span.high{vertical-align:super}span.junior{vertical-align:sub}span.replace{font-style:small-caps;text-shadow:-1px 1px}span.indexed{text-shadow:1px 1px orange}span.index-entry{text-shadow:1px 1px orange}span.keyboard{text-shadow:1px 1px}span.terminal{text-decoration:overline underline}span.footnote{vertical-align:super}span.developer-version{display:none;color:red}span.developer-version span.developer-note{font-family:"Brush Script MT",cursive}span.developer-version:hover{display:inline-block;transform:translate(50px, 100px);z-index:5}span.bad-markdown{text-shadow:1px 1px red}pre.code-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block::before{content:"--- input ---";display:block;text-shadow:-2px -2px 4px #000;color:#fff;padding-bottom:1rem}pre.output-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.output-block::before{content:"--- output ---";display:block;text-shadow:2px 2px 4px #000;color:#fff;padding-bottom:1rem}div.defn-text{margin-left:1rem}div.defn-term{font-weight:bold}div.id-target{display:none}div.nested{margin-left:5rem}div.toc .toc-item{margin-left:calc(var(--level)*1rem)}div.toc .toc-item::before{content:attr(data-bullet)}div.toc .toc-item a{padding-left:.4rem}div.index-section{margin-left:calc(var(--level)*1rem)}div.index-section>a.index-ref{white-space:nowrap;display:inline-block;width:5em;overflow:hidden;text-overflow:ellipsis}div.index-section>a.index-ref+span{display:none;width:0}div.index-section>a.index-ref:hover+span{display:inline-block;position:absolute;width:auto;z-index:5;background-color:#fff5ee;transform:translate(-5em, -1em)}span.developer-note{display:none;width:0;color:blue;text-shadow:2px 2px 5px green}span.developer-version{display:none;width:0;color:red;text-shadow:2px 2px 5px green}.delta::before,span.developer-text::before{content:"ℹ";vertical-align:super}.delta:hover .developer-version,span.developer-text:hover .developer-version{display:inline-block;position:absolute;width:100%;z-index:5;transform:translate(0.5rem, -1rem)}.delta:hover .developer-note,span.developer-text:hover .developer-note{display:inline-block;position:absolute;width:auto;z-index:5;margin-left:1rem}span.developer-text:hover{text-decoration:overline}div.footer{border-top:2px dashed;margin:1rem 0;padding:2rem}div.footer .footer-field{display:inline-block}div.footer .footer-line{display:block}.heading>a{color:maroon;text-decoration:none}h.title{font-size:larger}table,th,td{border:1px solid;border-collapse:collapse}.procedural-cell-left{text-align:left}.procedural-cell-centre{text-align:center}.procedural-cell-center{text-align:center}.procedural-cell-right{text-align:right}.procedural-cell-top{vertical-align:text-top}.procedural-cell-middle{vertical-align:baseline}.procedural-cell-bottom{vertical-align:text-bottom}.procedural-cell-label{font-weight:bold}li.item{padding-left:.4rem;margin-left:calc(var(--level)*1rem)}li.item::marker{content:attr(data-bullet)}
-</style>
-<style>.listf-container {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.25rem;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.5;
-  border: 1px solid #cccccc;
-  border-bottom: 5px solid #d9d9d9;
-  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.07);
-}
-.listf-container .listf-caption {
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.5;
-  display: flex;
-  justify-content: center;
-  background: #f2f2f2;
-  border-bottom: 1px solid #cccccc;
-  color: #83858D;
-}
-.listf-container .listf-file {
-  display: inline-block;
-  border-top: 1px solid #cccccc;
-  border-bottom: 1px solid #cccccc;
-  break-inside: avoid;
-}
-.listf-container .listf-file .listf-link {
-  display: inline-block;
-  width: 100%;
-  text-align: center;
-  padding-top: 0.25rem;
-}
-.listf-container .listf-file p {
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.5;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-.listf-error {
-  color: red;
-  font-size: xlarge;
-}
-</style>
-<style>// Chyron Toggle checkbox
-label.chyronToggle input#navbar-toc-toggle {
-opacity: 0;
-height: 0;
-width: 0;
-}
-label.chyronToggle span.checkmark {
-top: 1rem;
-position: relative;
-cursor: pointer;
-}
-label.chyronToggle input[type="checkbox"]{
-position: absolute;
-opacity: 0;
-cursor: pointer;
-height: 0;
-width: 0;
-}
-label.chyronToggle span.checkmark::before {
-content: '[\21e8';
-color: grey;
-font-weight: 800;
-line-height: 0.5rem;
-font-size: 1.75rem;
-margin-right: 0.25rem;
-}
-label.chyronToggle:hover span.checkmark::before {
-content: '[ \21e8';
-}
-label.chyronToggle input[type="checkbox"]:checked + .checkmark::before {
-content: '[ \21e6';
-}
-label.chyronToggle:hover input[type="checkbox"]:checked + .checkmark::before {
-content: '[\21e6';
-}
+        <title>Proving a renderer</title>
+    <style>span.basis{font-weight:800}span.important{font-style:italic}span.unusual{text-decoration:underline}span.code{font-weight:500;background-color:linen;display:inline-block;margin:2px;padding:2px}span.overstrike{text-decoration:line-through}span.high{vertical-align:super}span.junior{vertical-align:sub}span.replace{font-style:small-caps;text-shadow:-1px 1px}span.indexed{text-shadow:1px 1px orange}span.index-entry{text-shadow:1px 1px orange}span.keyboard{text-shadow:1px 1px}span.terminal{text-decoration:overline underline}span.footnote{vertical-align:super}span.developer-version{display:none;color:red}span.developer-version span.developer-note{font-family:"Brush Script MT",cursive}span.developer-version:hover{display:inline-block;transform:translate(50px, 100px);z-index:5}span.bad-markdown{text-shadow:1px 1px red}pre.code-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block::before{content:"--- input ---";display:block;text-shadow:-2px -2px 4px #000;color:#fff;padding-bottom:1rem}pre.output-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.output-block::before{content:"--- output ---";display:block;text-shadow:2px 2px 4px #000;color:#fff;padding-bottom:1rem}div.defn-text{margin-left:1rem}div.defn-term{font-weight:bold}div.id-target{display:none}div.nested{margin-left:5rem}div.toc .toc-item{margin-left:calc(var(--level)*1rem)}div.toc .toc-item::before{content:attr(data-bullet)}div.toc .toc-item a{padding-left:.4rem}div.index-section{margin-left:calc(var(--level)*1rem)}div.index-section>a.index-ref{white-space:nowrap;display:inline-block;width:5em;overflow:hidden;text-overflow:ellipsis}div.index-section>a.index-ref+span{display:none;width:0}div.index-section>a.index-ref:hover+span{display:inline-block;position:absolute;width:auto;z-index:5;background-color:#fff5ee;transform:translate(-5em, -1em)}span.developer-note{display:none;width:0;color:blue;text-shadow:2px 2px 5px green}span.developer-version{display:none;width:0;color:red;text-shadow:2px 2px 5px green}.delta::before,span.developer-text::before{content:"ℹ";vertical-align:super}.delta:hover .developer-version,span.developer-text:hover .developer-version{display:inline-block;position:absolute;width:100%;z-index:5;transform:translate(0.5rem, -1rem)}.delta:hover .developer-note,span.developer-text:hover .developer-note{display:inline-block;position:absolute;width:auto;z-index:5;margin-left:1rem}span.developer-text:hover{text-decoration:overline}div.footer{border-top:2px dashed;margin:1rem 0;padding:2rem}div.footer .footer-field{display:inline-block}div.footer .footer-line{display:block}.heading>a{color:maroon;text-decoration:none}h.title{font-size:larger}table,th,td{border:1px solid;border-collapse:collapse}.procedural-cell-left{text-align:left}.procedural-cell-centre{text-align:center}.procedural-cell-center{text-align:center}.procedural-cell-right{text-align:right}.procedural-cell-top{vertical-align:text-top}.procedural-cell-middle{vertical-align:baseline}.procedural-cell-bottom{vertical-align:text-bottom}.procedural-cell-label{font-weight:bold}li.item{padding-left:.4rem;margin-left:calc(var(--level)*1rem)}li.item::marker{content:attr(data-bullet)}
 </style>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-crossorigin=""
-/>
-
-<script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-crossorigin=""
-></script>
-<script src="https://unpkg.com/leaflet-providers@latest/leaflet-providers.js"
-></script>
-
-<script>// BulmaHelper.js
-var change_theme = function (theme) {
-    document.querySelector('html').className = '';
-    document.querySelector('html').classList.add('theme-' + theme);
-};
-var persisted_theme = function () { return localStorage.getItem('theme') };
-var persist_theme = function (theme) { localStorage.setItem('theme', theme) };
-
-var persisted_tocState = function () { return localStorage.getItem('tocOpen') };
-var persist_tocState = function (tocState) { localStorage.setItem('tocOpen', tocState ) };
-
-document.addEventListener('DOMContentLoaded', function () {
-    // set up functions needing document variables.
-    var matchTocState = function ( state ) {
-        if ( state ) {
-            document.getElementById("TOC").classList.remove('is-hidden');
-            persist_tocState( 'open');
-        }
-        else {
-            document.getElementById("TOC").classList.add('is-hidden');
-            persist_tocState( 'closed' );
-        }
-    }
-    var setTocState = function ( state ) {
-        if ( state === 'closed') {
-            document.getElementById("TOC").classList.add('is-hidden');
-            document.getElementById("navbar-toc-toggle").checked = false;
-        }
-        else {
-            document.getElementById("TOC").classList.remove('is-hidden');
-            document.getElementById("navbar-toc-toggle").checked = true;
-        }
-    };
-    // initialise if localStorage is set
-    let theme = persisted_theme();
-    if ( theme ) {
-        theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        change_theme(theme);
-        persist_theme(theme);
-    }
-    let tocState = persisted_tocState();
-    if ( tocState ) {
-        setTocState( tocState );
-        persist_tocState( tocState );
-    }
-
-    // Add listeners
-    // Get all "navbar-burger" elements
-    const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
-    // Check if there are any navbar burgers
-    if ($navbarBurgers.length > 0) {
-        // Add a click event on each of them
-        $navbarBurgers.forEach(el => {
-            el.addEventListener('click', () => {
-                // Get the target from the "data-target" attribute
-                const target = el.dataset.target;
-                const $target = document.getElementById(target);
-                // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
-                el.classList.toggle('is-active');
-                $target.classList.toggle('is-active');
-            });
-        });
-    };
-    // initialise window state
-    document.getElementById('changeTheme').addEventListener('click', function () {
-        let theme = persisted_theme() === 'light' ? 'dark' : 'light';
-        change_theme(theme);
-        persist_theme(theme);
-    });
-    document.getElementById("navbar-toc-toggle").addEventListener('change', function() {
-        matchTocState( this.checked )
-    });
-    document.getElementById('toc-tab').addEventListener('click', function () { swap_toc_index('toc') });
-    document.getElementById('index-tab').addEventListener('click', function () { swap_toc_index('index') });
-    // copy code block to clipboard adapted from solution at
-    // https://stackoverflow.com/questions/34191780/javascript-copy-string-to-clipboard-as-text-html
-    // if behaviour problems with different browsers add stylesheet code from that solution.
-//    $('.copy-code').click( function() {
-//        var codeElement = $(this).next().next(); // skip the label and get the div
-//        var container = document.createElement('div');
-//        container.innerHTML = codeElement.html();
-//        container.style.position = 'fixed';
-//        container.style.pointerEvents = 'none';
-//        container.style.opacity = 0;
-//        document.body.appendChild(container);
-//        window.getSelection().removeAllRanges();
-//        var range = document.createRange();
-//        range.selectNode(container);
-//        window.getSelection().addRange(range);
-//        document.execCommand("copy", false);
-//        document.body.removeChild(container);
-//    });
-});
-function swap_toc_index(activate) {
-    let disactivate = (activate == 'toc') ? 'index' : 'toc';
-    document.getElementById( activate + '-tab').classList.add('is-active');
-    document.getElementById( disactivate + '-menu').classList.add('is-hidden');
-    document.getElementById( disactivate + '-tab').classList.remove('is-active');
-    document.getElementById( activate + '-menu').classList.remove('is-hidden');
-}
-</script>
-
-
-    <link rel="icon" href="https://irclogs.raku.org/favicon.ico">
     </head>
-    <body class="has-navbar-fixed-top">
-    <nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
-<div class="navbar-brand">
-    <figure class="navbar-item is-128x128">
-        <a href="/index.html">
-        <img class="is-rounded" src="https://avatars.githubusercontent.com/u/58170775">
-        </a>
-    </figure>
-    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="pageNavigation">
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-      <span aria-hidden="true"></span>
-    </a>
-</div>
-<div id="pageNavigation" class="navbar-menu">
-    <div class="navbar-start">
-        <label class="chyronToggle">
-          <input id="navbar-toc-toggle" type="checkbox" />
-          <span class="checkmark"> </span>
-        </label>
-    </div>
-    <div class="navbar-end">
-        <div class="navbar-item">
-            <button id="changeTheme" class="button">Change theme</button>
-        </div>
-    </div>
-</nav>
-<section class="section">
-  <div class="container">
-<div id="Proving_a_renderer"></div><h1 class="title is-centered">Proving a renderer</h1>
+    <body>
+    <div id="Proving_a_renderer"></div><h1 class="title">Proving a renderer</h1>
 
-<p class="subtitle">A file with many RakuDoc components and some idea about what is expected.</p>
-  </div>
-</section>
+	A file with many RakuDoc components and some idea about what is expected.
 
-    <div class="columns">
-    <div id="TOC" class="column is-one-quarter">
-            <div class="container px-4">
-        <div class="tabs" id="tabs">
-            <ul>
-                <li class="is-active" id="toc-tab">
-                    <a>Table of Contents</a>
-                </li>
-                <li id="index-tab">
-                    <a>Index</a>
-                </li>
-            </ul>
-        </div>
-        <div class="container">
-            <aside id="toc-menu" class="menu">
-            <div class="toc">
+<div class="toc">
 <h2 class="toc-caption">Table of Contents</h2><div class="toc-item" style="--level:0;" data-bullet=""><a href="#SYNOPSIS">SYNOPSIS</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Purpose">Purpose</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Short_table_of_contents">Short table of contents</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#A_short_index">A short index</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#This_is_a_first_heading">This is a first heading</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#This_is_a_second_level_heading">This is a second level heading</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#This_is_third_level_heading">This is third level heading</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#This_is_a_numbered_heading,_level_1">This is a numbered heading, level 1</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#This_is_a_second_level_heading_0">This is a second level heading</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#A_third_level">A third level</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#Another_third_level">Another third level</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Back_to_second">Back to second</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#A_third_level_0">A third level</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#Another_third_level_0">Another third level</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Lists">Lists</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Taking_a_bullet">Taking a bullet</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Blocks_that_are_processed_differently">Blocks that are processed differently</a></div>
 <div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Unrelenting_hype">Unrelenting hype</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Formula_cannot_be_rendered">Fabulous identity</a></div>
@@ -297,45 +40,11 @@ function swap_toc_index(activate) {
 <div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#JPEG_image_placement">JPEG image placement</a></div>
 <div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Png_image_placement">Png image placement</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Credits">Credits</a></div>
-<div class="toc-item" style="--level:0;" data-bullet=""><a href="#Placement">Placement</a></div>
+<div class="toc-item" style="--level:0;" data-bullet=""><a href="#LICENSE_0">LICENSE</a></div>
 </div>
 
-            </aside>
-            <aside id="index-menu" class="menu is-hidden">
-            <div class="index">
-            <h2 class="index-caption">Index</h2>
-            <div class="index-section" data-index-level="0"><span class="index-entry">elements to be placed:  </span><a class="index-ref" href="#index-entry-elements_to_be_placed">This is third level heading</a><span>This is third level heading</span>
-
-</div><div class="index-section" data-index-level="0"><span class="index-entry">formatting code:  </span><a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
-
-</div><div class="index-section" data-index-level="0"><span class="index-entry">index:  </span><a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
-
-<div class="index-section" style="--level:1;">
-<span class="index-name">entry: </span><a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span><div class="index-section" style="--level:2;">
-<span class="index-name">nested: </span><a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
-</div>
-<div class="index-section" style="--level:1;">
-<span class="index-name">multiple entries: </span><a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
-<div class="index-section" style="--level:1;">
-<span class="index-name">subentry: </span><a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span><div class="index-section" style="--level:2;">
-<span class="index-name">multilevel: </span><a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
-<div class="index-section" style="--level:2;">
-<span class="index-name">rendering: </span><a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span></div>
-</div>
-</div><div class="index-section" data-index-level="0"><span class="index-entry">inline formatting:  </span><a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
-
-</div>
-            </div>
-
-            </aside>
-        </div>
-    </div>
-
-    </div>
-    <div class="column">
-        <div class="container px-4">
-        
-<div class="id-target" id=""></div><h2 id="SYNOPSIS" class="heading"><a href="#" title="go to top of document">SYNOPSIS</a></h2>
+    
+<div class="id-target" id=""></div><h2 id="SYNOPSIS" class="heading "><a href="#" title="go to top of document">SYNOPSIS</a></h2>
 <p id="4c4dada">Assuming a new renderer has been developed and installed (eg using <span class="important">zef</span>) at <span class="basis">Rakudoc::To::MyRender</span>, the render this file using a <span class="code">raku --rakudoc=MyRenderer</span> terminal command. The renderer will be consistent with the RakuDoc v2 specification if all the blocks are rendered appropriately, and warnings are generated by the statements marked as incorrect below. </p>
 
 
@@ -351,47 +60,45 @@ function swap_toc_index(activate) {
 <p id="198d613">Several <span class="important">mistakes</span> have been included where the RakuDoc v2 specification indicates how inconsistent behaviours or unknown components should be handled. </p>
 <p id="d6a1df2">The the end of the rendering of this source file, a number of warning messages should be included. </p>
 
-<div id="Short_table_of_contents"> </div>
-
-
-<div id="A_short_index"> </div><div class="toc">
-<h2 class="toc-caption">Table of Contents</h2><div class="toc-item" style="--level:0;" data-bullet=""><a href="#SYNOPSIS">SYNOPSIS</a></div>
+<div class="id-target" id=""></div><h2 id="Short_table_of_contents" class="heading "><a href="#" title="go to top of document">Short table of contents</a></h2>
+<div class="toc">
+<h2 class="toc-caption"></h2><div class="toc-item" style="--level:0;" data-bullet=""><a href="#SYNOPSIS">SYNOPSIS</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Purpose">Purpose</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Short_table_of_contents">Short table of contents</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#A_short_index">A short index</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#This_is_a_first_heading">This is a first heading</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#This_is_a_second_level_heading">This is a second level heading</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#This_is_third_level_heading">This is third level heading</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#This_is_a_numbered_heading,_level_1">This is a numbered heading, level 1</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#This_is_a_second_level_heading_0">This is a second level heading</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#A_third_level">A third level</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#Another_third_level">Another third level</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Back_to_second">Back to second</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#A_third_level_0">A third level</a></div>
-<div class="toc-item" style="--level:2;" data-bullet="‣"><a href="#Another_third_level_0">Another third level</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Lists">Lists</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Taking_a_bullet">Taking a bullet</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Blocks_that_are_processed_differently">Blocks that are processed differently</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Unrelenting_hype">Unrelenting hype</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Formula_cannot_be_rendered">Fabulous identity</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#A_customised_block">A customised block</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#This_is_an_extraordinary_paragraph">This is an extraordinary paragraph</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Some_tables">Some tables</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#A_visual_table">A visual table</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#A_visual_table_with_a_stupendously_long_caption">A visual table with a stupendously long caption</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#A_procedural_table">A procedural table</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Scoping_examples">Scoping examples</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Placements">Placements</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Text_placement">Text placement</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#RakuDoc_placement">RakuDoc placement</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#A_ware">A ware</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#B_ware">B ware</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#HTML_placement">HTML placement</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#JPEG_image_placement">JPEG image placement</a></div>
-<div class="toc-item" style="--level:1;" data-bullet="▹"><a href="#Png_image_placement">Png image placement</a></div>
 <div class="toc-item" style="--level:0;" data-bullet=""><a href="#Credits">Credits</a></div>
-<div class="toc-item" style="--level:0;" data-bullet=""><a href="#Placement">Placement</a></div>
+<div class="toc-item" style="--level:0;" data-bullet=""><a href="#LICENSE_0">LICENSE</a></div>
+</div>
+
+
+
+<div class="id-target" id=""></div><h2 id="A_short_index" class="heading "><a href="#" title="go to top of document">A short index</a></h2>
+<div class="index"><h2 class="index-caption"></h2>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">elements to be placed</span>: <a class="index-ref" href="#index-entry-elements_to_be_placed">This is third level heading</a><span>This is third level heading</span>
+</div>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">formatting code</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">index</span>: <a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">inline formatting</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+
 </div>
 
 
@@ -424,25 +131,21 @@ function swap_toc_index(activate) {
 <p id="19ff975">We can also make an inline <span class="basis">definition</span>. This whole paragraph will be referenced later. </p>
 <p id="9858a53">A developer note <span class="developer-text">can be attached<span class="developer-version">v1.2.3 ^.. v2.0.0<span class="developer-note"> highly deprecated</span></span></span> to text. A renderer may show the text or only show it for contexts compliant with the version. </p>
 <p id="3f70975">But a note without meta no versioning here is ignored and a warning generated. </p>
-<p id="8d264c7">When we want a formula <span class="code"><div class="latex-render">
-<img src="https://latex.codecogs.com/svg.image?\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}" />
-<img class="logo" src="https://www.codecogs.com/images/poweredbycodecogs.png" border="0" alt="CodeCogs - An Open Source Scientific Library"></a>
-</div>
-</span> use F&lt;&gt; markup. </p>
+<p id="2613d38">When we want a formula <span class="code">\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}</span> use F&lt;&gt; markup. </p>
 <p id="bf10a46">Links can be made internally <a href="#This_is_a_first_heading">say to the first heading</a> or externally <a href="https://docs.raku.org">say to the raku documentation site</a>. </p>
 <p id="1551c4d">A renderer should provide the opportunity to customise text using M&lt;...|..,..;...&gt; markup. The renderer <span class="code">should not recognise this functionality</span> and issue a warning. </p>
 <p id="da3d4cb">A note <a id="N<such_as_this_one>" href="#fn_target_N<such_as_this_one>"><span class="footnote">[ 1 ]</span></a> will not itself be rendered inline, but the text will be rendered in a footnote or popup. A marker or number will be rendered to point to the text. </p>
-<p id="ce8fa39">Suppose we want to place the definition 
+<p id="b23dc3c">Suppose we want to place the definition 
 
-&#x2997;  <span class="developer-note"><p id="19ff975">We can also make an inline <span class="basis">definition</span>. This whole paragraph will be referenced later. </p>
-</span>
+&#x2997;  <div class="defn-text"><p id="19ff975">We can also make an inline <span class="basis">definition</span>. This whole paragraph will be referenced later. </p>
+</div>
 &#x2998; here. And to confound pedants, here is a definition 
 
-&#x2997;  <span class="developer-note"><div class="defn-term">Happy</div>
+&#x2997;  <div class="defn-text"><div class="defn-term">Happy</div>
 
 <div class="defn-text">when not blue </div>
 
-</span>
+</div>
 &#x2998; defined using a <span class="code">=defn</span> block. </p>
 <p id="839cb63">Normally extra spaces are removed with paragraphs, but sometimes we truly dot dot dot&nbsp;&nbsp; dash dash dash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; want them. </p>
 <p id="6a58af6">Good text will contain <span id="index-entry-elements_to_be_placed"><span class="indexed">elements to be placed</span></span> in an index. The index has already been placed at the start of the document, although content is generated here. </p>
@@ -568,13 +271,13 @@ function swap_toc_index(activate) {
 # a brilliant program!
 </pre>
 <pre class="code-block">my $x = 3;
-# a renderer &lt;span class="basis"&gt;should&lt;/span&gt; observe the basis markup
-# and the &lt;span class="keyboard"&gt;markup&lt;/span&gt; but render R&lt;markup&gt; verbatim
+# a renderer <span class="basis">should</span> observe the basis markup
+# and the <span class="keyboard">markup</span> but render R<markup> verbatim
 </pre>
 <pre class="code-block"># indenting causes an implicit code block
 my $raku = 'fantastic';
 </pre>
-<pre class="input-block">This is a text with &lt;span class="basis"&gt;basis&lt;/span&gt; markup that conserves
+<pre class="input-block">This is a text with <span class="basis">basis</span> markup that conserves
 all spacing      when trying    to get column
 just using       white spaces   naively
 better           to             use tables
@@ -586,21 +289,14 @@ but may have a different styling
 </div>
 <p id="ccd64b2">The following semantic block was included at the beginning in source, but it is now included here. </p>
 
-<div id="Unrelenting_hype"> </div>
-<div class="id-target" id=""></div><h2 id="AUTHORS" class="heading"><a href="#" title="go to top of document">AUTHORS</a></h2>
+<div class="id-target" id=""></div><h3 id="Unrelenting_hype" class="heading "><a href="#" title="go to top of document">Unrelenting hype</a></h3>
 Richard Hainsworth, aka finanalyst
 
 
 
 
 <div class="id-target" id=""></div><h2 id="Formula_cannot_be_rendered" class="heading"><a href="#" title="go to top of document">Fabulous identity</a></h2>
-<div class="formula"><div class="latex-render">
-<img src="https://latex.codecogs.com/svg.image?e^{i\pi}+1=0
-
-" />
-<img class="logo" src="https://www.codecogs.com/images/poweredbycodecogs.png" border="0" alt="CodeCogs - An Open Source Scientific Library"></a>
-</div>
-</div>
+<div class="formula">e^{i\pi}+1=0</div>
 <div class="id-target" id=""></div><h2 id="A_customised_block" class="heading"><a href="#" title="go to top of document">UNKNOWN MyBlock</a></h2>
 =begin MyBlock :caption&lt;A customised block&gt; :headlevel(2)<br>Actually it fails because no customisation has been made.<br>It<br>should<br>be<br>rendered without spaces&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;being chewed up.<br>=end MyBlock<br><br>
 
@@ -657,7 +353,8 @@ Richard Hainsworth, aka finanalyst
 <div class="id-target" id=""></div><h2 id="Placements" class="heading "><a href="#" title="go to top of document">Placements</a></h2>
 <p id="bef1786">Renderers are required to place text and RakuDoc sources, but may fallback to text messages for other formats. </p>
 
-<div id="Text_placement"> </div>ABSOLUTELY NO WARRANTY IS IMPLIED. NOT EVEN OF ANY KIND. WE HAVE SOLD
+<div class="id-target" id=""></div><h3 id="Text_placement" class="heading "><a href="#" title="go to top of document">Text placement</a></h3>
+ABSOLUTELY NO WARRANTY IS IMPLIED. NOT EVEN OF ANY KIND. WE HAVE SOLD
 YOU THIS SOFTWARE WITH NO HINT OF A SUGGESTION THAT IT IS EITHER USEFUL
 OR USABLE. AS FOR GUARANTEES OF CORRECTNESS...DON'T MAKE US LAUGH! AT
 SOME TIME IN THE FUTURE WE MIGHT DEIGN TO SELL YOU UPGRADES THAT PURPORT
@@ -667,7 +364,8 @@ EMPLOYEES, SO DON'T EVEN *THINK* ABOUT SUING US. HAVE A NICE DAY.
 
 
 
-<div id="RakuDoc_placement"> </div>
+<div class="id-target" id=""></div><h3 id="RakuDoc_placement" class="heading "><a href="#" title="go to top of document">RakuDoc placement</a></h3>
+
 <div class="id-target" id=""></div><h2 id="A_ware" class="heading "><a href="#" title="go to top of document">A ware</a></h2>
 <p id="20af981">Absolutely no warranty is implied. <span class="basis">Not even of any kind</span>. We have sold you this <span class="code">software</span> with no hint of a suggestion that it is either useful or usable. As for guarantees of correctness...don't make us laugh! </p>
 
@@ -677,7 +375,8 @@ EMPLOYEES, SO DON'T EVEN *THINK* ABOUT SUING US. HAVE A NICE DAY.
 
 
 
-<div id="HTML_placement"> </div><html>
+<div class="id-target" id=""></div><h3 id="HTML_placement" class="heading "><a href="#" title="go to top of document">HTML placement</a></h3>
+<html>
 <head>
     <meta content-type="text/html; charset=utf-8" />
     <title>Complete disclaimer</title>
@@ -701,59 +400,76 @@ Have a nice day. &#x263A;
 </html>
 
 
-<div id="JPEG_image_placement"> </div><img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg">JPEG image placement</img> 
+<div class="id-target" id=""></div><h3 id="JPEG_image_placement" class="heading "><a href="#" title="go to top of document">JPEG image placement</a></h3>
+<img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg">JPEG image placement</img> 
 
 
-<div id="Png_image_placement"> </div><img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png">Png image placement</img> 
+<div class="id-target" id=""></div><h3 id="Png_image_placement" class="heading "><a href="#" title="go to top of document">Png image placement</a></h3>
+<img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png">Png image placement</img> 
 
 <p id="8ec3517">Text finishes after version number </p>
 
-<div id="Credits"> </div>
-<div class="id-target" id=""></div><h2 id="AUTHORS" class="heading"><a href="#" title="go to top of document">AUTHORS</a></h2>
+<div class="id-target" id=""></div><h2 id="Credits" class="heading "><a href="#" title="go to top of document">Credits</a></h2>
 Richard Hainsworth, aka finanalyst
 
 
 
 
-<div id="Placement"> </div>
-<div class="id-target" id=""></div><h2 id="LICENSE" class="heading"><a href="#" title="go to top of document">LICENSE</a></h2>
+<div class="id-target" id=""></div><h2 id="LICENSE_0" class="heading "><a href="#" title="go to top of document">LICENSE</a></h2>
 Artistic-2.0
 
 
 
 
-<div id="Placement_0"> </div>
-<div class="id-target" id=""></div><h2 id="VERSION" class="heading"><a href="#" title="go to top of document">VERSION</a></h2>
+<div class="id-target" id=""></div><h2 id="VERSION_0" class="heading "><a href="#" title="go to top of document">VERSION</a></h2>
 v0.2.1
 
 
-
-        </div>
-        <div class="container px-4">
-            <div class="footnotes">
+    <div class="footnotes">
     <h2 class="footnote-caption">Footnotes</h2>
     <div class="footnote">1<a id="fn_target_N<such_as_this_one>" href="#N<such_as_this_one>"> |^| </a>such as this one</div>
     </div>
 
-        </div>
-    </div>
+<div class="index"><h2 class="index-caption">Index</h2>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">elements to be placed</span>: <a class="index-ref" href="#index-entry-elements_to_be_placed">This is third level heading</a><span>This is third level heading</span>
+</div>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">formatting code</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">index</span>: <a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="2">
+entry: <a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="3">
+nested: <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="2">
+multiple entries: <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="2">
+subentry: <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="3">
+multilevel: <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="3">
+rendering: <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>
+</div>
+<div class="index-section" data-index-level="1">
+<span class="index-entry">inline formatting</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
 </div>
 
-    <footer class="footer main-footer">
-    <div class="container px-4">
-        <nav class="level">
-            <div class="level-item">
-                Rendered from <span class="footer-field">resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc</span>
-            </div>
-            <div class="level-item">
-                Rendered at 09:40 UTC on 2024-07-26</span>
-            </div>
-            <div class="level-item">
-                Source last modified at 20:36 UTC on 2024-07-25</span>
-            </div>
-        </nav>
-    </div>
-    <div class="section"><div class="container px-4 warnings">    <div class="warnings">
+</div>
+
+    
+<div class="footer">
+    Rendered from <span class="footer-field">resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc</span>
+<span class="footer-field"> at 19:55 UTC on 2024-07-28</span>
+<span class="footer-line">Source last modified at 20:36 UTC on 2024-07-25</span>
+<div class="warnings">    <div class="warnings">
     <h2 class="warnings-caption">Warnings</h2>
         <ol>
         <li>｢G｣ is not defined, but is reserved for future use in block ｢rakudoc｣ with heading ｢This is third level heading｣.</li>
@@ -767,8 +483,8 @@ v0.2.1
 
         </ol>
     </div>
-</div></div>
-</footer>
+</div>
+</div>
 
 </body>
 </html>

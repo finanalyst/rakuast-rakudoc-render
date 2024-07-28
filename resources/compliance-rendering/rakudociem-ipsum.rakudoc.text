@@ -1,20 +1,11 @@
 [21mTable of Contents[24m
 SYNOPSIS
 Purpose
-The table of contents
+Short table of contents
 A short index
 This is a first heading
-  - This is a second level heading
-    - This is third level heading
 This is a numbered heading, level 1
-  - This is a second level heading
-    - A third level
-    - Another third level
-  - Back to second
-    - A third level
-    - Another third level
 Lists
-  - Taking a bullet
 Blocks that are processed differently
   - Unrelenting hype
 Fabulous identity
@@ -26,6 +17,16 @@ Some tables
   - A procedural table
 Adding index entries to your text
 Scoping examples
+Placements
+  - Text placement
+  - RakuDoc placement
+A ware
+B ware
+  - HTML placement
+  - JPEG image placement
+  - Png image placement
+Credits
+LICENSE
 
 
 
@@ -53,48 +54,38 @@ Several [3mmistakes[23m have been included where the RakuDoc v2 specification 
 
 The the end of the rendering of this source file, a number of warning messages should be included. 
 
-[21mTable of Contents[24m
+
+[21m[1mShort table of contents[22m[24m
+[21m[24m
 SYNOPSIS
 Purpose
-The table of contents
+Short table of contents
 A short index
 This is a first heading
-  - This is a second level heading
-    - This is third level heading
 This is a numbered heading, level 1
-  - This is a second level heading
-    - A third level
-    - Another third level
-  - Back to second
-    - A third level
-    - Another third level
 Lists
-  - Taking a bullet
 Blocks that are processed differently
-  - Unrelenting hype
 Fabulous identity
-  - A customised block
 This is an extraordinary paragraph
 Some tables
-  - A visual table
-  - A visual table with a stupendously long caption
-  - A procedural table
 Adding index entries to your text
 Scoping examples
+Placements
+A ware
+B ware
+Credits
+LICENSE
 
 
 
 
-[21mIndex[24m
+
+[21m[1mA short index[22m[24m
+[21m[24m
+
 [48;5;2melements to be placed[39;49m: see in § This is third level heading
 [48;5;2mformatting code[39;49m: see in § Adding index entries to your text
 [48;5;2mindex[39;49m: see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
-	- entry : see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
-		- nested : see in § Adding index entries to your text
-	- multiple entries : see in § Adding index entries to your text
-	- subentry : see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
-		- multilevel : see in § Adding index entries to your text
-		- rendering : see in § Adding index entries to your text
 [48;5;2minline formatting[39;49m: see in § Adding index entries to your text
 
 
@@ -164,7 +155,7 @@ Suppose we want to place the definition [1mIm-a-doppelganger[22m
 
 ⦘ here. And to confound pedants, here is a definition [1mHappy[22m
 ⦗[1mHappy[22m
-  [48;5;243mwhen not blue[39;49m
+  [48;5;243mwhen not blue [39;49m
 
 ⦘ defined using a [7m=defn[27m block. 
 
@@ -234,11 +225,11 @@ to put space between lists, probably a [7m=para[27m without text is needed.
 
 
 [1mDefinitions[22m
-  [48;5;243mcan be placed in lists[39;49m
+  [48;5;243mcan be placed in lists [39;49m
 [1mHappy[22m
-  [48;5;243mwhen not blue[39;49m
+  [48;5;243mwhen not blue [39;49m
 [1mBlue[22m
-  [48;5;243mwhen not happy[39;49m
+  [48;5;243mwhen not happy [39;49m
 [1mBeing assertive[22m
   [48;5;243mJust [1mshout[22m why don't you? 
 
@@ -247,16 +238,16 @@ to put space between lists, probably a [7m=para[27m without text is needed.
 
 This is an ordinary paragraph 
 
-[1m1.Lemma 1[22m
-  [48;5;243mdo not make trouble[39;49m
-[1m2.Lemma 2[22m
-  [48;5;243mdo not shout at people[39;49m
-[1m3.Lemma 3[22m
-  [48;5;243mjust phone the SWAT team[39;49m
+[1m1. Lemma 1[22m
+  [48;5;243mdo not make trouble [39;49m
+[1m2. Lemma 2[22m
+  [48;5;243mdo not shout at people [39;49m
+[1m3. Lemma 3[22m
+  [48;5;243mjust phone the SWAT team [39;49m
 An ordinary paragraph creates the definition list. 
 
-[1m4.Lemma 4[22m
-  [48;5;243mClaim you are the victim here[39;49m
+[1m4. Lemma 4[22m
+  [48;5;243mClaim you are the victim here [39;49m
 
   [21m[1mTaking a bullet[22m[24m
 The project originally consisted of five phases, of which two are already complete and two have been abandoned: 
@@ -290,9 +281,8 @@ my $x = 3;
   --- ----- ---
 
   --- code --- 
-# indenting causes an implicit code block my $raku = 'fantastic'; 
-
-
+# indenting causes an implicit code block
+my $raku = 'fantastic';
   --- ----- ---
 
   --- input --- 
@@ -313,7 +303,7 @@ but may have a different styling
 The following semantic block was included at the beginning in source, but it is now included here. 
 
 
-[21m[1mAUTHORS[22m[24m
+  [21m[1mUnrelenting hype[22m[24m
 Richard Hainsworth, aka finanalyst
 
 
@@ -384,11 +374,83 @@ But configuration directives [7monly B<apply> inside[27m a block scope.
 
 Did I mention before that: Do not consider this a disquisition of possible combinations. 
 
+
+[21m[1mPlacements[22m[24m
+Renderers are required to place text and RakuDoc sources, but may fallback to text messages for other formats. 
+
+
+  [21m[1mText placement[22m[24m
+ABSOLUTELY NO WARRANTY IS IMPLIED. NOT EVEN OF ANY KIND. WE HAVE SOLD
+YOU THIS SOFTWARE WITH NO HINT OF A SUGGESTION THAT IT IS EITHER USEFUL
+OR USABLE. AS FOR GUARANTEES OF CORRECTNESS...DON'T MAKE US LAUGH! AT
+SOME TIME IN THE FUTURE WE MIGHT DEIGN TO SELL YOU UPGRADES THAT PURPORT
+TO ADDRESS SOME OF THE APPLICATION'S MANY DEFICIENCIES, BUT NO PROMISES
+THERE EITHER. WE HAVE MORE LAWYERS ON STAFF THAN YOU HAVE TOTAL
+EMPLOYEES, SO DON'T EVEN *THINK* ABOUT SUING US. HAVE A NICE DAY.
+
+
+
+  [21m[1mRakuDoc placement[22m[24m
+
+[21m[1mA ware[22m[24m
+Absolutely no warranty is implied. [1mNot even of any kind[22m. We have sold you this [7msoftware[27m with no hint of a suggestion that it is either useful or usable. As for guarantees of correctness...don't make us laugh! 
+
+
+[21m[1mB ware[22m[24m
+At [4msome[24m time in the future we might deign to sell you upgrades that purport to address some of the application's many deficiencies, but no promises there either. We have more lawyers on staff than you have total employees, so don't even [1m[3mthink[23m[22m about suing us. 
+
+Have a nice day. ☺ 
+
+
+
+
+  [21m[1mHTML placement[22m[24m
+<html>
+<head>
+    <meta content-type="text/html; charset=utf-8" />
+    <title>Complete disclaimer</title>
+</head>
+<body>
+<h1>A ware</h1>
+
+Absolutely no warranty is implied. <B>Not even of any kind</B>. We have sold
+you this <code>software</code> with no hint of a suggestion that it is either useful
+or usable. As for guarantees of correctness...don't make us laugh!
+
+<h1>B ware</h1>
+
+At <U>some</U> time in the future we might deign to sell you upgrades that purport
+to address some of the application's many deficiencies, but no promises
+there either. We have more lawyers on staff than you have total
+employees, so don't even <B>think</B> about suing us.
+
+Have a nice day. &#x263A;
+</body>
+</html>
+
+
+  [21m[1mJPEG image placement[22m[24m
+Link returned image/jpeg, which cannot be rendered
+
+
+  [21m[1mPng image placement[22m[24m
+Link returned image/png, which cannot be rendered
+
 Text finishes after version number 
 
 
+[21m[1mCredits[22m[24m
+Richard Hainsworth, aka finanalyst
+
+
+
+[21m[1mLICENSE[22m[24m
+Artistic-2.0
+
+
+
 [21m[1mVERSION[22m[24m
-v0.2.0
+v0.2.1
 
 
 
@@ -400,22 +462,23 @@ v0.2.0
 
 ================================================================================
 [21mIndex[24m
+
 [48;5;2melements to be placed[39;49m: see in § This is third level heading
 [48;5;2mformatting code[39;49m: see in § Adding index entries to your text
 [48;5;2mindex[39;49m: see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
-	- entry : see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
-		- nested : see in § Adding index entries to your text
-	- multiple entries : see in § Adding index entries to your text
-	- subentry : see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
-		- multilevel : see in § Adding index entries to your text
-		- rendering : see in § Adding index entries to your text
+		entry: see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
+			nested: see in § Adding index entries to your text
+		multiple entries: see in § Adding index entries to your text
+		subentry: see in § Adding index entries to your text, § Adding index entries to your text, § Adding index entries to your text
+			multilevel: see in § Adding index entries to your text
+			rendering: see in § Adding index entries to your text
 [48;5;2minline formatting[39;49m: see in § Adding index entries to your text
 
 
 
 ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-Rendered from rakudociem-ipsum.rakudoc/rakudociem-ipsum.rakudoc at 14:47 UTC on 2024-06-19
-Source last modified at 14:42 UTC on 2024-06-19
+Rendered from resources/compliance-rendering/rakudociem-ipsum.rakudoc/resources/compliance-rendering/rakudociem-ipsum.rakudoc at 10:56 UTC on 2024-07-28
+Source last modified at 20:36 UTC on 2024-07-25
 
 ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
 [21mWARNINGS[24m

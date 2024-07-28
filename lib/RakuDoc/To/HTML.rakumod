@@ -154,6 +154,7 @@ method html-templates {
             my $del = %prm<delta> // '';
             PStr.new:
                 qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
                 qq[[<$h id="$targ" class="heading {'delta' if $del}">]] ~
                 ($del if $del) ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
@@ -166,6 +167,7 @@ method html-templates {
             my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
+                ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
                 qq[[<$h id="$targ" class="heading">]] ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
@@ -231,16 +233,18 @@ method html-templates {
         },
         #| renders =place block
         place => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            my $rv = PStr.new;
-            $rv ~= $del ~ "\n";
-            $rv ~= qq[<div id="{ %prm<target> }"> </div>];
-            $rv ~= qq[<div id="{ %prm<id> }"> </div>] if %prm<id>;
-            if %prm<content-type>.contains('text') {
-                $rv ~= %prm<contents>
-            }
-            else {
-                $rv ~= qq[<p>Placement of {%prm<content-type>} requires internet or is not yet implemented</p> ]
+            my $level = %prm<headlevel> // 1;
+            my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+            given %prm<content-type> {
+                when .contains('text') {
+                    $rv ~= %prm<contents>
+                }
+                when .contains('image') {
+                    $rv ~= qq[<img src="{ %prm<uri> }">%prm<caption>\</img> ]
+                }
+                default {
+                    $rv ~= qq[<p>Placement of {%prm<content-type>} is not yet implemented or requires internet connection</p> ]
+                }
             }
             $rv ~= "\n\n";
         },
@@ -253,16 +257,11 @@ method html-templates {
         },
         #| renders =SEMANTIC block, if not otherwise given
         semantic => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-            my $title = %prm<caption>;
-            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading">]] ~
-                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
-                $title ~
-                qq[[</a></$h>\n]] ~
-                (%prm<delta> // '') ~
-                %prm<contents> ~ "\n\n"
+            my $level = %prm<headlevel> // 1;
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+
+            ( $head unless %prm<hidden> ) ~
+            %prm<contents> ~ "\n\n"
         },
         #| renders =pod block
         pod => -> %prm, $tmpl { %prm<contents> },
@@ -360,32 +359,20 @@ method html-templates {
         },
         #| renders a single item in the index
         index-item => -> %prm, $tmpl {
-            sub si( %h, $n ) {
-                my $rv = '';
-                for %h.sort( *.key )>>.kv -> ( $k, %v ) {
-                    $rv ~= qq[<div class="index-section" style="--level:{$n};">\n<span class="index-name">{$k}: </span>] ~
-                        %v<refs>.map({ qq[<a class="index-ref" href="#{ .<target> }">{ .<place> }</a><span>{ .<place> }</span>] }).join(', ') ~
-                        si( %v<sub-index>, $n + 1 ) ~
-                        "</div>\n"
-                        ;
-                }
-                $rv
-            }#qq[<div id="{ %prm<target> }"> </div>] ~
+            my $n = %prm<level>;
             PStr.new:
-                '<div class="index-section" data-index-level="0">' ~
-                INDEX-ENTRY-ON ~ %prm<entry> ~ ':  ' ~ INDEX-ENTRY-OFF ~
-                %prm<entry-data><refs>.map({
+                qq[<div class="index-section" data-index-level="$n">\n] ~
+                (INDEX-ENTRY-ON if $n == 1) ~ %prm<entry> ~ (INDEX-ENTRY-OFF if $n == 1) ~ ': ' ~
+                %prm<refs>.map({
                     qq[<a class="index-ref" href="#{ .<target> }">{ .<place> }</a><span>{ .<place> }</span>] }).join(', ')
-                ~ "\n\n"
-                ~ si( %prm<entry-data><sub-index>, 1 ) ~
-                '</div>'
+                ~ "\n</div>\n"
         },
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
-            qq[<div class="index">
-            <h2 class="index-caption">{%prm<caption>}</h2>
-            {[~] %prm<index-list>}
-            </div>\n]
+            my $cap = %prm<caption>:exists ?? qq[<h2 class="index-caption">{%prm<caption>}</h2>] !! '';
+            PStr.new: '<div class="index">' ~ $cap ~ "\n" ~
+            ([~] %prm<index-list>) ~ "\n</div>\n"
+
         },
         #| special template to render the footnotes data structure
         footnotes => -> %prm, $tmpl {
@@ -495,22 +482,22 @@ method html-templates {
         #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
         #| Link ( L<display text|destination URI> )
         markup-L => -> %prm, $tmpl {
-            my $target = %prm<target>;
+            my $target = %prm<target>.trim.subst(/ '.*' /, ".%prm<output-format>", :g);
             my $text = %prm<link-label>;
             given %prm<type> {
                 when 'local' {
                     if %prm<place>:exists {
-                        qq[<a href="{$target.trim}.html#%prm<place>">$text\</a>]
+                        qq[<a href="{$target}#%prm<place>">$text\</a>]
                     }
                     else {
-                        qq[<a href="{$target.trim}.html">$text\</a>]
+                        qq[<a href="{$target}">$text\</a>]
                     }
                 }
                 when 'internal' {
-                    qq[<a href="#{$target.trim}">$text\</a>]
+                    qq[<a href="#{$target}">$text\</a>]
                 }
                 default {
-                    qq[<a href="{$target.trim}">$text\</a>]
+                    qq[<a href="$target">$text\</a>]
                 }
             }
         },
@@ -524,11 +511,16 @@ method html-templates {
                     "\n&#x2998;"
                 }
                 default {
-                    if %prm<content-type>.contains('text') {
-                        %prm<contents>
-                    }
-                    else {
-                        qq[<span class="error">Placement of {%prm<content-type>} requires internet or is not yet implemented</span> ]
+                    given %prm<content-type> {
+                        when .contains('text') {
+                            %prm<contents>
+                        }
+                        when .contains('image') {
+                            qq[<img src="{ %prm<uri> }">%prm<caption>\</img> ]
+                        }
+                        default {
+                            qq[<p>Placement of {%prm<content-type>} is not yet implemented or requires internet connection</p> ]
+                        }
                     }
                 }
             }

@@ -146,7 +146,7 @@ class RakuDoc::Processor {
         # so ToC and Index need to be rendered and any other PCells triggered
         # toc may contain numbered captions, so the heading-numbers need to be calculated
         self.complete-heading-numerations;
-        $!current.rendered-toc = self.complete-toc;
+        $!current.rendered-toc = self.complete-toc( :spec( '*' ), :caption( $!current.source-data<toc-caption>));
         my @pcells = $!current.rendered-toc.has-PCells;
         if @pcells.elems {
             $!current.warnings.push( 'In ToC: ' ~ $_ ) for @pcells
@@ -154,33 +154,19 @@ class RakuDoc::Processor {
         $!current.rendered-toc .= Str;
         #render filtered toc, if any
         for $!register.list-unexpanded('toc').kv -> $id, $spec {
-            if $spec eq '*' {
-                $!register.add-payload(:payload( self.complete-toc.strip ) , :$id);
-                next
-            }
-            my Set $levels .= new: $spec.EVAL.list;
-            my @toc-list = gather for $!current.toc -> $toc-entry {
-                take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ $toc-entry<level> }
-            }
-            my $payload = %!templates<toc>( %(:@toc-list, ) ).strip
-                if @toc-list.elems;
+            my $payload = self.complete-toc( :$spec, :caption('')).strip.Str;
             $!register.add-payload(:$payload, :$id)
         }
         # render indices
-        $!current.rendered-index = self.complete-index;
+        $!current.rendered-index = self.complete-index( :spec('*'), :caption( $!current.source-data<index-caption> ) );
         @pcells = $!current.rendered-index.has-PCells;
         if @pcells.elems {
             $!current.warnings.push( 'In Index: ' ~ $_ ) for @pcells
         }
         $!current.rendered-index .= Str;
         # place for rendering filtered index
-        # no filter apart from index:* specified, so only that is implemented here
-        # everything else is considered to be *
         for $!register.list-unexpanded('index').kv -> $id, $spec {
-        #     if $spec eq '*' {
-                $!register.add-payload(:payload( self.complete-toc.strip ) , :$id);
-        #         next
-        #     }
+                $!register.add-payload(:payload( self.complete-index(:$spec, :caption('')).strip.Str ) , :$id);
         }
         $!current.body.strip; # replace expanded PCells with Str
         # all suspended PCells should have been replaced by Str
@@ -613,7 +599,7 @@ class RakuDoc::Processor {
                 }
                 $!current.links{$_} = %(:$target, :$link-label, :$type, :$extra);
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$target, :$link-label, :$type, :$extra, %config)
+                    %( :$target, :$link-label, :$type, :$extra, :$!output-format, %config)
                 );
                 $prs.body ~= $rv;
             }
@@ -1054,7 +1040,12 @@ class RakuDoc::Processor {
     method gen-place($ast) {
         my %config = $.merged-config( $ast, 'place');
         my $uri = %config<uri>:delete;
-        %config<caption> = 'Placement' unless %config<caption>:exists;
+        unless %config<caption>:exists {
+            if $uri ~~ / 'semantic:' (.+) / {
+                %config<caption> = ~$0
+            }
+            else { %config<caption> = 'Placement' }
+        }
         my $caption = %config<caption>;
         my $level = %config<headlevel> // 1;
         $!scoped-data.last-title($caption);
@@ -1077,28 +1068,27 @@ class RakuDoc::Processor {
         my Bool $keep-format = False;
         # defaults when no schema is explicit
         my $schema = 'file';
-        my $body = $uri;
+        my $uri-body = $uri;
         my $contents;
         #defaults to text type of contents, could be blob from https
         %config<content-type> = 'text';
         my $prs := $*prs;
         if $uri ~~ / ^ $<sch> = (\w+) ':' $<body> = (.+) $ / {
             $schema = $/<sch>.Str;
-            $body = $/<body>.Str
+            $uri-body = $/<body>.Str
         }
         given $schema {
             when 'toc' {
-                # TODO add the constraints for toc: in RakuDoc v2.
-                $contents = PCell.new( :$!register, :id("toc_$body"), :spec($body) );
+                $contents = PCell.new( :$!register, :id("toc_$uri-body"), :spec($uri-body) );
                 $keep-format = True;
             }
             when 'index' {
-                $contents = PCell.new( :$!register, :id("index_$body"), :spec($body) );
+                $contents = PCell.new( :$!register, :id("index_$uri-body"), :spec($uri-body) );
                 $keep-format = True;
             }
             when 'semantic' {
                 $keep-format = True;
-                $contents =  PCell.new( :$!register, :id( "semantic_$body" ), :spec($body) );
+                $contents =  PCell.new( :$!register, :id( "semantic_$uri-body" ), :spec($uri-body) );
             }
             when 'http' | 'https' {
                 my LibCurl::Easy $curl .= new(:URL($uri), :followlocation, :failonerror );
@@ -1136,14 +1126,14 @@ class RakuDoc::Processor {
             when 'defn' {
                 # get definition from Processed state, or make a PCell
                 my %definitions = $prs.definitions;
-                $contents = $body;
-                if %definitions{ $body }:exists {
-                    %config<defn-expansion> = %definitions{ $body }[0];
-                    %config<defn-target> = %definitions{ $body }[1]
+                $contents = $uri-body;
+                if %definitions{ $uri-body }:exists {
+                    %config<defn-expansion> = %definitions{ $uri-body }[0];
+                    %config<defn-target> = %definitions{ $uri-body }[1]
                 }
                 else {
-                    %config<defn-expansion> = PCell.new( :$!register, :id( $body ));
-                    %config<defn-target> = PCell.new( :$!register, :id( $body ~ '_target' ));
+                    %config<defn-expansion> = PCell.new( :$!register, :id( $uri-body ));
+                    %config<defn-target> = PCell.new( :$!register, :id( $uri-body ~ '_target' ));
                 }
             }
             default {
@@ -1165,7 +1155,7 @@ class RakuDoc::Processor {
              }
         }
         $prs.body ~= %!templates{ $template }(
-            %( :$contents, :$keep-format, :$schema, :$uri, %config )
+            %( :$contents, :$keep-format, :$schema, :$uri-body, :$uri, %config )
         )
     }
     #| The rakudoc block should encompass the output
@@ -1435,7 +1425,7 @@ class RakuDoc::Processor {
                     $rv = %!templates<TITLE>( %( :$level, :$contents, :$caption, :$target, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, :$hidden, %config ) )
                 }
             }
             when 'SUBTITLE' {
@@ -1447,11 +1437,12 @@ class RakuDoc::Processor {
                     $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, :$target, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, :$hidden, %config ) )
                 }
             }
             default {
                 $hidden = %config<hidden>.so // False; # other SEMANTIC by default rendered in place
+                # allows for a plugin to add a SEMANTIC blockname to templates
                 my $template = %!templates{ $block-name }:exists ?? $block-name !! 'semantic';
                 my $target = $.name-id($block-name);
                 my $id = '';
@@ -1467,7 +1458,7 @@ class RakuDoc::Processor {
                     }
                 }
                 $rv = %!templates{$template}(
-                    %( :$level, :$caption, :$target, :$contents, :$id, %config )
+                    %( :$level, :$caption, :$hidden, :$target, :$contents, :$id, %config )
                 );
                 $prs.toc.push(  %( :$caption, :$target, :$level ) ) unless $hidden;
             }
@@ -1544,20 +1535,38 @@ class RakuDoc::Processor {
     }
     #| completes the index by rendering each key
     #| triggers the 'index-schema' id, which may be placed by a P<>
-    method complete-index( --> PStr ) {
-        my @index-list = gather for $!current.index.sort( *.key )>>.kv
-            -> ( $entry, %entry-data ) {
-            take %!templates<index-item>( %( :$entry, :%entry-data , ) )
+    sub si( %h, $n, $max ) {
+        return unless (%h.elems and $n <= $max);
+        my @rv;
+        for %h.sort( *.key )>>.kv -> ( $k, %v) {
+            my @inner = [$n];
+            my @refs = %v<refs>.values;
+            @inner.push: $k;
+            @inner.push: @refs;
+            @rv.push: @inner;
+            @rv.append($_) with si( %v<sub-index>, $n + 1, $max );
         }
-        PStr.new( @index-list.elems ?? %!templates<index>( %(:@index-list, :caption( $!current.source-data<index-caption> ) ))
+        @rv
+    }
+    method complete-index( :$spec, :$caption --> PStr ) {
+        my $max;
+        if $spec eq '*' { $max = 100 }
+        else { $max = $spec.EVAL.list.max }
+        my @index-list = .map({
+            %!templates<index-item>( %( :level( .[0] ), :entry( .[1] ), :refs( .[2] ) ) )
+        }) with si( $!current.index , 1, $max );
+        PStr.new( @index-list.elems ?? %!templates<index>( %(:@index-list, :$caption ))
                                     !! '')
     }
     #| renders the complete toc
-    method complete-toc {
+    method complete-toc( :$spec, :$caption --> PStr ) {
+        my Set $levels;
+        if $spec eq '*' { $levels .=new: (^10).list }
+        else { $levels .= new: $spec.EVAL.list }
         my @toc-list = gather for $!current.toc -> $toc-entry {
-            take %!templates<toc-item>( %( :$toc-entry , ) )
+            take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ $toc-entry<level> }
         }
-        PStr.new( @toc-list.elems ?? %!templates<toc>( %(:@toc-list, :toc( $!current.toc), :caption( $!current.source-data<toc-caption>) ) )
+        PStr.new( @toc-list.elems ?? %!templates<toc>( %(:@toc-list, :toc( $!current.toc), :$caption ) )
                                   !! '' )
     }
     #| finalises all the heading numerations
@@ -1849,7 +1858,7 @@ class RakuDoc::Processor {
             defn-list => -> %prm, $tmpl { [~] %prm<defn-list> },
             #| special template to render a numbered defn list data structure
             numdefn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
+                DEFN-TERM-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
                 DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
             },
             #| special template to render a numbered item list data structure
@@ -1884,9 +1893,8 @@ class RakuDoc::Processor {
             },
             #| renders =place block
             place => -> %prm, $tmpl {
-                my $del = %prm<delta> // '';
-                my $rv = PStr.new;
-                $rv ~= $del;
+                my $level = %prm<headlevel> // 1;
+                my $rv = $tmpl('head', %(:$level, :contents(%prm<caption>), :delta(%prm<delta>)));
                 if %prm<content-type>.contains('text') {
                     $rv ~= %prm<contents>
                 }
@@ -1906,7 +1914,8 @@ class RakuDoc::Processor {
             semantic => -> %prm, $tmpl {
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
                 my $del = %prm<delta> // '';
-                "\n" ~ ' ' x $indent  ~ HEADING-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ HEADING-OFF ~ "\n" ~
+                my $head = "\n" ~ ' ' x $indent  ~ HEADING-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ HEADING-OFF ~ "\n";
+                ( $head unless %prm<hidden> ) ~
                 $del ~
                 %prm<contents> ~ "\n"
             },
@@ -2037,24 +2046,15 @@ class RakuDoc::Processor {
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
-                sub si( %h, $n ) {
-                    my $rv = '';
-                    for %h.sort( *.key )>>.kv -> ( $k, %v ) {
-                        $rv ~= "\t" x $n ~ "- $k : see in"
-                            ~ %v<refs>.map({ ' § ' ~ .<place> }).join(',')
-                            ~ "\n"
-                            ~ si( %v<sub-index>, $n + 1 );
-                    }
-                    $rv
-                }
-                PStr.new: INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': see in'
-                    ~ %prm<entry-data><refs>.map({ ' § ' ~ .<place> }).join(',')
+                my $n = %prm<level>;
+                PStr.new: ($n == 1 ?? INDEX-ENTRY-ON !! "\t" x $n ) ~ %prm<entry> ~ (INDEX-ENTRY-OFF if $n == 1) ~ ': see in'
+                    ~ %prm<refs>.map({ ' § ' ~ .<place> }).join(',')
                     ~ "\n"
-                    ~ si( %prm<entry-data><sub-index>, 1 );
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                PStr.new: HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~"\n" ~
+                my $cap = %prm<caption>:exists ?? (HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n") !! '';
+                PStr.new: $cap ~ "\n" ~
                 ([~] %prm<index-list>) ~ "\n\n"
             },
             #| special template to render the footnotes data structure
@@ -2135,6 +2135,7 @@ class RakuDoc::Processor {
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
 			markup-L => -> %prm, $tmpl {
+			    my $target = %prm<target>.subst(/ '.*' /, ".%prm<output-format>", :g);
 			    LINK-TEXT-ON ~ %prm<link-label> ~ LINK-TEXT-OFF ~
 			    '[' ~
 			    ( given %prm<type> {
@@ -2142,7 +2143,7 @@ class RakuDoc::Processor {
 			        when 'external' { 'internet location: ' }
 			        when 'local' { 'this location (site): ' }
                 } ) ~
-			    LINK-ON ~ %prm<target> ~ LINK-OFF ~
+			    LINK-ON ~ $target ~ LINK-OFF ~
 			    ']'
 			 },
             #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >

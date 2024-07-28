@@ -134,6 +134,7 @@ method markdown-templates {
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
             %prm<contents> ~ qq[<div id="{ %prm<target> }"> </div>] ~
+            ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
             "\n"
         },
         #| renders =numhead block
@@ -146,7 +147,7 @@ method markdown-templates {
             "\n" ~ $del ~ "\n" ~
             '#' x ( %prm<level> + 1)  ~ ' ' ~
             $title ~ qq[<div id="{ %prm<target> }"> </div>] ~
-            "\n"
+            ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~ "\n"
         },
         #| renders the numeration part for a toc
         toc-numeration => -> %prm, $tmpl { %prm<contents> },
@@ -171,7 +172,7 @@ method markdown-templates {
         defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
         #| special template to render a numbered defn list data structure
         numdefn => -> %prm, $tmpl {
-            DEFN-TERM-ON ~ %prm<numeration> ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+            DEFN-TERM-ON ~ %prm<numeration> ~ '&nbsp;' ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
             DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
         },
         #| special template to render a numbered item list data structure
@@ -210,22 +211,20 @@ method markdown-templates {
         },
         #| renders =place block
         place => -> %prm, $tmpl {
-            my $rv = PStr.new;
+            my $level = %prm<headlevel> // 1;
+            my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
             given %prm<content-type> {
                 when .contains('text') {
                     $rv ~= %prm<contents>
                 }
                 when .contains('image') {
-                    $rv ~=  '[' ~ %prm<caption> ~ '](' ~ %prm<uri> ~ ')'
+                    $rv ~=  '![' ~ %prm<caption> ~ '](' ~ %prm<uri> ~ ')'
                 }
                 default {
                     $rv ~= qq[Placement of {%prm<content-type>} is not yet implemented\n\n ]
                 }
             }
-            PStr.new: '<div id="' ~ %prm<target> ~ '"> </div>' ~ "\n\n" ~
-                ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
-                $rv ~
-                "\n\n";
+            $rv ~ "\n\n";
         },
         #| renders =rakudoc block
         rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
@@ -236,16 +235,10 @@ method markdown-templates {
         },
         #| renders =SEMANTIC block, if not otherwise given
         semantic => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            # using level + 1 so that TITLE is always larger
-            # a line above heading level one to separate sections
-            PStr.new: ('----' if %prm<level> == 1) ~
-            "  \n" ~ $del ~ "\n" ~
-            '#' x ( %prm<level> + 1)  ~ ' ' ~
-            %prm<caption> ~
-            qq[<div id="{ %prm<target> }"> </div>] ~
-            ( qq[<div id="{ %prm<id> }"> </div>] if %prm<id> ) ~
-            "\n" ~
+            my $level = %prm<headlevel> // 1;
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+
+            ( $head unless %prm<hidden> ) ~
             %prm<contents> ~ "\n\n"
         },
         #| renders =pod block
@@ -350,30 +343,22 @@ method markdown-templates {
         },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            PStr.new: "----\n\n## " ~ (%prm<caption>:exists ?? %prm<caption> !! 'Table of Contents') ~ "\n" ~
+            my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
+            PStr.new: $cap ~
             ([~] %prm<toc-list>) ~ "\n\n"
         },
         #| renders a single item in the index
         index-item => -> %prm, $tmpl {
-            sub si( %h, $n ) {
-                my $rv = '';
-                for %h.sort( *.key )>>.kv -> ( $k, %v ) {
-                    $rv ~= "  " x $n ~ "- $k : "
-                        ~ %v<refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
-                        ~ "\n\n"
-                        ~ si( %v<sub-index>, $n + 1 );
-                }
-                $rv
-            }#qq[<div id="{ %prm<target> }"> </div>] ~
+            my $n = %prm<level>;
             PStr.new:
-                INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ':  ' ~
-                %prm<entry-data><refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
+                ("&nbsp;&nbsp;&nbsp;" x $n - 1 ) ~ INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': ' ~
+                %prm<refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
                 ~ "\n\n"
-                ~ si( %prm<entry-data><sub-index>, 1 );
         },
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
-            PStr.new: "----\n\n## " ~ %prm<caption> ~"\n" ~
+            my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
+            PStr.new: $cap ~
             ([~] %prm<index-list>) ~ "\n\n"
         },
         #| special template to render the footnotes data structure
@@ -469,22 +454,32 @@ method markdown-templates {
         #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
         #| Link ( L<display text|destination URI> )
         markup-L => -> %prm, $tmpl {
-            my $target = %prm<target>;
-            $target ~= '.md' if %prm<type> eq 'local';
-            $target = '#' ~ $target if %prm<type> eq 'internal';
+            my $target = %prm<target>.trim.subst(/ '.*' /, ".%prm<output-format>", :g);
             LINK-TEXT-ON ~ %prm<link-label> ~ LINK-TEXT-OFF ~
             LINK-ON ~ $target ~ LINK-OFF
          },
         #| P< DISPLAY-TEXT |  METADATA = REPLACEMENT-URI >
         #| Placement link
         markup-P => -> %prm, $tmpl {
+            my $rv = PStr.new;
+            given %prm<content-type> {
+                when .contains('text') {
+                    $rv ~= %prm<contents>
+                }
+                when .contains('image') {
+                    $rv ~=  '![' ~ %prm<caption> ~ '](' ~ %prm<uri> ~ ')'
+                }
+                default {
+                    $rv ~= qq[Placement of {%prm<content-type>} is not yet implemented\n\n ]
+                }
+            }
             given %prm<schema> {
                 when 'defn' {
-                    DEFN-TERM-ON ~ %prm<contents> ~ DEFN-TERM-OFF ~ "\n\x2997" ~
+                    DEFN-TERM-ON ~ $rv ~ DEFN-TERM-OFF ~ "\n\x2997" ~
                     %prm<defn-expansion> ~
                     "\n\x2998"
                 }
-                default { %prm<contents> }
+                default { $rv }
             }
         },
 
