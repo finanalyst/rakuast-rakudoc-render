@@ -1,6 +1,7 @@
 use experimental :rakuast;
 use RakuDoc::Render;
 use RakuDoc::PromiseStrings;
+use RakuAST::Deparse::Highlight;
 
 unit class RakuDoc::To::HTML;
 has RakuDoc::Processor $.rdp .=new;
@@ -85,66 +86,82 @@ method html-templates {
     my constant BAD-MARK-ON = '<span class="bad-markdown">';
     my constant BAD-MARK-OFF = '</span>';
     my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
+    my regex tab { '<' $<name> = (<-[>\s]>+) $<cont> = (.*?) '>'};
     %(
         #| special key to name template set
         _name => -> %, $ { 'markdown templates' },
         # escape contents
         escaped => -> %prm, $tmpl {
-            if %prm<contents> {
-                %prm<contents>.Str.trans(
-                   qw｢ <    >    &     "       ｣
-                => qw｢ &lt; &gt; &amp; &quot;  ｣
-                )
+            my $cont = %prm<contents>;
+            if $cont and %prm<html-tags> {
+                $cont .= Str.trans(qw｢ & " ｣ => qw｢ &amp; &quot; ｣);
+                while $cont ~~ m:c/ <tab> / {
+                    my $name = ~$<tab><name>;
+                    $cont = $/.replace-with('&lt;' ~ $<tab><name> ~ $<tab><cont> ~ '&gt;')
+                        unless ($name eq <span /span>.any).so
+                }
+                $cont
+            }
+            elsif $cont {
+                $cont.Str.trans(
+                        qw｢ <    >    &     "       ｣
+                        => qw｢ &lt; &gt; &amp; &quot;  ｣
+                        )
             }
             else { '' }
         },
         #| renders =code blocks
         code => -> %prm, $tmpl {
+            %prm<html-tags> = True;
+            my $contents := %prm<contents>;
+#            try {
+#                my $hilit = highlight( $contents.Str, 'HTML');
+#                $contents = $hilit;
+#                CATCH {
+#                    default {
+#                        $*prs.warning.push( 'Cannot highlight ｢' ~
+#                            ( $contents.chars > 200
+#                                ?? ($contents.substr(200) ~ ' ... ')
+#                                !! $contents ) ~
+#                            '｣' );
+#                        .resume
+#                    }
+#                }
+#            }
             my $del = %prm<delta> // '';
             PStr.new: ('<div class="delta">' ~ $del if $del) ~
             q[<pre class="code-block">] ~
-            %prm<contents> ~
+            $tmpl('escaped', %(:html-tags, :$contents) ) ~
             "\n</pre>\n" ~
             (</div> if $del)
         },
         #| renders implicit code from an indented paragraph
-        implicit-code => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            PStr.new: q[<pre class="code-block">] ~
-            $del ~
-            %prm<contents> ~
-            "\n</pre>\n"
-        },
+        implicit-code => -> %prm, $tmpl { $tmpl<code> },
         #| renders =input block
         input => -> %prm, $tmpl {
+            %prm<html-tags> = True;
             my $del = %prm<delta> // '';
             PStr.new: q[<pre class="input-block">] ~
             $del ~
-            %prm<contents> ~
+            $tmpl('escaped', %(:html-tags, %prm) ) ~
             "\n</pre>\n"
         },
         #| renders =output block
         output => -> %prm, $tmpl {
+            %prm<html-tags> = True;
             my $del = %prm<delta> // '';
             PStr.new: q[<pre class="output-block">] ~
             $del ~
-            %prm<contents> ~
+            $tmpl('escaped', %(:html-tags, %prm) ) ~
             "\n</pre>\n"
-         },
+        },
         #| renders =comment block
         comment => -> %prm, $tmpl { '' },
         #| renders =formula block
         formula => -> %prm, $tmpl {
-            my $title = %prm<caption>;
-            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading">]] ~
-                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
-                $title ~
-                qq[[</a></$h>\n]] ~
-                (%prm<delta> // '') ~
-                qq[[<div class="formula">{%prm<formula>}</div>]]
+            my $level = %prm<headlevel> // 1;
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+            PStr.new: $head ~ qq[[<div class="formula">{%prm<formula>}</div>]]
         },
         #| renders =head block
         head => -> %prm, $tmpl {
@@ -267,16 +284,9 @@ method html-templates {
         pod => -> %prm, $tmpl { %prm<contents> },
         #| renders =table block
         table => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-            my $title = %prm<caption>;
-            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            my $rv = PStr.new:
-                qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                    qq[[<$h id="$targ" class="heading">]] ~
-                    qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
-                    $title ~
-                    qq[[</a></$h>\n]] ~
-                    (%prm<delta> // '') ~ '<table class="table">';
+            my $level = %prm<headlevel> // 1;
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+            my $rv = PStr.new: $head ~ '<table class="table">';
             if %prm<procedural> {
                 for %prm<grid>.list -> @row {
                     $rv ~= "\n<tr>";
@@ -312,29 +322,16 @@ method html-templates {
         },
         #| renders =custom block
         custom => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-            my $title = %prm<caption>;
-            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading">]] ~
-                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
-                $title ~
-                qq[[</a></$h>\n]] ~
-                (%prm<delta> // '') ~
-                %prm<raw> ~ "\n\n"
+            my $level = %prm<headlevel> // 1;
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+            PStr.new: $head ~ %prm<raw> ~ "\n\n"
         },
         #| renders any unknown block minimally
         unknown => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-            my $title = qq[UNKNOWN { %prm<block-name> }];
-            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                qq[[<$h id="$targ" class="heading">]] ~
-                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
-                $title ~
-                qq[[</a></$h>\n]] ~
-                (%prm<delta> // '') ~
-                $tmpl<escaped>
+            my $level = %prm<headlevel> // 1;
+            my $contents = qq[UNKNOWN { %prm<block-name> }];
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :$contents, :delta(%prm<delta>)));
+            PStr.new: $head ~ $tmpl<escaped>
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g) ~
                      "\n\n"

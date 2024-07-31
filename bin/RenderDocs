@@ -14,7 +14,7 @@ multi sub MAIN(
     my @to-be-rendered = %docs.pairs.grep({
         %rendered{.key}:exists.not ||(%rendered{.key} < .value)
     })>>.key;
-    say 'Documents with .md in CWD, but not in docs/ : ', (%rendered.keys (-) %docs.keys).keys unless $quiet;
+    say "Documents with .{ $format } in CWD, but not in docs/ : ", (%rendered.keys (-) %docs.keys).keys unless $quiet;
     my $nformat = ($format eq 'html' && $extra) ?? 'html-extra' !! $format;
     render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat)
 }
@@ -27,7 +27,7 @@ multi sub MAIN(
         Bool :$extra = False,      #= Use ::HTML-Extra renderer, otherwise ::HTML renderer
                ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
-    my $nformat =  ($format eq 'html' && $extra) ?? 'html-extra' !! $format;
+    my $nformat = ($format eq 'html' && $extra) ?? 'html-extra' !! $format;
     render-files([$file,], :$src, :$to, :$quiet, :$nformat)
 }
 multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md') {

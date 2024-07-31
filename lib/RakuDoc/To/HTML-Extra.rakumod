@@ -61,7 +61,6 @@ method gather-flatten( $rdp, $key ) {
     }
     %d{ $key } = @p-tuples.sort({ .[1], .[0] }).map( *.[0] ).list;
 }
-my @allowed = ('span',).map({ ($_, '/'~$_ ).Slip });
 method templates {
     %( # replace the template that governs where CSS and JS go
         #| head-block, what goes in the head tab
@@ -88,62 +87,6 @@ method templates {
             !! ''
             }
             HEAD
-        },
-        # escape contents
-        escaped => -> %prm, $tmpl {
-            my $cont = %prm<contents>;
-            if $cont and %prm<html-tags> {
-                $cont .= Str.trans( qw｢ & " ｣ => qw｢ &amp; &quot; ｣ );
-                while $cont ~~ m:c/ '<' <!before @allowed> (.+? ) '>' / {
-                    $cont = $/.replace-with( '&lt;' ~ $0 ~ '&gt;')
-                }
-                $cont .= trans( qw｢ < > ｣ => qw｢ &lt; &gt; ｣ );
-                $cont
-            }
-            elsif $cont {
-                $cont.Str.trans(
-                   qw｢ <    >    &     "       ｣
-                => qw｢ &lt; &gt; &amp; &quot;  ｣
-                )
-            }
-            else { '' }
-        },
-        #| renders =code blocks
-        code => -> %prm, $tmpl {
-            %prm<html-tags> = True;
-            my $del = %prm<delta> // '';
-            PStr.new: ('<div class="delta">' ~ $del if $del) ~
-            q[<pre class="code-block">] ~
-            $tmpl('escaped', %(:html-tags, %prm) ) ~
-            "\n</pre>\n" ~
-            (</div> if $del)
-        },
-        #| renders implicit code from an indented paragraph
-        implicit-code => -> %prm, $tmpl {
-            %prm<html-tags> = True;
-            my $del = %prm<delta> // '';
-            PStr.new: q[<pre class="code-block">] ~
-            $del ~
-            $tmpl('escaped', %(:html-tags, %prm) ) ~
-            "\n</pre>\n"
-        },
-        #| renders =input block
-        input => -> %prm, $tmpl {
-            %prm<html-tags> = True;
-            my $del = %prm<delta> // '';
-            PStr.new: q[<pre class="input-block">] ~
-            $del ~
-            $tmpl('escaped', %(:html-tags, %prm) ) ~
-            "\n</pre>\n"
-        },
-        #| renders =output block
-        output => -> %prm, $tmpl {
-            %prm<html-tags> = True;
-            my $del = %prm<delta> // '';
-            PStr.new: q[<pre class="output-block">] ~
-            $del ~
-            $tmpl('escaped', %(:html-tags, %prm) ) ~
-            "\n</pre>\n"
         },
         #| download the Camelia favicon
         favicon => -> %prm, $tmpl {

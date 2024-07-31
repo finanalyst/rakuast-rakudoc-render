@@ -1225,7 +1225,7 @@ class RakuDoc::Processor {
         $prs.toc.push(
             { :$caption, :$target, :$level, :$numeration }
         ) if $toc;
-        my Bool $procedural = $ast.procedural;
+        my Bool $procedural = $ast.visual-table.not;
         my @grid;
         my @headers;
         my @rows;
