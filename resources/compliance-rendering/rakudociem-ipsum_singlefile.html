@@ -3,7 +3,7 @@
     <head>
     <meta charset="UTF-8" />
         <title>Proving a renderer</title>
-    <style>span.basis{font-weight:800}span.important{font-style:italic}span.unusual{text-decoration:underline}span.code{font-weight:500;background-color:linen;display:inline-block;margin:2px;padding:2px}span.overstrike{text-decoration:line-through}span.high{vertical-align:super}span.junior{vertical-align:sub}span.replace{font-style:small-caps;text-shadow:-1px 1px}span.indexed{text-shadow:1px 1px orange}span.index-entry{text-shadow:1px 1px orange}span.keyboard{text-shadow:1px 1px}span.terminal{text-decoration:overline underline}span.footnote{vertical-align:super}span.developer-version{display:none;color:red}span.developer-version span.developer-note{font-family:"Brush Script MT",cursive}span.developer-version:hover{display:inline-block;transform:translate(50px, 100px);z-index:5}span.bad-markdown{text-shadow:1px 1px red}pre.code-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block::before{content:"--- input ---";display:block;text-shadow:-2px -2px 4px #000;color:#fff;padding-bottom:1rem}pre.output-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.output-block::before{content:"--- output ---";display:block;text-shadow:2px 2px 4px #000;color:#fff;padding-bottom:1rem}div.defn-text{margin-left:1rem}div.defn-term{font-weight:bold}div.id-target{display:none}div.nested{margin-left:5rem}div.toc .toc-item{margin-left:calc(var(--level)*1rem)}div.toc .toc-item::before{content:attr(data-bullet)}div.toc .toc-item a{padding-left:.4rem}div.index-section{margin-left:calc(var(--level)*1rem)}div.index-section>a.index-ref{white-space:nowrap;display:inline-block;width:5em;overflow:hidden;text-overflow:ellipsis}div.index-section>a.index-ref+span{display:none;width:0}div.index-section>a.index-ref:hover+span{display:inline-block;position:absolute;width:auto;z-index:5;background-color:#fff5ee;transform:translate(-5em, -1em)}span.developer-note{display:none;width:0;color:blue;text-shadow:2px 2px 5px green}span.developer-version{display:none;width:0;color:red;text-shadow:2px 2px 5px green}.delta::before,span.developer-text::before{content:"ℹ";vertical-align:super}.delta:hover .developer-version,span.developer-text:hover .developer-version{display:inline-block;position:absolute;width:100%;z-index:5;transform:translate(0.5rem, -1rem)}.delta:hover .developer-note,span.developer-text:hover .developer-note{display:inline-block;position:absolute;width:auto;z-index:5;margin-left:1rem}span.developer-text:hover{text-decoration:overline}div.footer{border-top:2px dashed;margin:1rem 0;padding:2rem}div.footer .footer-field{display:inline-block}div.footer .footer-line{display:block}.heading>a{color:maroon;text-decoration:none}h.title{font-size:larger}table,th,td{border:1px solid;border-collapse:collapse}.procedural-cell-left{text-align:left}.procedural-cell-centre{text-align:center}.procedural-cell-center{text-align:center}.procedural-cell-right{text-align:right}.procedural-cell-top{vertical-align:text-top}.procedural-cell-middle{vertical-align:baseline}.procedural-cell-bottom{vertical-align:text-bottom}.procedural-cell-label{font-weight:bold}li.item{padding-left:.4rem;margin-left:calc(var(--level)*1rem)}li.item::marker{content:attr(data-bullet)}
+    <style>span.basis{font-weight:800}span.important{font-style:italic}span.unusual{text-decoration:underline}span.code{font-weight:500;background-color:linen;display:inline-block;margin:2px;padding:2px}span.overstrike{text-decoration:line-through}span.high{vertical-align:super}span.junior{vertical-align:sub}span.replace{font-style:small-caps;text-shadow:-1px 1px}span.indexed{text-shadow:1px 1px orange}span.keyboard{text-shadow:1px 1px}span.terminal{text-decoration:overline underline}span.footnote{vertical-align:super}span.developer-version{display:none;color:red}span.developer-version span.developer-note{font-family:"Brush Script MT",cursive}span.developer-version:hover{display:inline-block;transform:translate(50px, 100px);z-index:5}span.bad-markdown{text-shadow:1px 1px red}pre.code-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block::before{content:"--- input ---";display:block;text-shadow:-2px -2px 4px #000;color:#fff;padding-bottom:1rem}pre.output-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.output-block::before{content:"--- output ---";display:block;text-shadow:2px 2px 4px #000;color:#fff;padding-bottom:1rem}div.defn-text{margin-left:1rem}div.defn-term{font-weight:bold}div.id-target{display:none}div.nested{margin-left:5rem}div.toc .toc-item{margin-left:calc(var(--level)*1rem)}div.toc .toc-item::before{content:attr(data-bullet)}div.toc .toc-item a{padding-left:.4rem}div.index-section{margin-left:calc((var(--level) - 1)*1rem)}div.index-section[data-index-level="1"]{text-shadow:1px 1px orange}div.index-section>a.index-ref{white-space:nowrap;display:inline-block;width:1em}div.index-section>a.index-ref+span{display:none;width:0}div.index-section>a.index-ref:hover+span{display:inline-block;position:absolute;width:auto;z-index:5;background-color:#fff5ee}span.developer-note{display:none;width:0;color:blue;text-shadow:2px 2px 5px green}span.developer-version{display:none;width:0;color:red;text-shadow:2px 2px 5px green}.delta::before,span.developer-text::before{content:"ℹ";vertical-align:super}.delta:hover .developer-version,span.developer-text:hover .developer-version{display:inline-block;position:absolute;width:100%;z-index:5;transform:translate(0.5rem, -1rem)}.delta:hover .developer-note,span.developer-text:hover .developer-note{display:inline-block;position:absolute;width:auto;z-index:5;margin-left:1rem}span.developer-text:hover{text-decoration:overline}div.footer{border-top:2px dashed;margin:1rem 0;padding:2rem}div.footer .footer-field{display:inline-block}div.footer .footer-line{display:block}.heading>a{color:maroon;text-decoration:none}h.title{font-size:larger}table,th,td{border:1px solid;border-collapse:collapse}.procedural-cell-left{text-align:left}.procedural-cell-centre{text-align:center}.procedural-cell-center{text-align:center}.procedural-cell-right{text-align:right}.procedural-cell-top{vertical-align:text-top}.procedural-cell-middle{vertical-align:baseline}.procedural-cell-bottom{vertical-align:text-bottom}.procedural-cell-label{font-weight:bold}li.item{padding-left:.4rem;margin-left:calc(var(--level)*1rem)}li.item::marker{content:attr(data-bullet)}
 </style>
 
     </head>
@@ -86,17 +86,17 @@
 
 <div class="id-target" id=""></div><h2 id="A_short_index" class="heading "><a href="#" title="go to top of document">A short index</a></h2>
 <div class="index"><h2 class="index-caption"></h2>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">elements to be placed</span>: <a class="index-ref" href="#index-entry-elements_to_be_placed">This is third level heading</a><span>This is third level heading</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">elements to be placed</span>: <a class="index-ref" href="#index-entry-elements_to_be_placed">&nbsp;§&nbsp;</a><span>This is third level heading</span>
 </div>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">formatting code</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">formatting code</span>: <a class="index-ref" href="#index-entry-formatting_code">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">index</span>: <a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">index</span>: <a class="index-ref" href="#index-entry-index_entry">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">inline formatting</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">inline formatting</span>: <a class="index-ref" href="#index-entry-formatting_code">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
 
 </div>
@@ -295,9 +295,9 @@ Richard Hainsworth, aka finanalyst
 
 
 
-<div class="id-target" id=""></div><h2 id="Formula_cannot_be_rendered" class="heading"><a href="#" title="go to top of document">Fabulous identity</a></h2>
+<div class="id-target" id=""></div><h2 id="Formula_cannot_be_rendered" class="heading "><a href="#" title="go to top of document">Fabulous identity</a></h2>
 <div class="formula">e^{i\pi}+1=0</div>
-<div class="id-target" id=""></div><h2 id="A_customised_block" class="heading"><a href="#" title="go to top of document">UNKNOWN MyBlock</a></h2>
+<div class="id-target" id=""></div><h2 id="A_customised_block" class="heading "><a href="#" title="go to top of document">UNKNOWN MyBlock</a></h2>
 =begin MyBlock :caption&lt;A customised block&gt; :headlevel(2)<br>Actually it fails because no customisation has been made.<br>It<br>should<br>be<br>rendered without spaces&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;being chewed up.<br>=end MyBlock<br>
 
 <p id="This_is_an_extraordinary_paragraph"><p id="4c10339">Some silly text which will have its own <span class="basis">extraordinary</span> ToC entry </p>
@@ -306,7 +306,7 @@ Richard Hainsworth, aka finanalyst
 
 <div class="id-target" id=""></div><h2 id="Some_tables" class="heading "><a href="#" title="go to top of document">Some tables</a></h2>
 
-<div class="id-target" id=""></div><h3 id="A_visual_table" class="heading"><a href="#" title="go to top of document">A visual table</a></h3>
+<div class="id-target" id=""></div><h3 id="A_visual_table" class="heading "><a href="#" title="go to top of document">A visual table</a></h3>
 <table class="table">	<thead>
 		<tr><th>Animal</th><th>Legs</th><th>Eats</th></tr>
 	</thead>	<tbody>
@@ -316,7 +316,7 @@ Richard Hainsworth, aka finanalyst
 			</tbody>
 </table>
 
-<div class="id-target" id=""></div><h3 id="A_visual_table_with_a_stupendously_long_caption" class="heading"><a href="#" title="go to top of document">A visual table with a stupendously long caption</a></h3>
+<div class="id-target" id=""></div><h3 id="A_visual_table_with_a_stupendously_long_caption" class="heading "><a href="#" title="go to top of document">A visual table with a stupendously long caption</a></h3>
 <table class="table">	<thead>
 		<tr><th>Animal</th><th>Legs</th><th>Eats</th></tr>
 	</thead>	<tbody>
@@ -326,7 +326,7 @@ Richard Hainsworth, aka finanalyst
 			</tbody>
 </table>
 
-<div class="id-target" id=""></div><h3 id="A_procedural_table" class="heading"><a href="#" title="go to top of document">A procedural table</a></h3>
+<div class="id-target" id=""></div><h3 id="A_procedural_table" class="heading "><a href="#" title="go to top of document">A procedural table</a></h3>
 <table class="table">
 <tr><th rowspan="2" class="">Date</th><th colspan="3" class="">Samples</th><th rowspan="2" class="">Mean</th></tr>
 <tr><th class=""><p id="be4f23a"><span class="important">Sample 1</span> </p>
@@ -431,35 +431,35 @@ v0.2.1
     </div>
 
 <div class="index"><h2 class="index-caption">Index</h2>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">elements to be placed</span>: <a class="index-ref" href="#index-entry-elements_to_be_placed">This is third level heading</a><span>This is third level heading</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">elements to be placed</span>: <a class="index-ref" href="#index-entry-elements_to_be_placed">&nbsp;§&nbsp;</a><span>This is third level heading</span>
 </div>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">formatting code</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">formatting code</span>: <a class="index-ref" href="#index-entry-formatting_code">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">index</span>: <a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">index</span>: <a class="index-ref" href="#index-entry-index_entry">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-subentries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="2">
-entry: <a class="index-ref" href="#index-entry-index_entry">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="2" style="--level:2">
+<span class="index-entry">entry</span>: <a class="index-ref" href="#index-entry-index_entry">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-Index_entries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="3">
-nested: <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="3" style="--level:3">
+<span class="index-entry">nested</span>: <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="2">
-multiple entries: <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="2" style="--level:2">
+<span class="index-entry">multiple entries</span>: <a class="index-ref" href="#index-entry-two_or_more_separate_entries_in_the_index">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="2">
-subentry: <a class="index-ref" href="#index-entry-subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="2" style="--level:2">
+<span class="index-entry">subentry</span>: <a class="index-ref" href="#index-entry-subentries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-multilevel_subentries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>, <a class="index-ref" href="#index-entry-first_level">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="3">
-multilevel: <a class="index-ref" href="#index-entry-multilevel_subentries">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="3" style="--level:3">
+<span class="index-entry">multilevel</span>: <a class="index-ref" href="#index-entry-multilevel_subentries">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="3">
-rendering: <a class="index-ref" href="#index-entry-first_level">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="3" style="--level:3">
+<span class="index-entry">rendering</span>: <a class="index-ref" href="#index-entry-first_level">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
-<div class="index-section" data-index-level="1">
-<span class="index-entry">inline formatting</span>: <a class="index-ref" href="#index-entry-formatting_code">Adding index entries to your text</a><span>Adding index entries to your text</span>
+<div class="index-section" data-index-level="1" style="--level:1">
+<span class="index-entry">inline formatting</span>: <a class="index-ref" href="#index-entry-formatting_code">&nbsp;§&nbsp;</a><span>Adding index entries to your text</span>
 </div>
 
 </div>
@@ -467,7 +467,7 @@ rendering: <a class="index-ref" href="#index-entry-first_level">Adding index ent
     
 <div class="footer">
     Rendered from <span class="footer-field">resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc</span>
-<span class="footer-field"> at 08:30 UTC on 2024-07-31</span>
+<span class="footer-field"> at 11:21 UTC on 2024-08-05</span>
 <span class="footer-line">Source last modified at 20:36 UTC on 2024-07-25</span>
 <div class="warnings">    <div class="warnings">
     <h2 class="warnings-caption">Warnings</h2>

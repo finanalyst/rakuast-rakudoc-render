@@ -31,9 +31,6 @@ span.replace {
 span.indexed {
 	text-shadow: 1px 1px orange;
 }
-span.index-entry {
-	text-shadow: 1px 1px orange;
-}
 span.keyboard {
 	text-shadow: 1px 1px;
 }
@@ -124,13 +121,14 @@ div.toc {
 h1.toc-caption {
 }
 div.index-section {
-    margin-left: calc(var(--level) * 1rem);
+    margin-left: calc(( var(--level) - 1 ) * 1rem);
+    &[data-index-level="1"] {
+        text-shadow: 1px 1px orange;
+    }
 	> a.index-ref {
 	    white-space: nowrap;
 	    display:inline-block;
-	    width: 5em;
-	    overflow: hidden;
-	    text-overflow: ellipsis;
+	    width: 1em;
 	    + span {
 	        display: none;
 	        width: 0;
@@ -141,7 +139,6 @@ div.index-section {
 	        width: auto;
 	        z-index: 5;
 	        background-color: seashell;
-	        transform: translate(-5em,-1em);
 	    }
 	}
 }

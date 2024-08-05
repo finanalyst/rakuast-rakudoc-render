@@ -358,10 +358,10 @@ method html-templates {
         index-item => -> %prm, $tmpl {
             my $n = %prm<level>;
             PStr.new:
-                qq[<div class="index-section" data-index-level="$n">\n] ~
-                (INDEX-ENTRY-ON if $n == 1) ~ %prm<entry> ~ (INDEX-ENTRY-OFF if $n == 1) ~ ': ' ~
+                qq[<div class="index-section" data-index-level="$n" style="--level:$n">\n] ~
+                INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': ' ~
                 %prm<refs>.map({
-                    qq[<a class="index-ref" href="#{ .<target> }">{ .<place> }</a><span>{ .<place> }</span>] }).join(', ')
+                    qq[<a class="index-ref" href="#{ .<target> }">&nbsp;§&nbsp;</a><span>{ .<place> }</span>] }).join(', ')
                 ~ "\n</div>\n"
         },
         #| special template to render the index data structure

@@ -11,12 +11,13 @@ has %.config = %(
 	:author<Richard Hainsworth, aka finanalyst>,
 	:version<0.1.0>,
 	:css-link(['href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"',1],),
-    :js(['',1],),
-    :css(['',1],),
+	:js-link(['src="https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js"',1],),
+    :js(['',2],), # 1st element is replaced in TWEAK
+    :css([]),
 );
 submethod TWEAK {
     %!config<js>[0][0] = self.js-text;
-    %!config<css>[0][0] = self.chyron-css;
+    %!config<css>.append: [self.chyron-css,1], [ self.toc-css, 1];
 }
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
@@ -44,7 +45,64 @@ method templates {
         },
         #| the first section of body, including navigation
         top-of-page => -> %prm, $tmpl {
-            my $rv = $tmpl<navigation-bar> ~ q:to/TOP/;
+            $tmpl<navigation-bar> ~
+            $tmpl<page-navigation>
+        },
+        #| navigation bar at top of page
+        navigation-bar => -> %prm, $tmpl {
+            qq:to/BLOCK/
+            <nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
+                <div class="navbar-brand">
+                    <figure class="navbar-item is-256x256">
+                        <a href="/index.html">
+                        <img class="is-rounded" src="https://avatars.githubusercontent.com/u/58170775">
+                        </a>
+                    </figure>
+                    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="pageNavigation">
+                      <span aria-hidden="true"></span>
+                      <span aria-hidden="true"></span>
+                      <span aria-hidden="true"></span>
+                      <span aria-hidden="true"></span>
+                    </a>
+                </div>
+                <div id="pageNavigation" class="navbar-menu">
+                    <div class="navbar-start">
+                        <label class="chyronToggle">
+                          <input id="navbar-toc-toggle" type="checkbox" />
+                          <span class="checkmark"> </span>
+                        </label>
+                    </div>
+                    <div class="navbar-end">
+                        <div class="navbar-item">
+                            <button id="changeTheme" class="button">Change theme</button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            BLOCK
+        },
+        #| the main section of body
+        main-content => -> %prm, $tmpl {
+            qq:to/END/
+            <div class="columns">
+                <div id="TOC" class="column is-one-quarter">
+                    { $tmpl<sidebar> }
+                </div>
+                <div class="column">
+                    { $tmpl<title-section> }
+                    <div class="container px-4">
+                    { %prm<body> }
+                    </div>
+                    <div class="container px-4">
+                    { %prm<footnotes>.Str }
+                    </div>
+                </div>
+            </div>
+            END
+        },
+        #| title and subtitle
+        title-section => -> %prm, $tmpl {
+            my $rv = q:to/TOP/;
                 <section class="section">
                   <div class="container">
                 TOP
@@ -60,86 +118,83 @@ method templates {
                 </section>
                 END
         },
-        #| navigation bar at top of page
-        navigation-bar => -> %prm, $tmpl {
-            qq:to/BLOCK/
-            <nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
-            <div class="navbar-brand">
-                <figure class="navbar-item is-128x128">
-                    <a href="/index.html">
-                    <img class="is-rounded" src="https://avatars.githubusercontent.com/u/58170775">
-                    </a>
-                </figure>
-                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="pageNavigation">
-                  <span aria-hidden="true"></span>
-                  <span aria-hidden="true"></span>
-                  <span aria-hidden="true"></span>
-                  <span aria-hidden="true"></span>
-                </a>
-            </div>
-            <div id="pageNavigation" class="navbar-menu">
-                <div class="navbar-start">
-                    <label class="chyronToggle">
-                      <input id="navbar-toc-toggle" type="checkbox" />
-                      <span class="checkmark"> </span>
-                    </label>
-                </div>
-                <div class="navbar-end">
-                    <div class="navbar-item">
-                        <button id="changeTheme" class="button">Change theme</button>
-                    </div>
-                </div>
-            </nav>
-            BLOCK
-        },
-        #| the main section of body
-        main-content => -> %prm, $tmpl {
-            qq:to/END/
-            <div class="columns">
-                <div id="TOC" class="column is-one-quarter">
-                    { $tmpl<sidebar> }
-                </div>
-                <div class="column">
-                    <div class="container px-4">
-                    { %prm<body> }
-                    </div>
-                    <div class="container px-4">
-                    { %prm<footnotes>.Str }
-                    </div>
-                </div>
-            </div>
-            END
-        },
         #| Side bar to hold ToC and Index
-        sidebar => -> %prm, $tmpl {
+        sidebar => -> %prm, $tmpl { '' },
+        page-navigation => -> %prm, $tmpl {
             qq:to/SIDEBAR/;
-                <div class="container px-4">
-                    <div class="tabs" id="tabs">
-                        <ul>
-                            <li class="is-active" id="toc-tab">
-                                <a>Table of Contents</a>
-                            </li>
-                            <li id="index-tab">
-                                <a>Index</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="container">
-                        <aside id="toc-menu" class="menu">
-                        { %prm<rendered-toc>
-                            ?? %prm<rendered-toc>
-                            !! '<p>No Table of contents for this page</p>'
-                        }
-                        </aside>
-                        <aside id="index-menu" class="menu is-hidden">
-                        { %prm<rendered-index>
-                            ?? %prm<rendered-index>
-                            !! '<p>No Index for this page</p>'
-                        }
-                        </aside>
-                    </div>
-                </div>
+            <nav class="panel" id="page-nav" style="width: 25%; position:fixed;">
+              <div class="panel-block">
+                <p class="control has-icons-left">
+                  <input class="input" type="text" placeholder="Search" id="page-nav-search"/>
+                  <span class="icon is-left">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                  </span>
+                </p>
+              </div>
+              <p class="panel-tabs">
+                <a id="toc-tab">Table of Contents</a>
+                <a id="index-tab">Index</a>
+              </p>
+                <aside id="toc-menu" class="panel-block">
+                { %prm<rendered-toc>
+                    ?? %prm<rendered-toc>
+                    !! '<p>No Table of contents for this page</p>'
+                }
+                </aside>
+                <aside id="index-menu" class="panel-block is-hidden">
+                { %prm<rendered-index>
+                    ?? %prm<rendered-index>
+                    !! '<p>No Index for this page</p>'
+                }
+                </aside>
+            </nav>
             SIDEBAR
+#                <div class="container px-4">
+#                    <div class="tabs" id="tabs">
+#                        <ul>
+#                            <li class="is-active" id="toc-tab">
+#                                <a>Table of Contents</a>
+#                            </li>
+#                            <li id="index-tab">
+#                                <a>Index</a>
+#                            </li>
+#                        </ul>
+#                    </div>
+#                    <div class="container">
+#                        <aside id="toc-menu" class="menu">
+#                        { %prm<rendered-toc>
+#                            ?? %prm<rendered-toc>
+#                            !! '<p>No Table of contents for this page</p>'
+#                        }
+#                        </aside>
+#                        <aside id="index-menu" class="menu is-hidden">
+#                        { %prm<rendered-index>
+#                            ?? %prm<rendered-index>
+#                            !! '<p>No Index for this page</p>'
+#                        }
+#                        </aside>
+#                    </div>
+#                </div>
+#            SIDEBAR
+        },
+        #| special template to render the toc list
+        toc => -> %prm, $tmpl {
+            if %prm<toc>:exists && %prm<toc>.elems {
+                PStr.new: qq[<div class="toc">] ~
+#                ( "<h2 class=\"toc-caption\">$_\</h2>" with  %prm<caption> ) ~
+                ([~] %prm<toc-list>) ~
+                "</div>\n"
+            }
+            else {
+                PStr.new: ''
+            }
+        },
+        #| special template to render the index data structure
+        index => -> %prm, $tmpl {
+#            my $cap = %prm<caption>:exists ?? qq[<h2 class="index-caption">{%prm<caption>}</h2>] !! '';
+            PStr.new: '<div class="index">' ~ "\n" ~
+            ([~] %prm<index-list>) ~ "\n</div>\n"
+
         },
         #| the last section of body
         footer => -> %prm, $tmpl {
@@ -175,17 +230,11 @@ method templates {
             PStr.new:
                 qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
                 ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
-                qq[[<$h id="$targ" class="heading {'delta' if $del} py-4">]] ~
+                qq[[<$h id="$targ" class="heading {'delta' if $del} py-2">]] ~
                 ($del if $del) ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
                 $title ~
                 qq[[</a></$h>\n]]
-        },
-        #| renders =para block
-        para => -> %prm, $tmpl {
-            PStr.new: '<p' ~
-                (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
-            'class="py-4">' ~ %prm<contents> ~ "</p>\n"
         },
     )
 }
@@ -207,20 +256,24 @@ method js-text {
         var matchTocState = function ( state ) {
             if ( state ) {
                 document.getElementById("TOC").classList.remove('is-hidden');
+                document.getElementById("page-nav").classList.remove('is-hidden');
                 persist_tocState( 'open');
             }
             else {
                 document.getElementById("TOC").classList.add('is-hidden');
+                document.getElementById("page-nav").classList.add('is-hidden');
                 persist_tocState( 'closed' );
             }
         }
         var setTocState = function ( state ) {
             if ( state === 'closed') {
                 document.getElementById("TOC").classList.add('is-hidden');
+                document.getElementById("page-nav").classList.add('is-hidden');
                 document.getElementById("navbar-toc-toggle").checked = false;
             }
             else {
                 document.getElementById("TOC").classList.remove('is-hidden');
+                document.getElementById("page-nav").classList.remove('is-hidden');
                 document.getElementById("navbar-toc-toggle").checked = true;
             }
         };
@@ -283,6 +336,39 @@ method js-text {
     //        document.execCommand("copy", false);
     //        document.body.removeChild(container);
     //    });
+        var TOC = document.getElementById('toc-menu');
+        var Index = document.getElementById('index-menu');
+        var originalTOC = TOC.getHTML();
+        var originalIndex = Index.getHTML();
+        document.getElementById("page-nav-search").addEventListener('keyup', function (event) {
+            TOC.innerHTML = originalTOC;
+            Index.innerHTML = originalIndex;
+            var searchText = event.srcElement.value.toLowerCase();
+            if (searchText.length === 0) return;
+            var menuListElements = document.getElementById('page-nav').querySelectorAll('.toc-item, .index-section');
+            var matchingListElements = Array.from(menuListElements).filter(function (item) {
+                var el;
+                if ( item.classList.contains('toc-item') ) {
+                    el = item.querySelector('a');
+                } else {
+                    el = item.querySelector('.index-entry')
+                }
+                var listItemHTML = el.innerHTML;
+                var fuzzyRes = fuzzysort.go(searchText, [listItemHTML])[0];
+                if (fuzzyRes === undefined || fuzzyRes.score <= 0) {
+                    return false;
+                }
+                var res = fuzzyRes.highlight('<b>','</b>');
+                if (res !== null) {
+                    el.innerHTML = res;
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+        menuListElements.forEach(function(elem){elem.classList.add('is-hidden')});
+        matchingListElements.forEach(function(elem){elem.classList.remove('is-hidden')});
+        });
     });
     function swap_toc_index(activate) {
         let disactivate = (activate == 'toc') ? 'index' : 'toc';
@@ -331,4 +417,16 @@ method chyron-css {
     content: '[\21e6';
     }
     CHYRON
+}
+method toc-css {
+    q:to/TOC/;
+    #page-nav .panel-block .toc {
+        overflow-y:scroll;
+        height:65vh;
+    }
+    #page-nav .panel-block .index {
+        overflow-y:scroll;
+        height:65vh;
+    }
+    TOC
 }
