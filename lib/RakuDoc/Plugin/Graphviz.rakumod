@@ -23,7 +23,9 @@ method templates {
                     return "\n"~'<div class="graphviz">The program ｢dot｣ fom Graphviz needs installing to get an image</div>'
             }
             my $data = %prm<raw>;
-            $proc = Proc::Async.new(:w, 'dot', '-Tsvg');
+            my $attrs = '';
+            $attrs = ('-G' <<~<< .comb(/\S+/)).join(' ') with %prm<attrs>;
+            $proc = Proc::Async.new(:w, <<dot -Tsvg $attrs >>);
             my $proc-rv;
             my $proc-err;
             $proc.stdout.tap(-> $d { $proc-rv ~= $d });
@@ -37,14 +39,20 @@ method templates {
                     default {}
                 }
             }
-            my $rv = "\n"~'<div class="graphviz">';
-            if $proc-rv { $rv ~= $proc-rv }
+            my $level = %prm<headlevel> // 1;
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+
+            my $rv = $head;
+            if $proc-rv { $rv ~= qq[<div class="graphviz">$proc-rv\</div>] }
             elsif $proc-err {
                $rv ~= '<div style="color: red">'
                 ~ $proc-err.subst(/^ .+? 'tdin>:' \s*/, '') ~ '</div>'
-                ~ '<div>Graph input was <div style="color: green">' ~ $data ~ '</div></div>'
+                ~ '<div>Graph input was <div style="color: green">' ~ $data ~ '</div>'
             }
-            $rv ~= '</div>'
+            else {
+                $rv ~= '<div style="color:red">No output from dot command</div>'
+            }
+            $rv
         },
     )
 }

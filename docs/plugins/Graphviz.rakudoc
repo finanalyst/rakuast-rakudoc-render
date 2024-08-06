@@ -3,17 +3,33 @@
 =SUBTITLE RakuDoc::Plugin::Graphviz
 =for AUTHOR :hidden
 Richard Hainsworth aka finanalyst
+authors of dot coding for figures can be found at the links provided beneath each figure
 
 =for VERSION :hidden
-v0.1.0
+v0.2.0
 
 =head Introduction
 
-The GraphViz block introduces a directed graph in the dot language. It is rendered into HTML as an svg using the
-dot program. Since a graph data is require, only the delimited form of the block (starting with =begin/=end)
+The GraphViz block provides access to the L<fabulous GraphViz software | https://graphviz.org>.
+The contents of the block should be a figure/graph in the dot language. The contents are rendered into svg
+using the dot program, which must be installed into the environment.
+Since graph data are required, only the delimited form of the block (starting with =begin/=end)
 will be used.
 
-The following digraph comes from the C<dot> documentation. The following Rakudoc
+=begin Graphviz :headlevel(2) :caption<Simple example>
+    digraph G {
+        main -> parse -> execute;
+        main -> init;
+        main -> cleanup;
+        execute -> make_string;
+        execute -> printf
+        init -> make_string;
+        main -> printf;
+        execute -> compare;
+    }
+=end Graphviz
+
+This simple example is from the dot documentation, and included in a Rakudoc source as
 =begin code
 =begin Graphviz :headlevel(2) :caption<Simple example>
     digraph G {
@@ -29,22 +45,613 @@ The following digraph comes from the C<dot> documentation. The following Rakudoc
 =end Graphviz
 =end code
 
-produces
+=head Gallery
 
-=begin Graphviz :headlevel(2) :caption<Simple example>
-    digraph G {
-        main -> parse -> execute;
-        main -> init;
-        main -> cleanup;
-        execute -> make_string;
-        execute -> printf
-        init -> make_string;
-        main -> printf;
-        execute -> compare;
-    }
+The following are some great examples
+from L<GraphViz.org's gallery | https://graphviz.org/gallery>.
+They show the possibilities of GraphViz software without any post-processing.
+
+=begin Graphviz :headlevel(2) :caption<Cluster gradients>
+digraph G {bgcolor="#0000FF44:#FF000044" gradientangle=90
+	fontname="Helvetica,Arial,sans-serif"
+	node [fontname="Helvetica,Arial,sans-serif"]
+	edge [fontname="Helvetica,Arial,sans-serif"]
+
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		fillcolor="darkgray:gold";
+		gradientangle=0
+		node [fillcolor="yellow:green" style=filled gradientangle=270] a0;
+		node [fillcolor="lightgreen:red"] a1;
+		node [fillcolor="lightskyblue:darkcyan"] a2;
+		node [fillcolor="cyan:lightslateblue"] a3;
+
+		a0 -> a1 -> a2 -> a3;
+		label = "process #1";
+	}
+
+	subgraph cluster_1 {
+		node [fillcolor="yellow:magenta"
+			 style=filled gradientangle=270] b0;
+		node [fillcolor="violet:darkcyan"] b1;
+		node [fillcolor="peachpuff:red"] b2;
+		node [fillcolor="mediumpurple:purple"] b3;
+
+		b0 -> b1 -> b2 -> b3;
+		label = "process #2";
+		color=blue
+		fillcolor="darkgray:gold";
+		gradientangle=0
+		style=filled;
+	}
+	start -> a0;
+	start -> b0;
+	a1 -> b3;
+	b2 -> a3;
+	a3 -> a0;
+	a3 -> end;
+	b3 -> end;
+
+	start [shape=Mdiamond ,
+		fillcolor="pink:red",
+		gradientangle=90,
+		style=radial];
+	end [shape=Msquare,
+		fillcolor="lightyellow:orange",
+		style=radial,
+		gradientangle=90];
+}
 =end Graphviz
 
+The diagram L<source| https://graphviz.org/Gallery/gradient/cluster.html> is included in a Rakudoc source file as:
+=begin code
+=begin Graphviz :headlevel(2) :caption<Cluster gradients>
+digraph G {bgcolor="#0000FF44:#FF000044" gradientangle=90
+	fontname="Helvetica,Arial,sans-serif"
+	node [fontname="Helvetica,Arial,sans-serif"]
+	edge [fontname="Helvetica,Arial,sans-serif"]
 
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		fillcolor="darkgray:gold";
+		gradientangle=0
+		node [fillcolor="yellow:green" style=filled gradientangle=270] a0;
+		node [fillcolor="lightgreen:red"] a1;
+		node [fillcolor="lightskyblue:darkcyan"] a2;
+		node [fillcolor="cyan:lightslateblue"] a3;
+
+		a0 -> a1 -> a2 -> a3;
+		label = "process #1";
+	}
+
+	subgraph cluster_1 {
+		node [fillcolor="yellow:magenta"
+			 style=filled gradientangle=270] b0;
+		node [fillcolor="violet:darkcyan"] b1;
+		node [fillcolor="peachpuff:red"] b2;
+		node [fillcolor="mediumpurple:purple"] b3;
+
+		b0 -> b1 -> b2 -> b3;
+		label = "process #2";
+		color=blue
+		fillcolor="darkgray:gold";
+		gradientangle=0
+		style=filled;
+	}
+	start -> a0;
+	start -> b0;
+	a1 -> b3;
+	b2 -> a3;
+	a3 -> a0;
+	a3 -> end;
+	b3 -> end;
+
+	start [shape=Mdiamond ,
+		fillcolor="pink:red",
+		gradientangle=90,
+		style=radial];
+	end [shape=Msquare,
+		fillcolor="lightyellow:orange",
+		style=radial,
+		gradientangle=90];
+}
+=end Graphviz
+=end code
+
+=begin Graphviz :caption<Neural network> :headlevel(2)
+digraph G {
+  fontname="Helvetica,Arial,sans-serif"
+  node [fontname="Helvetica,Arial,sans-serif"]
+  edge [fontname="Helvetica,Arial,sans-serif"]
+  concentrate=True;
+  rankdir=TB;
+  node [shape=record];
+  140087530674552 [label="title: InputLayer\n|{input:|output:}|{{[(?, ?)]}|{[(?, ?)]}}"];
+  140087537895856 [label="body: InputLayer\n|{input:|output:}|{{[(?, ?)]}|{[(?, ?)]}}"];
+  140087531105640 [label="embedding_2: Embedding\n|{input:|output:}|{{(?, ?)}|{(?, ?, 64)}}"];
+  140087530711024 [label="embedding_3: Embedding\n|{input:|output:}|{{(?, ?)}|{(?, ?, 64)}}"];
+  140087537980360 [label="lstm_2: LSTM\n|{input:|output:}|{{(?, ?, 64)}|{(?, 128)}}"];
+  140087531256464 [label="lstm_3: LSTM\n|{input:|output:}|{{(?, ?, 64)}|{(?, 32)}}"];
+  140087531106200 [label="tags: InputLayer\n|{input:|output:}|{{[(?, 12)]}|{[(?, 12)]}}"];
+  140087530348048 [label="concatenate_1: Concatenate\n|{input:|output:}|{{[(?, 128), (?, 32), (?, 12)]}|{(?, 172)}}"];
+  140087530347992 [label="priority: Dense\n|{input:|output:}|{{(?, 172)}|{(?, 1)}}"];
+  140087530711304 [label="department: Dense\n|{input:|output:}|{{(?, 172)}|{(?, 4)}}"];
+  140087530674552 -> 140087531105640;
+  140087537895856 -> 140087530711024;
+  140087531105640 -> 140087537980360;
+  140087530711024 -> 140087531256464;
+  140087537980360 -> 140087530348048;
+  140087531256464 -> 140087530348048;
+  140087531106200 -> 140087530348048;
+  140087530348048 -> 140087530347992;
+  140087530348048 -> 140087530711304;
+}
+=end Graphviz
+The figure's L<source|https://graphviz.org/Gallery/directed/neural-network.html>
+is included in a Rakudoc source file as:
+=begin code
+=begin Graphviz :caption<Neural network :headlevel(2)
+digraph G {
+  fontname="Helvetica,Arial,sans-serif"
+  node [fontname="Helvetica,Arial,sans-serif"]
+  edge [fontname="Helvetica,Arial,sans-serif"]
+  concentrate=True;
+  rankdir=TB;
+  node [shape=record];
+  140087530674552 [label="title: InputLayer\n|{input:|output:}|{{[(?, ?)]}|{[(?, ?)]}}"];
+  140087537895856 [label="body: InputLayer\n|{input:|output:}|{{[(?, ?)]}|{[(?, ?)]}}"];
+  140087531105640 [label="embedding_2: Embedding\n|{input:|output:}|{{(?, ?)}|{(?, ?, 64)}}"];
+  140087530711024 [label="embedding_3: Embedding\n|{input:|output:}|{{(?, ?)}|{(?, ?, 64)}}"];
+  140087537980360 [label="lstm_2: LSTM\n|{input:|output:}|{{(?, ?, 64)}|{(?, 128)}}"];
+  140087531256464 [label="lstm_3: LSTM\n|{input:|output:}|{{(?, ?, 64)}|{(?, 32)}}"];
+  140087531106200 [label="tags: InputLayer\n|{input:|output:}|{{[(?, 12)]}|{[(?, 12)]}}"];
+  140087530348048 [label="concatenate_1: Concatenate\n|{input:|output:}|{{[(?, 128), (?, 32), (?, 12)]}|{(?, 172)}}"];
+  140087530347992 [label="priority: Dense\n|{input:|output:}|{{(?, 172)}|{(?, 1)}}"];
+  140087530711304 [label="department: Dense\n|{input:|output:}|{{(?, 172)}|{(?, 4)}}"];
+  140087530674552 -> 140087531105640;
+  140087537895856 -> 140087530711024;
+  140087531105640 -> 140087537980360;
+  140087530711024 -> 140087531256464;
+  140087537980360 -> 140087530348048;
+  140087531256464 -> 140087530348048;
+  140087531106200 -> 140087530348048;
+  140087530348048 -> 140087530347992;
+  140087530348048 -> 140087530711304;
+}
+=end Graphviz
+=end code
+=begin Graphviz :caption<Color wheel> :headlevel(2)
+graph Color_wheel {
+	graph [
+		layout = neato
+		label = "Color wheel, 33 colors.\nNeato layout"
+		labelloc = b
+		fontname = "Helvetica,Arial,sans-serif"
+		start = regular
+		normalize = 0
+		size="10"
+	]
+	node [
+		shape = circle
+		style = filled
+		color = "#00000088"
+		fontname = "Helvetica,Arial,sans-serif"
+	]
+	edge [
+		len = 2.7
+		color = "#00000088"
+		fontname = "Helvetica,Arial,sans-serif"
+	]
+	subgraph Dark {
+		node [fontcolor = white width = 1.4]
+		center [width = 1 style = invis shape = point]
+		center -- darkred [label = "0°/360°"]
+		darkred [fillcolor = darkred]
+		brown [fillcolor = brown]
+		brown -- center [label = "30°"]
+		olive [fillcolor = olive]
+		olive -- center [label = "60°"]
+		darkolivegreen [fillcolor = darkolivegreen fontsize = 10]
+		darkolivegreen -- center [label = "90°"]
+		darkgreen [fillcolor = darkgreen]
+		darkgreen -- center [label = "120°"]
+		"dark hue 0.416" [color = ".416 1 .6" fontcolor = white]
+		"dark hue 0.416" -- center [label = "150°"]
+		darkcyan [fillcolor = darkcyan]
+		darkcyan -- center [label = "180°"]
+		"dark hue 0.583" [color = ".583 1 .6" fontcolor = white]
+		"dark hue 0.583" -- center [label = "210°"]
+		darkblue [fillcolor = darkblue]
+		darkblue -- center [label = "240°"]
+		"dark hue 0.750" [color = ".750 1 .6"]
+		"dark hue 0.750" -- center [label = "270°"]
+		darkmagenta [fillcolor = darkmagenta]
+		darkmagenta -- center [label = "300°"]
+		"dark hue 0.916" [color = ".916 1 .6"]
+		"dark hue 0.916" -- center [label = "330°"]
+	}
+	subgraph Tue {
+		node [width = 1.3]
+		"hue 0.083" -- brown
+		"hue 0.083" [color = ".083 1 1"]
+		"hue 0.125" [color = ".125 1 1"]
+		"hue 0.166" -- olive
+		"hue 0.166" [color = ".166 1 1"]
+		"hue 0.208" [color = ".208 1 1"]
+		"hue 0.250" -- darkolivegreen
+		"hue 0.250" [color = ".250 1 1"]
+		"hue 0.291" [color = ".291 1 1"]
+		"hue 0.333" -- darkgreen
+		"hue 0.333" [color = ".333 1 1"]
+		"hue 0.375" [color = ".375 1 1"]
+		"hue 0.416" -- "dark hue 0.416"
+		"hue 0.416" [color = ".416 1 1"]
+		"hue 0.458" [color = ".458 1 1"]
+		"hue 0.500" -- darkcyan
+		"hue 0.500" [color = ".500 1 1"]
+		"hue 0.541" [color = ".541 1 1"]
+		node [fontcolor = white]
+		"hue 0.000" [color = ".000 1 1"]
+		"hue 0.000" -- darkred
+		"hue 0.041" [color = ".041 1 1"]
+		"hue 0.583" -- "dark hue 0.583"
+		"hue 0.583" [color = ".583 1 1"]
+		"hue 0.625" [color = ".625 1 1"]
+		"hue 0.666" -- darkblue
+		"hue 0.666" [color = ".666 1 1"]
+		"hue 0.708" [color = ".708 1 1"]
+		"hue 0.750" -- "dark hue 0.750"
+		"hue 0.750" [color = ".750 1 1"]
+		"hue 0.791" [color = ".791 1 1"]
+		"hue 0.833" -- darkmagenta
+		"hue 0.833" [color = ".833 1 1"]
+		"hue 0.875" [color = ".875 1 1"]
+		"hue 0.916" -- "dark hue 0.916"
+		"hue 0.916" [color = ".916 1 1"]
+		"hue 0.958" [color = ".958 1 1"]
+		edge [len = 1]
+		"hue 0.000" -- "hue 0.041" -- "hue 0.083" -- "hue 0.125" -- "hue 0.166" -- "hue 0.208"
+		"hue 0.208" -- "hue 0.250" -- "hue 0.291" -- "hue 0.333" -- "hue 0.375" -- "hue 0.416"
+		"hue 0.416" -- "hue 0.458" -- "hue 0.500" --"hue 0.541" -- "hue 0.583" -- "hue 0.625"
+		"hue 0.625" -- "hue 0.666" -- "hue 0.708" -- "hue 0.750" -- "hue 0.791" -- "hue 0.833"
+		"hue 0.833" -- "hue 0.875" -- "hue 0.916" -- "hue 0.958" -- "hue 0.000"
+	}
+	subgraph Main_colors {
+		node [width = 2 fontsize = 20]
+		red [fillcolor = red fontcolor = white]
+		orangered [fillcolor = orangered]
+		orange [fillcolor = orange]
+		gold [fillcolor = gold]
+		yellow [fillcolor = yellow]
+		yellowgreen [fillcolor = yellowgreen]
+		deeppink [fillcolor = deeppink fontcolor = white]
+		fuchsia [label = "fuchsia\nmagenta" fillcolor = fuchsia fontcolor = white]
+		purple [fillcolor = purple fontcolor = white]
+		blue [fillcolor = blue fontcolor = white]
+		cornflowerblue [fillcolor = cornflowerblue]
+		deepskyblue [fillcolor = deepskyblue]
+		aqua [fillcolor = aqua label = "aqua\ncyan"]
+		springgreen [fillcolor = springgreen]
+		green [fillcolor = green]
+		purple -- fuchsia -- deeppink -- red
+		cornflowerblue -- blue -- purple
+		cornflowerblue -- deepskyblue -- aqua [len = 1.7]
+		aqua -- springgreen -- green -- yellowgreen -- yellow
+		yellow -- gold -- orange -- orangered -- red [len = 1.6]
+		orange -- "hue 0.083"
+		deeppink -- "hue 0.916"
+		deeppink -- "hue 0.875"
+		red -- "hue 0.000"
+		yellowgreen -- "hue 0.250"
+		blue -- "hue 0.666"
+		yellow -- "hue 0.166"
+		gold -- "hue 0.125"
+		green -- "hue 0.333"
+		springgreen -- "hue 0.416"
+		aqua -- "hue 0.500"
+		cornflowerblue -- "hue 0.583"
+		deepskyblue -- "hue 0.541"
+		purple -- "hue 0.791"
+		purple -- "hue 0.750"
+		fuchsia -- "hue 0.833"
+	}
+	subgraph Light_colors {
+		node [width = 2 fontsize = 20]
+		node [shape = circle width = 1.8]
+		edge [len = 2.1]
+		pink [fillcolor = pink]
+		pink -- red
+		lightyellow [fillcolor = lightyellow]
+		lightyellow -- yellow
+		mediumpurple [fillcolor = mediumpurple]
+		mediumpurple -- purple
+		violet [fillcolor = violet]
+		violet -- fuchsia
+		hotpink [fillcolor = hotpink]
+		hotpink -- deeppink
+		"light hue 0.250" [color = ".250 .2 1"]
+		"light hue 0.250" -- yellowgreen
+		lightcyan [fillcolor = lightcyan]
+		lightcyan -- aqua
+		lightslateblue [fillcolor = lightslateblue]
+		lightslateblue -- blue
+		lightgreen [fillcolor = lightgreen]
+		lightgreen -- green
+		lightskyblue [fillcolor = lightskyblue]
+		lightskyblue -- deepskyblue
+		peachpuff [fillcolor = peachpuff]
+		peachpuff -- orange
+		"light hue 0.416" [color = ".416 .2 1"]
+		"light hue 0.416" -- springgreen
+	}
+	subgraph Tints {
+		node [width = 1]
+		edge [len = 2.4]
+		"hue 0 tint" -- pink
+		"hue 0 tint" [color = "0 .1 1"]
+		"hue 0.041 tint" [color = ".041 .1 1"]
+		"hue 0.083 tint" -- peachpuff
+		"hue 0.083 tint" [color = ".083 .1 1"]
+		"hue 0.125 tint" [color = ".125 .1 1"]
+		"hue 0.166 tint" -- lightyellow
+		"hue 0.166 tint" [color = ".166 .1 1"]
+		"hue 0.208 tint" [color = ".208 .1 1"]
+		"hue 0.250 tint" -- "light hue 0.250"
+		"hue 0.250 tint" [color = ".250 .1 1"]
+		"hue 0.291 tint" [color = ".291 .1 1"]
+		"hue 0.333 tint" -- lightgreen
+		"hue 0.333 tint" [color = ".333 .1 1"]
+		"hue 0.375 tint" [color = ".375 .1 1"]
+		"hue 0.416 tint" -- "light hue 0.416"
+		"hue 0.416 tint" [color = ".416 .1 1"]
+		"hue 0.458 tint" [color = ".458 .1 1"]
+		"hue 0.5 tint" -- lightcyan
+		"hue 0.5 tint" [color = ".5 .1 1"]
+		"hue 0.541 tint" -- lightskyblue
+		"hue 0.541 tint" [color = ".541 .1 1"]
+		"hue 0.583 tint" [color = ".583 .1 1"]
+		"hue 0.625 tint" [color = ".625 .1 1"]
+		"hue 0.666 tint" -- lightslateblue
+		"hue 0.666 tint" [color = ".666 .1 1"]
+		"hue 0.708 tint" [color = ".708 .1 1"]
+		"hue 0.750 tint" -- mediumpurple
+		"hue 0.750 tint" [color = ".750 .1 1"]
+		"hue 0.791 tint" [color = ".791 .1 1"]
+		"hue 0.833 tint" -- violet
+		"hue 0.833 tint" [color = ".833 .1 1"]
+		"hue 0.875 tint" [color = ".875 .1 1"]
+		"hue 0.916 tint" -- hotpink
+		"hue 0.916 tint" [color = ".916 .1 1"]
+		"hue 0.958 tint" [color = ".958 .1 1"]
+		edge [len = 2]
+		"hue 0 tint" -- "hue 0.041 tint" -- "hue 0.083 tint" -- "hue 0.125 tint" -- "hue 0.166 tint" -- "hue 0.208 tint"
+		"hue 0.208 tint" -- "hue 0.250 tint" -- "hue 0.291 tint" -- "hue 0.333 tint" -- "hue 0.375 tint" -- "hue 0.416 tint"
+		"hue 0.416 tint" -- "hue 0.458 tint" -- "hue 0.5 tint" --"hue 0.541 tint" -- "hue 0.583 tint" -- "hue 0.625 tint"
+		"hue 0.625 tint" -- "hue 0.666 tint" -- "hue 0.708 tint" -- "hue 0.750 tint" -- "hue 0.791 tint" -- "hue 0.833 tint"
+		"hue 0.833 tint" -- "hue 0.875 tint" -- "hue 0.916 tint" -- "hue 0.958 tint" -- "hue 0 tint"
+	}
+	// © 2022 Costa Shulyupin, licensed under EPL
+}
+=end Graphviz
+The figure's L<source| https://graphviz.org/Gallery/neato/color_wheel.html>, with an extra C<graph/size option>,
+is included in a Rakudoc source file as:
+=begin code
+=begin Graphviz :caption<Color wheel> :headlevel(2)
+graph Color_wheel {
+	graph [
+		layout = neato
+		label = "Color wheel, 33 colors.\nNeato layout"
+		labelloc = b
+		fontname = "Helvetica,Arial,sans-serif"
+		start = regular
+		normalize = 0
+		size="10"
+	]
+	node [
+		shape = circle
+		style = filled
+		color = "#00000088"
+		fontname = "Helvetica,Arial,sans-serif"
+	]
+	edge [
+		len = 2.7
+		color = "#00000088"
+		fontname = "Helvetica,Arial,sans-serif"
+	]
+	subgraph Dark {
+		node [fontcolor = white width = 1.4]
+		center [width = 1 style = invis shape = point]
+		center -- darkred [label = "0°/360°"]
+		darkred [fillcolor = darkred]
+		brown [fillcolor = brown]
+		brown -- center [label = "30°"]
+		olive [fillcolor = olive]
+		olive -- center [label = "60°"]
+		darkolivegreen [fillcolor = darkolivegreen fontsize = 10]
+		darkolivegreen -- center [label = "90°"]
+		darkgreen [fillcolor = darkgreen]
+		darkgreen -- center [label = "120°"]
+		"dark hue 0.416" [color = ".416 1 .6" fontcolor = white]
+		"dark hue 0.416" -- center [label = "150°"]
+		darkcyan [fillcolor = darkcyan]
+		darkcyan -- center [label = "180°"]
+		"dark hue 0.583" [color = ".583 1 .6" fontcolor = white]
+		"dark hue 0.583" -- center [label = "210°"]
+		darkblue [fillcolor = darkblue]
+		darkblue -- center [label = "240°"]
+		"dark hue 0.750" [color = ".750 1 .6"]
+		"dark hue 0.750" -- center [label = "270°"]
+		darkmagenta [fillcolor = darkmagenta]
+		darkmagenta -- center [label = "300°"]
+		"dark hue 0.916" [color = ".916 1 .6"]
+		"dark hue 0.916" -- center [label = "330°"]
+	}
+	subgraph Tue {
+		node [width = 1.3]
+		"hue 0.083" -- brown
+		"hue 0.083" [color = ".083 1 1"]
+		"hue 0.125" [color = ".125 1 1"]
+		"hue 0.166" -- olive
+		"hue 0.166" [color = ".166 1 1"]
+		"hue 0.208" [color = ".208 1 1"]
+		"hue 0.250" -- darkolivegreen
+		"hue 0.250" [color = ".250 1 1"]
+		"hue 0.291" [color = ".291 1 1"]
+		"hue 0.333" -- darkgreen
+		"hue 0.333" [color = ".333 1 1"]
+		"hue 0.375" [color = ".375 1 1"]
+		"hue 0.416" -- "dark hue 0.416"
+		"hue 0.416" [color = ".416 1 1"]
+		"hue 0.458" [color = ".458 1 1"]
+		"hue 0.500" -- darkcyan
+		"hue 0.500" [color = ".500 1 1"]
+		"hue 0.541" [color = ".541 1 1"]
+		node [fontcolor = white]
+		"hue 0.000" [color = ".000 1 1"]
+		"hue 0.000" -- darkred
+		"hue 0.041" [color = ".041 1 1"]
+		"hue 0.583" -- "dark hue 0.583"
+		"hue 0.583" [color = ".583 1 1"]
+		"hue 0.625" [color = ".625 1 1"]
+		"hue 0.666" -- darkblue
+		"hue 0.666" [color = ".666 1 1"]
+		"hue 0.708" [color = ".708 1 1"]
+		"hue 0.750" -- "dark hue 0.750"
+		"hue 0.750" [color = ".750 1 1"]
+		"hue 0.791" [color = ".791 1 1"]
+		"hue 0.833" -- darkmagenta
+		"hue 0.833" [color = ".833 1 1"]
+		"hue 0.875" [color = ".875 1 1"]
+		"hue 0.916" -- "dark hue 0.916"
+		"hue 0.916" [color = ".916 1 1"]
+		"hue 0.958" [color = ".958 1 1"]
+		edge [len = 1]
+		"hue 0.000" -- "hue 0.041" -- "hue 0.083" -- "hue 0.125" -- "hue 0.166" -- "hue 0.208"
+		"hue 0.208" -- "hue 0.250" -- "hue 0.291" -- "hue 0.333" -- "hue 0.375" -- "hue 0.416"
+		"hue 0.416" -- "hue 0.458" -- "hue 0.500" --"hue 0.541" -- "hue 0.583" -- "hue 0.625"
+		"hue 0.625" -- "hue 0.666" -- "hue 0.708" -- "hue 0.750" -- "hue 0.791" -- "hue 0.833"
+		"hue 0.833" -- "hue 0.875" -- "hue 0.916" -- "hue 0.958" -- "hue 0.000"
+	}
+	subgraph Main_colors {
+		node [width = 2 fontsize = 20]
+		red [fillcolor = red fontcolor = white]
+		orangered [fillcolor = orangered]
+		orange [fillcolor = orange]
+		gold [fillcolor = gold]
+		yellow [fillcolor = yellow]
+		yellowgreen [fillcolor = yellowgreen]
+		deeppink [fillcolor = deeppink fontcolor = white]
+		fuchsia [label = "fuchsia\nmagenta" fillcolor = fuchsia fontcolor = white]
+		purple [fillcolor = purple fontcolor = white]
+		blue [fillcolor = blue fontcolor = white]
+		cornflowerblue [fillcolor = cornflowerblue]
+		deepskyblue [fillcolor = deepskyblue]
+		aqua [fillcolor = aqua label = "aqua\ncyan"]
+		springgreen [fillcolor = springgreen]
+		green [fillcolor = green]
+		purple -- fuchsia -- deeppink -- red
+		cornflowerblue -- blue -- purple
+		cornflowerblue -- deepskyblue -- aqua [len = 1.7]
+		aqua -- springgreen -- green -- yellowgreen -- yellow
+		yellow -- gold -- orange -- orangered -- red [len = 1.6]
+		orange -- "hue 0.083"
+		deeppink -- "hue 0.916"
+		deeppink -- "hue 0.875"
+		red -- "hue 0.000"
+		yellowgreen -- "hue 0.250"
+		blue -- "hue 0.666"
+		yellow -- "hue 0.166"
+		gold -- "hue 0.125"
+		green -- "hue 0.333"
+		springgreen -- "hue 0.416"
+		aqua -- "hue 0.500"
+		cornflowerblue -- "hue 0.583"
+		deepskyblue -- "hue 0.541"
+		purple -- "hue 0.791"
+		purple -- "hue 0.750"
+		fuchsia -- "hue 0.833"
+	}
+	subgraph Light_colors {
+		node [width = 2 fontsize = 20]
+		node [shape = circle width = 1.8]
+		edge [len = 2.1]
+		pink [fillcolor = pink]
+		pink -- red
+		lightyellow [fillcolor = lightyellow]
+		lightyellow -- yellow
+		mediumpurple [fillcolor = mediumpurple]
+		mediumpurple -- purple
+		violet [fillcolor = violet]
+		violet -- fuchsia
+		hotpink [fillcolor = hotpink]
+		hotpink -- deeppink
+		"light hue 0.250" [color = ".250 .2 1"]
+		"light hue 0.250" -- yellowgreen
+		lightcyan [fillcolor = lightcyan]
+		lightcyan -- aqua
+		lightslateblue [fillcolor = lightslateblue]
+		lightslateblue -- blue
+		lightgreen [fillcolor = lightgreen]
+		lightgreen -- green
+		lightskyblue [fillcolor = lightskyblue]
+		lightskyblue -- deepskyblue
+		peachpuff [fillcolor = peachpuff]
+		peachpuff -- orange
+		"light hue 0.416" [color = ".416 .2 1"]
+		"light hue 0.416" -- springgreen
+	}
+	subgraph Tints {
+		node [width = 1]
+		edge [len = 2.4]
+		"hue 0 tint" -- pink
+		"hue 0 tint" [color = "0 .1 1"]
+		"hue 0.041 tint" [color = ".041 .1 1"]
+		"hue 0.083 tint" -- peachpuff
+		"hue 0.083 tint" [color = ".083 .1 1"]
+		"hue 0.125 tint" [color = ".125 .1 1"]
+		"hue 0.166 tint" -- lightyellow
+		"hue 0.166 tint" [color = ".166 .1 1"]
+		"hue 0.208 tint" [color = ".208 .1 1"]
+		"hue 0.250 tint" -- "light hue 0.250"
+		"hue 0.250 tint" [color = ".250 .1 1"]
+		"hue 0.291 tint" [color = ".291 .1 1"]
+		"hue 0.333 tint" -- lightgreen
+		"hue 0.333 tint" [color = ".333 .1 1"]
+		"hue 0.375 tint" [color = ".375 .1 1"]
+		"hue 0.416 tint" -- "light hue 0.416"
+		"hue 0.416 tint" [color = ".416 .1 1"]
+		"hue 0.458 tint" [color = ".458 .1 1"]
+		"hue 0.5 tint" -- lightcyan
+		"hue 0.5 tint" [color = ".5 .1 1"]
+		"hue 0.541 tint" -- lightskyblue
+		"hue 0.541 tint" [color = ".541 .1 1"]
+		"hue 0.583 tint" [color = ".583 .1 1"]
+		"hue 0.625 tint" [color = ".625 .1 1"]
+		"hue 0.666 tint" -- lightslateblue
+		"hue 0.666 tint" [color = ".666 .1 1"]
+		"hue 0.708 tint" [color = ".708 .1 1"]
+		"hue 0.750 tint" -- mediumpurple
+		"hue 0.750 tint" [color = ".750 .1 1"]
+		"hue 0.791 tint" [color = ".791 .1 1"]
+		"hue 0.833 tint" -- violet
+		"hue 0.833 tint" [color = ".833 .1 1"]
+		"hue 0.875 tint" [color = ".875 .1 1"]
+		"hue 0.916 tint" -- hotpink
+		"hue 0.916 tint" [color = ".916 .1 1"]
+		"hue 0.958 tint" [color = ".958 .1 1"]
+		edge [len = 2]
+		"hue 0 tint" -- "hue 0.041 tint" -- "hue 0.083 tint" -- "hue 0.125 tint" -- "hue 0.166 tint" -- "hue 0.208 tint"
+		"hue 0.208 tint" -- "hue 0.250 tint" -- "hue 0.291 tint" -- "hue 0.333 tint" -- "hue 0.375 tint" -- "hue 0.416 tint"
+		"hue 0.416 tint" -- "hue 0.458 tint" -- "hue 0.5 tint" --"hue 0.541 tint" -- "hue 0.583 tint" -- "hue 0.625 tint"
+		"hue 0.625 tint" -- "hue 0.666 tint" -- "hue 0.708 tint" -- "hue 0.750 tint" -- "hue 0.791 tint" -- "hue 0.833 tint"
+		"hue 0.833 tint" -- "hue 0.875 tint" -- "hue 0.916 tint" -- "hue 0.958 tint" -- "hue 0 tint"
+	}
+	// © 2022 Costa Shulyupin, licensed under EPL
+}
+=end Graphviz
+=end code
 =place semantic:AUTHOR :caption<Credits>
 
 =place semantic:VERSION :!toc
