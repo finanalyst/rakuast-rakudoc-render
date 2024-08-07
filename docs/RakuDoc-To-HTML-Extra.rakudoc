@@ -11,12 +11,12 @@ use the terminal command
 =code RAKUDO_RAKUAST=1 raku -MRakuDoc::Render -MRakuDoc::To::HTML --rakudoc=HTML-Extra wp.rakudoc > wp.html
 
 Easier (once the distribution has been installed, see L<README|README>)
-=code RakuDoc wp
+=code RenderDocs --html --extra --src='.' --to='.' wp
 
-Both will cause the file C<wp.html> to be generated in the current working directory, together with
-a new subdirectory I<assets/> in which other CSS and Javascript files will be placed.
+Both will cause the file C<wp.html> to be generated in the current working directory from C<wp.rakudoc> in CWD.
 
-To view this file, see L<small Cro app|#Small Cro app>.
+To view this file (adapt according to browser), open C<file://<home-path-to>/wp.html>. All the JS and CSS are
+packaged in the HTML file, or downloaded from a CDN.
 =end SYNOPSIS
 =head Overview
 
@@ -31,20 +31,35 @@ By default, the following plugins are provided, and more can be added by the use
 =cell Use
 =cell License
 =row
-=cell Bulma CSS
+=cell Bulma
 =cell L<Bulma Home|https://bulma.io>
-=cell The output page is styled into panels, is responsive, has themes
+=cell Use the Bulma CSS for the page, which is styled into panels, is responsive, has themes
 =cell MIT
 =row
-=cell Leaflet Maps
-=cell L<Home page|https://leafletjs.com/>
+=cell LeafletMaps
+=cell L<Home page|https://leafletjs.com/> and L<Github repo|https://github.com/leaflet-extras/leaflet-providers>
 =cell Puts a map in a web page, with tiles from multiple providers
 =cell 2-clause BSD
 =row
-=cell Leaflet providers
-=cell L<Github repo|https://github.com/leaflet-extras/leaflet-providers>
-=cell Easy way to access tile providers
-=cell 2-clause BSD
+=cell Latex
+=cell L<CodeCogs editor page|https://editor.codecogs.com/>
+=cell Uses CodeCogs online equation editor to render formulae
+=cell see website
+=row
+=cell Graphviz
+=cell L<GraphViz software | https://graphviz.org>
+=cell Allows for figures/diagrams to be described in the C<dot> language
+=cell see website
+=row
+=cell FontAwesome
+=cell L<FontAwesome v5-15-4|https://docs.fontawesome.com/v5/web/setup/get-started/>
+=cell Include FontAwesome icons using ℱV«<»> markup, where ℱ is U+2131
+=cell see website
+=row
+=cell ListFiles
+=cell L<Local documentation|plugins/ListFiles.*>
+=cell Provides C<=ListFiles> custom block
+=cell Artistic-2.0
 =end table
 
 =head RakuDoc::Render plugins
@@ -52,10 +67,47 @@ By default, the following plugins are provided, and more can be added by the use
 Customisation is provided by plugins. These are essentially classes of the form
 C<RakuDoc::Plugins::XXX>, where B<XXX> is the name of a plugin.
 
-The plugin class B<does> the I<RakuDoc::Plugin> role.
+An illustrative example of the plugin class is for the Bulma CSS:
+=begin code
+use experimental :rakuast;
+use RakuDoc::Templates;
+use RakuDoc::PromiseStrings;
+use RakuDoc::Render;
+
+unit class RakuDoc::Plugin::Bulma;
+has %.config = %(
+    :name-space<bulma>,
+	:license<Artistic-2.0>,
+	:credit<https://https://bulma.io , MIT License>,
+	:author<Richard Hainsworth, aka finanalyst>,
+	:version<0.1.0>,
+	:css-link(['href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"',1],),
+	:js-link(['src="https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js"',1],),
+    :js(['',2],), # 1st element is replaced in TWEAK
+    :css([]),
+);
+submethod TWEAK {
+    %!config<js>[0][0] = self.js-text;
+    %!config<css>.append: [self.chyron-css,1], [ self.toc-css, 1];
+}
+method enable( RakuDoc::Processor:D $rdp ) {
+    $rdp.add-templates( $.templates );
+    $rdp.add-data( %!config<name-space>, %!config );
+}
+method templates {
+    %(
+        final => -> %prm, $tmpl {
+            qq:to/PAGE/
+            <!DOCTYPE html>
+            ... <!- the rest of the template is omitted ->
+            PAGE
+        },
+    )
+}
+=end code
 
 Each RP class must have a C<%.config> attribute containing the information needed
-for the plugin. These are divided into mandatory keys, which will be tested for,
+for the plugin. These are divided into mandatory keys
 and plugin-specific.
 
 The mandatory key-value Pairs are:
@@ -85,6 +137,39 @@ All the elements of %.config are transferred to the RakuDoc::Processor object, a
 be accessed in a template or callable, as C<$tmpl.globals.data<plugin-name-space> > (assuming
 that the plugin's config has C<namespace => plugin-name-space>).
 
+The C<enable> method is mandatory. It is used to add data and templates to the C<RakuDoc::Processor>
+object created by the C<RakuDoc::To::HTML-Extra> renderer.
+
+=head Customisability
+
+A user can create a custom plugin class (eg. C<RakuDoc::Plugin::MyFunc>),
+which should then be installed in the environment.
+
+The plugin can be enabled, for example by running the following in the
+repo root directory
+    zef install -/precompile-install .
+
+Note the option C<-/precompile-install> turning off the precompilation. This is because currently
+this distribution has some modules that depend on the RakuAST compiler, and
+some that use the standard Rakudo compiler. Precompilation does not handle
+the situation robustly. However, when a C<use> or C<require> is encountered,
+the relevant module is correctly compiled and loaded.
+
+In order to enable C<RakuDoc::Plugin::MyFunc>, create a file called C<rakudoc-config.raku>
+in the current working directory. The file should be a raku program that yields a sequence or array, eg.
+=begin code
+use RakuDoc::To::HTML-Extra;
+my @plugs = @HTML-Extra-plugins;
+@plugs.append: 'MyFunc';
+=end code
+
+C<@HTML-Extra-plugins> contains the default plugins called by C<RakuDoc::To::HTML-Extra>.
+
+So the code above adds C<MyFunc> to the list, and the plugin C<RakuDoc::Plugin::MyFunc> will now be enabled
+after all of the default plugins called by C<RakuDoc::To::HTML-Extra>.
+
+It is also possible to disable a default plugin by passing an array that does not contain the
+plugin to be disabled.
 
 =place semantic:AUTHOR :caption<Credits>
 

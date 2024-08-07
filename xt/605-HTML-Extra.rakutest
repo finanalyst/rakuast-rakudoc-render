@@ -1,12 +1,16 @@
 use v6.d;
 use Test;
+use Test::Output;
 
-plan 3;
+plan 9;
 
 use RakuDoc::Render;
 use RakuDoc::To::HTML-Extra;
+# remove config in case of previous test failure
+my $fn-io = 'rakudoc-config.raku'.IO;
+$fn-io.unlink if $fn-io ~~ :e;
 my @generic = RakuDoc::Processor.new.default-text-templates.keys;
-my $html-extra-instance = RakuDoc::To::HTML-Extra.new;
+my RakuDoc::To::HTML-Extra $html-extra-instance .= new;
 my @html-extra = $html-extra-instance.html-templates.keys.Slip, $html-extra-instance.templates.keys.Slip;
 
 ok @generic (<=) @html-extra, 'HTML redefines all the keys in generic';
@@ -32,15 +36,6 @@ subtest 'live internet tests', sub {
     like $rv, /
         '<title>Test document</title>'
     /, 'got simple render';
-#    $ast = Q:to/QAST/.AST;
-#        =begin rakudoc
-#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/fanciful-disclaimer.txt :caption<Text placement> :headlevel(2)
-#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/bootiful-disclaimer.rakudoc :caption<RakuDoc placement> :headlevel(2)
-#        =head separate
-#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg :caption<JPEG image placement> :headlevel(2)
-#        =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png :caption<Png image placement> :headlevel(2)
-#        =end rakudoc
-#        QAST
     $ast = Q:to/QAST/.AST;
         =begin rakudoc
         =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/fanciful-disclaimer.txt :caption<Text placement> :headlevel(2)
@@ -67,4 +62,38 @@ subtest 'live internet tests', sub {
         /, 'rakdoc included and rendered only once';
 }
 
+# test plugin config
+
+$fn-io.spurt: '<FontAwesome Non-existent-plugin ListFiles>';
+my $out = output-from { $html-extra-instance .= new };
+
+like $out, /
+    'Plugins required' .+ 'FontAwesome'
+    /, 'plugin config accepted';
+unlike $out, /
+    'Could not enable' .+ 'FontAwesome'
+    /, 'FontAwesome was enabled';
+like $out, /
+    'Could not enable' .+ 'Non-existent-plugin'
+    /, 'could not find Non-existent';
+
+$fn-io.unlink if $fn-io ~~ :e;
+$fn-io.spurt: q:to/CONFIG/;
+    use RakuDoc::To::HTML-Extra;
+    my @plugs = @HTML-Extra-plugins;
+    @plugs.append: 'NonExistentPlugin';
+    CONFIG
+$out = output-from { $html-extra-instance .= new };
+
+like $out, /
+    'Plugins required' .+ 'FontAwesome'
+    /, 'plugin config accepted';
+unlike $out, /
+    'Could not enable' .+ 'FontAwesome'
+    /, 'FontAwesome was enabled';
+like $out, /
+    'Could not enable' .+ 'NonExistentPlugin'
+    /, 'could not find Non-existent';
+
+$fn-io.unlink if $fn-io ~~ :e;
 done-testing;

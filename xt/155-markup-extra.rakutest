@@ -1,6 +1,5 @@
 use v6.d;
 use Test;
-use Test::Output;
 use RakuDoc::Render;
 use RakuDoc::Templates;
 

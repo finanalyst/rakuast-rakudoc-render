@@ -7,7 +7,7 @@ Richard Hainsworth aka finanalyst
 v0.1.0
 =head Introduction
 
-This plugin block sends the Latex-style markup to the CodeCogs online equation editor. For example,
+This plugin block sends the Latex-style markup to the L<CodeCogs online equation editor|https://editor.codecogs.com/>. For example,
 
 =begin code
 =for LatexFormula :headlevel(2) :caption<Simple formula>
