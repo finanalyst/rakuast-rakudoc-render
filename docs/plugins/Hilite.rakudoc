@@ -1,0 +1,18 @@
+=begin rakudoc :type<plugin>
+=TITLE Hilite plugin
+=SUBTITLE Using highlight-js and Deparse-syntax highlighter to highlight Raku
+=for AUTHOR :hidden
+Richard Hainsworth aka finanalyst
+=for VERSION :hidden
+v0.1.0
+=head Introduction
+
+This plugin replaces the code-block template so that the highlight-js library
+is included to highlight code according to the C<:lang> attribute.
+
+Raku and RakuDoc code is highlighted using Lizmat's Deparse highlighter.
+
+=place semantic:AUTHOR :caption<Credits>
+
+=place semantic:VERSION :!toc
+=end rakudoc
