@@ -149,33 +149,6 @@ method templates {
                 </aside>
             </nav>
             SIDEBAR
-#                <div class="container px-4">
-#                    <div class="tabs" id="tabs">
-#                        <ul>
-#                            <li class="is-active" id="toc-tab">
-#                                <a>Table of Contents</a>
-#                            </li>
-#                            <li id="index-tab">
-#                                <a>Index</a>
-#                            </li>
-#                        </ul>
-#                    </div>
-#                    <div class="container">
-#                        <aside id="toc-menu" class="menu">
-#                        { %prm<rendered-toc>
-#                            ?? %prm<rendered-toc>
-#                            !! '<p>No Table of contents for this page</p>'
-#                        }
-#                        </aside>
-#                        <aside id="index-menu" class="menu is-hidden">
-#                        { %prm<rendered-index>
-#                            ?? %prm<rendered-index>
-#                            !! '<p>No Index for this page</p>'
-#                        }
-#                        </aside>
-#                    </div>
-#                </div>
-#            SIDEBAR
         },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
@@ -318,24 +291,6 @@ method js-text {
         });
         document.getElementById('toc-tab').addEventListener('click', function () { swap_toc_index('toc') });
         document.getElementById('index-tab').addEventListener('click', function () { swap_toc_index('index') });
-        // copy code block to clipboard adapted from solution at
-        // https://stackoverflow.com/questions/34191780/javascript-copy-string-to-clipboard-as-text-html
-        // if behaviour problems with different browsers add stylesheet code from that solution.
-    //    $('.copy-code').click( function() {
-    //        var codeElement = $(this).next().next(); // skip the label and get the div
-    //        var container = document.createElement('div');
-    //        container.innerHTML = codeElement.html();
-    //        container.style.position = 'fixed';
-    //        container.style.pointerEvents = 'none';
-    //        container.style.opacity = 0;
-    //        document.body.appendChild(container);
-    //        window.getSelection().removeAllRanges();
-    //        var range = document.createRange();
-    //        range.selectNode(container);
-    //        window.getSelection().addRange(range);
-    //        document.execCommand("copy", false);
-    //        document.body.removeChild(container);
-    //    });
         var TOC = document.getElementById('toc-menu');
         var Index = document.getElementById('index-menu');
         var originalTOC = TOC.getHTML();

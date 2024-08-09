@@ -114,20 +114,6 @@ method html-templates {
         code => -> %prm, $tmpl {
             %prm<html-tags> = True;
             my $contents := %prm<contents>;
-#            try {
-#                my $hilit = highlight( $contents.Str, 'HTML');
-#                $contents = $hilit;
-#                CATCH {
-#                    default {
-#                        $*prs.warning.push( 'Cannot highlight ｢' ~
-#                            ( $contents.chars > 200
-#                                ?? ($contents.substr(200) ~ ' ... ')
-#                                !! $contents ) ~
-#                            '｣' );
-#                        .resume
-#                    }
-#                }
-#            }
             my $del = %prm<delta> // '';
             PStr.new: ('<div class="delta">' ~ $del if $del) ~
             q[<pre class="code-block">] ~

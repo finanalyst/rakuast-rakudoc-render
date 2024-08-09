@@ -6,28 +6,8 @@
 ----
 
 ## Table of Contents
+
 <a href="#PCell_and_PStr_classes">PCell and PStr classes</a>   
-&nbsp;&nbsp;- <a href="#Concatenation_to_PStr">Concatenation to PStr</a>   
-&nbsp;&nbsp;- <a href="#PStr_methods">PStr methods</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#new()_and_new(_*@string_)">new() and new( *@string )</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="22713f2"></span>debug_Calling_debug_on_a_**PStr**_will_stringify_the_object_together_with_information_about_any_**PCells**_inside_the_object."><span class="para" id="22713f2"></span>debug Calling debug on a **PStr** will stringify the object together with information about any **PCells** inside the object. 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="81d35f8"></span>Method_strip_Goes_through_a_**PStr**_and_substitutes_any_expanded_**PCell**_with_its_Str_equivalent._All_Str_are_then_concatenated."><span class="para" id="81d35f8"></span>Method strip Goes through a **PStr** and substitutes any expanded **PCell** with its Str equivalent. All Str are then concatenated. 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Method_trim-trailing,_trim-leading,_trim">Method trim-trailing, trim-leading, trim</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="965983f"></span>Method_`_has-PCells(_-->_Bool_)_`"><span class="para" id="965983f"></span>Method ` has-PCells( --> Bool ) ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="c6231a2"></span>Method_`_segments(_-->_Int_)_`"><span class="para" id="c6231a2"></span>Method ` segments( --> Int ) ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="362f759"></span>Methods_`_lead(_-->Str_)_`_and_`_tail(_-->_Str_)_`"><span class="para" id="362f759"></span>Methods ` lead( -->Str ) ` and ` tail( --> Str ) ` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#PCell_methods">PCell methods</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#debug">debug</a>   
 <a href="#Credits">Credits</a>   
 
 
@@ -145,34 +125,30 @@ table => -> %prm, $tmpl {
 #### debug<div id="debug"> </div>
 <span class="para" id="e67e89a"></span>Provides information about a **PCell**. 
 
-<div id="Credits"> </div>
 
-----  
+----
 
-## AUTHOR<div id="AUTHOR"> </div>
+## Credits<div id="Credits"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-<div id="Placement"> </div>
 
-----  
+----
 
-## VERSION<div id="VERSION"> </div>
+## VERSION<div id="VERSION_0"> </div>
 v0.2.1
 
 
 
 
 
-
-
 ----
 
 ----
 
-Rendered from docs/docs/PromiseStrings.rakudoc at 21:21 UTC on 2024-07-25
+Rendered from docs/docs/PromiseStrings.rakudoc at 15:53 UTC on 2024-08-08
 
-Source last modified at 21:19 UTC on 2024-07-21
+Source last modified at 09:38 UTC on 2024-08-07
 
 

@@ -5,7 +5,7 @@ use RakuDoc::PromiseStrings;
 #| the plugins to be attached to the processor
 #| the order of the plugins matters as templates names
 #| attached last are used first
-our @HTML-Extra-plugins = <LeafletMaps Latex Graphviz Bulma FontAwesome ListFiles>;
+our @HTML-Extra-plugins = <LeafletMaps Latex Graphviz Bulma FontAwesome ListFiles Hilite>;
 
 class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
     #| keys reserved for assets in HTML page, so Plugins may not claim any as a name-space.

@@ -6,18 +6,8 @@
 ----
 
 ## Table of Contents
+
 <a href="#Overview">Overview</a>   
-&nbsp;&nbsp;- <a href="#Templates">Templates</a>   
-&nbsp;&nbsp;- <a href="#Process">Process</a>   
-&nbsp;&nbsp;- <a href="#Warnings">Warnings</a>   
-&nbsp;&nbsp;- <a href="#Customisability">Customisability</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Custom_blocks">Custom blocks</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Custom_markup_codes">Custom markup codes</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Markup_M">Markup M</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Markup_UNICODE[upper]">Markup UNICODE[upper]</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Global_data_accessible_in_templates">Global data accessible in templates</a>   
-&nbsp;&nbsp;- <a href="#Debugging">Debugging</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Debug_options">Debug options</a>   
 <a href="#Environment_variables">Environment variables</a>   
 <a href="#Paragraph_id">Paragraph id</a>   
 <a href="#Credits">Credits</a>   
@@ -29,15 +19,15 @@
 ## Overview<div id="Overview"> </div>
 <span class="para" id="2b8160a"></span>The module contains the RakuDoc::Processor class. 
 
-<span class="para" id="b0fce19"></span>The class method 'render' is the principal one for rendering RakuDoc v2. The Raku compiler expects to call render with an AST and to return a Str. It can be called with the option `:pre-finalised` to get the processed data, see the example in [Debugging](#Debugging). 
+<span class="para" id="939179f"></span>The class method 'render' is the principal one for rendering RakuDoc v2. The Raku compiler expects to call render with an AST and to return a Str. It can be called with the option `:pre-finalised` to get the processed data, see the example in [Debugging](Debugging). 
 
 <span class="para" id="7fab93d"></span>The aim is for a **RakuDoc::Processor** object (an **RPO**) to be as generic as possible, allowing for other classes to instantiate it, and to attach templates that will generate more specific formats, such as HTML, MarkDown, or EPub pages. 
 
-<span class="para" id="82c4107"></span>An **RPO** relies on [Templates](Templates.md), [PromiseStrings](PromiseStrings.md), and [ScopedData](ScopedData.md). 
+<span class="para" id="f48ea42"></span>An **RPO** relies on [Templates](Templates), [PromiseStrings](PromiseStrings), and [ScopedData](ScopedData). 
 
 <span class="para" id="dbba06d"></span>It is also necessary to have a good understanding of RakuDoc v2. 
 
-<span class="para" id="0b209a6"></span>Some [environment variables](#Environment_variables) provide for some output control. 
+<span class="para" id="23813ba"></span>Some [environment variables](Environment_variables) provide for some output control. 
 
 <span class="para" id="685dcbf"></span>The following describes choices that are left by RakuDoc v2 to the renderer. 
 
@@ -52,7 +42,7 @@
 
 <span class="para" id="f31964f"></span>The design of the Templates object means that new additions to the object push the previous definition onto a linked list, and so they will always be available by default. 
 
-<span class="para" id="810a9ef"></span>The set of template keys needed to create a renderer is [tabulated here](default-text-templates.md). 
+<span class="para" id="fdb143d"></span>The set of template keys needed to create a renderer is [tabulated here](default-text-templates). 
 
 <span class="para" id="2e881b0"></span>All aspects of the output can be defined using the templates. 
 
@@ -128,7 +118,7 @@
 
 
 #### Global data accessible in templates<div id="Global_data_accessible_in_templates"> </div>
-<span class="para" id="221a62d"></span>More information is available in [Templates](Templates.md). 
+<span class="para" id="395c2a8"></span>More information is available in [Templates](Templates). 
 
 <span class="para" id="094f0a8"></span>All templates can attach items to the Table of Contents, Index, Footnotes, and Warnings structures of the rendered source using the helper methods. 
 
@@ -207,7 +197,7 @@
 &nbsp;&nbsp;• MarkUp like BlockType but gives the MarkUp letter  
 <span class="para" id="146e904"></span>It is also possible to get the result of one template (so as to reduce the amount of output information). This is done eg for the 'table' template: $rdp.verbose( 'table' ); $rv = $rdp.render( $ast, :pre-finalised ); 
 
-<span class="para" id="7092363"></span>The Test and Pretty options described in [the Templates documentation](Templates.md) can be set on an **RPO**, eg. $rdp.test( True ); $rdp.pretty( True ); 
+<span class="para" id="657c9da"></span>The Test and Pretty options described in [the Templates documentation](Templates) can be set on an **RPO**, eg. $rdp.test( True ); $rdp.pretty( True ); 
 
 <span class="para" id="4acb082"></span>Bear in mind that the **pretty** flag overrides the **test** flag, and both override the **debug** and **verbose** flags. 
 
@@ -237,34 +227,30 @@
 
 <span class="para" id="ef6367d"></span>Long texts or books will probably need more to avoid a conflict. This can be done by setting `paragraph-id-length` in the %structure-data to the required number of hex digits. 
 
-<div id="Credits"> </div>
 
-----  
+----
 
-## AUTHOR<div id="AUTHOR"> </div>
+## Credits<div id="Credits"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-<div id="Placement"> </div>
 
-----  
+----
 
-## VERSION<div id="VERSION"> </div>
+## VERSION<div id="VERSION_0"> </div>
 v0.3.0
 
 
 
 
 
-
-
 ----
 
 ----
 
-Rendered from docs/docs/Render.rakudoc at 23:08 UTC on 2024-07-14
+Rendered from docs/docs/Render.rakudoc at 15:53 UTC on 2024-08-08
 
-Source last modified at 20:48 UTC on 2024-07-06
+Source last modified at 09:38 UTC on 2024-08-07
 
 

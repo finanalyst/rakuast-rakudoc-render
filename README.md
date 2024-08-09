@@ -6,6 +6,7 @@
 ----
 
 ## Table of Contents
+
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Overview">Overview</a>   
 &nbsp;&nbsp;- <a href="#Table_of_outputs_and_renderers">Table of outputs and renderers</a>   
@@ -16,7 +17,8 @@
 <a href="#Credits">Credits</a>   
 
 
-----  
+
+----
 
 ## SYNOPSIS<div id="SYNOPSIS"> </div>
 &nbsp;&nbsp;• Clone the repository and submodule  
@@ -52,11 +54,11 @@
 ### Table of outputs and renderers<div id="Table_of_outputs_and_renderers"> </div>
  | **Output** | **Renderer** | **Documentation** |
 | :---: | :---: | :---: |
- | Text | <span class="para" id="c482061"></span>`RakuDoc::To::Generic` | <span class="para" id="17a7ac2"></span>[a wrapper for *RakuDoc::Render*](Render.md) |
- | Markdown | <span class="para" id="b82d661"></span>`RakuDoc::To::Markdown` | <span class="para" id="ba33522"></span>[Markdown](RakuDoc-To-Markdown.md) |
- | HTML | <span class="para" id="4bbd661"></span>`RakuDoc::To::HTML` | <span class="para" id="812b488"></span>[A minimal, single file, 'all in' HTML](RakuDoc-To-HTML.md) |
+ | Text | <span class="para" id="c482061"></span>`RakuDoc::To::Generic` | <span class="para" id="a467a99"></span>[a wrapper for *RakuDoc::Render*](Render) |
+ | Markdown | <span class="para" id="b82d661"></span>`RakuDoc::To::Markdown` | <span class="para" id="783db0c"></span>[Markdown](RakuDoc-To-Markdown) |
+ | HTML | <span class="para" id="4bbd661"></span>`RakuDoc::To::HTML` | <span class="para" id="5200ddf"></span>[A minimal, single file, 'all in' HTML](RakuDoc-To-HTML) |
  | HTML-Extra | in development | HTML output using Bulma CSS, Graphviz, Leaflet-Maps, Latex, assumes internet |
-<span class="para" id="6fc3d4f"></span>This is software using bleeding edge Rakudo, so look [at troubleshooting below](#Troubleshooting). 
+<span class="para" id="c0e52b5"></span>This is software using bleeding edge Rakudo, so look [at troubleshooting below](Troubleshooting). 
 
 <span class="para" id="a9d8493"></span>Using the *Generic* renderer, the **canonical method** for generating rendered text is possible (which sends output to STDOUT, so pipe to a file), namely 
 
@@ -64,7 +66,7 @@
 ```
 RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 ```
-<span class="para" id="4e6a3e5"></span>Some [naive wrapping and width modification](#Wrapping) is possible using environment variables. 
+<span class="para" id="81696a6"></span>Some [naive wrapping and width modification](Wrapping) is possible using environment variables. 
 
 <span class="para" id="880a886"></span>The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. It can be obtained with: 
 
@@ -74,7 +76,7 @@ bin/get-compliance-document
 ```
 <span class="para" id="7599a17"></span>`rakudociem-ipsum.rakudoc` is contained in the submodule `rakudoc-compliance` with a link in `resources/compliance`. 
 
-<span class="para" id="8278045"></span>In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered to Text using the [RenderTextify](#RenderTextify_utility). It avoids some installation problems, stores the output and offers some other output options, eg. 
+<span class="para" id="084d11c"></span>In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered to Text using the [RenderTextify](RenderTextify_utility). It avoids some installation problems, stores the output and offers some other output options, eg. 
 
 
 ```
@@ -90,32 +92,32 @@ bin/RenderTextify rakudociem-ipsum
 
 
 
-&nbsp;&nbsp;• <span class="para" id="94ec4ac"></span>[An overview of the generic renderer](Render.md) 
+&nbsp;&nbsp;• <span class="para" id="4759936"></span>[An overview of the generic renderer](Render) 
 
   
-&nbsp;&nbsp;• <span class="para" id="c11632c"></span>[The templating system](Templates.md) 
+&nbsp;&nbsp;• <span class="para" id="c06fad3"></span>[The templating system](Templates) 
 
   
 <span class="para" id="525d438"></span>Other modules are also documented: 
 
 
 
-&nbsp;&nbsp;• <span class="para" id="8ca950d"></span>[Processed - objects to keep track of intermediate state](Processed.md) 
+&nbsp;&nbsp;• <span class="para" id="d531605"></span>[Processed - objects to keep track of intermediate state](Processed) 
 
   
-&nbsp;&nbsp;• <span class="para" id="86c99ef"></span>[PStr - Strings containing forward references](PromiseStrings.md) 
+&nbsp;&nbsp;• <span class="para" id="2753916"></span>[PStr - Strings containing forward references](PromiseStrings) 
 
   
-&nbsp;&nbsp;• <span class="para" id="b75e585"></span>[ScopedData - an object to keep track of data valid for a block scope](ScopedData.md) 
+&nbsp;&nbsp;• <span class="para" id="ae4d406"></span>[ScopedData - an object to keep track of data valid for a block scope](ScopedData) 
 
   
-&nbsp;&nbsp;• <span class="para" id="52bf018"></span>[a table of the minimum set of templates to render any RakuDoc source](default-text-templates.md) 
+&nbsp;&nbsp;• <span class="para" id="0f6a7ab"></span>[a table of the minimum set of templates to render any RakuDoc source](default-text-templates) 
 
   
-&nbsp;&nbsp;• <span class="para" id="4812438"></span>[a grammar for parsing the meta data of a Markup code](MarkUpMeta.md) 
+&nbsp;&nbsp;• <span class="para" id="17fd6d8"></span>[a grammar for parsing the meta data of a Markup code](MarkUpMeta) 
 
   
-&nbsp;&nbsp;• <span class="para" id="2fa4035"></span>[an object for numerating items headings](Numeration.md) 
+&nbsp;&nbsp;• <span class="para" id="71c42e9"></span>[an object for numerating items headings](Numeration) 
 
   
 
@@ -220,34 +222,30 @@ prove6 -I.
 
 <span class="para" id="e0ec639"></span>This is sometimes not sufficient. The next step is to use the utility `bin/force-compile` in the root of the repo. It deletes the `.precomp` files in the current directory, and runs `prove6 -I.`. 
 
-<div id="Credits"> </div>
 
-----  
+----
 
-## AUTHOR<div id="AUTHOR"> </div>
+## Credits<div id="Credits"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-<div id="Placement"> </div>
 
-----  
+----
 
-## VERSION<div id="VERSION"> </div>
+## VERSION<div id="VERSION_0"> </div>
 v0.3.1
 
 
 
 
 
-
-
 ----
 
 ----
 
-Rendered from docs/docs/README.rakudoc at 21:21 UTC on 2024-07-25
+Rendered from docs/docs/README.rakudoc at 15:53 UTC on 2024-08-08
 
-Source last modified at 16:19 UTC on 2024-07-20
+Source last modified at 09:38 UTC on 2024-08-07
 
 

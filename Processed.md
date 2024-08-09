@@ -6,84 +6,8 @@
 ----
 
 ## Table of Contents
+
 <a href="#Purpose">Purpose</a>   
-&nbsp;&nbsp;- <a href="#Attributes_of_ProcessedState_object">Attributes of ProcessedState object</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="fc85fc9"></span>`PStr_$.body_is_rw_`"><span class="para" id="fc85fc9"></span>`PStr $.body is rw ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="37b55ea"></span>`Hash_@.toc_`"><span class="para" id="37b55ea"></span>`Hash @.toc ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="6415c40"></span>`Array_@.head-numbering_`"><span class="para" id="6415c40"></span>`Array @.head-numbering ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="3b4a333"></span>`%.index_`"><span class="para" id="3b4a333"></span>`%.index ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="759022e"></span>`@.footnotes_`"><span class="para" id="759022e"></span>`@.footnotes ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="56ed6f5"></span>`Array_%.semantics_`"><span class="para" id="56ed6f5"></span>`Array %.semantics ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="adbfe90"></span>`@.warnings_`"><span class="para" id="adbfe90"></span>`@.warnings ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="b1e72b5"></span>`@.items_`"><span class="para" id="b1e72b5"></span>`@.items ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="a671a57"></span>`@.defns_`"><span class="para" id="a671a57"></span>`@.defns ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="672e1c0"></span>`@.numitems_`"><span class="para" id="672e1c0"></span>`@.numitems ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="2259bc7"></span>`@.numdefns_`"><span class="para" id="2259bc7"></span>`@.numdefns ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="35befe0"></span>`%.definitions_`"><span class="para" id="35befe0"></span>`%.definitions ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="16822a7"></span>`@.inline-defns_`"><span class="para" id="16822a7"></span>`@.inline-defns ` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#Attributes_of_RakuDoc::Processed">Attributes of RakuDoc::Processed</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="97a239b"></span>`_%.source-data_`"><span class="para" id="97a239b"></span>` %.source-data ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="e74e751"></span>`_$!output-format_=_'txt'_`"><span class="para" id="e74e751"></span>` $!output-format = 'txt' ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="b4bfea5"></span>`_Str_$.front-matter_is_rw_=_'preface'_`"><span class="para" id="b4bfea5"></span>` Str $.front-matter is rw = 'preface' ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="39732e7"></span>`_Str_$.name_is_rw_`"><span class="para" id="39732e7"></span>` Str $.name is rw ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="0200a11"></span>`_Str_$.title_is_rw_=_'NO_TITLE'_`"><span class="para" id="0200a11"></span>` Str $.title is rw = 'NO_TITLE' ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="d6774e3"></span>`_Str_$.title-target_is_rw_=_'___top'_`"><span class="para" id="d6774e3"></span>` Str $.title-target is rw = '___top' ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="67ced52"></span>`_Str_$.subtitle_is_rw_=_''_`"><span class="para" id="67ced52"></span>` Str $.subtitle is rw = '' ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="f9c2a5f"></span>`_Str_$.modified_is_rw_=_now.DateTime.utc.truncated-to('seconds').Str_`"><span class="para" id="f9c2a5f"></span>` Str $.modified is rw = now.DateTime.utc.truncated-to('seconds').Str ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="680cf03"></span>`_SetHash_$.targets_`"><span class="para" id="680cf03"></span>` SetHash $.targets ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="5b3bafb"></span>`_Hash_%.links_`"><span class="para" id="5b3bafb"></span>` Hash %.links ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="8267861"></span>`_Str_$.rendered-toc_is_rw_`"><span class="para" id="8267861"></span>` Str $.rendered-toc is rw ` 
-
-</a>   
-&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#<span_class="para"_id="ff304a1"></span>`_Str_$.rendered-index_is_rw_`"><span class="para" id="ff304a1"></span>` Str $.rendered-index is rw ` 
-
-</a>   
 <a href="#Credits">Credits</a>   
 
 
@@ -298,7 +222,7 @@ if name is not set, then it is taken from source name + format
 #### <span class="para" id="5b3bafb"></span>` Hash %.links ` 
 
 <div id="<span_class="para"_id="5b3bafb"></span>`_Hash_%.links_`"> </div>
-<span class="para" id="2df09b8"></span>Links (from [link-label](destination.md) markup) Hash of destination => :target, :type, :place, :link-label target = computed URL (for local files), place = anchor inside file type has following values: 
+<span class="para" id="65b0ac0"></span>Links (from [link-label](destination) markup) Hash of destination => :target, :type, :place, :link-label target = computed URL (for local files), place = anchor inside file type has following values: 
 
 
 
@@ -319,23 +243,19 @@ if name is not set, then it is taken from source name + format
 <div id="<span_class="para"_id="ff304a1"></span>`_Str_$.rendered-index_is_rw_`"> </div>
 <span class="para" id="10f5945"></span>Rendered version of the Index 
 
-<div id="Credits"> </div>
 
-----  
+----
 
-## AUTHOR<div id="AUTHOR"> </div>
+## Credits<div id="Credits"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-<div id="Placement"> </div>
 
-----  
+----
 
-## VERSION<div id="VERSION"> </div>
+## VERSION<div id="VERSION_0"> </div>
 v0.2.1
-
-
 
 
 
@@ -343,7 +263,8 @@ v0.2.1
 ----
 
 ## Index
-<span style="background-color: antiquewhite; font-weight: 600;"></span>:  <a href="#index-entry-">Block # 2</a>, <a href="#index-entry-_0"><span class="para" id="b4bfea5"></span>` Str $.front-matter is rw = 'preface' ` 
+
+<span style="background-color: antiquewhite; font-weight: 600;"></span>: <a href="#index-entry-">Block # 2</a>, <a href="#index-entry-_0"><span class="para" id="b4bfea5"></span>` Str $.front-matter is rw = 'preface' ` 
 
 </a>
 
@@ -354,8 +275,8 @@ v0.2.1
 
 ----
 
-Rendered from docs/docs/Processed.rakudoc at 23:08 UTC on 2024-07-14
+Rendered from docs/docs/Processed.rakudoc at 15:53 UTC on 2024-08-08
 
-Source last modified at 20:48 UTC on 2024-07-06
+Source last modified at 09:38 UTC on 2024-08-07
 
 

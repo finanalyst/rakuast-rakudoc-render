@@ -6,51 +6,8 @@
 ----
 
 ## Table of Contents
+
 <a href="#Purpose">Purpose</a>   
-&nbsp;&nbsp;- <a href="#Method_diagnostic()">Method diagnostic()</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="d274ce7"></span>Method_`_start-scope(_:$starter!,_:$title,_:$verbatim_)_`"><span class="para" id="d274ce7"></span>Method ` start-scope( :$starter!, :$title, :$verbatim ) ` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#Method_end-scope">Method end-scope</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="d31aef8"></span>`_multi_method_config(%h)`"><span class="para" id="d31aef8"></span>` multi method config(%h)` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="1e2a459"></span>`_multi_method_config(_-->_Hash_)`"><span class="para" id="1e2a459"></span>` multi method config( --> Hash )` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="a51c3cd"></span>`_multi_method_aliases(%h)`"><span class="para" id="a51c3cd"></span>` multi method aliases(%h)` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="9d61991"></span>`_multi_method_aliases(_-->_Hash_)`"><span class="para" id="9d61991"></span>` multi method aliases( --> Hash )` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="1534183"></span>`_method_last-starter_`"><span class="para" id="1534183"></span>` method last-starter ` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="698cf07"></span>`_multi_method_last-title()_`"><span class="para" id="698cf07"></span>` multi method last-title() ` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="ebe5b26"></span>`_multi_method_last-title(_$s_)`"><span class="para" id="ebe5b26"></span>` multi method last-title( $s )` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="015f39e"></span>`_multi_method_verbatim()`"><span class="para" id="015f39e"></span>` multi method verbatim()` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="c003b05"></span>`_multi_method_verbatim(_:called-by($)!_)`"><span class="para" id="c003b05"></span>` multi method verbatim( :called-by($)! )` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="6df8b7c"></span>`_multi_method_item-inc(_$level_-->_Str_)`"><span class="para" id="6df8b7c"></span>` multi method item-inc( $level --> Str )` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="b7235a6"></span>`_multi_method_item-reset()`"><span class="para" id="b7235a6"></span>` multi method item-reset()` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="a75664f"></span>`_multi_method_defn-inc(_-->_Str_)`"><span class="para" id="a75664f"></span>` multi method defn-inc( --> Str )` 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="6f49046"></span>`_multi_method_defn-reset()`"><span class="para" id="6f49046"></span>` multi method defn-reset()` 
-
-</a>   
 <a href="#Credits">Credits</a>   
 
 
@@ -171,7 +128,7 @@
 ### <span class="para" id="6df8b7c"></span>` multi method item-inc( $level --> Str )` 
 
 <div id="<span_class="para"_id="6df8b7c"></span>`_multi_method_item-inc(_$level_-->_Str_)`"> </div>
-<span class="para" id="fffd3c8"></span>Increment the item numeration at the required level, returns the result. See [Numeration module](Numeration.md) for more detail 
+<span class="para" id="07df0ae"></span>Increment the item numeration at the required level, returns the result. See [Numeration module](Numeration) for more detail 
 
 
 
@@ -194,34 +151,30 @@
 <div id="<span_class="para"_id="6f49046"></span>`_multi_method_defn-reset()`"> </div>
 <span class="para" id="b75a9fe"></span>Reset the defn numeration 
 
-<div id="Credits"> </div>
 
-----  
+----
 
-## AUTHOR<div id="AUTHOR"> </div>
+## Credits<div id="Credits"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-<div id="Placement"> </div>
 
-----  
+----
 
-## VERSION<div id="VERSION"> </div>
+## VERSION<div id="VERSION_0"> </div>
 v0.2.1
 
 
 
 
 
-
-
 ----
 
 ----
 
-Rendered from docs/docs/ScopedData.rakudoc at 23:08 UTC on 2024-07-14
+Rendered from docs/docs/ScopedData.rakudoc at 15:53 UTC on 2024-08-08
 
-Source last modified at 20:48 UTC on 2024-07-06
+Source last modified at 09:38 UTC on 2024-08-07
 
 

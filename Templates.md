@@ -6,26 +6,12 @@
 ----
 
 ## Table of Contents
+
 <a href="#Overview">Overview</a>   
 <a href="#Templates">Templates</a>   
 <a href="#Custom_data">Custom data</a>   
 <a href="#Template_object">Template object</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="fb491c6"></span>method_**$tmpl.prev**"><span class="para" id="fb491c6"></span>method **$tmpl.prev** 
-
-</a>   
-&nbsp;&nbsp;- <a href="#Calling_a_helper_callable">Calling a helper callable</a>   
-&nbsp;&nbsp;- <a href="#Calling_another_defined_template">Calling another defined template</a>   
 <a href="#Template_information_and_debugging">Template information and debugging</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="71d192b"></span>`.debug`_attribute"><span class="para" id="71d192b"></span>`.debug` attribute 
-
-</a>   
-&nbsp;&nbsp;- <a href="#Verbose_output_of_one_template">Verbose output of one template</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="2aad8a1"></span>The_`.test`_attribute"><span class="para" id="2aad8a1"></span>The `.test` attribute 
-
-</a>   
-&nbsp;&nbsp;- <a href="#<span_class="para"_id="00a6e3c"></span>The_`.pretty`_attribute"><span class="para" id="00a6e3c"></span>The `.pretty` attribute 
-
-</a>   
 <a href="#Credits">Credits</a>   
 
 
@@ -41,7 +27,7 @@
 
 <span class="para" id="b7bcc7f"></span>Helper callables that can be used inside a template can also be added to the *processor*'s **Template-directory** object. 
 
-<span class="para" id="4cb8052"></span>Within a template, all the registered templates, the custom data of the *processor*, and the helper callables can be accessed. See [helper callables](#Calling_a_helper_callable) for more information. 
+<span class="para" id="b842d2c"></span>Within a template, all the registered templates, the custom data of the *processor*, and the helper callables can be accessed. See [helper callables](Calling_a_helper_callable) for more information. 
 
 <span class="para" id="6456d29"></span>When a template is added to a *Template-directory* and the template name already exists, the old value is pushed onto a stack, and can be accessed. 
 
@@ -329,34 +315,30 @@ say %template-dir<aaa>(%(
   }｣
 </aaa>
 ```
-<div id="Credits"> </div>
 
-----  
+----
 
-## AUTHOR<div id="AUTHOR"> </div>
+## Credits<div id="Credits"> </div>
 Richard Hainsworth aka finanalyst
 
 
 
-<div id="Placement"> </div>
 
-----  
+----
 
-## VERSION<div id="VERSION"> </div>
+## VERSION<div id="VERSION_0"> </div>
 v0.2.1
 
 
 
 
 
-
-
 ----
 
 ----
 
-Rendered from docs/docs/Templates.rakudoc at 23:08 UTC on 2024-07-14
+Rendered from docs/docs/Templates.rakudoc at 15:53 UTC on 2024-08-08
 
-Source last modified at 20:48 UTC on 2024-07-06
+Source last modified at 09:38 UTC on 2024-08-07
 
 

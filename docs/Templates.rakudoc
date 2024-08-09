@@ -105,11 +105,11 @@ parameter needs to be preprocessed and the previous template called. Assuming %p
 
 B<Post-processing> For example, suppose a template 'table' has been defined, but a new template is needed that substitutes the HTML class,
 then some post-processing of the old template is sufficient, eg.,
-
+=begin code
     table => -> %prm, $tmpl {
         ($tmpl.prev).subst( / '<table' \s+ 'class="pod-table' /, '<table class="table is-centered')
     }
-
+=end code
 This assumes that the return object from both templates I<chapter> and I<table> is a Str, which it could be. But generically,
 it is best not to assume this. A fuller example is given below.
 
@@ -120,20 +120,21 @@ The ToC structure is collected by the Renderer leaf by leaf, and the order of th
 leaf data is constructed because the order of the ToC is important.
 
 So the code in the template block can call
-
+=begin code
     $tmpl.globals.helper<add-to-toc>(
         :caption<...>, :target<...>, :level(1)
     )
-
+=end code
 =head2 Calling another defined template
 
 The block registered with key C<aaa> can be called inside another template block, with or without parameters.
 
 I<Without parameters>, eg C<$tmpl<aaa>> or B<$tmpl('aaa')> the other template block is called with the same parameters, eg
-
+=begin code
     page => -> %prm, $tmpl {
         $tmpl<header> ~ $tmpl<body> ~ $tmpl<footer>
     }
+=end code
 where C<header>, C<body>, and C<footer> are all registered in the I<RR> processor.
 
 I<With parameters>, eg. C<$tmpl('aaa', %( :attr(1), :new-attr<some string> ) )>,
@@ -167,14 +168,14 @@ The information generated is for the registered template, not to be confused wit
 
 The C<Template-directory> class has a C<.verbose> attribute.
 When set to a string corresponding to the name of a template, eg.
-
+=begin code
     my Template-directory %template-dir = %(
         one => -> %prm, $tml { 'Hello world' },
         two => -> %prm, $tml { 'Not again' },
     );
     # later ...
     %template-dir.verbose = 'one';
-
+=end code
 the verbose result of that template (eg. 'one') will be sent to
 STDOUT via C<say>.
 
@@ -183,7 +184,7 @@ The output of only one template at a time is supported at the moment.
 =head2 The C<.test> attribute
 
 When this attribute is set for the Template-directory object, eg.
-
+=begin code
     my Template-directory %template-dir;
     # assign some templates to %template-dir
     %template-dir = %(
@@ -195,7 +196,7 @@ When this attribute is set for the Template-directory object, eg.
         }
     );
     %template-dir.test = True;
-
+=end code
 In order to test the template with a set of unit tests, it is important for the results of the
 template to be uniform and predictable.
 
@@ -208,7 +209,7 @@ order.
 
 For example, the result of calling the templates defined above, with C<test=True>, where the
 output from one template is contained in another, will be:
-
+=begin code
     say %template-dir<aaa>(%(
         :contents<something>,
         ggg => %template-dir<ggg>(%(:contents<more stiff>,)),
@@ -221,14 +222,14 @@ output from one template is contained in another, will be:
     </ggg>
     ｣
     </aaa>
-
+=end code
 It does not matter I<how> the templates were defined, but it does matter that they B<were> defined.
 Calling a template that is not registered in the B<Templated-directory> object will cause an error.
 
 =head2 The C<.pretty> attribute
 
 When this attribute is set for the Template-directory object, eg.
-
+=begin code
     my Template-directory %template-dir;
     # assign some templates to %template-dir
     %template-dir = %(
@@ -240,12 +241,12 @@ When this attribute is set for the Template-directory object, eg.
         }
     );
     %template-dir.pretty = True;
-
+=end code
 the output is similar to the C<.test> attribute, which it overrides, but white space is added to
 make the content structure clearer.
 
 For example,
-
+=begin code
     say %template-dir<aaa>(%(
         :contents<something>,
         array => <one two three four>,
@@ -266,7 +267,7 @@ For example,
             :ten(3)
       }｣
     </aaa>
-
+=end code
 =place semantic:AUTHOR :caption<Credits>
 =place semantic:VERSION :!toc
 

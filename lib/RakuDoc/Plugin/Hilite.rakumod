@@ -1,19 +1,22 @@
 use experimental :rakuast;
-use RakuDoc::Templates;
-use RakuDoc::PromiseStrings;
+use RakuAST::Deparse::Highlight;
 use RakuDoc::Render;
 
 unit class RakuDoc::Plugin::Hilite;
 has %.config = %(
     :name-space<hilite>,
 	:license<Artistic-2.0>,
-	:credit<finanalyst>,
-	:author<Richard Hainsworth, aka finanalyst>,
+	:credit<finanalyst, lizmat>,
+	:author<<Richard Hainsworth, aka finanalyst\nElizabeth Mattijsen, aka lizmat>>,
 	:version<0.1.0>,
-	:css-link(['href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"',1],),
-	:js-link(['src="https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js"',1],),
-    :js(['',2],), # 1st element is replaced in TWEAK
-    :css([]),
+	:js-link(
+		['src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"', 2 ],
+		['src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/haskell.min.js"', 2 ],
+	),
+	:css-link(
+		['href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-light.min.css" title="light"',1],
+	),
+    :js(['',1],), # 1st element is replaced in TWEAK
 );
 has %!hilight-langs = %(
     'HTML' => 'xml',
@@ -60,20 +63,15 @@ has %!hilight-langs = %(
 );
 submethod TWEAK {
     %!config<js>[0][0] = self.js-text;
-    %!config<css>.append: [self.chyron-css,1], [ self.toc-css, 1];
 }
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
 }
 
-
 method templates {
     %(
-    block-code => sub (%prm, %tml) {
-        my regex marker {
-            "\xFF\xFF" ~ "\xFF\xFF" $<content> = (.+?)
-        };
+    code => sub (%prm, $tmpl) {
         # if :lang is set != raku / rakudoc, then enable highlightjs
         # otherwise pass through Raku syntax highlighter.
         my $code;
@@ -83,18 +81,18 @@ method templates {
                 $syntax-label = %prm<lang>.tc ~  ' highlighting by highlight-js';
                 $code = qq:to/HILIGHT/;
                     <pre class="browser-hl">
-                    <code class="language-{ %!hilight-langs{ %prm<lang>.uc } }">{ %tml<escaped>(%prm<contents>) }
+                    <code class="language-{ %!hilight-langs{ %prm<lang>.uc } }">{ $tmpl<escaped> }
                     </code></pre>
                     HILIGHT
             }
-            elsif %prm<lang> ~~ any( <Raku Rakudoc raku rakudoc> ) {
-                $syntax-label = %prm<lang>.tc ~ ' highlighting';
+            elsif %prm<lang> ~~ any( <Raku RakuDoc Rakudoc raku rakudoc> ) {
+                $syntax-label = %prm<lang> ~ ' highlighting';
             }
             else {
                 $syntax-label = "｢{ %prm<lang> }｣ without highlighting";
                 $code = qq:to/NOHIGHS/;
                     <pre class="nohighlights">
-                    { %tml<escaped>( %prm<contents> ) }
+                    { $tmpl<escaped> }
                     </pre>
                     NOHIGHS
             }
@@ -102,25 +100,32 @@ method templates {
         else {
             $syntax-label = 'Raku highlighting';
         }
-        without $code {
-            my @tokens;
-            my $t;
-            my $parsed = %prm<contents> ~~ / ^ .*? [<marker> .*?]+ $/;
-            if $parsed {
-                for $parsed.chunks -> $c {
-                    if $c.key eq 'marker' {
-                        $t ~= "\xFF\xFF";
-                        @tokens.push: $c.value<content>.Str;
-                    }
-                    else {
-                        $t ~= $c.value
-                    }
-                }
-                %prm<contents> = $t;
+        without $code { # so need Raku highlighting
+            my $source = %prm<contents>.Str;
+            try {
+                $code = highlight( $source, 'HTML');
             }
-            $code = &highlight(%prm<contents>);
-            $code .= subst( / '<pre class="' /, '<pre class="nohighlights cm-s-ayaya ');
-            $code .= subst( / "\xFF\xFF" /, { @tokens.shift }, :g );
+            with $! {
+                $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
+                    ( $source.chars > 200
+                        ?? ($source.substr(200) ~ ' ... ')
+                        !! $source.trim ) ~
+                    '｣' ~ "\nbecause\n" ~ .message );
+                $code = $source;
+            }
+            unless $code {
+                $tmpl.globals.helper<add-to-warnings>( 'Could not highlight ｢' ~
+                    ( $source.chars > 200
+                        ?? ($source.substr(200) ~ ' ... ')
+                        !! $source.trim ) ~
+                    '｣' );
+                $code = $source;
+            }
+            $code = qq:to/NOHIGHS/;
+                    <pre class="nohighlights">
+                    $code
+                    </pre>
+                    NOHIGHS
         }
         qq[
             <div class="raku-code raku-lang">
@@ -130,4 +135,36 @@ method templates {
             </div>
         ]
     },
+    )
+}
+method js-text {
+    q:to/JSCOPY/;
+        // Hilite-helper.js
+        document.addEventListener('DOMContentLoaded', function () {
+            // trigger the highlighter for non-Raku code
+            hljs.highlightAll();
+
+            // copy code block to clipboard adapted from solution at
+            // https://stackoverflow.com/questions/34191780/javascript-copy-string-to-clipboard-as-text-html
+            // if behaviour problems with different browsers add stylesheet code from that solution.
+            const copyButtons = Array.from(document.querySelectorAll('.copy-code'));
+            copyButtons.forEach( function( button ) {
+            var codeElement = button.nextElementSibling.nextElementSibling; // skip the label and get the div
+            button.addEventListener( 'click', function(insideButton) {
+                var container = document.createElement('div');
+                container.innerHTML = codeElement.innerHTML;
+                    container.style.position = 'fixed';
+                    container.style.pointerEvents = 'none';
+                    container.style.opacity = 0;
+                    document.body.appendChild(container);
+                    window.getSelection().removeAllRanges();
+                    var range = document.createRange();
+                    range.selectNode(container);
+                    window.getSelection().addRange(range);
+                    document.execCommand("copy", false);
+                    document.body.removeChild(container);
+                });
+            });
+        });
+    JSCOPY
 }
