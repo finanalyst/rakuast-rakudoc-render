@@ -122,7 +122,7 @@ method templates {
         sidebar => -> %prm, $tmpl { '' },
         page-navigation => -> %prm, $tmpl {
             qq:to/SIDEBAR/;
-            <nav class="panel" id="page-nav" style="width: 25%; position:fixed;">
+            <nav class="panel" id="page-nav">
               <div class="panel-block">
                 <p class="control has-icons-left">
                   <input class="input" type="text" placeholder="Search" id="page-nav-search"/>
@@ -375,6 +375,11 @@ method chyron-css {
 }
 method toc-css {
     q:to/TOC/;
+    #page-nav {
+        width: 25%;
+        position: fixed;
+        z-index: -1;
+    }
     #page-nav .panel-block .toc {
         overflow-y:scroll;
         height:65vh;
