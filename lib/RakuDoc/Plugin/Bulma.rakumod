@@ -378,7 +378,6 @@ method toc-css {
     #page-nav {
         width: 25%;
         position: fixed;
-        z-index: -1;
     }
     #page-nav .panel-block .toc {
         overflow-y:scroll;
@@ -388,5 +387,6 @@ method toc-css {
         overflow-y:scroll;
         height:65vh;
     }
+    .main-footer { z-index: 1; }
     TOC
 }

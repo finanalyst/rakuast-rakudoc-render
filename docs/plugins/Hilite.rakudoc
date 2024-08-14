@@ -12,6 +12,139 @@ is included to highlight code according to the C<:lang> attribute.
 
 Raku and RakuDoc code is highlighted using Lizmat's Deparse highlighter.
 
+=head Examples
+
+The following are examples of code blocks that are highlighted.
+
+Highlighting status (working/not working and why) is given below the example. Hover for
+more info.
+
+=head2 Other languages (via highlight-js)
+
+Code in Haskell
+
+=begin code :lang<haskell>
+greeting :: String -> String
+greeting  ""   = "Hello, World!"
+greeting "bub" = "Hey bub."
+greeting  name = "Hello, " ++ name ++ "!"
+=end code
+
+Code in Ruby
+
+=begin code :lang<ruby>
+# Ruby
+if x > 5
+    puts "Bigger!"
+elsif x == 5
+    puts "The same!"
+else
+    puts "Smaller!"
+end
+=end code
+
+Code in Python
+
+=for code :lang<python>
+squares = []
+for x in range(5):
+    squares.append(lambda: x ** 2)
+print(squares[2]())
+print(squares[4]())
+# both 16 since there is only one x
+
+=head2 Raku examples with status
+
+Δ<Code line before comment Status | not working, failure to highlight>
+=begin code
+my $x = 2;
+# a brilliant program!
+=end code
+
+Δ<code from indented para - Status | working>
+
+    # indenting causes an implicit code block
+    my $raku = 'fantastic';
+
+
+Δ<code with comments before raku. Status | working >
+
+=begin code :allow<B K>
+# a renderer B<should> observe the basis markup
+# and the K<markup> but render R<markup> verbatim
+my $x = 3;
+=end code
+
+Δ<code from operators. Status | working >
+
+    my @arr = [10, 20, 30];
+    my $i = 0;
+
+    if rand < 1/2 {
+        @arr[++$i] += 1;                # @arr = [10,21,30]
+    } else {
+        @arr[++$i] = @arr[++$i] + 1;    # @arr = [10,31,30] (or [10,20,21]?)
+    }                                   # the result may be implementation-specific
+    say @arr;
+
+
+From 101-basics. Δ<code with comments before raku. Status | working >
+
+=begin code
+use v6;
+
+# start by printing out the header.
+say "Tournament Results:\n";
+
+my $file  = open 'scores.txt'; # get filehandle and...
+my @names = $file.get.words;   # ... get players.
+
+my %matches;
+my %sets;
+
+for $file.lines -> $line {
+    next unless $line; # ignore any empty lines
+
+    my ($pairing, $result) = $line.split(' | ');
+    my ($p1, $p2)          = $pairing.words;
+    my ($r1, $r2)          = $result.split(':');
+
+    %sets{$p1} += $r1;
+    %sets{$p2} += $r2;
+
+    if $r1 > $r2 {
+        %matches{$p1}++;
+    } else {
+        %matches{$p2}++;
+    }
+}
+
+my @sorted = @names.sort({ %sets{$_} }).sort({ %matches{$_} }).reverse;
+
+for @sorted -> $n {
+    my $match-noun = %matches{$n} == 1 ?? 'match' !! 'matches';
+    my $set-noun   = %sets{$n} == 1 ?? 'set' !! 'sets';
+    say "$n has won %matches{$n} $match-noun and %sets{$n} $set-noun";
+}
+=end code
+
+RakuDoc. Δ<Text inside option (caption) should be shown, but is missing. Status | Not working >
+
+=begin code
+=begin Graphviz :headlevel(2) :caption<Simple example>
+    digraph G {
+        main -> parse -> execute;
+        main -> init;
+        main -> cleanup;
+        execute -> make_string;
+        execute -> printf
+        init -> make_string;
+        main -> printf;
+        execute -> compare;
+    }
+=end Graphviz
+=end code
+
 =place semantic:AUTHOR :caption<Credits>
 
 =place semantic:VERSION :!toc
