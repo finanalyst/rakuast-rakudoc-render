@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Proving a renderer</title>
 <link rel="icon" href="https://irclogs.raku.org/favicon.ico">
-<style>span.basis{font-weight:800}span.important{font-style:italic}span.unusual{text-decoration:underline}span.code{font-weight:500;background-color:linen;display:inline-block;margin:2px;padding:2px}span.overstrike{text-decoration:line-through}span.high{vertical-align:super}span.junior{vertical-align:sub}span.replace{font-style:small-caps;text-shadow:-1px 1px}span.indexed{text-shadow:1px 1px orange}span.keyboard{text-shadow:1px 1px}span.terminal{text-decoration:overline underline}span.footnote{vertical-align:super}span.developer-version{display:none;color:red}span.developer-version span.developer-note{font-family:"Brush Script MT",cursive}span.developer-version:hover{display:inline-block;transform:translate(50px, 100px);z-index:5}span.bad-markdown{text-shadow:1px 1px red}pre.code-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block::before{content:"--- input ---";display:block;text-shadow:-2px -2px 4px #000;color:#fff;padding-bottom:1rem}pre.output-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.output-block::before{content:"--- output ---";display:block;text-shadow:2px 2px 4px #000;color:#fff;padding-bottom:1rem}div.defn-text{margin-left:1rem}div.defn-term{font-weight:bold}div.id-target{display:none}div.nested{margin-left:5rem}div.toc .toc-item{margin-left:calc(var(--level)*1rem)}div.toc .toc-item::before{content:attr(data-bullet)}div.toc .toc-item a{padding-left:.4rem}div.index-section{margin-left:calc((var(--level) - 1)*1rem)}div.index-section[data-index-level="1"]{text-shadow:1px 1px orange}div.index-section>a.index-ref{white-space:nowrap;display:inline-block;width:1em}div.index-section>a.index-ref+span{display:none;width:0}div.index-section>a.index-ref:hover+span{display:inline-block;position:absolute;width:auto;z-index:5;background-color:#fff5ee}span.developer-note{display:none;width:0;color:blue;text-shadow:2px 2px 5px green}span.developer-version{display:none;width:0;color:red;text-shadow:2px 2px 5px green}.delta::before,span.developer-text::before{content:"ℹ";vertical-align:super}.delta:hover .developer-version,span.developer-text:hover .developer-version{display:inline-block;position:absolute;width:100%;z-index:5;transform:translate(0.5rem, -1rem)}.delta:hover .developer-note,span.developer-text:hover .developer-note{display:inline-block;position:absolute;width:auto;z-index:5;margin-left:1rem}span.developer-text:hover{text-decoration:overline}div.footer{border-top:2px dashed;margin:1rem 0;padding:2rem}div.footer .footer-field{display:inline-block}div.footer .footer-line{display:block}.heading>a{color:maroon;text-decoration:none}h.title{font-size:larger}table,th,td{border:1px solid;border-collapse:collapse}.procedural-cell-left{text-align:left}.procedural-cell-centre{text-align:center}.procedural-cell-center{text-align:center}.procedural-cell-right{text-align:right}.procedural-cell-top{vertical-align:text-top}.procedural-cell-middle{vertical-align:baseline}.procedural-cell-bottom{vertical-align:text-bottom}.procedural-cell-label{font-weight:bold}li.item{padding-left:.4rem;margin-left:calc(var(--level)*1rem)}li.item::marker{content:attr(data-bullet)}
+<style>span.basis{font-weight:800}span.important{font-style:italic}span.unusual{text-decoration:underline}span.code{font-weight:500;background-color:linen;display:inline-block;margin:2px;padding:2px}span.overstrike{text-decoration:line-through}span.high{vertical-align:super}span.junior{vertical-align:sub}span.replace{font-style:small-caps;text-shadow:-1px 1px}span.indexed{text-shadow:1px 1px orange}span.keyboard{text-shadow:1px 1px}span.terminal{text-decoration:overline underline}span.footnote{vertical-align:super}span.developer-version{display:none;color:red}span.developer-version span.developer-note{font-family:"Brush Script MT",cursive}span.developer-version:hover{display:inline-block;transform:translate(50px, 100px);z-index:5}span.bad-markdown{text-shadow:1px 1px red}pre.code-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.input-block::before{content:"--- input ---";display:block;text-shadow:-2px -2px 4px #000;color:#fff;padding-bottom:1rem}pre.output-block{background-color:#eee;margin:1rem;padding:0 1rem 1rem 1rem}pre.output-block::before{content:"--- output ---";display:block;text-shadow:2px 2px 4px #000;color:#fff;padding-bottom:1rem}div.defn-text{margin-left:1rem}div.defn-term{font-weight:bold}div.id-target{display:none}div.nested{margin-left:5rem}div.toc .toc-item{margin-left:calc(var(--level)*1rem)}div.toc .toc-item::before{content:attr(data-bullet)}div.toc .toc-item a{padding-left:.4rem}div.index-section{margin-left:calc((var(--level) - 1)*1rem)}div.index-section[data-index-level="1"]{text-shadow:1px 1px orange}div.index-section>a.index-ref{white-space:nowrap;display:inline-block;width:1em}div.index-section>a.index-ref+span{display:none;width:0}div.index-section>a.index-ref:hover+span{display:inline-block;position:absolute;width:auto;z-index:5;background-color:#fff5ee}span.developer-note{display:none;width:0;color:blue;text-shadow:2px 2px 5px green}span.developer-version{display:none;width:0;color:red;text-shadow:2px 2px 5px green}.delta::before,span.developer-text::before{content:"ℹ";vertical-align:super}.delta:hover .developer-version,span.developer-text:hover .developer-version{display:inline-block;position:absolute;width:100%;z-index:5;transform:translate(0.5rem, -1rem)}.delta:hover .developer-note,span.developer-text:hover .developer-note{display:inline-block;position:absolute;width:auto;z-index:5;margin-left:1rem}span.developer-text:hover{text-decoration:overline}div.footer{border-top:2px dashed;margin:1rem 0;padding:2rem}div.footer .footer-field{display:inline-block}div.footer .footer-line{display:block}.heading>a{color:maroon;text-decoration:none}h.title{font-size:larger}table,th,td{border:1px solid;border-collapse:collapse}.procedural-cell-left{text-align:left}.procedural-cell-centre{text-align:center}.procedural-cell-center{text-align:center}.procedural-cell-right{text-align:right}.procedural-cell-top{vertical-align:text-top}.procedural-cell-middle{vertical-align:baseline}.procedural-cell-bottom{vertical-align:text-bottom}.procedural-cell-label{font-weight:bold}li.item{padding-left:.4rem;margin-left:calc(var(--level)*1rem)}li.item::marker{content:attr(data-bullet)}div.rakudoc-image-placement{display:flex;justify-content:space-around;align-items:center}.rakudoc-placement-error{display:flex;justify-content:sapace-around;align-items:center;color:red;font-weight:bold}
 </style>
 <style>#page-nav .panel-block .toc {
     overflow-y:scroll;
@@ -16,7 +16,19 @@
     height:65vh;
 }
 </style>
-<style>/* Chyron Toggle checkbox */
+<style>/* graphviz */
+div.graphviz{display:flex;justify-content:space-around;align-items:center}.graphviz-error{display:flex;justify-content:space-around;align-items:center;color:red;font-weight:bold}.graphviz-error span.data{color:green}
+</style>
+<style>/* hilite */
+.raku-code{position:relative;margin:1rem 0;border-bottom:3px solid #ccccccc;box-shadow:0 2px 3px 0 rgba(0,0,0,.07);border:1px solid #ccccccc}.raku-code button.copy-code{cursor:pointer;opacity:0;padding:0 .25rem .25rem .25rem;position:absolute}.raku-code:hover button.copy-code{opacity:.5}.raku-code label{float:right;font-size:xx-small;font-style:italic;height:auto;margin:0 5px 0 0}.raku-code pre.browser-hl{padding:7px}.raku-code .code-name{padding-top:.75rem;padding-left:1.25rem;color:#a30031;font-weight:500}.raku-code pre{background-color:#fafafa;color:#030303;display:inline-block;overflow:scroll;width:96%}.raku-code .rakudoc-in-code{padding:1.25rem 1.5rem}.raku-code .section{padding:0rem}
+</style>
+<style>/* latexformula */
+div.latex-equation{display:flex;justify-content:space-around;align-items:center}div.latex-equation a.logo{align-self:flex-last}span.latex-formula{display:inline-block;cursor:crosshair}span.latex-formula a{display:none}span.latex-formula:hover>a{display:inline-block;position:absolute;transform:translate(-3rem, -2rem);background:#faebd7}.latex-render-error{color:red;font-weight:bold}
+</style>
+<style>/* listfiles */
+.listf-container{display:flex;flex-direction:column;margin-bottom:1.25rem;font-size:1rem;font-weight:500;line-height:1.5;border:1px solid #ccc;border-bottom:5px solid #d9d9d9;box-shadow:0 2px 3px 0 rgba(0,0,0,.07)}.listf-container .listf-caption{display:flex;justify-content:center;background:#f2f2f2;border-bottom:1px solid #ccc;color:#83858d}.listf-container .listf-file{display:inline-block;border-top:1px solid #ccc;border-bottom:1px solid #ccc;break-inside:avoid}.listf-container .listf-file .listf-link{display:inline-block;width:100%;text-align:center;padding-top:.25rem}.listf-container .listf-file p{padding-left:.5rem;padding-right:.5rem;margin-bottom:.25rem}.listf-error{color:red;font-size:xlarge}
+</style>
+<style>// Chyron Toggle checkbox
 label.chyronToggle input#navbar-toc-toggle {
     opacity: 0;
     height: 0;
@@ -51,18 +63,6 @@ label.chyronToggle input[type="checkbox"]:checked + .checkmark::before {
 label.chyronToggle:hover input[type="checkbox"]:checked + .checkmark::before {
     content: '[\21e6';
 }
-</style>
-<style>/* graphviz */
-div.graphviz{display:flex;justify-content:space-around;align-items:center}.graphviz-error{display:flex;justify-content:space-around;align-items:center;color:red;font-weight:bold}.graphviz-error span.data{color:green}
-</style>
-<style>/* hilite */
-.raku-code{position:relative;margin:1rem 0;border-bottom:3px solid #ccccccc;box-shadow:0 2px 3px 0 rgba(0,0,0,.07);border:1px solid #ccccccc}.raku-code button.copy-code{cursor:pointer;opacity:0;padding:0 .25rem .25rem .25rem;position:absolute}.raku-code:hover button.copy-code{opacity:.5}.raku-code label{float:right;font-size:xx-small;font-style:italic;height:auto;margin:0 5px 0 0}.raku-code pre.browser-hl{padding:7px}.raku-code .code-name{padding-top:.75rem;padding-left:1.25rem;color:#a30031;font-weight:500}.raku-code pre{background-color:#fafafa;color:#030303;display:inline-block;overflow:scroll;width:96%}.raku-code .rakudoc-in-code{padding:1.25rem 1.5rem}.raku-code .section{padding:0rem}
-</style>
-<style>/* latexformula */
-div.latex-equation{display:flex;justify-content:space-around;align-items:center}div.latex-equation a.logo{align-self:flex-last}span.latex-formula{display:inline-block;cursor:crosshair}span.latex-formula a{display:none}span.latex-formula:hover>a{display:inline-block;position:absolute;transform:translate(-3rem, -2rem);background:#faebd7}.latex-render-error{color:red;font-weight:bold}
-</style>
-<style>/* listfiles */
-.listf-container{display:flex;flex-direction:column;margin-bottom:1.25rem;font-size:1rem;font-weight:500;line-height:1.5;border:1px solid #ccc;border-bottom:5px solid #d9d9d9;box-shadow:0 2px 3px 0 rgba(0,0,0,.07)}.listf-container .listf-caption{display:flex;justify-content:center;background:#f2f2f2;border-bottom:1px solid #ccc;color:#83858d}.listf-container .listf-file{display:inline-block;border-top:1px solid #ccc;border-bottom:1px solid #ccc;break-inside:avoid}.listf-container .listf-file .listf-link{display:inline-block;width:100%;text-align:center;padding-top:.25rem}.listf-container .listf-file p{padding-left:.5rem;padding-right:.5rem;margin-bottom:.25rem}.listf-error{color:red;font-size:xlarge}
 </style>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"/>
@@ -746,11 +746,13 @@ Have a nice day. &#x263A;
 
 
 <div class="id-target" id=""></div><h3 id="JPEG_image_placement" class="heading  py-2"><a href="#" title="go to top of document">JPEG image placement</a></h3>
-<img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg">JPEG image placement</img> 
+<div class="rakudoc-image-placement">
+                        <img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg">JPEG image placement</img></div> 
 
 
 <div class="id-target" id=""></div><h3 id="Png_image_placement" class="heading  py-2"><a href="#" title="go to top of document">Png image placement</a></h3>
-<img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png">Png image placement</img> 
+<div class="rakudoc-image-placement">
+                        <img src="https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png">Png image placement</img></div> 
 
 <p id="8ec3517">Text finishes after version number </p>
 
@@ -789,7 +791,7 @@ v0.2.1
                 Rendered from <span class="footer-field">resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc</span>
             </div>
             <div class="level-item">
-                Rendered at 08:21 UTC on 2024-08-14</span>
+                Rendered at 10:01 UTC on 2024-08-14</span>
             </div>
             <div class="level-item">
                 Source last modified at 09:38 UTC on 2024-08-07</span>

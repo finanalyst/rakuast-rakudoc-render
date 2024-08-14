@@ -243,10 +243,13 @@ method html-templates {
                     $rv ~= %prm<contents>
                 }
                 when .contains('image') {
-                    $rv ~= qq[<img src="{ %prm<uri> }">%prm<caption>\</img> ]
+                    my $alt = '';
+                    $alt = ' alt="' ~ $_ ~ '"' with %prm<alt>;
+                    $rv ~= qq[<div class="rakudoc-image-placement">
+                        <img src="{ %prm<uri> }"$alt>%prm<caption>\</img></div> ]
                 }
                 default {
-                    $rv ~= qq[<p>Placement of {%prm<content-type>} is not yet implemented or requires internet connection</p> ]
+                    $rv ~= qq[<div class="rakudoc-placement-error"><p>Placement of {%prm<content-type>} is not yet implemented or requires internet connection</p></div> ]
                 }
             }
             $rv ~= "\n\n";

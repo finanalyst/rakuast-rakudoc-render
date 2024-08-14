@@ -246,3 +246,15 @@ li.item {
         content: attr(data-bullet);
     }
 }
+div.rakudoc-image-placement {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+.rakudoc-placement-error {
+    display: flex;
+    justify-content: sapace-around;
+    align-items: center;
+    color: red;
+    font-weight: bold;
+}
