@@ -1,8 +1,9 @@
 use v6.d;
 use Test;
 use Test::Output;
+#test-output-verbosity(:on);
 
-plan 9;
+plan 10;
 
 use RakuDoc::Render;
 use RakuDoc::To::HTML-Extra;
@@ -56,10 +57,10 @@ subtest 'live internet tests', sub {
     $rv = $rdp.render( $ast );
     like $rv, /
         'Not even of any kind'
-        /, 'rakdoc included and rendered';
+        /, 'rakudoc included and rendered';
     unlike $rv, /
         'Not even of any kind' .+ 'Not even of any kind'
-        /, 'rakdoc included and rendered only once';
+        /, 'rakudoc included and rendered only once';
 }
 
 # test plugin config
@@ -96,4 +97,16 @@ like $out, /
     /, 'could not find Non-existent';
 
 $fn-io.unlink if $fn-io ~~ :e;
+$fn-io.spurt: q:to/CONFIG/;
+    use RakuDoc::To::HTML-Extra;
+    my @plugs = @HTML-Extra-plugins.grep({ $_ ne 'FontAwesome' });
+    CONFIG
+$out = output-from { $html-extra-instance .= new };
+
+unlike $out, /
+    'Plugins required' .+ 'FontAwesome'
+    /, 'default plugin was disabled';
+
+$fn-io.unlink if $fn-io ~~ :e;
+
 done-testing;

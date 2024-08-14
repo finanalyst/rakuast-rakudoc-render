@@ -338,38 +338,38 @@ method chyron-css {
     q:to/CHYRON/;
     // Chyron Toggle checkbox
     label.chyronToggle input#navbar-toc-toggle {
-    opacity: 0;
-    height: 0;
-    width: 0;
+        opacity: 0;
+        height: 0;
+        width: 0;
     }
     label.chyronToggle span.checkmark {
-    top: 1rem;
-    position: relative;
-    cursor: pointer;
+        top: 1rem;
+        position: relative;
+        cursor: pointer;
     }
     label.chyronToggle input[type="checkbox"]{
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
     }
     label.chyronToggle span.checkmark::before {
-    content: '[\21e8';
-    color: grey;
-    font-weight: 800;
-    line-height: 0.5rem;
-    font-size: 1.75rem;
-    margin-right: 0.25rem;
+        content: '[\21e8';
+        color: grey;
+        font-weight: 800;
+        line-height: 0.5rem;
+        font-size: 1.75rem;
+        margin-right: 0.25rem;
     }
     label.chyronToggle:hover span.checkmark::before {
-    content: '[ \21e8';
+        content: '[ \21e8';
     }
     label.chyronToggle input[type="checkbox"]:checked + .checkmark::before {
-    content: '[ \21e6';
+        content: '[ \21e6';
     }
     label.chyronToggle:hover input[type="checkbox"]:checked + .checkmark::before {
-    content: '[\21e6';
+        content: '[\21e6';
     }
     CHYRON
 }

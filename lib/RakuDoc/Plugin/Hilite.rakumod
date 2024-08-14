@@ -16,7 +16,8 @@ has %.config = %(
 	:css-link(
 		['href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-light.min.css" title="light"',1],
 	),
-    :js(['',1],), # 1st element is replaced in TWEAK
+    :js([self.js-text,1],),
+    :scss([ self.scss-str, 1], ),
 );
 has %!hilight-langs = %(
     'HTML' => 'xml',
@@ -61,9 +62,6 @@ has %!hilight-langs = %(
     '.NET' => 'vbnet',
     'HASKELL' => 'haskell',
 );
-submethod TWEAK {
-    %!config<js>[0][0] = self.js-text;
-}
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
@@ -167,4 +165,59 @@ method js-text {
             });
         });
     JSCOPY
+}
+method scss-str {
+    q:to/SCSS/
+    /* Raku code highlighting */
+    .raku-code {
+      position: relative;
+      margin: 1rem 0;
+      border-bottom: 3px solid #ccccccc;
+      box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.07);;
+      border: 1px solid #ccccccc;
+
+      button.copy-code {
+        cursor: pointer;
+        opacity: 0;
+        padding: 0 0.25rem 0.25rem 0.25rem;
+        position: absolute;
+      }
+      &:hover button.copy-code {
+        opacity: 0.5;
+      }
+
+      label {
+        float: right;
+        font-size: xx-small;
+        font-style: italic;
+        height: auto;
+        margin: 0 5px 0 0;
+      }
+
+    /* required to match highlights-js css with raku highlighter css */
+      pre.browser-hl { padding: 7px; }
+
+      .code-name {
+        padding-top: 0.75rem;
+        padding-left: 1.25rem;
+        color: #A30031;
+        font-weight: 500;
+      }
+       pre {
+        background-color: #fafafa;
+        color: #030303;
+        display: inline-block;
+        overflow: scroll;
+        width: 96%;
+      }
+      .rakudoc-in-code {
+        padding: 1.25rem 1.5rem;
+      }
+
+      .section {
+        /* https://github.com/Raku/doc-website/issues/144 */
+        padding: 0rem;
+      }
+    }
+    SCSS
 }

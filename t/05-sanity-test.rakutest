@@ -3,7 +3,7 @@ use Test;
 my @modules = <MarkupMeta Numeration PromiseStrings ScopedData Templates Processed
     Render To::Generic To::Markdown To::HTML
     Plugin::Bulma Plugin::Graphviz Plugin::Latex Plugin::LeafletMaps
-    Plugin::ListFiles Plugin::FontAwesome Plugin::Hilite
+    Plugin::ListFiles Plugin::FontAwesome Plugin::Hilite Plugin::SCSS
     To::HTML-Extra>;
 
 plan @modules.elems;

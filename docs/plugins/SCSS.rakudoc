@@ -1,0 +1,33 @@
+=begin rakudoc :type<plugin>
+=TITLE SCSS
+=SUBTITLE Creates CSS output and adds to Processor object from SCSS in other plugins
+=for AUTHOR :hidden
+Richard Hainsworth, aka finanalyst
+=for VERSION :hidden
+v0.1.0
+=head Overview
+
+Uses the L<Dart CASS program|https://sass-lang.com/> to convert SCSS input into CSS output that is
+added to the RPO structure.
+
+The plugin is intended to be run B<once> and B<after> any other plugin that defines a C<scss:> field
+in its C<%.config> attribute in the correct manner for HTML-Extra, eg.,
+=begin code
+    %!config =
+        :scss( [ self.add-scss-string, 2], ),
+=end code
+
+=head Warnings
+=item The B<scss> attribute must be a sequence of Str,Int tuples, so the comma inside the I<)> is important.
+=item This plugin adds CSS to the Processor instance, but a previous plugin may have
+added CSS as well as SCSS. HTML-Extra gives precedence to SCSS.
+
+=item It is assumed that a shell call to C<sass -v> will yield a version number, otherwise the plugin
+will C<die>.
+
+Note that a plugin can be disabled by overriding the default plugin list (see
+L<Customisability in HTML-Extra | to/HTML-Extra.*#Customisability >).
+
+=place semantic:AUTHOR :caption<Credits>
+=place semantic:VERSION :!toc
+=end rakudoc

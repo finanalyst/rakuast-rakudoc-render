@@ -1,11 +1,10 @@
 use v6.d;
 use RakuDoc::To::HTML;
-use RakuDoc::PromiseStrings;
 
 #| the plugins to be attached to the processor
 #| the order of the plugins matters as templates names
 #| attached last are used first
-our @HTML-Extra-plugins = <LeafletMaps Latex Graphviz Bulma FontAwesome ListFiles Hilite>;
+our @HTML-Extra-plugins = <LeafletMaps Latex Graphviz Bulma FontAwesome ListFiles Hilite SCSS>;
 
 class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
     #| keys reserved for assets in HTML page, so Plugins may not claim any as a name-space.
@@ -14,19 +13,28 @@ class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
     submethod TWEAK {
         my $rdp := self.rdp;
         $rdp.add-templates(self.templates);
-
         if 'rakudoc-config.raku'.IO ~~ :e & :f {
             @HTML-Extra-plugins = EVALFILE('rakudoc-config.raku');
             note 'Plugins required are: ', @HTML-Extra-plugins;
         }
-        my @ignored;
-        for @HTML-Extra-plugins {
-            require ::("RakuDoc::Plugin::$_");
-            CATCH { @ignored.push($_); .resume }
-            ::("RakuDoc::Plugin::$_").new.enable( $rdp )
+        for @HTML-Extra-plugins -> $plugin {
+            require ::("RakuDoc::Plugin::$plugin");
+            CATCH {
+                note "RakuDoc::Plugin::$plugin is not installed";
+                .resume
+            }
+            try {
+                ::("RakuDoc::Plugin::$plugin").new.enable( $rdp )
+            }
+            with $! {
+                note "Could not enable RakuDoc::Plugin::$plugin\. Error: ", .message;
+            }
         }
-        note 'Could not enable the following plugins: ', @ignored if @ignored.elems;
-        self.gather-flatten($rdp, $_) for <css-link js-link js css>;
+        for <css-link js-link js css> {
+            # prevent duplication of CSS if both css and scss are provided in a plugin
+            next if $_ eq 'css' and ( 'SCSS' (elem) @HTML-Extra-plugins ) and $rdp.templates.data<scss>:exists;
+            self.gather-flatten($rdp, $_)
+        }
     }
 
     method render($ast) {
@@ -47,16 +55,16 @@ class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
             .grep({ .value.{ $key } ~~ Positional })
             .map( { .key => .value.{ $key } });
         my @p-tuples;
-        for %valid.kv -> $k, $tuple-list {
+        for %valid.kv -> $plugin, $tuple-list {
             if $tuple-list ~~ Positional {
                 for $tuple-list.list {
                     if .[0] ~~ Str && .[1] ~~ Int {
                         @p-tuples.push: $_
                     }
-                    else { note "Element ｢$_｣ of config attribute ｢$key｣ for plugin ｢$k｣ not a [Str, Int] tuple"}
+                    else { note "Element ｢$_｣ of config attribute ｢$key｣ for plugin ｢$plugin｣ not a [Str, Int] tuple"}
                 }
             }
-            else { note "Config attribute ｢$key｣ for plugin ｢$k｣ must be a Positional, but got ｢$tuple-list｣"}
+            else { note "Config attribute ｢$key｣ for plugin ｢$plugin｣ must be a Positional, but got ｢$tuple-list｣"}
         }
         if %d{ $key }:exists { # this is true for css from HTML, add it with zero order.
             @p-tuples.push: [ %d{ $key }, 0]

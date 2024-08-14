@@ -10,11 +10,8 @@ has %.config =
 	:license<Artistic-2.0>,
 	:credit<finanalyst>,
 	:authors<finanalyst>,
-    :css(['',1],),
+    :scss([self.add-scss,1],),
 ;
-submethod TWEAK {
-    %!config<css>[0][0] = self.add-css;
-}
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
@@ -29,7 +26,8 @@ method templates {
     %(
         ListFiles => sub (%prm, $tmpl) {
             return qq:to/ERROR/ unless %prm<select>:exists;
-                <div class=\"listf-error\">ListFiles needs :select key with criteria.
+                <div class="listf-error">
+                ListFiles needs :select key with criteria.
                 </div>
                 ERROR
 
@@ -101,8 +99,8 @@ method templates {
         },
     )
 }
-method add-css {
-    q:to/CSS/;
+method add-scss {
+    q:to/SCSS/;
     .listf-container {
       display: flex;
       flex-direction: column;
@@ -113,40 +111,34 @@ method add-css {
       border: 1px solid #cccccc;
       border-bottom: 5px solid #d9d9d9;
       box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.07);
-    }
-    .listf-container .listf-caption {
-      font-size: 1rem;
-      font-weight: 500;
-      line-height: 1.5;
-      display: flex;
-      justify-content: center;
-      background: #f2f2f2;
-      border-bottom: 1px solid #cccccc;
-      color: #83858D;
-    }
-    .listf-container .listf-file {
-      display: inline-block;
-      border-top: 1px solid #cccccc;
-      border-bottom: 1px solid #cccccc;
-      break-inside: avoid;
-    }
-    .listf-container .listf-file .listf-link {
-      display: inline-block;
-      width: 100%;
-      text-align: center;
-      padding-top: 0.25rem;
-    }
-    .listf-container .listf-file p {
-      font-size: 1rem;
-      font-weight: 500;
-      line-height: 1.5;
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
-      margin-bottom: 0.25rem;
+      .listf-caption {
+          display: flex;
+          justify-content: center;
+          background: #f2f2f2;
+          border-bottom: 1px solid #cccccc;
+          color: #83858D;
+      }
+      .listf-file {
+          display: inline-block;
+          border-top: 1px solid #cccccc;
+          border-bottom: 1px solid #cccccc;
+          break-inside: avoid;
+          .listf-link {
+              display: inline-block;
+              width: 100%;
+              text-align: center;
+              padding-top: 0.25rem;
+          }
+          p {
+              padding-left: 0.5rem;
+              padding-right: 0.5rem;
+              margin-bottom: 0.25rem;
+          }
+      }
     }
     .listf-error {
       color: red;
       font-size: xlarge;
     }
-    CSS
+    SCSS
 }

@@ -16,90 +16,57 @@
     height:65vh;
 }
 </style>
-<style>.listf-container {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.25rem;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.5;
-  border: 1px solid #cccccc;
-  border-bottom: 5px solid #d9d9d9;
-  box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.07);
-}
-.listf-container .listf-caption {
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.5;
-  display: flex;
-  justify-content: center;
-  background: #f2f2f2;
-  border-bottom: 1px solid #cccccc;
-  color: #83858D;
-}
-.listf-container .listf-file {
-  display: inline-block;
-  border-top: 1px solid #cccccc;
-  border-bottom: 1px solid #cccccc;
-  break-inside: avoid;
-}
-.listf-container .listf-file .listf-link {
-  display: inline-block;
-  width: 100%;
-  text-align: center;
-  padding-top: 0.25rem;
-}
-.listf-container .listf-file p {
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.5;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-.listf-error {
-  color: red;
-  font-size: xlarge;
-}
-</style>
-<style>// Chyron Toggle checkbox
+<style>/* Chyron Toggle checkbox */
 label.chyronToggle input#navbar-toc-toggle {
-opacity: 0;
-height: 0;
-width: 0;
+    opacity: 0;
+    height: 0;
+    width: 0;
 }
 label.chyronToggle span.checkmark {
-top: 1rem;
-position: relative;
-cursor: pointer;
+    top: 1rem;
+    position: relative;
+    cursor: pointer;
 }
 label.chyronToggle input[type="checkbox"]{
-position: absolute;
-opacity: 0;
-cursor: pointer;
-height: 0;
-width: 0;
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
 }
 label.chyronToggle span.checkmark::before {
-content: '[\21e8';
-color: grey;
-font-weight: 800;
-line-height: 0.5rem;
-font-size: 1.75rem;
-margin-right: 0.25rem;
+    content: '[\21e8';
+    color: grey;
+    font-weight: 800;
+    line-height: 0.5rem;
+    font-size: 1.75rem;
+    margin-right: 0.25rem;
 }
 label.chyronToggle:hover span.checkmark::before {
-content: '[ \21e8';
+    content: '[ \21e8';
 }
 label.chyronToggle input[type="checkbox"]:checked + .checkmark::before {
-content: '[ \21e6';
+    content: '[ \21e6';
 }
 label.chyronToggle:hover input[type="checkbox"]:checked + .checkmark::before {
-content: '[\21e6';
+    content: '[\21e6';
 }
+</style>
+<style>/* graphviz */
+div.graphviz{display:flex;justify-content:space-around;align-items:center}.graphviz-error{display:flex;justify-content:space-around;align-items:center;color:red;font-weight:bold}.graphviz-error span.data{color:green}
+</style>
+<style>/* hilite */
+.raku-code{position:relative;margin:1rem 0;border-bottom:3px solid #ccccccc;box-shadow:0 2px 3px 0 rgba(0,0,0,.07);border:1px solid #ccccccc}.raku-code button.copy-code{cursor:pointer;opacity:0;padding:0 .25rem .25rem .25rem;position:absolute}.raku-code:hover button.copy-code{opacity:.5}.raku-code label{float:right;font-size:xx-small;font-style:italic;height:auto;margin:0 5px 0 0}.raku-code pre.browser-hl{padding:7px}.raku-code .code-name{padding-top:.75rem;padding-left:1.25rem;color:#a30031;font-weight:500}.raku-code pre{background-color:#fafafa;color:#030303;display:inline-block;overflow:scroll;width:96%}.raku-code .rakudoc-in-code{padding:1.25rem 1.5rem}.raku-code .section{padding:0rem}
+</style>
+<style>/* latexformula */
+div.latex-equation{display:flex;justify-content:space-around;align-items:center}div.latex-equation a.logo{align-self:flex-last}span.latex-formula{display:inline-block;cursor:crosshair}span.latex-formula a{display:none}span.latex-formula:hover>a{display:inline-block;position:absolute;transform:translate(-3rem, -2rem);background:#faebd7}.latex-render-error{color:red;font-weight:bold}
+</style>
+<style>/* listfiles */
+.listf-container{display:flex;flex-direction:column;margin-bottom:1.25rem;font-size:1rem;font-weight:500;line-height:1.5;border:1px solid #ccc;border-bottom:5px solid #d9d9d9;box-shadow:0 2px 3px 0 rgba(0,0,0,.07)}.listf-container .listf-caption{display:flex;justify-content:center;background:#f2f2f2;border-bottom:1px solid #ccc;color:#83858d}.listf-container .listf-file{display:inline-block;border-top:1px solid #ccc;border-bottom:1px solid #ccc;break-inside:avoid}.listf-container .listf-file .listf-link{display:inline-block;width:100%;text-align:center;padding-top:.25rem}.listf-container .listf-file p{padding-left:.5rem;padding-right:.5rem;margin-bottom:.25rem}.listf-error{color:red;font-size:xlarge}
 </style>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-light.min.css" title="light"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
 crossorigin=""
@@ -111,9 +78,39 @@ crossorigin=""
 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 crossorigin=""
 ></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/haskell.min.js"></script>
 <script src="https://unpkg.com/leaflet-providers@latest/leaflet-providers.js"
 ></script>
 
+<script>    // Hilite-helper.js
+    document.addEventListener('DOMContentLoaded', function () {
+        // trigger the highlighter for non-Raku code
+        hljs.highlightAll();
+
+        // copy code block to clipboard adapted from solution at
+        // https://stackoverflow.com/questions/34191780/javascript-copy-string-to-clipboard-as-text-html
+        // if behaviour problems with different browsers add stylesheet code from that solution.
+        const copyButtons = Array.from(document.querySelectorAll('.copy-code'));
+        copyButtons.forEach( function( button ) {
+        var codeElement = button.nextElementSibling.nextElementSibling; // skip the label and get the div
+        button.addEventListener( 'click', function(insideButton) {
+            var container = document.createElement('div');
+            container.innerHTML = codeElement.innerHTML;
+                container.style.position = 'fixed';
+                container.style.pointerEvents = 'none';
+                container.style.opacity = 0;
+                document.body.appendChild(container);
+                window.getSelection().removeAllRanges();
+                var range = document.createRange();
+                range.selectNode(container);
+                window.getSelection().addRange(range);
+                document.execCommand("copy", false);
+                document.body.removeChild(container);
+            });
+        });
+    });
+</script>
 <script>// BulmaHelper.js
 var change_theme = function (theme) {
     document.querySelector('html').className = '';
@@ -192,24 +189,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     document.getElementById('toc-tab').addEventListener('click', function () { swap_toc_index('toc') });
     document.getElementById('index-tab').addEventListener('click', function () { swap_toc_index('index') });
-    // copy code block to clipboard adapted from solution at
-    // https://stackoverflow.com/questions/34191780/javascript-copy-string-to-clipboard-as-text-html
-    // if behaviour problems with different browsers add stylesheet code from that solution.
-//    $('.copy-code').click( function() {
-//        var codeElement = $(this).next().next(); // skip the label and get the div
-//        var container = document.createElement('div');
-//        container.innerHTML = codeElement.html();
-//        container.style.position = 'fixed';
-//        container.style.pointerEvents = 'none';
-//        container.style.opacity = 0;
-//        document.body.appendChild(container);
-//        window.getSelection().removeAllRanges();
-//        var range = document.createRange();
-//        range.selectNode(container);
-//        window.getSelection().addRange(range);
-//        document.execCommand("copy", false);
-//        document.body.removeChild(container);
-//    });
     var TOC = document.getElementById('toc-menu');
     var Index = document.getElementById('index-menu');
     var originalTOC = TOC.getHTML();
@@ -469,10 +448,8 @@ function swap_toc_index(activate) {
 <p id="19ff975">We can also make an inline <span class="basis">definition</span>. This whole paragraph will be referenced later. </p>
 <p id="9858a53">A developer note <span class="developer-text">can be attached<span class="developer-version">v1.2.3 ^.. v2.0.0<span class="developer-note"> highly deprecated</span></span></span> to text. A renderer may show the text or only show it for contexts compliant with the version. </p>
 <p id="3f70975">But a note without meta no versioning here is ignored and a warning generated. </p>
-<p id="8d264c7">When we want a formula <span class="code"><div class="latex-render">
-<img src="https://latex.codecogs.com/svg.image?\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}" />
-<img class="logo" src="https://www.codecogs.com/images/poweredbycodecogs.png" border="0" alt="CodeCogs - An Open Source Scientific Library"></a>
-</div>
+<p id="d0079da">When we want a formula  <span class="latex-formula"><img src="https://latex.codecogs.com/svg.image?\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}" />
+<a class="logo" href="https://www.codecogs.com"><img src="https://www.codecogs.com/images/poweredbycodecogs.png" border="0" alt="CodeCogs - An Open Source Scientific Library"></a>
 </span> use F&lt;&gt; markup. </p>
 <p id="bf10a46">Links can be made internally <a href="#This_is_a_first_heading">say to the first heading</a> or externally <a href="https://docs.raku.org">say to the raku documentation site</a>. </p>
 <p id="1551c4d">A renderer should provide the opportunity to customise text using M&lt;...|..,..;...&gt; markup. The renderer <span class="code">should not recognise this functionality</span> and issue a warning. </p>
@@ -609,17 +586,39 @@ function swap_toc_index(activate) {
 
 
 <div class="id-target" id=""></div><h2 id="Blocks_that_are_processed_differently" class="heading  py-2"><a href="#" title="go to top of document">Blocks that are processed differently</a></h2>
-<pre class="code-block">my $x = 2;
+
+            <div class="raku-code raku-lang">
+                <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
+                <label>Raku highlighting</label>
+                <div><pre class="nohighlights">
+my $x = 2;
 # a brilliant program!
 </pre>
-<pre class="code-block">my $x = 3;
+</div>
+            </div>
+        
+            <div class="raku-code raku-lang">
+                <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
+                <label>Raku highlighting</label>
+                <div><pre class="nohighlights">
+my $x = 3;
 # a renderer <span class="basis">should</span> observe the basis markup
-# and the <span class="keyboard">markup</span> but render R&lt;markup&gt; verbatim
+# and the <span class="keyboard">markup</span> but render R<markup> verbatim
 </pre>
-<pre class="code-block"># indenting causes an implicit code block
-my $raku = 'fantastic';
+</div>
+            </div>
+        
+            <div class="raku-code raku-lang">
+                <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
+                <label>Raku highlighting</label>
+                <div><pre class="nohighlights">
+<span style="color:blue;"># indenting causes an implicit code block</span>
+<span style="color:magenta;">my</span> <span style="color:cyan;">$raku</span> <span style="color:yellow;">=</span> <span style="color:red;">"fantastic"</span>
+
 </pre>
-<pre class="input-block">This is a text with <span class="basis">basis</span> markup that conserves
+</div>
+            </div>
+        <pre class="input-block">This is a text with <span class="basis">basis</span> markup that conserves
 all spacing      when trying    to get column
 just using       white spaces   naively
 better           to             use tables
@@ -638,12 +637,10 @@ Richard Hainsworth, aka finanalyst
 
 
 <div class="id-target" id=""></div><h2 id="Formula_cannot_be_rendered" class="heading  py-2"><a href="#" title="go to top of document">Fabulous identity</a></h2>
-<div class="formula"><div class="latex-render">
-<img src="https://latex.codecogs.com/svg.image?e^{i\pi}+1=0
+<div class="latex-equation"><img src="https://latex.codecogs.com/svg.image?e^{i\pi}+1=0
 
 " />
-<img class="logo" src="https://www.codecogs.com/images/poweredbycodecogs.png" border="0" alt="CodeCogs - An Open Source Scientific Library"></a>
-</div>
+<a class="logo" href="https://www.codecogs.com"><img src="https://www.codecogs.com/images/poweredbycodecogs.png" border="0" alt="CodeCogs - An Open Source Scientific Library"></a>
 </div>
 <div class="id-target" id=""></div><h2 id="A_customised_block" class="heading  py-2"><a href="#" title="go to top of document">UNKNOWN MyBlock</a></h2>
 =begin MyBlock :caption&lt;A customised block&gt; :headlevel(2)<br>Actually it fails because no customisation has been made.<br>It<br>should<br>be<br>rendered without spaces&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;being chewed up.<br>=end MyBlock<br>
@@ -792,10 +789,10 @@ v0.2.1
                 Rendered from <span class="footer-field">resources/compliance-rendering/resources/compliance-rendering/rakudociem-ipsum.rakudoc</span>
             </div>
             <div class="level-item">
-                Rendered at 11:19 UTC on 2024-08-05</span>
+                Rendered at 08:21 UTC on 2024-08-14</span>
             </div>
             <div class="level-item">
-                Source last modified at 20:36 UTC on 2024-07-25</span>
+                Source last modified at 09:38 UTC on 2024-08-07</span>
             </div>
         </nav>
     </div>
@@ -809,6 +806,11 @@ v0.2.1
 <li>Unknown or as yet undeclared alias ｢XXX｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣ over-riden by ｢an undeclared｣</li>
 <li>Δ&lt;&gt; markup ignored because it has no version/note content ｢Δ&lt;no versioning here&gt;｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.</li>
 <li>Markup-M failed: template ｢PayMeMoreApp｣ does not exist. Got ｢M&lt;should not recognise this functionality|PayMeMoreApp; user-id&gt;｣</li>
+<li>Could not highlight ｢my $x = 2;
+# a brilliant program!｣</li>
+<li>Could not highlight ｢my $x = 3;
+# a renderer &lt;span class=&quot;basis&quot;&gt;should&lt;/span&gt; observe the basis markup
+# and the &lt;span class=&quot;keyboard&quot;&gt;markup&lt;/span&gt; but render R&lt;markup&gt; verbatim｣</li>
 <li>No template exists for custom block ｢MyBlock｣. It has been rendered as unknown in block ｢MyBlock｣ with heading ｢MyBlock｣.</li>
 
         </ol>

@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "authors": [
     "Richard Hainsworth"
   ],
@@ -33,6 +33,7 @@
     "RakuDoc::Plugin::Latex": "lib/RakuDoc/Plugin/Latex.rakumod",
     "RakuDoc::Plugin::LeafletMaps": "lib/RakuDoc/Plugin/LeafletMaps.rakumod",
     "RakuDoc::Plugin::ListFiles": "lib/RakuDoc/Plugin/ListFiles.rakumod",
+    "RakuDoc::Plugin::SCSS": "lib/RakuDoc/Plugin/SCSS.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
     "RakuDoc::PromiseStrings": "lib/RakuDoc/PromiseStrings.rakumod",
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
@@ -98,7 +99,6 @@
     "docs/to/HTML-Extra.rakudoc",
     "docs/to/Markdown.rakudoc",
     "docs/default-text-templates.rakudoc",
-    null,
     "docs/plugins/Bulma.rakudoc",
     "docs/plugins/FontAwesome.rakudoc",
     "docs/plugins/Graphviz.rakudoc",
@@ -106,7 +106,8 @@
     "docs/plugins/Latex.rakudoc",
     "docs/plugins/LeafletMaps.rakudoc",
     "docs/plugins/Graphviz.rakudoc",
-    "docs/plugins/ListFiles.rakudoc"
+    "docs/plugins/ListFiles.rakudoc",
+    "docs/plugins/SCSS.rakudoc"
   ],
   "source-type": "git"
 }

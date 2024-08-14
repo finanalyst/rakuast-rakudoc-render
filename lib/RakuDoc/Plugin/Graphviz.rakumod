@@ -9,6 +9,7 @@ has %.config =
 	:license<Artistic-2.0>,
 	:credit<https://graphviz.org/credits/ Common Public License Version 1.0>,
 	:version<0.1.0>,
+	:scss( [ self.scss-str, 1], ),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
@@ -45,14 +46,35 @@ method templates {
             my $rv = $head;
             if $proc-rv { $rv ~= qq[<div class="graphviz">$proc-rv\</div>] }
             elsif $proc-err {
-               $rv ~= '<div style="color: red">'
-                ~ $proc-err.subst(/^ .+? 'tdin>:' \s*/, '') ~ '</div>'
-                ~ '<div>Graph input was <div style="color: green">' ~ $data ~ '</div>'
+               $rv ~= '<div class="graphviz-error">'
+                ~ $proc-err.subst(/^ .+? 'tdin>:' \s*/, '')
+                ~ '<div>Graph input was <span class="data">' ~ $data ~ '</span></div>'
+                ~ '</div>'
             }
             else {
-                $rv ~= '<div style="color:red">No output from dot command</div>'
+                $rv ~= '<div class="graphviz-error">No output from dot command</div>'
             }
             $rv
         },
     )
+}
+method scss-str {
+    q:to/SCSS/
+    /* Graphviz styling */
+    div.graphviz {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    .graphviz-error {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        color: red;
+        font-weight: bold;
+        span.data {
+            color: green;
+        }
+    }
+    SCSS
 }

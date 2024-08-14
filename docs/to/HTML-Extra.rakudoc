@@ -169,7 +169,13 @@ So the code above adds C<MyFunc> to the list, and the plugin C<RakuDoc::Plugin::
 after all of the default plugins called by C<RakuDoc::To::HTML-Extra>.
 
 It is also possible to disable a default plugin by passing an array that does not contain the
-plugin to be disabled.
+plugin to be disabled. Suppose it is desired to disable the SCSS plugin, then create (include)
+the following code in C<rakudoc-config.raku>:
+=begin code
+use RakuDoc::To::HTML-Extra;
+my @plugs = @HTML-Extra-plugins;
+@plugs.grep({ $_ ne 'FontAwesome' });
+=end code
 
 =place semantic:AUTHOR :caption<Credits>
 
