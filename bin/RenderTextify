@@ -1,7 +1,15 @@
 #!/usr/bin/env -S raku -I/home/richard/development/rakuast-rakudoc-render
 use experimental :rakuast;
 use RakuDoc::Render;
-sub MAIN( $fn, :$test = False, :$pretty = False, :$post-processing, :$width ) {
+sub MAIN(
+        $fn,               #= path/file name of source
+        :$test = False,    #= use test templates
+        :$pretty = False,  #= use pretty dump & test templates
+        :$post-processing, #= use default post-processing
+        :$width,           #= set width if post-processing is used
+        :$debug,           #= apply debug parameters. Valid names are: None (default) All AstBlock BlockType Scoping Templates MarkUp
+        Str :$verbose,     #= name of a template gives more detail about parameters / output
+     ) {
     my $f = $fn.ends-with('.rakudoc') ?? $fn !! $fn ~ '.rakudoc';
     exit note "$f doesn't exist" unless $f.IO ~~ :e & :f;
     %*ENV<POSTPROCESSING> = $_ with $post-processing;
@@ -13,6 +21,8 @@ sub MAIN( $fn, :$test = False, :$pretty = False, :$post-processing, :$width ) {
         path     => $f.IO.path
     );
     my RakuDoc::Processor $rdp .= new( :$test, :$pretty );
+    $rdp.debug( $debug ) with $debug;
+    $rdp.verbose( $verbose ) with $verbose;
     note "Using {$rdp.templates.source}{$pretty ?? ' with pretty' !! ($test ?? ' with test' !!  '')}";
     ($f ~ ( $pretty ?? '.pretty' !! ($test ?? '.test' !!  '')) ~ '.text').IO.spurt: $rdp.render($ast, :%source-data);
 }

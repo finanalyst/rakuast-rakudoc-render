@@ -1,5 +1,8 @@
 #!/usr/bin/env raku
 use experimental :rakuast;
+use RakuDoc::Render;
+use RakuDoc::To::HTML;
+use RakuDoc::To::HTML-Extra;
 
 multi sub MAIN(
         :$src = 'docs',
@@ -7,7 +10,9 @@ multi sub MAIN(
         Bool :q($quiet) = False,
         Str :$format = 'md',
         Bool :$extra = False,
-               ) {
+        :$debug,
+        Str :$verbose,
+    ) {
     my %docs = $src.IO.dir(test => *.ends-with('.rakudoc')).map({ .extension('').basename => .modified });
     my $extension = $format eq 'html' ?? ($extra ?? '.html' !! '_singlefile.html') !! ".$format";
     my %rendered = $to.IO.dir(test => *.ends-with($extension)).map({ .extension('').basename => .modified });
@@ -16,21 +21,23 @@ multi sub MAIN(
     })>>.key;
     say "Documents with .{ $format } in CWD, but not in docs/ : ", (%rendered.keys (-) %docs.keys).keys unless $quiet;
     my $nformat = ($format eq 'html' && $extra) ?? 'html-extra' !! $format;
-    render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat)
+    render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose)
 }
 multi sub MAIN(
         Str:D $file,               #= a single file name that must exist in src directory
         Str :$src = 'docs',        #= the directory containing the source files, defaults to docs/
         :$to = $*CWD,              #= the directory to which the output is directed, defaults to $*CWD,
         Bool :q($quiet) = False,   #= Don't output info
-        Str :$format = 'md', #= Output file extension, must be 'html' if not 'md'
+        Str :$format = 'md',       #= Output file extension, must be 'html' if not 'md'
         Bool :$extra = False,      #= Use ::HTML-Extra renderer, otherwise ::HTML renderer
-               ) {
+        :$debug,                   #= apply debug parameters. Valid names are: None (default) All AstBlock BlockType Scoping Templates MarkUp
+        Str :$verbose,             #= name of a template gives more detail about parameters / output
+     ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
     my $nformat = ($format eq 'html' && $extra) ?? 'html-extra' !! $format;
-    render-files([$file,], :$src, :$to, :$quiet, :$nformat)
+    render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose)
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md') {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
         say "Processing ｢$src/$_.rakudoc｣ to ｢$dest.md｣" unless $quiet;
@@ -42,31 +49,40 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         "$dest.md".IO.spurt($out) if $out;
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html') {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html', :$debug, :$verbose) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
-        say "Processing ｢$src/$_.rakudoc｣ to ｢{ $dest }_singlefile.html｣" unless $quiet;
-        my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '-MRakuDoc::Render', '--rakudoc=HTML',
-                       "$src/$_.rakudoc"), :err, :out;
-        my $err = $p.err.slurp(:close);
-        $err.say if $err;
-        my $out = $p.out.slurp(:close);
-        "{ $dest }_singlefile.html".IO.spurt($out) if $out;
+        my $from = "$src/$_.rakudoc";
+        say "Processing ｢$from｣ to ｢{ $dest }_singlefile.html｣" unless $quiet;
+        my $ast = $from.IO.slurp.AST;
+        my %source-data = %(
+            name     => $_,
+            modified => $from.IO.modified,
+            path     => $from.IO.path
+        );
+        my RakuDoc::Processor $rdp = RakuDoc::To::HTML.new.rdp;
+        $rdp.debug( $debug ) with $debug;
+        $rdp.verbose( $verbose ) with $verbose;
+        "{ $dest }_singlefile.html".IO.spurt($rdp.render($ast, :%source-data));
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-extra') {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-extra', :$debug, :$verbose) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
-        say "Processing ｢$src/$_.rakudoc｣ to ｢$dest.html｣" unless $quiet;
-        my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '-MRakuDoc::Render', '-MRakuDoc::To::HTML',
-                       '--rakudoc=HTML-Extra',
-                       "$src/$_.rakudoc"), :err, :out;
-        my $err = $p.err.slurp(:close);
-        $err.say if $err;
-        my $out = $p.out.slurp(:close);
-        "$dest.html".IO.spurt($out) if $out;
+        my $from = "$src/$_.rakudoc";
+        say "Processing ｢$from｣ to ｢{ $dest }.html｣" unless $quiet;
+        my $ast = $from.IO.slurp.AST;
+        my %source-data = %(
+            name     => $_,
+            modified => $from.IO.modified,
+            path     => $from.IO.path
+        );
+        my RakuDoc::Processor $rdp = RakuDoc::To::HTML-Extra.new.rdp;
+        $rdp.debug( $debug ) with $debug;
+        $rdp.verbose( $verbose ) with $verbose;
+        "{ $dest }.html".IO.spurt($rdp.render($ast, :%source-data));
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose) {
     note "The ｢$nformat｣ is not yet implemented, try ｢$*PROGRAM -h｣ for options"
 }

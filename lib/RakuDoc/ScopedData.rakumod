@@ -10,7 +10,7 @@ has @!config = {}, ; #an array of hashes, with empty hash at start
 has @!aliases = {}, ;
 has @!starters;
 has @!titles;
-has @!save-spacer = 'None' but False ;
+has @!save-spacer = 'None' => False , ;
 #| the last item numeration
 has Numeration @.items-numeration = Numeration.new , ;
 #| the last defn numeration
@@ -19,7 +19,8 @@ has Bool $.debug is rw = False;
 #| debug information
 method diagnostic {
     qq[ Scope levels: { +@!starters }
-    Scope starters: { +@!starters ?? @!starters.join(' ') !! 'original level' } ]
+    Scope starters: { +@!starters ?? @!starters.join(' ') !! 'original level' }
+    Space savers: { +@!save-spacer ?? @!save-spacer.map({ .key ~ ' => ' ~ .value}).join(', ') !! 'original level' }]
 }
 #| starts a new scope
 method start-scope(:$starter!, :$title, :$verbatim ) {
@@ -27,8 +28,10 @@ method start-scope(:$starter!, :$title, :$verbatim ) {
     @!titles.push: $title // 'Block # ' ~ @!starters.elems;
     @!config.push: @!config.tail.pairs.hash;
     @!aliases.push: @!aliases.tail.pairs.hash;
+#    say "@ $?LINE ScopedData verbatim space-save ", $verbatim.raku ,'  ss: ', $starter.raku, ' ss.tail: ',@!save-spacer.tail;
+#    say "@ $?LINE diag", $.diagnostic;
     with $verbatim and @!save-spacer.tail.not {
-        @!save-spacer.push: $starter
+        @!save-spacer.push: $starter => $verbatim.so
     }
     else {
         @!save-spacer.push: @!save-spacer.tail
@@ -70,10 +73,10 @@ multi method last-title( $s ) {
     if +@!titles { @!titles.tail = $s }
 }
 multi method verbatim() {
-    @!save-spacer.tail.so
+    @!save-spacer.tail.value
 }
 multi method verbatim( :called-by($)! ) {
-    @!save-spacer.tail
+    @!save-spacer.tail.key
 }
 multi method item-inc( $level --> Str ) {
     @!items-numeration.tail.inc($level).Str

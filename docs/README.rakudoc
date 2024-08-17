@@ -6,7 +6,7 @@
 Richard Hainsworth aka finanalyst
 
 =for VERSION :hidden
-v0.3.1
+v0.4.0
 
 =begin SYNOPSIS
 =item Clone the repository and submodule
@@ -25,32 +25,9 @@ modules in the distribution.
 This distribution is intended to provide several renderers from RakuDoc v2 into commonly used
 output formats.
 
-The basic render engine is C<RakuDoc::Render>, which renders into Text. It
-is designed to be extended to other output formats by subclassing.
+The basic render engine is C<RakuDoc::Render>, which renders a RakuDoc source into text for display on a terminal.
 
-Currently, the other renderers in this distribution are:
-=begin table :caption<Table of outputs and renderers> :headlevel(2)
-=row :header
-=cell Output
-=cell Renderer
-=cell Documentation
-=row
-=cell Text
-=cell C<RakuDoc::To::Generic>
-=cell L<a wrapper for I<RakuDoc::Render>|Render>
-=row
-=cell Markdown
-=cell C<RakuDoc::To::Markdown>
-=cell L<Markdown|RakuDoc-To-Markdown>
-=row
-=cell HTML
-=cell C<RakuDoc::To::HTML>
-=cell L<A minimal, single file, 'all in' HTML|RakuDoc-To-HTML>
-=row
-=cell HTML-Extra
-=cell in development
-=cell HTML output using Bulma CSS, Graphviz, Leaflet-Maps, Latex, assumes internet
-=end table
+The Renderer class is designed to be extended to other output formats by subclassing.
 
 This is software using bleeding edge Rakudo, so look L<at troubleshooting below|#Troubleshooting>.
 
@@ -64,8 +41,8 @@ The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/m
 is the file for testing RakuDoc v2 compliance. It can be obtained with:
 =code   bin/get-compliance-document
 
-C<rakudociem-ipsum.rakudoc> is contained in the submodule C<rakudoc-compliance> with
-a link in C<resources/compliance>.
+A copy of C<rakudociem-ipsum.rakudoc> is also contained in C<resources/compliance-rendering>, together with
+renderings of the file using the output renderers in this distribution.
 
 In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered
 to Text using the L<RenderTextify|#RenderTextify utility>. It
@@ -74,19 +51,18 @@ avoids some installation problems, stores the output and offers some other outpu
 
 (the .rakudoc extension may be omitted if desired)
 
+Rendering into the other output formats provided in this distribution can be done using
+L<RenderDocs|#RenderDocs utility>. By default, sources are located in C<docs/> and rendered
+to the current working directory into MarkDown, eg.,
+=code bin/RenderDocs README
+
 =head Documentation
 
-The two main documentation sources are:
-=item L<An overview of the generic renderer|Render>
-=item L<The templating system|Templates>
+All documentation can be found at L<finanalyst.github.io| https://finanalyst.github.io>.
 
-Other modules are also documented:
-=item L<Processed - objects to keep track of intermediate state|Processed>
-=item L<PStr - Strings containing forward references|PromiseStrings>
-=item L<ScopedData - an object to keep track of data valid for a block scope|ScopedData>
-=item L<a table of the minimum set of templates to render any RakuDoc source|default-text-templates>
-=item L<a grammar for parsing the meta data of a Markup code|MarkUpMeta>
-=item L<an object for numerating items headings|Numeration>
+The two main documentation sources are:
+=item L<An overview of the generic renderer|https://finanalyst.github.io/Render>
+=item L<The templating system|https://finanalyst.github.io/Templates>
 
 =head RenderTextify utility
 
@@ -129,36 +105,63 @@ wrapped to the value. WIDTH by default is set at 80 chars. To set at 70, use:
 or
 =code bin/RenderTextify --post-processing --width=70 doc
 
+The utility can also be used for debugging new templates. For more information, see the
+Render and Templates documents. To get all the debugging information, and information on
+the template for C<C-markup> try
+=code bin/RenderTextify --debug='All' --verbose='C-markup' doc
+
+=head RenderDocs utility
+
+I<RenderDoc> is similar to RenderTextify, but uses the other formats in this distribution, namely
+=item B<.md> - Markdown (default)
+=item B<-singlefile.html> - HTML that can be opened directly in a browser without internet connection.
+=item B<.html> - HTML that is intended for use with an internet connection
+
+By default, the utility renders all the I<rakudoc> sources from C<docs/> and outputs them in
+I<markdown> to the current working directory, eg.
+=code bin/RenderDocs
+
+In order to get the useage try
+=code bin/RenderDocs -h
+
+In order to render a single file, put the basename without I<.rakudoc> as a string parameter, eg.
+=code bin/RenderDocs README
+
+In order to override the source and output defaults use C<--src> and C<--to> options, eg.
+=code bin/RenderDocs --src='sources/' --to='rendered/' some-file
+
+In order to get single file HTML, rather than markdown
+=code bin/Render --to='rendered' --html README
+
+In order to get the possibilities offered by RakuDoc::To::HTML-Extra, including maps, graphs, themes
+and the Bulma CSS framework, use C<--html> and C<--extra>, eg.
+=code bin/Render --html --extra Graphviz
+
+The B<html> variants allow for C<--debug> and C<--verbose>.
+
 =head1 Troubleshooting
 
 In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recent
-version of the Rakudoc compiler is needed, after v2024.06.
+version of the Rakudoc compiler is needed, after v2024.07.
 
 If the cannonical command above fails, perhaps with a message such as
 =code     ===SORRY!===
     This element has not been resolved. Type: RakuAST::Type::Simple
 
-then try
-=code RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
-
-The command above may also generate an error, such as
+or
 =begin code
-    ===SORRY!=== Error while compiling ..... (OO::Monitors)
-    Variable '$cond' is not declared.  Perhaps you forgot a 'sub' if this
-    was intended to be part of a signature?
-    at ....
-    ------> macro wait-condition(⏏$cond) is export {
-because the RakuAST compiler does not yet handle macros, and (OO::Monitors) uses them.
+Out-of-sync package detected in LANG1 at r => Str=｢{ $!front-matter }｣
+
+  (value in braid: RakuAST::Class, value in $*PACKAGE: RakuAST::Class)
+===SORRY!===
+No such method 'IMPL-REGEX-QAST' for invocant of type 'RakuAST::Regex'
 =end code
 
-The first step is to re-run the test files, eg.,
-=code prove6 -I.
+then try
+=code bin/force-compile
 
-This causes a  recompilation of the modules in this distribution to be recompiled
-because the tests run C<isa-ok> on each module.
-
-This is sometimes not sufficient. The next step is to use the utility C<bin/force-compile> in the root of the repo.
-It deletes the C<.precomp> files in the current directory, and runs C<prove6 -I.>.
+This deletes the C<.precomp> files in the current directory, and runs C<prove6 -I.>,
+which causes a recompilation of all the modules.
 
 =place semantic:AUTHOR :caption<Credits>
 

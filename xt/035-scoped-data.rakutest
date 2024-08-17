@@ -3,6 +3,7 @@ use Test;
 use Test::Deeply::Relaxed;
 use RakuDoc::ScopedData;
 use Test::Output;
+#test-output-verbosity(:on);
 
 my RakuDoc::ScopedData $sc;
 
@@ -21,28 +22,28 @@ $sc.config( {:1foo, :2xxx});
 is-deeply-relaxed $sc.config, {:1foo, :2xxx }, 'new current scope updated';
 like $sc.diagnostic, /
     'Scope levels' .+ 1
-    .+ 'ters:' \s 'foo' \s+ $
+    .+ 'Scope starters:' \s 'foo' .+ 'Space'
 /, 'diagnostic data as expected';
 is $sc.last-title, 'Block # 1', 'title  of first starter';
 $sc.debug = True;
 output-like { $sc.start-scope(:starter<testing>) }, /
     'Scope levels' .+ 2
-    .+ 'ters:' \s 'foo' \s+ 'testing'
+    .+ 'Scope starters:' \s 'foo' \s+ 'testing' .+ 'Space'
 /, 'diagnostic data output with debug';
 like $sc.diagnostic, /
     'Scope levels' .+ 2
-    .+ 'ters:' \s 'foo' \s+ 'testing'
+    .+ 'ters:' \s 'foo' \s+ 'testing' .+ 'Space'
 /, 'diagnostic data as expected';
 is $sc.last-starter, 'testing', 'only last starter context';
 lives-ok { $sc.last-title('Test') }, 'accepts title';
 is $sc.last-title, 'Test', 'title  of last starter';
 output-like { $sc.end-scope }, /
     'Scope levels' .+ 1
-    .+ 'ters:' \s 'foo' \s+ $
+    .+ 'Scope starters:' \s 'foo' .+ 'Space'
 /, 'diagnostic data output with debug';
 like $sc.diagnostic, /
     'Scope levels' .+ 1
-    .+ 'ters:' \s 'foo' \s+ $
+    .+? 'Scope starters:' \s 'foo' .+ 'Space'
 /, 'diagnostic data as expected';
 $sc.debug = False;
 $sc.end-scope;
