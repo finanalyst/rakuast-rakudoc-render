@@ -2,4 +2,4 @@
 use v6.d;
 run <<rm -rf .precomp>>;
 run <<prove6 -I.>>;
-say 'force recompiled dependencies';
+say 'forced recompilation of dependencies';

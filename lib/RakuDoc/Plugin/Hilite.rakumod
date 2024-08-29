@@ -8,7 +8,7 @@ has %.config = %(
 	:license<Artistic-2.0>,
 	:credit<finanalyst, lizmat>,
 	:author<<Richard Hainsworth, aka finanalyst\nElizabeth Mattijsen, aka lizmat>>,
-	:version<0.1.0>,
+	:version<0.1.1>,
 	:js-link(
 		['src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"', 2 ],
 		['src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/haskell.min.js"', 2 ],
@@ -66,73 +66,231 @@ method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
 }
-
+my %allowables =
+  L => { qq|<a href="$_.meta()">$_.atoms()\</a>| },
+  X => { qq|<span class="indexed" id="$_.meta()">$_.atoms()\</span>| },
+  B => { '<span class="basis">' ~ .atoms ~ '</span>' },
+  C => { '<span class="code">' ~ .atoms ~ '</span>' },
+  H => { '<span class="high">' ~ .atoms ~ '</span>' },
+  I => { '<span class="important">' ~ .atoms ~ '</span>' },
+  J => { '<span class="junior">' ~ .atoms ~ '</span>' },
+  K => { '<span class="keyboard">' ~ .atoms ~ '</span>' },
+  N => { '<span class="note">' ~ .atoms ~ '</span>' },
+  O => { '<span class="overstrike">' ~ .atoms ~ '</span>' },
+  R => { '<span class="replace">' ~ .atoms ~ '</span>' },
+  S => { '<span class="space">' ~ .atoms ~ '</span>' },
+  T => { '<span class="terminal">' ~ .atoms ~ '</span>' },
+  U => { '<span class="unusual">' ~ .atoms ~ '</span>' },
+  V => { .atoms }
+;
 method templates {
     %(
-    code => sub (%prm, $tmpl) {
-        # if :lang is set != raku / rakudoc, then enable highlightjs
-        # otherwise pass through Raku syntax highlighter.
-        my $code;
-        my $syntax-label;
-        if %prm<lang>:exists {
-            if %prm<lang>.uc ~~ any( %!hilight-langs.keys ) {
-                $syntax-label = %prm<lang>.tc ~  ' highlighting by highlight-js';
-                $code = qq:to/HILIGHT/;
-                    <pre class="browser-hl">
-                    <code class="language-{ %!hilight-langs{ %prm<lang>.uc } }">{ $tmpl<escaped> }
-                    </code></pre>
-                    HILIGHT
-            }
-            elsif %prm<lang> ~~ any( <Raku RakuDoc Rakudoc raku rakudoc> ) {
-                $syntax-label = %prm<lang> ~ ' highlighting';
+        code => sub (%prm, $tmpl) {
+            # if :lang is set != raku / rakudoc, then enable highlightjs
+            # otherwise pass through Raku syntax highlighter.
+            my $code;
+            my $syntax-label;
+            if %prm<lang>:exists {
+                if %prm<lang>.uc ~~ any( %!hilight-langs.keys ) {
+                    $syntax-label = %prm<lang>.tc ~  ' highlighting by highlight-js';
+                    $code = qq:to/HILIGHT/;
+                        <pre class="browser-hl">
+                        <code class="language-{ %!hilight-langs{ %prm<lang>.uc } }">{ $tmpl<escaped> }
+                        </code></pre>
+                        HILIGHT
+                }
+                elsif %prm<lang> ~~ /:i rakudoc / {
+                    $syntax-label = 'RakuDoc highlighting';
+                    # for the time being don't highlight RakuDoc
+                    $code = qq:to/NOHIGHS/
+                        <pre class="nohighlights">
+                        { $tmpl<escaped> }
+                        </pre>
+                        NOHIGHS
+                }
+                elsif %prm<lang> ~~ /:i 'raku' » / {
+                    $syntax-label = 'Raku highlighting';
+                }
+                else {
+                    $syntax-label = "｢{ %prm<lang> }｣ without highlighting";
+                    $code = qq:to/NOHIGHS/;
+                        <pre class="nohighlights">
+                        { $tmpl<escaped> }
+                        </pre>
+                        NOHIGHS
+                }
             }
             else {
-                $syntax-label = "｢{ %prm<lang> }｣ without highlighting";
+                $syntax-label = 'Raku highlighting';
+            }
+            without $code { # so need Raku highlighting
+                my $source = %prm<contents>.Str;
+                my %allow;
+                if %prm<allow>:exists {
+                    %allow{ $_ } = %allowables{ $_ } for %prm<allow>.list;
+                }
+                my $c = highlight( $source, 'HTML', :unsafe, :%allow);
+                if $c {
+                    $code = $c
+                } else {
+                    my $m = $c.exception.message;
+                    $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
+                        ( $source.chars > 200
+                            ?? ($source.substr(200) ~ ' ... ')
+                            !! $source.trim ) ~
+                        '｣' ~ "\nbecause\n$m" );
+                    $code = $source;
+                }
                 $code = qq:to/NOHIGHS/;
-                    <pre class="nohighlights">
-                    { $tmpl<escaped> }
-                    </pre>
-                    NOHIGHS
+                        <pre class="nohighlights">
+                        $tmpl('escaped', %(:html-tags, :contents($code) ) )
+                        </pre>
+                        NOHIGHS
+                CATCH {
+                    default {
+                        $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
+                            ( $source.chars > 500
+                                ?? ($source.substr(500) ~ ' ... ')
+                                !! $source.trim ) ~
+                            '｣' ~ "\nbecause\n" ~ .message );
+                        $code = $tmpl('escaped', %(:contents($source) ) );
+                    }
+                }
             }
-        }
-        else {
-            $syntax-label = 'Raku highlighting';
-        }
-        without $code { # so need Raku highlighting
-            my $source = %prm<contents>.Str;
-            try {
-                $code = highlight( $source, 'HTML');
+            qq[
+                <div class="raku-code raku-lang">
+                    <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
+                    <label>$syntax-label\</label>
+                    <div>$code\</div>
+                </div>
+            ]
+        },
+        markup-B => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'B<' ~ %prm<contents> ~ '>'
             }
-            with $! {
-                $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
-                    ( $source.chars > 200
-                        ?? ($source.substr(200) ~ ' ... ')
-                        !! $source.trim ) ~
-                    '｣' ~ "\nbecause\n" ~ .message );
-                $code = $source;
+            else { $tmpl.prev }
+        },
+        markup-C => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'C<' ~ %prm<contents> ~ '>'
             }
-            unless $code {
-                $tmpl.globals.helper<add-to-warnings>( 'Could not highlight ｢' ~
-                    ( $source.chars > 200
-                        ?? ($source.substr(200) ~ ' ... ')
-                        !! $source.trim ) ~
-                    '｣' );
-                $code = $source;
+            else { $tmpl.prev }
+        },
+        markup-H => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'H<' ~ %prm<contents> ~ '>'
             }
-            $code = qq:to/NOHIGHS/;
-                    <pre class="nohighlights">
-                    $code
-                    </pre>
-                    NOHIGHS
-        }
-        qq[
-            <div class="raku-code raku-lang">
-                <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
-                <label>$syntax-label\</label>
-                <div>$code\</div>
-            </div>
-        ]
-    },
+            else { $tmpl.prev }
+        },
+        markup-I => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'I<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-J => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'J<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-K => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'K<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-N => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                $tmpl.global.add-to-warning('Cannot ALLOW N<> inside code block');
+                # reconstitute the markup code
+                'N<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-O => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'O<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-R => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'R<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-S => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                $tmpl.global.add-to-warning('S<> inside code block is useless');
+                # reconstitute the markup code
+                'S<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-T => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'T<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-U => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'U<' ~ %prm<contents> ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-V => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                'V<' ~ $tmpl<escaped>
+                .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
+                .subst(/ \v /, '<br>', :g)
+                ~ '>'
+            }
+            else { $tmpl.prev }
+        },
+        markup-L => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                my $target = %prm<target>.trim.subst(/ '.*' /, ".%prm<output-format>", :g);
+                my $text = %prm<link-label>;
+                given %prm<type> {
+                    when 'local' {
+                        if %prm<place>:exists {
+                            qq[L\<$text|{$target}#{%prm<place>}>]
+                        }
+                        else {
+                            qq[L\<$text|$target>]
+                        }
+                    }
+                    when 'internal' {
+                        qq[L\<$text|#{$target}">]
+                    }
+                    default {
+                        qq[L\<$text|$target>]
+                    }
+                }
+            }
+            else { $tmpl.prev }
+        },
+        markup-X => -> %prm, $tmpl {
+            if %prm<in_code_context> {
+                # reconstitute the markup code
+                qq[X\<{%prm<contents>}|{%prm<target>}>]
+            }
+            else { $tmpl.prev }
+        },
     )
 }
 method js-text {

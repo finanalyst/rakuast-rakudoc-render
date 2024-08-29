@@ -867,6 +867,7 @@ class RakuDoc::Processor {
         $!scoped-data.start-scope(:starter($template), :verbatim )
             if $template ~~ any(<code implicit-code input output>);
         if $template eq 'code' {
+            %config<in_code_context> = True;
             %*ALLOW = %config<allow>:exists
                 ?? %config<allow>.map({ $_ => True }).hash
                 !! {}
@@ -1789,13 +1790,8 @@ class RakuDoc::Processor {
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
-            #| renders implicit code from an indented paragraph
-            implicit-code => -> %prm, $tmpl {
-                my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n  --- code --- \n"
-                ~ %prm<contents>
-                ~ "\n  --- ----- ---\n"
-            },
+            #| renders implicit code from an indented paragraph, same as code
+            implicit-code => -> %prm, $tmpl { $tmpl<code> },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
