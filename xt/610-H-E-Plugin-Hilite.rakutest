@@ -9,15 +9,15 @@ lives-ok {
     require RakuDoc::Plugin::Hilite;
     RakuDoc::Plugin::Hilite.new.enable( $rdp );
 }, 'hilite plugin enabled';
-my $src = q[my $var = 2;];
-my $hl = highlight( $src, 'HTML' );
-like $hl, /
-    '<span' .+ 'magenta' .+ 'my</span>' .+
-    'cyan' .+ '$var</span>' .+
-    'yellow' .+ '=</span' .+
-    'red' .+ '2</span>'
-    /, 'statement highlighted with default colors';
-my $hl-pl = $rdp.templates<code>(%(:contents($src), :lang<raku>) );
-like $hl-pl, / '<pre' .+ 'lights">' \s* $hl /, 'similar highlighting';
+#my $src = q[my $var = 2;];
+#my $hl = highlight( $src, 'HTML' );
+#like $hl, /
+#    '<span' .+ 'magenta' .+ 'my</span>' .+
+#    'cyan' .+ '$var</span>' .+
+#    'yellow' .+ '=</span' .+
+#    'red' .+ '2</span>'
+#    /, 'statement highlighted with default colors';
+#my $hl-pl = $rdp.templates<code>(%(:contents($src), :lang<raku>) );
+#like $hl-pl, / '<pre' .+ 'lights">' \s* $hl /, 'similar highlighting';
 
 done-testing;

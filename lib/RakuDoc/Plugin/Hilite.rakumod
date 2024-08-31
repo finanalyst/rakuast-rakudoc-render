@@ -83,7 +83,22 @@ my %allowables =
   U => { '<span class="unusual">' ~ .atoms ~ '</span>' },
   V => { .atoms }
 ;
+sub default-mapper(str $color, str $c) {
+    $c.trim ?? "<span style=\"color:var(--bulma-$color);font-weight:600;\">$c\</span>" !! $c
+}
+my %mapping = mapper
+  black     => -> $c { default-mapper "black",   $c },
+  blue      => -> $c { default-mapper "link",    $c },
+  cyan      => -> $c { default-mapper "info",    $c },
+  green     => -> $c { default-mapper "primary", $c },
+  magenta   => -> $c { default-mapper "success", $c },
+  none      => -> $c { default-mapper "none",    $c },
+  red       => -> $c { default-mapper "danger",  $c },
+  yellow    => -> $c { default-mapper "warning", $c },
+  white     => -> $c { default-mapper "white",   $c },
+;
 method templates {
+    constant CUT-LENG = 500;
     %(
         code => sub (%prm, $tmpl) {
             # if :lang is set != raku / rakudoc, then enable highlightjs
@@ -129,14 +144,14 @@ method templates {
                 if %prm<allow>:exists {
                     %allow{ $_ } = %allowables{ $_ } for %prm<allow>.list;
                 }
-                my $c = highlight( $source, 'HTML', :unsafe, :%allow);
+                my $c = highlight( $source, :unsafe, :default(&default-mapper), %mapping);
                 if $c {
                     $code = $c
                 } else {
                     my $m = $c.exception.message;
                     $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
-                        ( $source.chars > 200
-                            ?? ($source.substr(200) ~ ' ... ')
+                        ( $source.chars > CUT-LENG
+                            ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
                             !! $source.trim ) ~
                         '｣' ~ "\nbecause\n$m" );
                     $code = $source;
@@ -149,8 +164,8 @@ method templates {
                 CATCH {
                     default {
                         $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
-                            ( $source.chars > 500
-                                ?? ($source.substr(500) ~ ' ... ')
+                            ( $source.chars > CUT-LENG
+                                ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
                                 !! $source.trim ) ~
                             '｣' ~ "\nbecause\n" ~ .message );
                         $code = $tmpl('escaped', %(:contents($source) ) );
@@ -330,10 +345,6 @@ method scss-str {
     .raku-code {
       position: relative;
       margin: 1rem 0;
-      border-bottom: 3px solid #ccccccc;
-      box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.07);;
-      border: 1px solid #ccccccc;
-
       button.copy-code {
         cursor: pointer;
         opacity: 0;
@@ -343,7 +354,6 @@ method scss-str {
       &:hover button.copy-code {
         opacity: 0.5;
       }
-
       label {
         float: right;
         font-size: xx-small;
@@ -358,12 +368,9 @@ method scss-str {
       .code-name {
         padding-top: 0.75rem;
         padding-left: 1.25rem;
-        color: #A30031;
         font-weight: 500;
       }
        pre {
-        background-color: #fafafa;
-        color: #030303;
         display: inline-block;
         overflow: scroll;
         width: 96%;
