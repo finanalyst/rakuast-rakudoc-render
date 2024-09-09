@@ -10,11 +10,11 @@ has %.config = %(
 	:author<<Richard Hainsworth, aka finanalyst\nElizabeth Mattijsen, aka lizmat>>,
 	:version<0.1.1>,
 	:js-link(
-		['src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"', 2 ],
-		['src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/haskell.min.js"', 2 ],
+		['src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/highlight.min.js"', 2 ],
+		['src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/languages/haskell.min.js"', 2 ],
 	),
 	:css-link(
-		['href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-light.min.css" title="light"',1],
+		['href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/default.min.css"',1],
 	),
     :js([self.js-text,1],),
     :scss([ self.scss-str, 1], ),
@@ -23,6 +23,7 @@ has %!hilight-langs = %(
     'HTML' => 'xml',
     'XML' => 'xml',
     'BASH' => 'bash',
+    'C' => 'c',
     'C++' => 'cpp',
     'C#' => 'csharp',
     'SCSS' => 'css',
@@ -66,23 +67,7 @@ method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
 }
-my %allowables =
-  L => { qq|<a href="$_.meta()">$_.atoms()\</a>| },
-  X => { qq|<span class="indexed" id="$_.meta()">$_.atoms()\</span>| },
-  B => { '<span class="basis">' ~ .atoms ~ '</span>' },
-  C => { '<span class="code">' ~ .atoms ~ '</span>' },
-  H => { '<span class="high">' ~ .atoms ~ '</span>' },
-  I => { '<span class="important">' ~ .atoms ~ '</span>' },
-  J => { '<span class="junior">' ~ .atoms ~ '</span>' },
-  K => { '<span class="keyboard">' ~ .atoms ~ '</span>' },
-  N => { '<span class="note">' ~ .atoms ~ '</span>' },
-  O => { '<span class="overstrike">' ~ .atoms ~ '</span>' },
-  R => { '<span class="replace">' ~ .atoms ~ '</span>' },
-  S => { '<span class="space">' ~ .atoms ~ '</span>' },
-  T => { '<span class="terminal">' ~ .atoms ~ '</span>' },
-  U => { '<span class="unusual">' ~ .atoms ~ '</span>' },
-  V => { .atoms }
-;
+
 sub default-mapper(str $color, str $c) {
     $c.trim ?? "<span style=\"color:var(--bulma-$color);font-weight:600;\">$c\</span>" !! $c
 }
@@ -98,52 +83,69 @@ my %mapping = mapper
   white     => -> $c { default-mapper "white",   $c },
 ;
 method templates {
-    constant CUT-LENG = 500;
+    constant CUT-LENG = 500; # crop length in error message
     %(
         code => sub (%prm, $tmpl) {
-            # if :lang is set != raku / rakudoc, then enable highlightjs
-            # otherwise pass through Raku syntax highlighter.
+            # if :allow is set, then no highlighting as allow creates alternative styling
+            # if :!syntax-highlighting, then no highlighting
+            # if :lang is set to a lang in list, then enable highlightjs
+            # if :lang is set to lang not in list, not raku or RakuDoc, then no highlighting
+            # if :lang is not set, then highlight as Raku
             my $code;
             my $syntax-label;
-            if %prm<lang>:exists {
-                if %prm<lang>.uc ~~ any( %!hilight-langs.keys ) {
-                    $syntax-label = %prm<lang>.tc ~  ' highlighting by highlight-js';
-                    $code = qq:to/HILIGHT/;
-                        <pre class="browser-hl">
-                        <code class="language-{ %!hilight-langs{ %prm<lang>.uc } }">{ $tmpl<escaped> }
-                        </code></pre>
-                        HILIGHT
-                }
-                elsif %prm<lang> ~~ /:i rakudoc / {
-                    $syntax-label = 'RakuDoc highlighting';
-                    # for the time being don't highlight RakuDoc
-                    $code = qq:to/NOHIGHS/
+            my Bool $hilite = %prm<syntax-highlighting> // True;
+            if %prm<allow> {
+                $syntax-label = '<b>allow</b> styling';
+                $code = qq:to/NOHIGHS/;
                         <pre class="nohighlights">
-                        { $tmpl<escaped> }
+                        $tmpl('escaped', %(:html-tags, :contents($code) ) )
                         </pre>
-                        NOHIGHS
-                }
-                elsif %prm<lang> ~~ /:i 'raku' » / {
-                    $syntax-label = 'Raku highlighting';
-                }
-                else {
-                    $syntax-label = "｢{ %prm<lang> }｣ without highlighting";
-                    $code = qq:to/NOHIGHS/;
-                        <pre class="nohighlights">
-                        { $tmpl<escaped> }
-                        </pre>
-                        NOHIGHS
+                    NOHIGHS
+            }
+            elsif $hilite {
+                my $lang = %prm<lang> // 'RAKU';
+                given $lang.uc {
+                    when any( %!hilight-langs.keys ) {
+                        $syntax-label = $lang ~  ' highlighting by highlight-js';
+                        $code = qq:to/HILIGHT/;
+                            <pre class="browser-hl">
+                            <code class="language-{ %!hilight-langs{ $_ } }">
+                            { $tmpl<escaped> }
+                            </code></pre>
+                            HILIGHT
+                    }
+                    when 'RAKUDOC' {
+                        $syntax-label = 'RakuDoc';
+                        # for the time being don't highlight RakuDoc
+                        $code = qq:to/NOHIGHS/
+                            <pre class="nohighlights">
+                            { $tmpl<escaped> }
+                            </pre>
+                            NOHIGHS
+                    }
+                    when ! /^ 'RAKU' » / {
+                        $syntax-label = $lang;
+                        $code = qq:to/NOHIGHS/;
+                            <pre class="nohighlights">
+                            { $tmpl<escaped> }
+                            </pre>
+                            NOHIGHS
+                    }
+                    default {
+                        $syntax-label = 'Raku highlighting';
+                    }
                 }
             }
-            else {
-                $syntax-label = 'Raku highlighting';
+            else { # no :allow and :!syntax-highlighting
+                $syntax-label = %prm<lang>;
+                $code = qq:to/NOHIGHS/;
+                    <pre class="nohighlights">
+                    { $tmpl<escaped> }
+                    </pre>
+                    NOHIGHS
             }
             without $code { # so need Raku highlighting
                 my $source = %prm<contents>.Str;
-                my %allow;
-                if %prm<allow>:exists {
-                    %allow{ $_ } = %allowables{ $_ } for %prm<allow>.list;
-                }
                 my $c = highlight( $source, :unsafe, :default(&default-mapper), %mapping);
                 if $c {
                     $code = $c
@@ -173,7 +175,7 @@ method templates {
                 }
             }
             qq[
-                <div class="raku-code raku-lang">
+                <div class="raku-code">
                     <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
                     <label>$syntax-label\</label>
                     <div>$code\</div>
@@ -359,9 +361,8 @@ method scss-str {
         font-size: xx-small;
         font-style: italic;
         height: auto;
-        margin: 0 5px 0 0;
+        padding-right: 50px;
       }
-
     /* required to match highlights-js css with raku highlighter css */
       pre.browser-hl { padding: 7px; }
 
@@ -378,7 +379,6 @@ method scss-str {
       .rakudoc-in-code {
         padding: 1.25rem 1.5rem;
       }
-
       .section {
         /* https://github.com/Raku/doc-website/issues/144 */
         padding: 0rem;

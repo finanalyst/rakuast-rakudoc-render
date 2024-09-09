@@ -823,6 +823,7 @@ class RakuDoc::Processor {
     }
 
     # helper methods for markup
+    #| similar to merge-index in Processed, but simpler because less generic
     multi method merge-index( %p, %q ) {
         for %q.keys -> $k {
             if %p{$k}:exists {
@@ -1545,7 +1546,7 @@ class RakuDoc::Processor {
             @inner.push: $k;
             @inner.push: @refs;
             @rv.push: @inner;
-            @rv.append($_) with si( %v<sub-index>, $n + 1, $max );
+            if si( %v<sub-index>, $n + 1, $max ) -> $_ { @rv.append($_) }
         }
         @rv
     }
@@ -1553,9 +1554,12 @@ class RakuDoc::Processor {
         my $max;
         if $spec eq '*' { $max = 100 }
         else { $max = $spec.EVAL.list.max }
-        my @index-list = .map({
-            %!templates<index-item>( %( :level( .[0] ), :entry( .[1] ), :refs( .[2] ) ) )
-        }) with si( $!current.index , 1, $max );
+        my @index-list;
+        if si( $!current.index , 1, $max ) -> $_ {
+            @index-list = .map({
+                %!templates<index-item>( %( :level( .[0] ), :entry( .[1] ), :refs( .[2] ) ) )
+            })
+        }
         PStr.new( @index-list.elems ?? %!templates<index>( %(:@index-list, :$caption ))
                                     !! '')
     }
@@ -1981,14 +1985,20 @@ class RakuDoc::Processor {
                    ;
                 }
                 else {
-                    my $cap-shift = (([+] %prm<headers>[0]>>.Str>>.chars) + (3 * +%prm<headers>[0]) + 4 - $cap-width ) div 2;
+                    my $headers = '';
+                    my $cap-shift = 0;
+                    if %prm<headers>:exists && %prm<headers>[0] {
+                        my @headers := %prm<headers>[0];
+                        $cap-shift = (([+] @headers>>.Str>>.chars) + (3 * +@headers) + 4 - $cap-width ) div 2;
+                        $headers = '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n"
+                    }
                     my $row-shift = $cap-shift <= 0 ?? - $cap-shift !! 0;
+                    $headers = ' ' x $row-shift ~ $headers if $headers;
                     $cap-shift = 0 if $cap-shift <= 0;
                     PStr.new: $del ~
                         ' ' x $cap-shift ~
                         $caption ~ "\n" ~
-                        ' ' x $row-shift ~
-                        '| ' ~ BOLD-ON ~ %prm<headers>[0].join( BOLD-OFF ~ ' | ' ~ BOLD-ON ) ~ BOLD-OFF ~ " |\n" ~
+                        $headers ~
                         %prm<rows>.map({
                             ' ' x $row-shift ~
                             '| ' ~ $_.join(' | ') ~ " |\n"
@@ -2042,9 +2052,9 @@ class RakuDoc::Processor {
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
-                my $n = %prm<level>;
+                my $n := %prm<level>;
                 PStr.new: ($n == 1 ?? INDEX-ENTRY-ON !! "\t" x $n ) ~ %prm<entry> ~ (INDEX-ENTRY-OFF if $n == 1) ~ ': see in'
-                    ~ %prm<refs>.map({ ' § ' ~ .<place> }).join(',')
+                    ~ %prm<refs>.grep( *.isa(Hash) ).map({ ' § ' ~ .<place> }).join(',')
                     ~ "\n"
             },
             #| special template to render the index data structure

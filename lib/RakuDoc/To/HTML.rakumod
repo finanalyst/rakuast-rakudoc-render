@@ -302,7 +302,8 @@ method html-templates {
                 }
             }
             else {
-                $rv ~= "\t<thead>\n\t\t<tr><th>" ~ %prm<headers>[0]>>.trim.join( '</th><th>') ~ "</th></tr>\n\t</thead>" ;
+                $rv ~= "\t<thead>\n\t\t<tr><th>" ~ $_>>.trim.join( '</th><th>') ~ "</th></tr>\n\t</thead>"
+                    with %prm<headers>.head;
                 $rv ~= "\t<tbody>\n\t\t";
                 $rv ~= [~] %prm<rows>.map({ '<tr><td>' ~ .map(*.trim).join('</td><td>') ~ "</td></tr>\n\t\t" });
                 $rv ~= "\t</tbody>\n";
@@ -349,7 +350,7 @@ method html-templates {
             PStr.new:
                 qq[<div class="index-section" data-index-level="$n" style="--level:$n">\n] ~
                 INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': ' ~
-                %prm<refs>.map({
+                %prm<refs>.grep(*.isa(Hash)).map({
                     qq[<a class="index-ref" href="#{ .<target> }">&nbsp;§&nbsp;</a><span>{ .<place> }</span>] }).join(', ')
                 ~ "\n</div>\n"
         },

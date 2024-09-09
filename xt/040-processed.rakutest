@@ -7,7 +7,7 @@ use Test::Deeply::Relaxed;
 use PrettyDump;
 my $register = PCellTracker.new;
 
-plan 16;
+plan 17;
 
 my RakuDoc::Processed $rp;
 $rp .= new;
@@ -23,6 +23,7 @@ is $rp.source-data<extra>, 'extra', 'source data has extra';
 my ProcessedState $ps .= new;
 my ProcessedState $pt .= new;
 my ProcessedState $pu .= new;
+my %expected-ind;
 $ps.body ~= 'start' ~ PCell.new(:$register, :id('AAA')) ~ PCell.new(:$register, :id('BBB'));
 my $payload = '｢some stuff｣';
 $register.add-payload( :$payload, :id<AAA> );
@@ -90,7 +91,7 @@ $pt.index = %(
     ),
 );
 $pu += [+] $ps, $pt;
-my %expected-ind = %(
+%expected-ind = %(
     syntax => %(
         :refs([
             %(:target<one>,:place<Preface>,),
@@ -110,6 +111,64 @@ my %expected-ind = %(
     ),
 );
 is-deeply-relaxed $pu.index, %expected-ind, 'ProcessedState object index added as expected';
+
+$pu.index = %(
+	:Tutorial(%(
+		:refs([
+			%( :place("Preface"), :target("index-entry-Statements") ),
+		]),
+		:sub-index( %(
+			'statement (Basics)' => ( %(
+				:refs([
+					%( :place("Preface"), :target("index-entry-Statements") ),
+				]),
+				:sub-index( %() )
+			))
+		))
+	))
+);
+$ps.index = %(
+	:Tutorial(%(
+		:refs([
+			%( :place("Preface"), :target("index-entry-Lexical_scope") ),
+		]),
+		:sub-index( %(
+			'my (Basics)' => ( %(
+				:refs([
+					%( :place("Preface"), :target("index-entry-Lexical_scope") ),
+				]),
+				:sub-index( %() )
+			))
+		))
+	))
+);
+$pu += $ps;
+%expected-ind =
+    :Tutorial(
+        %(
+            :refs([
+                %(:place("Preface"), :target("index-entry-Statements")),
+                %(:place("Preface"), :target("index-entry-Lexical_scope"))
+            ]),
+            :sub-index( %(
+                "my (Basics)" => %(
+                    :refs([
+                        %(:place("Preface"), :target("index-entry-Lexical_scope")),
+                    ]),
+                    :sub-index( %() )
+                ),
+                "statement (Basics)" => %(
+                    :refs([
+                        %(:place("Preface"), :target("index-entry-Statements")),
+                    ]),
+                    :sub-index( %() )
+                )
+            ) )
+        )
+    )
+;
+
+is-deeply-relaxed $pu.index, %expected-ind, 'Merge two indices with same key name but different targets';
 
 $ps.semantics = %( syntax => ['one',], kind => ['two',]);
 $pt.semantics = %( syntax => ['tone',], xxx => ['yyy',]);

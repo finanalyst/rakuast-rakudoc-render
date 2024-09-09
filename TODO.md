@@ -2,7 +2,6 @@
 
 - [-] Templates
   - [ ] Epub, need to add extra metadata pages 
-- [ ] RakuDoc psuedo extensions
 
 - [ ] Outputs needing change
   - [ ] Md pseudo extensions
@@ -10,10 +9,9 @@
   - [ ] HTML, ditto
   - [x] HTML, include binary data into output, eg images.
   - [ ] HTML-Extra create SCSS processing & theme changes 
-    - [ ] rendering info at bottom not flowing
-    - [ ] space between titles
-    - [ ] Toc panel contents should be sticky
-    - [ ] Add filter to ToC
+    - [ ] linked css dark / light (eg for highlights-js)
+    - [ ] toc at mobile
+  - [ ] 
 
 - [ ] Apply numeration possibilities numTable, numFormula, numPara
 - [ ] Implement new numbering extensions, 

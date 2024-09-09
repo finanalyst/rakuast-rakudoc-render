@@ -12,13 +12,9 @@ has %.config = %(
 	:version<0.1.0>,
 	:css-link(['href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"',1],),
 	:js-link(['src="https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js"',1],),
-    :js(['',2],), # 1st element is replaced in TWEAK
-    :css([]),
+    :js([self.js-text,2],), # 1st element is replaced in TWEAK
+    :scss([self.chyron-scss,1], [ self.toc-scss, 1],),
 );
-submethod TWEAK {
-    %!config<js>[0][0] = self.js-text;
-    %!config<css>.append: [self.chyron-css,1], [ self.toc-css, 1];
-}
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
@@ -176,13 +172,13 @@ method templates {
                 <div class="container px-4">
                     <nav class="level">
                         <div class="level-item">
-                            Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}</span>
+                            Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}
                         </div>
                         <div class="level-item">
-                            { sprintf( "Rendered at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
+                            { sprintf( "Rendered at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }
                         </div>
                         <div class="level-item">
-                            Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
+                            Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}
                         </div>
                     </nav>
                 </div>
@@ -334,7 +330,7 @@ method js-text {
     }
     SCRIPT
 }
-method chyron-css {
+method chyron-scss {
     q:to/CHYRON/;
     // Chyron Toggle checkbox
     label.chyronToggle input#navbar-toc-toggle {
@@ -373,7 +369,7 @@ method chyron-css {
     }
     CHYRON
 }
-method toc-css {
+method toc-scss {
     q:to/TOC/;
     #page-nav {
         width: 25%;
@@ -387,6 +383,9 @@ method toc-css {
         overflow-y:scroll;
         height:65vh;
     }
-    .main-footer { z-index: 1; }
+    .main-footer {
+        z-index: 1;
+        position: relative;
+    }
     TOC
 }

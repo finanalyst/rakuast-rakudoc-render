@@ -202,7 +202,7 @@ multi sub merge-index( %p, %q ) {
         if %p{$k}:exists {
             %p{$k}<refs>.append: %q{$k}<refs>.Slip;
             if %p{$k}<sub-index>.elems and %q{$k}<sub-index>.elems {
-                %p{$k}<sub-index> = merge-index( %p{$k}<sub-index>, %q{$k}<sub-index> )
+                merge-index( %p{$k}<sub-index>, %q{$k}<sub-index> );
             }
             elsif %q{$k}<sub-index>.elems {
                 %p{$k}<sub-index> = %q{$k}<sub-index>
@@ -212,9 +212,6 @@ multi sub merge-index( %p, %q ) {
             %p{$k} = %q{$k}
         }
     }
-}
-multi sub merge-index( $p, $q ) {
-    # no change needed
 }
 
 #| Add one ProcessedState object to another
