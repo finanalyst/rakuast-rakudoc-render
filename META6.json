@@ -18,7 +18,8 @@
     "Method::Protected",
     "Test::Run",
     "RakuAST::Deparse::Highlight",
-    "Trap"
+    "Trap",
+    "Rainbow"
   ],
   "test-depends": [
     "Test",

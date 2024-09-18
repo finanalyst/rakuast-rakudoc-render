@@ -1,5 +1,6 @@
 use experimental :rakuast;
 use RakuAST::Deparse::Highlight;
+use Rainbow;
 use RakuDoc::Render;
 
 unit class RakuDoc::Plugin::Hilite;
@@ -67,20 +68,41 @@ method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates );
     $rdp.add-data( %!config<name-space>, %!config );
 }
-
-sub default-mapper(str $color, str $c) {
+sub wrapper(str $color, str $c) {
     $c.trim ?? "<span style=\"color:var(--bulma-$color);font-weight:600;\">$c\</span>" !! $c
 }
-my %mapping = mapper
-  black     => -> $c { default-mapper "black",   $c },
-  blue      => -> $c { default-mapper "link",    $c },
-  cyan      => -> $c { default-mapper "info",    $c },
-  green     => -> $c { default-mapper "primary", $c },
-  magenta   => -> $c { default-mapper "success", $c },
-  none      => -> $c { default-mapper "none",    $c },
-  red       => -> $c { default-mapper "danger",  $c },
-  yellow    => -> $c { default-mapper "warning", $c },
-  white     => -> $c { default-mapper "white",   $c },
+my %mappings =
+     deparse => mapper(
+          black     => -> $c { wrapper( "black",   $c ) },
+          blue      => -> $c { wrapper( "link",    $c ) },
+          cyan      => -> $c { wrapper( "info",    $c ) },
+          green     => -> $c { wrapper( "primary", $c ) },
+          magenta   => -> $c { wrapper( "success", $c ) },
+          none      => -> $c { wrapper( "none",    $c ) },
+          red       => -> $c { wrapper( "danger",  $c ) },
+          yellow    => -> $c { wrapper( "warning", $c ) },
+          white     => -> $c { wrapper( "white",   $c ) },
+     ),
+     rainbow => %(
+            NAME_SCALAR => 'link',
+            NAME_ARRAY => 'link',
+            NAME_HASH => 'link',
+            NAME_CODE => 'info',
+            KEYWORD => 'primary',
+            OPERATOR => 'success',
+            TYPE => 'danger',
+            ROUTINE => 'info',
+            STRING => 'warning',
+            STRING_DELIMITER => 'black',
+            ESCAPE => 'black',
+            TEXT => 'black',
+            COMMENT => 'black',
+            REGEX_SPECIAL => 'success',
+            REGEX_LITERAL => 'black',
+            REGEX_DELIMITER => 'primary',
+            POD_TEXT => 'warning',
+            POD_MARKUP => 'danger',
+    )
 ;
 method templates {
     constant CUT-LENG = 500; # crop length in error message
@@ -91,6 +113,11 @@ method templates {
             # if :lang is set to a lang in list, then enable highlightjs
             # if :lang is set to lang not in list, not raku or RakuDoc, then no highlighting
             # if :lang is not set, then highlight as Raku
+
+            # select hilite engine
+            my $engine = 'rainbow';
+            $engine = 'deparse' if (%prm<highlighter>:exists && %prm<highlighter> ~~ /:i 'Deparse' /);
+            my %mapping := %mappings{ $engine };
             my $code;
             my $syntax-label;
             my Bool $hilite = %prm<syntax-highlighting> // True;
@@ -146,33 +173,41 @@ method templates {
             }
             without $code { # so need Raku highlighting
                 my $source = %prm<contents>.Str;
-                my $c = highlight( $source, :unsafe, :default(&default-mapper), %mapping);
-                if $c {
-                    $code = $c
-                } else {
-                    my $m = $c.exception.message;
-                    $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
-                        ( $source.chars > CUT-LENG
-                            ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
-                            !! $source.trim ) ~
-                        '｣' ~ "\nbecause\n$m" );
-                    $code = $source;
+                if $engine eq 'deparse' {
+                    my $c = highlight( $source, :unsafe, %mapping);
+                    if $c {
+                        $code = $c
+                    } else {
+                        my $m = $c.exception.message;
+                        $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
+                            ( $source.chars > CUT-LENG
+                                ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
+                                !! $source.trim ) ~
+                            '｣' ~ "\nbecause\n$m" );
+                        $code = $source;
+                    }
+                    CATCH {
+                        default {
+                            $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
+                                ( $source.chars > CUT-LENG
+                                    ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
+                                    !! $source.trim ) ~
+                                '｣' ~ "\nbecause\n" ~ .message );
+                            $code = $tmpl('escaped', %(:contents($source) ) );
+                        }
+                    }
+                }
+                else {
+                    $code = Rainbow::tokenize($source).map( -> $t {
+                        my $col = %mapping{$t.type.key} // %mapping<TEXT>;
+                        wrapper($col,$t.text);
+                    }).join;
                 }
                 $code = qq:to/NOHIGHS/;
                         <pre class="nohighlights">
                         $tmpl('escaped', %(:html-tags, :contents($code) ) )
                         </pre>
                         NOHIGHS
-                CATCH {
-                    default {
-                        $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
-                            ( $source.chars > CUT-LENG
-                                ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
-                                !! $source.trim ) ~
-                            '｣' ~ "\nbecause\n" ~ .message );
-                        $code = $tmpl('escaped', %(:contents($source) ) );
-                    }
-                }
             }
             qq[
                 <div class="raku-code">
