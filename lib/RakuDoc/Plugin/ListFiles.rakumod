@@ -13,7 +13,7 @@ has %.config =
     :scss([self.add-scss,1],),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
-    $rdp.add-templates( $.templates );
+    $rdp.add-templates( $.templates, :source<ListFiles plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
 method templates {

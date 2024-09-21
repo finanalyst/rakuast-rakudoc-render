@@ -16,7 +16,7 @@ has %.config = %(
     :scss([self.chyron-scss,1], [ self.toc-scss, 1],),
 );
 method enable( RakuDoc::Processor:D $rdp ) {
-    $rdp.add-templates( $.templates );
+    $rdp.add-templates( $.templates, :source<Bulma plugin>);
     $rdp.add-data( %!config<name-space>, %!config );
 }
 method templates {

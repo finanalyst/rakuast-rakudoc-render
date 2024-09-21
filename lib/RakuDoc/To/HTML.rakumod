@@ -63,8 +63,6 @@ method html-templates {
     my constant JUNIOR-OFF = '</span>';
     my constant REPLACE-ON = '<span class="replace">';
     my constant REPLACE-OFF = '</span>';
-    my constant INDEXED-ON = '<span class="indexed">';
-    my constant INDEXED-OFF = '</span>';
     my constant INDEX-ENTRY-ON = '<span class="index-entry">';
     my constant INDEX-ENTRY-OFF = '</span>';
     my constant KEYBOARD-ON = '<span class="keyboard">';
@@ -92,7 +90,7 @@ method html-templates {
         _name => -> %, $ { 'markdown templates' },
         # escape contents
         escaped => -> %prm, $tmpl {
-            my $cont = %prm<contents>;
+            my $cont = %prm<contents> // '';
             if $cont and %prm<html-tags> {
                 $cont .= Str.trans(qw｢ & " ｣ => qw｢ &amp; &quot; ｣);
                 while $cont ~~ m:c/ <tab> / {
@@ -153,6 +151,10 @@ method html-templates {
         head => -> %prm, $tmpl {
             my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $title = %prm<contents>;
+            my $index-parse = $title ~~ /
+                ( '<a name="index-entry-' .+? '"></a>' )
+                '<span class="index-entry-heading">' ( .+? ) '</span>'
+            /;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             my $del = %prm<delta> // '';
             PStr.new:
@@ -160,8 +162,10 @@ method html-templates {
                 ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
                 qq[[<$h id="$targ" class="heading {'delta' if $del}">]] ~
                 ($del if $del) ~
+                ( $index-parse.so ?? $index-parse[0] !! '' ) ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
-                $title ~
+                ( $index-parse.so ?? $index-parse[1] !! $title ) ~
+                qq[[<a class="raku-anchor" title="direct link" href="#$targ">§</a>]] ~
                 qq[[</a></$h>\n]]
         },
         #| renders =numhead block
@@ -531,9 +535,8 @@ method html-templates {
         #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
         #| Index entry ( X<display text|entry,subentry;...>)
         markup-X => -> %prm, $tmpl {
-            qq[<span id="{ %prm<target> }">] ~
-            INDEXED-ON ~ %prm<contents> ~ INDEXED-OFF ~
-            '</span>'
+            '<span class="indexed" id="' ~ %prm<target> ~ '">' ~
+            %prm<contents> ~ '</span>'
         },
         #| Unknown markup, render minimally
         markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl<escaped> ~ BAD-MARK-OFF },
@@ -557,7 +560,7 @@ method html-templates {
             PAGE
         },
         ## sections of the final document
-        #| root section, what does in the html tab
+        #| root section, what is placed in the html tab
         html-root => -> %prm, $tmpl {
             qq[lang="{%prm<source-data><language>}"]
         },
@@ -593,7 +596,7 @@ method html-templates {
         footer => -> %prm, $tmpl {
             qq:to/FOOTER/;
             \n<div class="footer">
-                Rendered from <span class="footer-field">{%prm<source-data><path>}/{%prm<source-data><name>}</span>
+                Rendered from<span class="footer-field">&nbsp;{%prm<source-data><path>}/{%prm<source-data><name>}</span>
             <span class="footer-field">{sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
             <span class="footer-line">Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
             { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }

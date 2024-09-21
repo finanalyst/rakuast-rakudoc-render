@@ -61,6 +61,6 @@ is $rv.warnings[0], 'You have been warned', 'warning passed';
 $rdp.add-templates: %(
     new-template => -> %prm, $ { 'say something' },
     second-template => -> %prm, $ { 'say something else' },
-);
+), :source<test>;
 ok $rdp.templates.keys (>) <new-template second-template>.Set, 'got two more templates';
 done-testing;

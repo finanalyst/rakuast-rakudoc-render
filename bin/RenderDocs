@@ -9,19 +9,20 @@ multi sub MAIN(
         :$to = $*CWD,
         Bool :q($quiet) = False,
         Str :$format = 'md',
-        Bool :$extra = False,
+        Bool :$single = False,
         :$debug,
         Str :$verbose,
+        Bool :$pretty,
     ) {
     my %docs = $src.IO.dir(test => *.ends-with('.rakudoc')).map({ .extension('').basename => .modified });
-    my $extension = $format eq 'html' ?? ($extra ?? '.html' !! '_singlefile.html') !! ".$format";
+    my $extension = $format eq 'html' ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
     my %rendered = $to.IO.dir(test => *.ends-with($extension)).map({ .extension('').basename => .modified });
     my @to-be-rendered = %docs.pairs.grep({
         %rendered{.key}:exists.not ||(%rendered{.key} < .value)
     })>>.key;
     say "Documents with .{ $format } in CWD, but not in docs/ : ", (%rendered.keys (-) %docs.keys).keys unless $quiet;
-    my $nformat = ($format eq 'html' && $extra) ?? 'html-extra' !! $format;
-    render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose)
+    my $nformat = ($format eq 'html' && $single) ?? 'html-extra' !! $format;
+    render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
 }
 multi sub MAIN(
         Str:D $file,               #= a single file name that must exist in src directory
@@ -29,15 +30,16 @@ multi sub MAIN(
         :$to = $*CWD,              #= the directory to which the output is directed, defaults to $*CWD,
         Bool :q($quiet) = False,   #= Don't output info
         Str :$format = 'md',       #= Output file extension, must be 'html' if not 'md'
-        Bool :$extra = False,      #= Use ::HTML-Extra renderer, otherwise ::HTML renderer
+        Bool :$single = False,     #= Use ::HTML renderer, otherwise ::HTML-Extra renderer
         :$debug,                   #= apply debug parameters. Valid names are: None (default) All AstBlock BlockType Scoping Templates MarkUp
         Str :$verbose,             #= name of a template gives more detail about parameters / output
+        Bool :$pretty              #= set Template response to pretty
      ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
-    my $nformat = ($format eq 'html' && $extra) ?? 'html-extra' !! $format;
-    render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose)
+    my $nformat = ($format eq 'html' && $single) ?? 'html-single' !! $format;
+    render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose, :$pretty) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
         say "Processing ｢$src/$_.rakudoc｣ to ｢$dest.md｣" unless $quiet;
@@ -49,7 +51,7 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         "$dest.md".IO.spurt($out) if $out;
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html', :$debug, :$verbose) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-single', :$debug, :$verbose, :$pretty) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
         my $from = "$src/$_.rakudoc";
@@ -63,10 +65,11 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         my RakuDoc::Processor $rdp = RakuDoc::To::HTML.new.rdp;
         $rdp.debug( $debug ) with $debug;
         $rdp.verbose( $verbose ) with $verbose;
+        $rdp.pretty( $pretty ) with $pretty;
         "{ $dest }_singlefile.html".IO.spurt($rdp.render($ast, :%source-data));
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-extra', :$debug, :$verbose) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html', :$debug, :$verbose, :$pretty) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
         my $from = "$src/$_.rakudoc";
@@ -80,9 +83,10 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         my RakuDoc::Processor $rdp = RakuDoc::To::HTML-Extra.new.rdp;
         $rdp.debug( $debug ) with $debug;
         $rdp.verbose( $verbose ) with $verbose;
+        $rdp.pretty( $pretty ) with $pretty;
         "{ $dest }.html".IO.spurt($rdp.render($ast, :%source-data));
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty) {
     note "The ｢$nformat｣ is not yet implemented, try ｢$*PROGRAM -h｣ for options"
 }

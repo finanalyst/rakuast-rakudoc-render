@@ -65,7 +65,7 @@ has %!hilight-langs = %(
     'HASKELL' => 'haskell',
 );
 method enable( RakuDoc::Processor:D $rdp ) {
-    $rdp.add-templates( $.templates );
+    $rdp.add-templates( $.templates, :source<Hilite plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
 sub wrapper(str $color, str $c) {

@@ -92,7 +92,7 @@ class RakuDoc::Processor {
         %!templates.source = $source with $source;
         %!templates{ $t.key } = $t.value
     }
-    method add-templates( Hash $tt, :$source ) {
+    method add-templates( Hash $tt, :$source! ) {
         %!templates.source = $source with $source;
         for $tt.pairs {
             %!templates{ .key } = .value

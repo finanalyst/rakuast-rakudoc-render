@@ -12,7 +12,7 @@ class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
 
     submethod TWEAK {
         my $rdp := self.rdp;
-        $rdp.add-templates(self.templates);
+        $rdp.add-templates(self.templates, :source<HTML-Extra>);
         if 'rakudoc-config.raku'.IO ~~ :e & :f {
             @HTML-Extra-plugins = EVALFILE('rakudoc-config.raku');
             note 'Plugins required are: ', @HTML-Extra-plugins;

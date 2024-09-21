@@ -12,7 +12,7 @@ has %.config = %(
 	:js-link(['defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc" crossorigin="anonymous"',1],),
 );
 method enable( RakuDoc::Processor:D $rdp ) {
-    $rdp.add-templates( $.templates );
+    $rdp.add-templates( $.templates, :source<FontAwesome plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
 method templates {

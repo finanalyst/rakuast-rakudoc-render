@@ -28,7 +28,7 @@ has %.config =
 	:map-id<html-extra-leaflet-map>,
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
-    $rdp.add-templates( $.templates );
+    $rdp.add-templates( $.templates, :source<LeafletMaps plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
 method templates {
