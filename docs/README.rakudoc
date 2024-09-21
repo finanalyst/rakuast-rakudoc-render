@@ -9,8 +9,11 @@ Richard Hainsworth aka finanalyst
 v0.4.0
 
 =begin SYNOPSIS
-=item Clone the repository and submodule
-=item2 C<git clone https://github.com/finanalyst/rakuast-rakudoc-render.git rrr>
+=item Clone the repository and submodule.
+=item2 C<git clone https://github.com/finanalyst/rakuast-rakudoc-render.git>
+=item Give the repository a shorter name.
+=item2 C<mv rakuast-rakudoc-render rrr>
+=itenm Update the submodule.
 =item2 C<cd rrr && git submodule init>
 =item2 C<git submodule update>
 =item Install using zef as follows (flag is important)
