@@ -1,280 +1,339 @@
+### has SetHash $!debug-modes
 
-# RakuDoc renderer
+debug modes that are checked
 
-	Renders RakuDoc sources into an output format dependent on templates
+### multi method render
 
-----
-
-## Table of Contents
-
-<a href="#SYNOPSIS">SYNOPSIS</a>   
-<a href="#Overview">Overview</a>   
-<a href="#Documentation">Documentation</a>   
-<a href="#RenderTextify_utility">RenderTextify utility</a>   
-<a href="#Wrapping">Wrapping</a>   
-<a href="#RenderDocs_utility">RenderDocs utility</a>   
-<a href="#Troubleshooting">Troubleshooting</a>   
-<a href="#Credits">Credits</a>   
-
-
-
-----
-
-## SYNOPSIS<div id="SYNOPSIS"> </div>
-&nbsp;&nbsp;• Clone the repository and submodule  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="e52a3a8"></span>`git clone https://github.com/finanalyst/rakuast-rakudoc-render.git rrr` 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="1fa8ad9"></span>`cd rrr && git submodule init` 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="e4ec964"></span>`git submodule update` 
-
-  
-&nbsp;&nbsp;• Install using zef as follows (flag is important)  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="8f021ca"></span>`zef install . -/precompile-install` 
-
-  
-<span class="para" id="351913a"></span>Note that `zef` runs the tests in `t/`, and those cause compilation of the modules in the distribution. 
-
-
-
-
-----
-
-## Overview<div id="Overview"> </div>
-<span class="para" id="887ec44"></span>This distribution is intended to provide several renderers from RakuDoc v2 into commonly used output formats. 
-
-<span class="para" id="cb2e9a3"></span>The basic render engine is `RakuDoc::Render`, which renders a RakuDoc source into text for display on a terminal. 
-
-<span class="para" id="221bd19"></span>The Renderer class is designed to be extended to other output formats by subclassing. 
-
-<span class="para" id="c0e52b5"></span>This is software using bleeding edge Rakudo, so look [at troubleshooting below](Troubleshooting). 
-
-<span class="para" id="a9d8493"></span>Using the *Generic* renderer, the **canonical method** for generating rendered text is possible (which sends output to STDOUT, so pipe to a file), namely 
-
-
-```
-RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
-```
-<span class="para" id="81696a6"></span>Some [naive wrapping and width modification](Wrapping) is possible using environment variables. 
-
-<span class="para" id="880a886"></span>The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. It can be obtained with: 
-
-
-```
-bin/get-compliance-document
-```
-<span class="para" id="f4a51f3"></span>A copy of `rakudociem-ipsum.rakudoc` is also contained in `resources/compliance-rendering`, together with renderings of the file using the output renderers in this distribution. 
-
-<span class="para" id="084d11c"></span>In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered to Text using the [RenderTextify](RenderTextify_utility). It avoids some installation problems, stores the output and offers some other output options, eg. 
-
-
-```
-bin/RenderTextify rakudociem-ipsum
-```
-<span class="para" id="416d7d2"></span>(the .rakudoc extension may be omitted if desired) 
-
-<span class="para" id="fbe7947"></span>Rendering into the other output formats provided in this distribution can be done using [RenderDocs](RenderDocs_utility). By default, sources are located in `docs/` and rendered to the current working directory into MarkDown, eg., 
-
-
-```
-bin/RenderDocs README
+```raku
+multi method render(
+    $ast,
+    :%source-data,
+    :pre-finalized(:$pre-finalised) = Bool::False
+) returns Mu
 ```
 
-----
+renders to a String by default, but returns ProcessedState object if pre-finalised = True
 
-## Documentation<div id="Documentation"> </div>
-<span class="para" id="4a6e64e"></span>All documentation can be found at [finanalyst.github.io](https://finanalyst.github.io). 
+### method post-process
 
-<span class="para" id="9ae1d19"></span>The two main documentation sources are: 
-
-
-
-&nbsp;&nbsp;• <span class="para" id="8c91600"></span>[An overview of the generic renderer](https://finanalyst.github.io/Render) 
-
-  
-&nbsp;&nbsp;• <span class="para" id="0b80cbf"></span>[The templating system](https://finanalyst.github.io/Templates) 
-
-  
-
-----
-
-## RenderTextify utility<div id="RenderTextify_utility"> </div>
-<span class="para" id="ab8d800"></span>The utility `bin/RenderTexify` can be called with a RakuDoc source and it saves the result directly to a file, rather than to STDOUT. 
-
-<span class="para" id="c976c61"></span>For example, 
-
-
-```
-bin/RenderTextify rakudociem-ipsum
-```
-<span class="para" id="6d462ae"></span>will produce the file 
-
-
-```
-rakudociem-ipsum.rakudoc.text
-```
-<span class="para" id="3fbe458"></span>The executable `bin/RenderTexify` can also be called with the flags `test` and `pretty` and the name of a file to render. The use case of these options is to see what templates receive from the rendering engine when developing new templates. 
-
-<span class="para" id="63bbd59"></span>The file is output to text files with the flag and `.text` appended to the name. The file format `.rakudoc` is assumed, and added if missing. 
-
-<span class="para" id="c976c61"></span>For example, 
-
-
-```
-bin/RenderTextify --pretty rakudociem-ipsum
-```
-<span class="para" id="6d462ae"></span>will produce the file 
-
-
-```
-rakudociem-ipsum.rakudoc.pretty.text
+```raku
+method post-process(
+    Str:D $final
+) returns Str
 ```
 
-----
+This method is used to post process the final rendered output Use case: change targets to line numbers in a text output It should be overridden in subclasses for other outputs
 
-## Wrapping<div id="Wrapping"> </div>
-<span class="para" id="1860541"></span>The text output will be naively wrapped (the algorithm is still being developed), either by setting the environment variable POSTPROCESSING=1 or using RenderTextify. For example, 
+### method handle
 
-
-```
-POSTPROCESSING=1 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
-```
-<span class="para" id="7fa2f84"></span>or 
-
-
-```
-bin/RenderTextify --post-processing doc
-```
-<span class="para" id="96f3270"></span>If the environment variable WIDTH (--width) is also set, the text output will be wrapped to the value. WIDTH by default is set at 80 chars. To set at 70, use: 
-
-
-```
-POSTPROCESSING=1 WIDTH=70 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
-```
-<span class="para" id="7fa2f84"></span>or 
-
-
-```
-bin/RenderTextify --post-processing --width=70 doc
-```
-<span class="para" id="c90fe6d"></span>The utility can also be used for debugging new templates. For more information, see the Render and Templates documents. To get all the debugging information, and information on the template for `C-markup` try 
-
-
-```
-bin/RenderTextify --debug='All' --verbose='C-markup' doc
+```raku
+method handle(
+    $ast
+) returns Mu
 ```
 
-----
+All handle methods may generate debug reports
 
-## RenderDocs utility<div id="RenderDocs_utility"> </div>
-<span class="para" id="05fee90"></span>*RenderDoc* is similar to RenderTextify, but uses the other formats in this distribution, namely 
+### multi method handle
 
-
-
-&nbsp;&nbsp;• <span class="para" id="5fa0920"></span>**.md** - Markdown (default) 
-
-  
-&nbsp;&nbsp;• <span class="para" id="7e486a3"></span>**-singlefile.html** - HTML that can be opened directly in a browser without internet connection. 
-
-  
-&nbsp;&nbsp;• <span class="para" id="6e6d9fd"></span>**.html** - HTML that is intended for use with an internet connection 
-
-  
-<span class="para" id="d2b2c4f"></span>By default, the utility renders all the *rakudoc* sources from `docs/` and outputs them in *markdown* to the current working directory, eg. 
-
-
+```raku
+multi method handle(
+    RakuAST::Doc::Paragraph:D $ast
+) returns Mu
 ```
-bin/RenderDocs
+
+This block is created by the parser when a text has embedded markup Also ordinary strings in an extended block are coerced into one Sometimes, eg for a table cell, the paragraph should not be ended with a newline.
+
+### multi method merge-index
+
+```raku
+multi method merge-index(
+    %p,
+    %q
+) returns Mu
 ```
-<span class="para" id="1cb6d95"></span>In order to get the useage try 
 
+similar to merge-index in Processed, but simpler because less generic
 
+### method gen-paraish
+
+```raku
+method gen-paraish(
+    $ast,
+    $template,
+    $parify
+) returns Mu
 ```
-bin/RenderDocs -h
+
+generic code for next, para, code, input, output blocks No ToC content is added unless overridden by toc/caption/headlevel
+
+### method gen-headish
+
+```raku
+method gen-headish(
+    $ast,
+    $parify,
+    :$template = "head",
+    :$numerate = Bool::False
+) returns Mu
 ```
-<span class="para" id="da9a3ba"></span>In order to render a single file, put the basename without *.rakudoc* as a string parameter, eg. 
 
+A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption These can be set by a config directive The id option may be used to create a target An automatic target is also created from the contents
 
+### method gen-formula
+
+```raku
+method gen-formula(
+    $ast
+) returns Mu
 ```
-bin/RenderDocs README
+
+Formula at level 1 is added to ToC unless overriden by toc/headlevel/caption Content is passed verbatim to template as formula An alt text is also generated
+
+### method gen-item
+
+```raku
+method gen-item(
+    $ast,
+    $parify
+) returns Mu
 ```
-<span class="para" id="c8b00c3"></span>In order to override the source and output defaults use `--src` and `--to` options, eg. 
 
+generates a single item and adds it to the item structure nothing is added to the .body string bullet strategy can be left to template, with bullet in %config
 
+### method gen-numitem
+
+```raku
+method gen-numitem(
+    $ast,
+    $parify
+) returns Mu
 ```
-bin/RenderDocs --src='sources/' --to='rendered/' some-file
+
+generates a single numitem and adds it to the numitem structure nothing is added to the .body string
+
+### method gen-defn
+
+```raku
+method gen-defn(
+    $ast,
+    :$numerate = Bool::False
+) returns Mu
 ```
-<span class="para" id="21f9a8c"></span>In order to get single file HTML, rather than markdown 
 
+generates a single definition and adds it to the defn structure unlike item, a defn: - list has a flat hierarchy - can be created by a markup code - needs a target for links, and text for popup - is PCell-stored allowing for defn to be redefined like items nothing is added to the .body string until next non-defn
 
+### method gen-place
+
+```raku
+method gen-place(
+    $ast
+) returns Mu
 ```
-bin/Render --to='rendered' --html README
+
+A place block adds Place at level 1 to ToC unless toc/headlevel/caption set The contents of Place is a URI that is generated and then rendered with place template
+
+### method gen-rakudoc
+
+```raku
+method gen-rakudoc(
+    $ast,
+    $parify
+) returns Mu
 ```
-<span class="para" id="651cfd2"></span>In order to get the possibilities offered by RakuDoc::To::HTML-Extra, including maps, graphs, themes and the Bulma CSS framework, use `--html` and `--extra`, eg. 
 
+The rakudoc block should encompass the output Config data associated with block is provided to overall process state If a rakudoc file is embedded via place, then another rakudoc block will be called. Only allow embedding to three levels to avoid circularity.
 
+### method gen-section
+
+```raku
+method gen-section(
+    $ast,
+    $parify
+) returns Mu
 ```
-bin/Render --html --extra Graphviz
+
+A section is invisible to ToC, but is used by scoping Some output formats may want to handle section, so embedded RakuDoc are rendered and contents rendered by section template
+
+### multi method gen-table
+
+```raku
+multi method gen-table(
+    $ast
+) returns Mu
 ```
-<span class="para" id="9fe8e7e"></span>The **html** variants allow for `--debug` and `--verbose`. 
 
+Table is added to ToC with level 1 as TABLE unless overriden by toc/headlevel/caption contents is processed and rendered using table template
 
-----
+### method gen-unknown-builtin
 
-## Troubleshooting<div id="Troubleshooting"> </div>
-<span class="para" id="e3431ff"></span>In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recent version of the Rakudoc compiler is needed, after v2024.07. 
-
-<span class="para" id="53029b4"></span>If the cannonical command above fails, perhaps with a message such as 
-
-
+```raku
+method gen-unknown-builtin(
+    $ast
+) returns Mu
 ```
-===SORRY!===
-    This element has not been resolved. Type: RakuAST::Type::Simple
+
+A lower case block generates a warning DEPARSED Str is rendered with 'unknown' template Nothing added to ToC
+
+### method gen-semantics
+
+```raku
+method gen-semantics(
+    $ast,
+    $parify
+) returns Mu
 ```
-<span class="para" id="7fa2f84"></span>or 
 
+Semantic blocks defined by spelling embedded content is rendered and passed to template as contents rendered contents is added to the semantic structure If :hidden is True, then the string is not added to .body Unless :hidden, Block name is added to ToC at level 1, unless overriden by toc/caption/headlevel TITLE & SUBTITLE by default :hidden is True and added to $*prs separately All other SEMANTIC blocks are :!hidden by default
 
+### method complete-footnotes
+
+```raku
+method complete-footnotes() returns Mu
 ```
-Out-of-sync package detected in LANG1 at r => Str=｢{ $!front-matter }｣
 
-  (value in braid: RakuAST::Class, value in $*PACKAGE: RakuAST::Class)
-===SORRY!===
-No such method 'IMPL-REGEX-QAST' for invocant of type 'RakuAST::Regex'
+finalise the rendering of footnotes the numbering only happens when all footnotes are collected completes the PCell in the body
+
+### sub si
+
+```raku
+sub si(
+    %h,
+    $n,
+    $max
+) returns Mu
 ```
-<span class="para" id="347a187"></span>then try 
 
+completes the index by rendering each key triggers the 'index-schema' id, which may be placed by a P<>
 
+### method complete-toc
+
+```raku
+method complete-toc(
+    :$spec,
+    :$caption
+) returns PStr
 ```
-bin/force-compile
+
+renders the complete toc
+
+### method complete-heading-numerations
+
+```raku
+method complete-heading-numerations() returns Mu
 ```
-<span class="para" id="06b115a"></span>This deletes the `.precomp` files in the current directory, and runs `prove6 -I.`, which causes a recompilation of all the modules. 
 
+finalises all the heading numerations
 
-----
+### method complete-item-list
 
-## Credits<div id="Credits"> </div>
-Richard Hainsworth aka finanalyst
+```raku
+method complete-item-list() returns Mu
+```
 
+finalises rendering of the item list in $*prs
 
+### method complete-defn-list
 
+```raku
+method complete-defn-list() returns Mu
+```
 
-----
+finalises rendering of a defn list in $*prs
 
-## VERSION<div id="VERSION_0"> </div>
-v0.4.0
+### method complete-numitem-list
 
+```raku
+method complete-numitem-list() returns Mu
+```
 
+finalises rendering of the item list in $*prs
 
+### method complete-numdefn-list
 
+```raku
+method complete-numdefn-list() returns Mu
+```
 
-----
+finalises rendering of a defn list in $*prs
 
-----
+### method contents
 
-Rendered from docs/docs/README.rakudoc at 11:06 UTC on 2024-08-17
+```raku
+method contents(
+    $ast,
+    Bool $parify
+) returns Mu
+```
 
-Source last modified at 11:05 UTC on 2024-08-17
+The 'contents' method is called when $ast.paragraphs is a sequence. The $*prs for a set of paragraphs is new to collect all the associated data. The body of the contents must then be incorporated using the template of the block calling content when parify, strings are considered paragraphs
 
+### method markup-contents
+
+```raku
+method markup-contents(
+    $ast
+) returns Mu
+```
+
+similar to contents but expects atoms structure
+
+### method merged-config
+
+```raku
+method merged-config(
+    $ast,
+    $block-name
+) returns Hash
+```
+
+get config merged from the ast and scoped data handle generic metadata options such as delta
+
+### method name-id
+
+```raku
+method name-id(
+    $ast
+) returns Str
+```
+
+name-id takes an ast returns a unique Str to be used as an anchor / target Used by any name (block) that is placed in the ToC Also used for the main anchor in the text for a footnote Not called if an :id is specified in the source This method should be sub-classed by Renderers for different outputs renderers can use method is-target-unique to test for uniqueness
+
+### method index-id
+
+```raku
+method index-id(
+    :$context,
+    :$contents,
+    :$meta
+) returns Mu
+```
+
+Like name-id, index-id returns a unique Str to be used as a target Target should be unique Should be sub-classed by Renderers
+
+### method local-heading
+
+```raku
+method local-heading(
+    $ast
+) returns Mu
+```
+
+Like name-id, local-heading returns a Str to be used as a target A local-heading is assumed to exist because specified by document author Should be sub-classed by Renderers
+
+### multi method default-text-templates
+
+```raku
+multi method default-text-templates() returns Mu
+```
+
+returns a set of text templates
+
+### multi method default-helpers
+
+```raku
+multi method default-helpers() returns Mu
+```
+
+returns hash of test helper callables
 

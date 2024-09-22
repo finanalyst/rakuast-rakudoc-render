@@ -4,7 +4,10 @@ my @modules = <MarkupMeta Numeration PromiseStrings ScopedData Templates Process
     Render To::Generic To::Markdown To::HTML
     Plugin::Bulma Plugin::Graphviz Plugin::Latex Plugin::LeafletMaps
     Plugin::ListFiles Plugin::FontAwesome Plugin::Hilite Plugin::SCSS
-    To::HTML-Extra>;
+    To::HTML-Extra
+
+    To::PDF To::PDF::Subs To::PDF::Vars
+>;
 
 plan @modules.elems;
 
@@ -12,4 +15,3 @@ for @modules {
     use-ok "RakuDoc::$_", "Module $_ can be used";
 }
 
-done-testing;

@@ -1,11 +1,18 @@
 {
-  "name": "Rakuast::RakuDoc::Render",
-  "description": "Renders RakuDoc v2 to text, HTML, Markdown",
-  "version": "0.11.3",
+  "auth": "zef:finanalyst",
   "authors": [
     "Richard Hainsworth"
   ],
-  "auth": "zef:finanalyst",
+  "bin": [
+    "bin/RenderTextify",
+    "bin/gen-default-template-info.raku",
+    "bin/force-compile",
+    "bin/get-compliance-document",
+    "bin/RenderDocs",
+    "bin/test-script.sh"
+  ],
+  "build-depends": [
+  ],
   "depends": [
     "PrettyDump",
     "Test::Deeply::Relaxed",
@@ -20,60 +27,7 @@
     "RakuAST::Deparse::Highlight",
     "Trap"
   ],
-  "test-depends": [
-    "Test",
-    "Test::META"
-  ],
-  "provides": {
-    "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
-    "RakuDoc::Numeration": "lib/RakuDoc/Numeration.rakumod",
-    "RakuDoc::Plugin::Bulma": "lib/RakuDoc/Plugin/Bulma.rakumod",
-    "RakuDoc::Plugin::FontAwesome": "lib/RakuDoc/Plugin/FontAwesome.rakumod",
-    "RakuDoc::Plugin::Graphviz": "lib/RakuDoc/Plugin/Graphviz.rakumod",
-    "RakuDoc::Plugin::Hilite": "lib/RakuDoc/Plugin/Hilite.rakumod",
-    "RakuDoc::Plugin::Latex": "lib/RakuDoc/Plugin/Latex.rakumod",
-    "RakuDoc::Plugin::LeafletMaps": "lib/RakuDoc/Plugin/LeafletMaps.rakumod",
-    "RakuDoc::Plugin::ListFiles": "lib/RakuDoc/Plugin/ListFiles.rakumod",
-    "RakuDoc::Plugin::SCSS": "lib/RakuDoc/Plugin/SCSS.rakumod",
-    "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
-    "RakuDoc::PromiseStrings": "lib/RakuDoc/PromiseStrings.rakumod",
-    "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
-    "RakuDoc::ScopedData": "lib/RakuDoc/ScopedData.rakumod",
-    "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",
-    "RakuDoc::To::Generic": "lib/RakuDoc/To/Generic.rakumod",
-    "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
-    "RakuDoc::To::HTML-Extra": "lib/RakuDoc/To/HTML-Extra.rakumod",
-    "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod"
-  },
-  "resources": [
-    "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",
-    "compliance-rendering/rakudociem-ipsum.rakudoc.test.text",
-    "compliance-rendering/rakudociem-ipsum.rakudoc.text",
-    "scss/vanilla.scss",
-    "css/vanilla.css",
-    "html-example.raku",
-    "markdown-example.raku",
-    "compliance-rendering/rakudociem-ipsum.html",
-    "compliance-rendering/rakudociem-ipsum.md",
-    "compliance-rendering/rakudociem-ipsum.rakudoc",
-    "compliance-rendering/rakudociem-ipsum_singlefile.html"
-  ],
-  "support": {
-    "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",
-    "email": "richard@hainsworth.wales",
-    "source": "https://github.com/finanalyst/rakuast-rakudoc-render.git"
-  },
-  "license": "Artistic-2.0",
-  "source-url": "git://github.com/finanalyst/rakuast-rakudoc-render.git",
-  "bin": [
-    "bin/RenderTextify",
-    "bin/gen-default-template-info.raku",
-    "bin/force-compile",
-    "bin/get-compliance-document",
-    "bin/RenderDocs",
-    "bin/test-script.sh"
-  ],
-  "raku": "6.d",
+  "description": "Renders RakuDoc v2 to text, HTML, Markdown",
   "docs": [
     "README.md",
     "MarkUpMeta.md",
@@ -107,5 +61,58 @@
     "docs/plugins/ListFiles.rakudoc",
     "docs/plugins/SCSS.rakudoc"
   ],
-  "source-type": "git"
+  "license": "Artistic-2.0",
+  "name": "RakuDoc::Render",
+  "provides": {
+    "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
+    "RakuDoc::Numeration": "lib/RakuDoc/Numeration.rakumod",
+    "RakuDoc::Plugin::Bulma": "lib/RakuDoc/Plugin/Bulma.rakumod",
+    "RakuDoc::Plugin::FontAwesome": "lib/RakuDoc/Plugin/FontAwesome.rakumod",
+    "RakuDoc::Plugin::Graphviz": "lib/RakuDoc/Plugin/Graphviz.rakumod",
+    "RakuDoc::Plugin::Hilite": "lib/RakuDoc/Plugin/Hilite.rakumod",
+    "RakuDoc::Plugin::Latex": "lib/RakuDoc/Plugin/Latex.rakumod",
+    "RakuDoc::Plugin::LeafletMaps": "lib/RakuDoc/Plugin/LeafletMaps.rakumod",
+    "RakuDoc::Plugin::ListFiles": "lib/RakuDoc/Plugin/ListFiles.rakumod",
+    "RakuDoc::Plugin::SCSS": "lib/RakuDoc/Plugin/SCSS.rakumod",
+    "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
+    "RakuDoc::PromiseStrings": "lib/RakuDoc/PromiseStrings.rakumod",
+    "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
+    "RakuDoc::ScopedData": "lib/RakuDoc/ScopedData.rakumod",
+    "RakuDoc::Templates": "lib/RakuDoc/Templates.rakumod",
+    "RakuDoc::To::Generic": "lib/RakuDoc/To/Generic.rakumod",
+    "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
+    "RakuDoc::To::HTML-Extra": "lib/RakuDoc/To/HTML-Extra.rakumod",
+    "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod",
+    "RakuDoc::To::PDF": "lib/RakuDoc/To/PDF.rakumod",
+    "RakuDoc::To::PDF::Subs": "lib/RakuDoc/To/PDF/Subs.rakumod",
+    "RakuDoc::To::PDF::Vars": "lib/RakuDoc/To/PDF/Vars.rakumod"
+  },
+  "raku": "6.d",
+  "resources": [
+    "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",
+    "compliance-rendering/rakudociem-ipsum.rakudoc.test.text",
+    "compliance-rendering/rakudociem-ipsum.rakudoc.text",
+    "scss/vanilla.scss",
+    "css/vanilla.css",
+    "html-example.raku",
+    "markdown-example.raku",
+    "compliance-rendering/rakudociem-ipsum.html",
+    "compliance-rendering/rakudociem-ipsum.md",
+    "compliance-rendering/rakudociem-ipsum.rakudoc",
+    "compliance-rendering/rakudociem-ipsum_singlefile.html"
+  ],
+  "source-type": "git",
+  "source-url": "https://github.com/tbrowder/rakuast-rakudoc-render.git",
+  "support": {
+    "bugtracker": "https://github.com/finanalyst/rakuast-rakudoc-render/issues",
+    "email": "richard@hainsworth.wales",
+    "source": "https://github.com/finanalyst/rakuast-rakudoc-render.git"
+  },
+  "tags": [
+  ],
+  "test-depends": [
+    "Test",
+    "Test::META"
+  ],
+  "version": "0.11.3"
 }
