@@ -716,7 +716,9 @@ class RakuDoc::Processor {
                 my $contents = self.markup-contents($ast);
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
                 my $target = self.index-id(:$context, :$contents, :$meta);
-                my %ref = %( :$target, :$place );
+                #| Add to index structure whether X<> is within a head block
+                my Bool $is-in-heading = $!scoped-data.last-starter eq 'head';
+                my %ref = %( :$target, :$place, :$is-in-heading );
                 if $ast.meta and $meta {
                     $.merge-index( $prs.index, $.add-index( $_, %ref )) for $meta.list
                 }
@@ -732,7 +734,7 @@ class RakuDoc::Processor {
                     $prs.index{$contents}<refs>.push: %ref
                 }
                 my $rv = %!templates{"markup-$letter"}(
-                    %( :$contents, :$meta, :$target, :$place, %config )
+                    %( :$contents, :$meta, :$target, :$place, :$is-in-heading, %config )
                 ).Str;
                 $prs.body ~= $rv;
             }
@@ -887,8 +889,8 @@ class RakuDoc::Processor {
         my $contents = $.contents($ast, $parify).strip.trim.Str;
         my $prs := $*prs;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
-        $!scoped-data.start-scope(:starter($_)) if $parify;
         $!scoped-data.last-title( $contents );
+        $!scoped-data.start-scope(:starter('head'), :title($contents));
         my %config = $.merged-config($ast,($template ~ $level) );
         my $target = $.name-id($contents);
         my $id = %config<id>:delete ;
@@ -921,7 +923,7 @@ class RakuDoc::Processor {
         $prs.body ~= %!templates{ $template }(
             %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
         );
-        $!scoped-data.end-scope if $parify;
+        $!scoped-data.end-scope;
     }
     #| Formula at level 1 is added to ToC unless overriden by toc/headlevel/caption
     #| Content is passed verbatim to template as formula

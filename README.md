@@ -21,14 +21,11 @@
 ----
 
 ## SYNOPSIS<div id="SYNOPSIS"> </div>
-&nbsp;&nbsp;• Clone the repository and submodule  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="e52a3a8"></span>`git clone https://github.com/finanalyst/rakuast-rakudoc-render.git rrr` 
+&nbsp;&nbsp;• Clone the repository  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="fc2dfe0"></span>`git clone https://github.com/finanalyst/rakuast-rakudoc-render.git` 
 
   
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="1fa8ad9"></span>`cd rrr && git submodule init` 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="e4ec964"></span>`git submodule update` 
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="6846695"></span>`cd rakuast-rakudoc-render` 
 
   
 &nbsp;&nbsp;• Install using zef as follows (flag is important)  
@@ -59,7 +56,7 @@ RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 ```
 <span class="para" id="81696a6"></span>Some [naive wrapping and width modification](Wrapping) is possible using environment variables. 
 
-<span class="para" id="880a886"></span>The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. It can be obtained with: 
+<span class="para" id="8769247"></span>The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. An uptodate copy can be obtained with: 
 
 
 ```
@@ -263,7 +260,7 @@ Richard Hainsworth aka finanalyst
 ----
 
 ## VERSION<div id="VERSION_0"> </div>
-v0.4.0
+v0.5.0
 
 
 
@@ -273,8 +270,8 @@ v0.4.0
 
 ----
 
-Rendered from docs/docs/README.rakudoc at 11:06 UTC on 2024-08-17
+Rendered from docs/docs/README.rakudoc at 21:43 UTC on 2024-09-22
 
-Source last modified at 11:05 UTC on 2024-08-17
+Source last modified at 21:42 UTC on 2024-09-22
 
 

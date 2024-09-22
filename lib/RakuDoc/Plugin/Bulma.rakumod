@@ -189,21 +189,12 @@ method templates {
         html-root => -> %prm, $tmpl {
            'class="theme-light" style="scroll-padding-top:var(--bulma-navbar-height)"'
         },
-        #| adapt head and p for Bulma
+        #| adapt head for Bulma by adding class
         #| renders =head block
         head => -> %prm, $tmpl {
-            my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-            my $title = %prm<contents>;
-            my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
             my $del = %prm<delta> // '';
-            PStr.new:
-                qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
-                ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
-                qq[[<$h id="$targ" class="heading {'delta' if $del} py-2">]] ~
-                ($del if $del) ~
-                qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
-                $title ~
-                qq[[</a></$h>\n]]
+            %prm<classes> = "heading {'delta' if $del} py-2";
+            $tmpl.prev(%prm)
         },
     )
 }

@@ -6,13 +6,12 @@
 Richard Hainsworth aka finanalyst
 
 =for VERSION :hidden
-v0.4.0
+v0.5.0
 
 =begin SYNOPSIS
-=item Clone the repository and submodule
-=item2 C<git clone https://github.com/finanalyst/rakuast-rakudoc-render.git rrr>
-=item2 C<cd rrr && git submodule init>
-=item2 C<git submodule update>
+=item Clone the repository
+=item2 C<git clone https://github.com/finanalyst/rakuast-rakudoc-render.git>
+=item2 C<cd rakuast-rakudoc-render>
 =item Install using zef as follows (flag is important)
 =item2 C<zef install . -/precompile-install>
 
@@ -38,7 +37,7 @@ Using the I<Generic> renderer, the B<canonical method> for generating rendered t
 Some L<naive wrapping and width modification|#Wrapping> is possible using environment variables.
 
 The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc>
-is the file for testing RakuDoc v2 compliance. It can be obtained with:
+is the file for testing RakuDoc v2 compliance. An uptodate copy can be obtained with:
 =code   bin/get-compliance-document
 
 A copy of C<rakudociem-ipsum.rakudoc> is also contained in C<resources/compliance-rendering>, together with

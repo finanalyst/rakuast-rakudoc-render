@@ -149,6 +149,8 @@ method html-templates {
         },
         #| renders =head block
         head => -> %prm, $tmpl {
+            my $del = %prm<delta> // '';
+            my $classes = %prm<classes> // "heading {'delta' if $del}" ;
             my $h = 'h' ~ (%prm<level> // '1') + 1 ;
             my $title = %prm<contents>;
             my $index-parse = $title ~~ /
@@ -156,11 +158,10 @@ method html-templates {
                 '<span class="index-entry-heading">' ( .+? ) '</span>'
             /;
             my $targ = $tmpl('escaped', %(:contents(%prm<target>) ));
-            my $del = %prm<delta> // '';
             PStr.new:
                 qq[[\n<div class="id-target" id="{ $tmpl('escaped', %(:contents(%prm<id>),)) }"></div>]] ~
                 ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
-                qq[[<$h id="$targ" class="heading {'delta' if $del}">]] ~
+                qq[[<$h id="$targ" class="$classes">]] ~
                 ($del if $del) ~
                 ( $index-parse.so ?? $index-parse[0] !! '' ) ~
                 qq[[<a href="#{ $tmpl('escaped', %(:contents(%prm<top>), )) }" title="go to top of document">]] ~
@@ -535,8 +536,22 @@ method html-templates {
         #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
         #| Index entry ( X<display text|entry,subentry;...>)
         markup-X => -> %prm, $tmpl {
-            '<span class="indexed" id="' ~ %prm<target> ~ '">' ~
-            %prm<contents> ~ '</span>'
+            my $contents = %prm<contents> // '';
+            if %prm<is-in-heading> {
+                my $indexedheader = %prm<meta>.elems ?? %prm<meta>[0].join(';') !! $contents;
+                '<span class="indexed" id="' ~ %prm<target> ~ '"' ~
+                ( $indexedheader ?? (' data-indexedheader="' ~ $indexedheader ~ '"') !! '' ) ~
+                '</span>'
+            }
+            else {
+                my $index-text;
+                $index-text = %prm<meta>.map( { $_.elems ?? ( "\x2983" ~ $_.map({ "\x301a$_\x301b" }) ~ "\x2984") !! "\x301a$_\x301b" })
+                    if %prm<meta>.elems;
+                '<span class="indexed" id="' ~ %prm<target> ~ '"' ~
+                ($index-text && $contents ?? (' data-index-text="' ~ $index-text ~ '">') !! '>') ~
+                $contents ~
+                '</span>'
+            }
         },
         #| Unknown markup, render minimally
         markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl<escaped> ~ BAD-MARK-OFF },
