@@ -15,7 +15,7 @@ my RakuDoc::To::HTML-Extra $html-extra-instance .= new;
 my @html-extra = $html-extra-instance.html-templates.keys.Slip, $html-extra-instance.templates.keys.Slip;
 
 ok @generic (<=) @html-extra, 'HTML redefines all the keys in generic';
-cmp-ok (@html-extra (-) @generic), '(==)', < footer top-of-page head-block html-root escaped main-content favicon>, 'other templates RakuDoc::To::HTML & ::HTML-Extra additionally defines';
+cmp-ok (@html-extra (-) @generic), '(==)', < footer top-of-page head-block html-root escape-code main-content favicon>, 'other templates RakuDoc::To::HTML & ::HTML-Extra additionally defines';
 
 my RakuDoc::Processor $rdp := $html-extra-instance.rdp;
 my $internet = run <<curl -s --head  --request GET www.google.com>>, :err, :out, :merge;

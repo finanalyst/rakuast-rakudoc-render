@@ -148,6 +148,8 @@ The following helper methods are available:
 =item2 :fnTarget(Str)
 =item2 :fnNumber(Str}
 
+=item escape.($s), where C<$s> is a string. B<Note> the C<.> after C<escape>
+
 =item add-to-warnings( $warning )
 
 In addition, within a template, it is possible to attach data
@@ -236,6 +238,32 @@ L<Stackoverflow question|https://stackoverflow.com/questions/18134627/how-much-o
 
 Long texts or books will probably need more to avoid a conflict. This can be done by setting C<paragraph-id-length>
 in the %structure-data to the required number of hex digits.
+
+=head Writing a new Render
+
+Typically, it should only be necessary to change the templates of an existing renderer
+to alter the way output is formated. But for a new type of format, a new renderer will
+be needed.
+
+It is best to look at the code for the HTML renderer to see how to write a renderer. The
+following are only very brief notes.
+
+A new renderer for a new output format will need:
+=numitem A processor class, which is sub-classed from C<RakuDoc::Processor>. The C<escape>
+method will need to be over-ridden.
+
+=begin numitem
+A Renderer class which must be called C<RakuDoc::To::NEWFORMAT>. This is required so that
+the code
+    raku --rakudoc=NEWFORMAT input-file.rakudoc > output-filename.newformat
+
+will work.
+=end numitem
+=numitem The Renderer class must contain the method C<render( $ast )>, which is needed by
+the raku compiler, as noted above.
+
+=numitem The class should also define and attach templates. Note that if any needed templates
+are not included, then the default 'text' templates will be used.
 
 =place semantic:AUTHOR :caption<Credits>
 

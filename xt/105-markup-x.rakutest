@@ -55,8 +55,6 @@ $ast = Q:to/QAST/.AST;
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
-say $rv.index;
-say $rv.toc;
 like $rv.body, /
     'Some thing '
     '<markup-X' .+ 'contents:' .+ 'to be said｣' .+

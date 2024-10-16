@@ -104,7 +104,7 @@ method templates {
                 TOP
             if %prm<title-target>:exists and %prm<title-target> ne '' {
                 $rv ~= qq[<div id="{
-                    $tmpl('escaped', %( :contents(%prm<title-target>), ))
+                    $tmpl.globals.escape.( %prm<title-target> )
                 }"></div>]
             }
             $rv ~= '<h1 class="title is-centered">' ~ %prm<title> ~ "</h1>\n\n" ~
@@ -148,7 +148,7 @@ method templates {
         },
         #| special template to render the toc list
         toc => -> %prm, $tmpl {
-            if %prm<toc>:exists && %prm<toc>.elems {
+            if %prm<toc-list>:exists && %prm<toc-list>.elems {
                 PStr.new: qq[<div class="toc">] ~
 #                ( "<h2 class=\"toc-caption\">$_\</h2>" with  %prm<caption> ) ~
                 ([~] %prm<toc-list>) ~
@@ -161,9 +161,12 @@ method templates {
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
 #            my $cap = %prm<caption>:exists ?? qq[<h2 class="index-caption">{%prm<caption>}</h2>] !! '';
-            PStr.new: '<div class="index">' ~ "\n" ~
-            ([~] %prm<index-list>) ~ "\n</div>\n"
-
+            my @inds = %prm<index-list>.grep({ .isa(Str) || .isa(PStr) });
+            if @inds.elems {
+                PStr.new: '<div class="index">' ~ "\n" ~
+                ([~] @inds ) ~ "\n</div>\n"
+            }
+            else { 'No indexed items' }
         },
         #| the last section of body
         footer => -> %prm, $tmpl {

@@ -205,7 +205,7 @@ method templates {
                 }
                 $code = qq:to/NOHIGHS/;
                         <pre class="nohighlights">
-                        $tmpl('escaped', %(:html-tags, :contents($code) ) )
+                        $tmpl('escape-code', %( :contents($code) ) )
                         </pre>
                         NOHIGHS
             }
@@ -217,132 +217,133 @@ method templates {
                 </div>
             ]
         },
-        markup-B => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'B<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-C => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'C<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-H => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'H<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-I => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'I<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-J => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'J<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-K => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'K<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-N => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                $tmpl.global.add-to-warning('Cannot ALLOW N<> inside code block');
-                # reconstitute the markup code
-                'N<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-O => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'O<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-R => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'R<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-S => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                $tmpl.global.add-to-warning('S<> inside code block is useless');
-                # reconstitute the markup code
-                'S<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-T => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'T<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-U => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'U<' ~ %prm<contents> ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-V => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                'V<' ~ $tmpl<escaped>
-                .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
-                .subst(/ \v /, '<br>', :g)
-                ~ '>'
-            }
-            else { $tmpl.prev }
-        },
-        markup-L => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                my $target = %prm<target>.trim.subst(/ '.*' /, ".%prm<output-format>", :g);
-                my $text = %prm<link-label>;
-                given %prm<type> {
-                    when 'local' {
-                        if %prm<place>:exists {
-                            qq[L\<$text|{$target}#{%prm<place>}>]
-                        }
-                        else {
-                            qq[L\<$text|$target>]
-                        }
-                    }
-                    when 'internal' {
-                        qq[L\<$text|#{$target}">]
-                    }
-                    default {
-                        qq[L\<$text|$target>]
-                    }
-                }
-            }
-            else { $tmpl.prev }
-        },
-        markup-X => -> %prm, $tmpl {
-            if %prm<in_code_context> {
-                # reconstitute the markup code
-                qq[X\<{%prm<contents>}|{%prm<target>}>]
-            }
-            else { $tmpl.prev }
-        },
+        ## the following was needed when deparse highlight had %allow
+#        markup-B => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'B<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-C => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'C<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-H => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'H<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-I => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'I<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-J => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'J<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-K => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'K<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-N => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                $tmpl.global.add-to-warning('Cannot ALLOW N<> inside code block');
+#                # reconstitute the markup code
+#                'N<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-O => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'O<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-R => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'R<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-S => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                $tmpl.global.add-to-warning('S<> inside code block is useless');
+#                # reconstitute the markup code
+#                'S<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-T => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'T<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-U => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'U<' ~ %prm<contents> ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-V => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                'V<' ~ $tmpl<escaped>
+#                .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
+#                .subst(/ \v /, '<br>', :g)
+#                ~ '>'
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-L => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                my $target = %prm<target>.trim.subst(/ '.*' /, ".%prm<output-format>", :g);
+#                my $text = %prm<link-label>;
+#                given %prm<type> {
+#                    when 'local' {
+#                        if %prm<place>:exists {
+#                            qq[L\<$text|{$target}#{%prm<place>}>]
+#                        }
+#                        else {
+#                            qq[L\<$text|$target>]
+#                        }
+#                    }
+#                    when 'internal' {
+#                        qq[L\<$text|#{$target}">]
+#                    }
+#                    default {
+#                        qq[L\<$text|$target>]
+#                    }
+#                }
+#            }
+#            else { $tmpl.prev }
+#        },
+#        markup-X => -> %prm, $tmpl {
+#            if %prm<in_code_context> {
+#                # reconstitute the markup code
+#                qq[X\<{%prm<contents>}|{%prm<target>}>]
+#            }
+#            else { $tmpl.prev }
+#        },
     )
 }
 method js-text {

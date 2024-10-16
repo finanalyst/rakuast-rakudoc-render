@@ -11,6 +11,7 @@ has @!aliases = {}, ;
 has @!starters;
 has @!titles;
 has @!save-spacer = 'None' => False , ;
+has Bool $.in-head is rw = False;
 #| the last item numeration
 has Numeration @.items-numeration = Numeration.new , ;
 #| the last defn numeration

@@ -1,14 +1,19 @@
 # list of things to do
-
+- [ ] Testing. Skip test in 115 ln 19 when offline
 - [-] Templates
   - [ ] Epub, need to add extra metadata pages 
 
+- [ ] Add tests to Templates for new escape attribute
+- [ ] Chnage documentation for Templates about escape attribute
+- [ ] ditto to Render
+
 - [ ] Outputs needing change
-  - [ ] Md pseudo extensions
+  - [ ] MD pseudo extensions
+    - [ ] More tests of rendered output, including headers to test escaping 
   - [ ] text psuedo extensions ??
   - [ ] HTML, ditto
   - [x] HTML, include binary data into output, eg images.
-  - [ ] HTML-Extra create SCSS processing & theme changes 
+  - [x] HTML-Extra create SCSS processing & theme changes 
     - [ ] linked css dark / light (eg for highlights-js)
     - [ ] toc at mobile
   - [ ] 

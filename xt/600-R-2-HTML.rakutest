@@ -10,7 +10,7 @@ my @generic = RakuDoc::Processor.new.default-text-templates.keys;
 my @html = $html-instance.html-templates.keys;
 
 ok @generic (<=) @html, 'HTML redefines all the keys in generic';
-cmp-ok (@html (-) @generic), '(==)', < footer top-of-page head-block html-root escaped main-content >, 'other templates RakuDoc::To::HTML additionally defines';
+cmp-ok (@html (-) @generic), '(==)', < footer top-of-page head-block html-root escape-code main-content >, 'other templates RakuDoc::To::HTML additionally defines';
 %*ENV<RAKUDO_RAKUAST> = 1;
 my @args = <<$*EXECUTABLE -I. --rakudoc=HTML xt/test-files/test.rakudoc>>;
 runs_ok(

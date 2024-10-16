@@ -30,6 +30,11 @@ span.replace {
 }
 span.indexed {
 	text-shadow: 1px 1px orange;
+	&:hover::before {
+        content: attr(data-index-text);
+        translate: 0 -1.5em;
+        position: absolute;
+    }
 }
 span.keyboard {
 	text-shadow: 1px 1px;
@@ -257,4 +262,14 @@ div.rakudoc-image-placement {
     align-items: center;
     color: red;
     font-weight: bold;
+}
+
+.raku-anchor {
+  font-size: 0.9em;
+  text-decoration: none;
+  visibility: hidden;
+}
+.heading:hover .raku-anchor {
+  visibility: visible;
+  padding-left: 5px;
 }

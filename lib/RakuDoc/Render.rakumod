@@ -84,6 +84,7 @@ class RakuDoc::Processor {
         %!templates.test = $test;
         %!templates.pretty = $pretty;
         %!templates.helper = self.default-helpers;
+        %!templates.escape = -> $s { self.escape( $s ) };
         if $debug ~~ List { self.debug($debug.list) }
         else { self.debug( $debug ) }
     }
@@ -714,10 +715,12 @@ class RakuDoc::Processor {
             #| :is-header because X<> in headings treated differently to ordinary text
             when 'X' {
                 my $contents = self.markup-contents($ast);
+                # stringify contents without processing for targets
+                my $stripped-contents = $ast.atoms.Str;
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
-                my $target = self.index-id(:$context, :$contents, :$meta);
+                my $target = self.index-id(:$context, :contents($stripped-contents), :$meta);
                 #| Add to index structure whether X<> is within a head block
-                my Bool $is-in-heading = $!scoped-data.last-starter eq 'head';
+                my Bool $is-in-heading = $!scoped-data.in-head;
                 my %ref = %( :$target, :$place, :$is-in-heading );
                 if $ast.meta and $meta {
                     $.merge-index( $prs.index, $.add-index( $_, %ref )) for $meta.list
@@ -875,9 +878,10 @@ class RakuDoc::Processor {
                 ?? %config<allow>.map({ $_ => True }).hash
                 !! {}
         }
+        my Bool $is-in-heading = $!scoped-data.in-head;
         my PStr $contents = $.contents($ast, $parify);
         $*prs.body ~= %!templates{ $template }(
-            %( :$contents, %config)
+            %( :$contents, :$is-in-heading, %config)
         );
         $!scoped-data.end-scope if $template ~~ any( <code implicit-code input output> )
     }
@@ -886,13 +890,16 @@ class RakuDoc::Processor {
     #| The id option may be used to create a target
     #| An automatic target is also created from the contents
     method gen-headish($ast, $parify, :$template = 'head', :$numerate = False ) {
+        $!scoped-data.in-head = True;
         my $contents = $.contents($ast, $parify).strip.trim.Str;
+        #| stringify ast for internal use
+        my $title = $ast.Str.trim; # unprocessed content
         my $prs := $*prs;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
-        $!scoped-data.last-title( $contents );
-        $!scoped-data.start-scope(:starter('head'), :title($contents));
+        $!scoped-data.last-title( $title );
+        $!scoped-data.start-scope(:starter('head'), :$title ) if $parify;
         my %config = $.merged-config($ast,($template ~ $level) );
-        my $target = $.name-id($contents);
+        my $target = $.name-id($title);
         my $id = %config<id>:delete ;
         with $id {
             if self.is-target-unique( $_ ) {
@@ -912,6 +919,7 @@ class RakuDoc::Processor {
             $numeration ~= PCell.new( :$!register, :id('heading_' ~ $target ) );
             $prs.head-numbering.push: ['heading_' ~ $target, $level ];
         }
+        #| may have embedded content, so TOC template will need to handle it
         my $caption = %config<caption>:delete;
         $caption = $contents without $caption;
         my $toc = %config<toc>:delete // True;
@@ -923,7 +931,8 @@ class RakuDoc::Processor {
         $prs.body ~= %!templates{ $template }(
             %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
         );
-        $!scoped-data.end-scope;
+        $!scoped-data.in-head = False;
+        $!scoped-data.end-scope if $parify;
     }
     #| Formula at level 1 is added to ToC unless overriden by toc/headlevel/caption
     #| Content is passed verbatim to template as formula
@@ -1571,7 +1580,7 @@ class RakuDoc::Processor {
         if $spec eq '*' { $levels .=new: (^10).list }
         else { $levels .= new: $spec.EVAL.list }
         my @toc-list = gather for $!current.toc -> $toc-entry {
-            take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ $toc-entry<level> }
+            take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ +$toc-entry<level> }
         }
         PStr.new( @toc-list.elems ?? %!templates<toc>( %(:@toc-list, :toc( $!current.toc), :$caption ) )
                                   !! '' )
@@ -1691,6 +1700,9 @@ class RakuDoc::Processor {
     ## - indexed text, where Raku HTML has anchors that depend on context and meta
     ## - external links to other documents, which do not have to be unique
 
+    #| Escape characters in a string, needs to be over-ridden
+    method escape( Str:D $s ) { $s.subst(/ \s /, '_', :g) }
+
     #| name-id takes an ast
     #| returns a unique Str to be used as an anchor / target
     #| Used by any name (block) that is placed in the ToC
@@ -1699,7 +1711,7 @@ class RakuDoc::Processor {
     #| This method should be sub-classed by Renderers for different outputs
     #| renderers can use method is-target-unique to test for uniqueness
     method name-id($ast --> Str) {
-        my $target = $ast.Str.trim.subst(/ \s /, '_', :g);
+        my $target = self.escape($ast.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -1712,7 +1724,7 @@ class RakuDoc::Processor {
     #| Target should be unique
     #| Should be sub-classed by Renderers
     method index-id(:$context, :$contents, :$meta ) {
-        my $target = 'index-entry-' ~ $contents.Str.trim.subst(/ \s /, '_', :g );
+        my $target = 'index-entry-' ~ self.escape($contents.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -1725,7 +1737,7 @@ class RakuDoc::Processor {
     #| A local-heading is assumed to exist because specified by document author
     #| Should be sub-classed by Renderers
     method local-heading($ast) {
-        $ast.Str.trim.subst(/ \s /, '_', :g);
+        self.escape($ast.Str.trim);
     }
 
     method para-target( $contents ) {

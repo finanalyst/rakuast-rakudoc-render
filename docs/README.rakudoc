@@ -130,13 +130,13 @@ In order to override the source and output defaults use C<--src> and C<--to> opt
 =code bin/RenderDocs --src='sources/' --to='rendered/' some-file
 
 In order to get single file HTML, rather than markdown
-=code bin/Render --to='rendered' --html README
+=code bin/Render --to='rendered' --html --single README
 
 In order to get the possibilities offered by RakuDoc::To::HTML-Extra, including maps, graphs, themes
 and the Bulma CSS framework, use C<--html> and C<--extra>, eg.
-=code bin/Render --html --extra Graphviz
+=code bin/Render --html Graphviz
 
-The B<html> variants allow for C<--debug> and C<--verbose>.
+The B<html> variants allow for C<--debug> and C<--verbose>, which are described in L<Render|Render.*>.
 
 =head1 Troubleshooting
 
