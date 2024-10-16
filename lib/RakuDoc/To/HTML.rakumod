@@ -18,6 +18,8 @@ class HTML::Processor is RakuDoc::Processor {
         .subst(/ \s /, '_', :g)
         .trans(qw｢ & " > < ｣ => qw｢ &amp; &quot; &gt; &lt;｣)
     }
+    #| pass through if not string
+    multi method escape( $s ) { $s }
     #| name-id takes an ast
     #| returns a unique Str to be used as an anchor / target
     #| Used by any name (block) that is placed in the ToC
