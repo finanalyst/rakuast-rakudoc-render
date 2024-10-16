@@ -514,7 +514,7 @@ class RakuDoc::To::HTML {
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
             markup-V => -> %prm, $tmpl {
-                $tmpl.globals.escape.( %prm<contents> )
+                $tmpl.globals.escape.( %prm<contents>.Str )
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g)
             },

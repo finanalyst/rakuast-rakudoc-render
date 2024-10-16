@@ -56,7 +56,7 @@ String of rendered source, may contain Promises during rendering
      :sub-index (maybe empty) is Hash of sub-entry => :refs, :sub-index
      :refs is Array of (Hash :target, :place, :is-header)
      :target is for link, :place is section name
-     :is-header because X<> in headings treated differently to ordinary text
+     :is-header because V«X<>» in headings treated differently to ordinary text
 
 =head3 C<@.footnotes >
 
