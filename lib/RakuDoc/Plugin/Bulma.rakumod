@@ -86,10 +86,10 @@ method templates {
                 </div>
                 <div class="column">
                     { $tmpl<title-section> }
-                    <div class="container px-4">
+                    <div class="content px-4">
                     { %prm<body> }
                     </div>
-                    <div class="container px-4">
+                    <div class="content px-4">
                     { %prm<footnotes>.Str }
                     </div>
                 </div>

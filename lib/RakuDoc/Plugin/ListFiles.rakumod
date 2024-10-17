@@ -73,7 +73,7 @@ method templates {
                 ];
             }
             my $rv = qq:to/FIRST/;
-                    <div class="listf-container" id="{ $tmpl('escaped', %( :contents(%prm<target>),)) }">
+                    <div class="listf-container" id="{ $tmpl.globals.escape.( %prm<target>) }">
                     FIRST
             my $cap = qq:to/CAP/;
                     <p class="listf-caption">{ %prm<raw>.trim }</p>

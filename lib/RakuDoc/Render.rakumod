@@ -1525,7 +1525,7 @@ class RakuDoc::Processor {
             $prs.warnings.push:
             "No template exists for custom block ｢$block-name｣. It has been rendered as unknown"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.";
-            $prs.body ~= %!templates<unknown>( %( :$contents, :$block-name, :$target) )
+            $prs.body ~= %!templates<unknown>( %( :$contents, :$block-name, :$target, :$caption) )
         }
     }
     # directive type methods

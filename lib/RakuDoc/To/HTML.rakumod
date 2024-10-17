@@ -18,8 +18,8 @@ class HTML::Processor is RakuDoc::Processor {
         .subst(/ \s /, '_', :g)
         .trans(qw｢ & " > < ｣ => qw｢ &amp; &quot; &gt; &lt;｣)
     }
-    #| pass through if not string
-    multi method escape( $s ) { $s }
+    #| Stringify if not string
+    multi method escape( $s ) { self.escape( $s.gist ) }
     #| name-id takes an ast
     #| returns a unique Str to be used as an anchor / target
     #| Used by any name (block) that is placed in the ToC
@@ -382,7 +382,7 @@ class RakuDoc::To::HTML {
             unknown => -> %prm, $tmpl {
                 my $level = %prm<headlevel> // 1;
                 my $contents = qq[UNKNOWN { %prm<block-name> }];
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :$contents, :delta(%prm<delta>)));
+                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :$contents, :delta(%prm<delta>)));
                 PStr.new: $head ~ $tmpl.globals.escape.( %prm<contents> )
                         .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                         .subst(/ \v /, '<br>', :g) ~

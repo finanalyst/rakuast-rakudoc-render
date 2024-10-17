@@ -8,6 +8,8 @@ class MarkDown::Processor is RakuDoc::Processor {
                    qw｢ <    >    &     "       `   ｣
                 => qw｢ &lt; &gt; &amp; &quot;  ``  ｣
     ) }
+    #| Stringify if not string
+    multi method escape( $s ) { self.escape( $s.gist ) }
 
     #| name-id takes an ast
     #| returns a unique Str to be used as an anchor / target
@@ -125,13 +127,6 @@ class RakuDoc::To::Markdown {
         %(
             #| special key to name template set
             _name => -> %, $ { 'markdown templates' },
-            # escape contents
-            escaped => -> %prm, $tmpl {
-                %prm<contents>.Str.trans(
-                   qw｢ <    >    &     "       `   ｣
-                => qw｢ &lt; &gt; &amp; &quot;  ``  ｣
-                )
-            },
             #| renders =code blocks
             code => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
