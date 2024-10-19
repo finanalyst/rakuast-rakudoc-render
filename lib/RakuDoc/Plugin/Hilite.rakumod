@@ -12,7 +12,7 @@ has %.config = %(
 	:version<0.1.1>,
 	:js-link(
 		['src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/highlight.min.js"', 2 ],
-		['src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/languages/haskell.min.js"', 2 ],
+#		['src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/languages/haskell.min.js"', 2 ],
 	),
 	:css-link(
 		['href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.10.0/build/styles/default.min.css"',1],
@@ -62,7 +62,7 @@ has %!hilight-langs = %(
     'TYPESCRIPT' => 'typescript',
     'BASIC' => 'vbnet',
     '.NET' => 'vbnet',
-    'HASKELL' => 'haskell',
+#    'HASKELL' => 'haskell',
 );
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates, :source<Hilite plugin> );
