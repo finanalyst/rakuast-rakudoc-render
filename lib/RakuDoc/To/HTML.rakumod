@@ -201,9 +201,10 @@ class RakuDoc::To::HTML {
                 my $del = %prm<delta> // '';
                 my $classes = %prm<classes> // "heading {'delta' if $del}" ;
                 my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-                my $caption = $tmpl.globals.escape.( %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim );
+                my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
                 my $targ := %prm<target>;
-                my $esc-cap = '' if $caption eq $targ;
+                my $esc-cap = $tmpl.globals.escape.( $caption );
+                $esc-cap = '' if $caption eq $targ;
                 my $id-target = %prm<id>:exists && %prm<id>
                     ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                     !! '';

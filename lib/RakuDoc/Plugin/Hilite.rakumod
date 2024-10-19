@@ -125,7 +125,7 @@ method templates {
                 $syntax-label = '<b>allow</b> styling';
                 $code = qq:to/NOHIGHS/;
                         <pre class="nohighlights">
-                        $tmpl('escape-code', %( :contents($code) ) )
+                        $tmpl<escape-code>
                         </pre>
                     NOHIGHS
             }
@@ -137,26 +137,15 @@ method templates {
                         $code = qq:to/HILIGHT/;
                             <pre class="browser-hl">
                             <code class="language-{ %!hilight-langs{ $_ } }">
-                            { $tmpl.globals.escape.( %prm<contents> ) }
+                            { $tmpl.globals.escape.( %prm<contents>.Str ) }
                             </code></pre>
                             HILIGHT
                     }
                     when 'RAKUDOC' {
                         $syntax-label = 'RakuDoc';
-                        # for the time being don't highlight RakuDoc
-                        $code = qq:to/NOHIGHS/
-                            <pre class="nohighlights">
-                            { $tmpl.globals.escape.( %prm<contents> ) }
-                            </pre>
-                            NOHIGHS
                     }
                     when ! /^ 'RAKU' » / {
                         $syntax-label = $lang;
-                        $code = qq:to/NOHIGHS/;
-                            <pre class="nohighlights">
-                            { $tmpl.globals.escape.( %prm<contents> ) }
-                            </pre>
-                            NOHIGHS
                     }
                     default {
                         $syntax-label = 'Raku highlighting';
@@ -167,7 +156,7 @@ method templates {
                 $syntax-label = %prm<lang>;
                 $code = qq:to/NOHIGHS/;
                     <pre class="nohighlights">
-                    { $tmpl.globals.escape.( %prm<contents> ) }
+                    { $tmpl.globals.escape.( %prm<contents>.Str ) }
                     </pre>
                     NOHIGHS
             }
