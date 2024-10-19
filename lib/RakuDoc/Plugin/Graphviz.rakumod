@@ -41,7 +41,7 @@ method templates {
                 }
             }
             my $level = %prm<headlevel> // 1;
-            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
 
             my $rv = $head;
             if $proc-rv { $rv ~= qq[<div class="graphviz">$proc-rv\</div>] }
