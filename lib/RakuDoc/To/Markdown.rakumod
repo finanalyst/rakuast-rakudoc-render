@@ -4,7 +4,7 @@ use RakuDoc::PromiseStrings;
 
 class MarkDown::Processor is RakuDoc::Processor {
     #| Escape characters in a string, needs to be over-ridden
-    method escape( Str:D $s ) { $s.trans(
+    multi method escape( Str:D $s ) { $s.trans(
                    qw｢ <    >    &     "       `   ｣
                 => qw｢ &lt; &gt; &amp; &quot;  ``  ｣
     ) }
