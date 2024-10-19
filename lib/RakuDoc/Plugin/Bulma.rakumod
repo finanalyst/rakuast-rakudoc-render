@@ -84,7 +84,7 @@ method templates {
                 <div id="TOC" class="column is-one-quarter">
                     { $tmpl<sidebar> }
                 </div>
-                <div class="column">
+                <div id="MainText" class="column">
                     { $tmpl<title-section> }
                     <div class="content px-4">
                     { %prm<body> }
@@ -150,7 +150,6 @@ method templates {
         toc => -> %prm, $tmpl {
             if %prm<toc-list>:exists && %prm<toc-list>.elems {
                 PStr.new: qq[<div class="toc">] ~
-#                ( "<h2 class=\"toc-caption\">$_\</h2>" with  %prm<caption> ) ~
                 ([~] %prm<toc-list>) ~
                 "</div>\n"
             }
@@ -160,7 +159,6 @@ method templates {
         },
         #| special template to render the index data structure
         index => -> %prm, $tmpl {
-#            my $cap = %prm<caption>:exists ?? qq[<h2 class="index-caption">{%prm<caption>}</h2>] !! '';
             my @inds = %prm<index-list>.grep({ .isa(Str) || .isa(PStr) });
             if @inds.elems {
                 PStr.new: '<div class="index">' ~ "\n" ~
@@ -220,11 +218,17 @@ method js-text {
             if ( state ) {
                 document.getElementById("TOC").classList.remove('is-hidden');
                 document.getElementById("page-nav").classList.remove('is-hidden');
+                document.getElementById("MainText").classList.add('is-three-quarters');
+                document.getElementById("MainText").classList.add('column');
+                document.getElementById("MainText").classList.remove('px-5');
                 persist_tocState( 'open');
             }
             else {
                 document.getElementById("TOC").classList.add('is-hidden');
                 document.getElementById("page-nav").classList.add('is-hidden');
+                document.getElementById("MainText").classList.remove('is-three-quarters');
+                document.getElementById("MainText").classList.remove('column');
+                document.getElementById("MainText").classList.add('px-5');
                 persist_tocState( 'closed' );
             }
         }
@@ -232,11 +236,17 @@ method js-text {
             if ( state === 'closed') {
                 document.getElementById("TOC").classList.add('is-hidden');
                 document.getElementById("page-nav").classList.add('is-hidden');
+                document.getElementById("MainText").classList.remove('is-three-quarters');
+                document.getElementById("MainText").classList.remove('column');
+                document.getElementById("MainText").classList.add('px-5');
                 document.getElementById("navbar-toc-toggle").checked = false;
             }
             else {
                 document.getElementById("TOC").classList.remove('is-hidden');
                 document.getElementById("page-nav").classList.remove('is-hidden');
+                document.getElementById("MainText").classList.add('is-three-quarters');
+                document.getElementById("MainText").classList.add('column');
+                document.getElementById("MainText").classList.remove('px-5');
                 document.getElementById("navbar-toc-toggle").checked = true;
             }
         };
@@ -380,6 +390,15 @@ method toc-scss {
     .main-footer {
         z-index: 1;
         position: relative;
+    }
+    .toc-item {
+        &:hover {
+            background: var(--bulma-background);
+        }
+        a {
+            text-decoration:none;
+            color: var(--bulma-text);
+        }
     }
     TOC
 }
