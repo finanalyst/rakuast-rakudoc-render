@@ -1419,12 +1419,14 @@ class RakuDoc::Processor {
     method gen-semantics($ast, $parify) {
         my $block-name = $ast.type;
         my %config = $.merged-config($ast, $block-name);
+        $!scoped-data.last-title( $block-name );
         # treat all semantic blocks as a heading level 1 unless otherwise specified
         my $caption = %config<caption> // $block-name;
         my $level = %config<headlevel> // 1;
         my $hidden;
         my $contents = $.contents($ast, $parify).trim;
-        $!scoped-data.last-title( $block-name );
+        $contents ~= $.complete-item-list ~ $.complete-defn-list
+            ~ $.complete-numitem-list ~ $.complete-numdefn-list;
         my $prs := $*prs;
         my $rv;
         given $ast.type {
@@ -1447,7 +1449,7 @@ class RakuDoc::Processor {
                 $!current.subtitle = $contents.Str;
                 my $target = $.name-id($contents.Str);
                 if %!templates<SUBTITLE>:exists {
-                    $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, :$target, %config ) )
+                    $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, :$target, :$hidden, %config ) )
                 }
                 else {
                     $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, :$hidden, %config ) )

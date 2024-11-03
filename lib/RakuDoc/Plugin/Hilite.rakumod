@@ -4,6 +4,7 @@ use Rainbow;
 use RakuDoc::Render;
 
 unit class RakuDoc::Plugin::Hilite;
+has $!default-engine = 'deparse';
 has %.config = %(
     :name-space<hilite>,
 	:license<Artistic-2.0>,
@@ -65,6 +66,7 @@ has %!hilight-langs = %(
     'HASKELL' => 'haskell',
 );
 method enable( RakuDoc::Processor:D $rdp ) {
+    $!default-engine = %*ENV<HIGHLIGHTER>.lc // 'rainbow';
     $rdp.add-templates( $.templates, :source<Hilite plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
@@ -115,8 +117,9 @@ method templates {
             # if :lang is not set, then highlight as Raku
 
             # select hilite engine
-            my $engine = 'rainbow';
-            $engine = 'deparse' if (%prm<highlighter>:exists && %prm<highlighter> ~~ /:i 'Deparse' /);
+            my $engine = $!default-engine;
+            $engine = %prm<highlighter>.lc
+                if (%prm<highlighter>:exists && %prm<highlighter> ~~ /:i 'Deparse' | 'Rainbow' /);
             my %mapping := %mappings{ $engine };
             my $code;
             my $syntax-label;
@@ -130,7 +133,7 @@ method templates {
                     NOHIGHS
             }
             elsif $hilite {
-                my $lang = %prm<lang> // 'RAKU';
+                my $lang = %prm<lang> // 'Raku';
                 given $lang.uc {
                     when any( %!hilight-langs.keys ) {
                         $syntax-label = $lang ~  ' highlighting by highlight-js';
@@ -146,6 +149,11 @@ method templates {
                     }
                     when ! /^ 'RAKU' » / {
                         $syntax-label = $lang;
+                        $code = qq:to/NOHIGHS/;
+                                <pre class="nohighlights">
+                                $tmpl<escape-code>
+                                </pre>
+                            NOHIGHS
                     }
                     default {
                         $syntax-label = 'Raku highlighting';
@@ -153,7 +161,7 @@ method templates {
                 }
             }
             else { # no :allow and :!syntax-highlighting
-                $syntax-label = %prm<lang>;
+                $syntax-label = %prm<lang> // 'Text';
                 $code = qq:to/NOHIGHS/;
                     <pre class="nohighlights">
                     { $tmpl.globals.escape.( %prm<contents>.Str ) }
@@ -163,26 +171,36 @@ method templates {
             without $code { # so need Raku highlighting
                 my $source = %prm<contents>.Str;
                 if $engine eq 'deparse' {
-                    my $c = highlight( $source, :unsafe, %mapping);
-                    if $c {
-                        $code = $c
-                    } else {
-                        my $m = $c.exception.message;
-                        $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
-                            ( $source.chars > CUT-LENG
-                                ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
-                                !! $source.trim ) ~
-                            '｣' ~ "\nbecause\n$m" );
-                        $code = $source;
+                    # while deparse cannot handle RakuDoc
+                    if $syntax-label eq 'RakuDoc' {
+                        $code = qq:to/NOHIGHS/;
+                            <pre class="nohighlights">
+                            $tmpl<escape-code>
+                            </pre>
+                        NOHIGHS
                     }
-                    CATCH {
-                        default {
-                            $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
+                    else {
+                        my $c = highlight( $source, :unsafe, %mapping);
+                        if $c {
+                            $code = $c
+                        } else {
+                            my $m = $c.exception.message;
+                            $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
                                 ( $source.chars > CUT-LENG
                                     ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
                                     !! $source.trim ) ~
-                                '｣' ~ "\nbecause\n" ~ .message );
-                            $code = $tmpl.globals.escape.( $source );
+                                '｣' ~ "\nbecause\n$m" );
+                            $code = $source;
+                        }
+                        CATCH {
+                            default {
+                                $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
+                                    ( $source.chars > CUT-LENG
+                                        ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
+                                        !! $source.trim ) ~
+                                    '｣' ~ "\nbecause\n" ~ .message );
+                                $code = $tmpl.globals.escape.( $source );
+                            }
                         }
                     }
                 }

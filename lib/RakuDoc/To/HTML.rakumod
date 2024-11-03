@@ -145,7 +145,7 @@ class RakuDoc::To::HTML {
             _name => -> %, $ { 'markdown templates' },
             # escape contents
             escape-code => -> %prm, $tmpl {
-                my $cont = %prm<contents> // '';
+                my $cont = %prm<contents>.trim // '';
                 if $cont {
                     $cont .= Str.trans(qw｢ & " ｣ => qw｢ &amp; &quot; ｣);
                     while $cont ~~ m:c/ <tab> / {
