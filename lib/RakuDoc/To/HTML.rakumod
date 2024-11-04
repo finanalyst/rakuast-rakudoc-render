@@ -204,7 +204,7 @@ class RakuDoc::To::HTML {
                 my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
                 my $targ := %prm<target>;
                 my $esc-cap = $tmpl.globals.escape.( $caption );
-                $esc-cap = '' if $caption eq $targ;
+                $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
                 my $id-target = %prm<id>:exists && %prm<id>
                     ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                     !! '';
@@ -213,9 +213,7 @@ class RakuDoc::To::HTML {
                     ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
                     qq[[<$h id="$targ" class="$classes">]] ~
                     ($del if $del) ~
-    #                ( $index-parse.so ?? $index-parse[0] !! '' ) ~
                     qq[[<a href="#" title="go to top of document">]] ~
-    #                ( $index-parse.so ?? $index-parse[1] !! $title ) ~
                     $caption ~
                     qq[[</a><a class="raku-anchor" title="direct link" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>]] ~
                     qq[[</$h>\n]]
@@ -386,6 +384,17 @@ class RakuDoc::To::HTML {
                         .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                         .subst(/ \v /, '<br>', :g) ~
                          "\n\n"
+            },
+            #| Version numbers should appear on the same line as the heading
+            VERSION => -> %prm, $tmpl {
+                my $level = %prm<headlevel> // 1;
+                my $head = $tmpl('head', %(
+                    :$level, :id(%prm<id>), :target(%prm<target>),
+                    :caption(%prm<caption> ~ '&nbsp' x 4 ~ %prm<contents>.Str ),
+                    :delta(%prm<delta>)
+                ));
+
+                ( $head unless %prm<hidden> ) ~ "\n"
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {

@@ -66,7 +66,7 @@ has %!hilight-langs = %(
     'HASKELL' => 'haskell',
 );
 method enable( RakuDoc::Processor:D $rdp ) {
-    $!default-engine = %*ENV<HIGHLIGHTER>.lc // 'rainbow';
+    $!default-engine = (%*ENV<HIGHLIGHTER> // 'deparse').lc;
     $rdp.add-templates( $.templates, :source<Hilite plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
@@ -171,37 +171,36 @@ method templates {
             without $code { # so need Raku highlighting
                 my $source = %prm<contents>.Str;
                 if $engine eq 'deparse' {
-                    # while deparse cannot handle RakuDoc
+                    # for RakuDoc, deparse needs an explicit =rakudoc block
                     if $syntax-label eq 'RakuDoc' {
-                        $code = qq:to/NOHIGHS/;
-                            <pre class="nohighlights">
-                            $tmpl<escape-code>
-                            </pre>
-                        NOHIGHS
+#                        $code = $source;
+                         $source = "=begin rakudoc\n$source\n=end rakudoc";
                     }
-                    else {
-                        my $c = highlight( $source, :unsafe, %mapping);
-                        if $c {
-                            $code = $c
-                        } else {
-                            my $m = $c.exception.message;
-                            $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
+                    my $c = highlight( $source, :unsafe, %mapping);
+                    if $c {
+                        $code = $c.trim
+                    } else {
+                        my $m = $c.exception.message;
+                        $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
+                            ( $source.chars > CUT-LENG
+                                ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
+                                !! $source.trim ) ~
+                            '｣' ~ "\nbecause\n$m" );
+                        $code = $source;
+                    }
+                    CATCH {
+                        default {
+                            $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
                                 ( $source.chars > CUT-LENG
                                     ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
                                     !! $source.trim ) ~
-                                '｣' ~ "\nbecause\n$m" );
-                            $code = $source;
+                                '｣' ~ "\nbecause\n" ~ .message );
+                            $code = $tmpl.globals.escape.( $source );
                         }
-                        CATCH {
-                            default {
-                                $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
-                                    ( $source.chars > CUT-LENG
-                                        ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
-                                        !! $source.trim ) ~
-                                    '｣' ~ "\nbecause\n" ~ .message );
-                                $code = $tmpl.globals.escape.( $source );
-                            }
-                        }
+                    }
+                    if $syntax-label eq 'RakuDoc' {
+                         $code .= subst(/ '<span' <-[ > ]>+ '>=begin</span> <span' <-[ > ]>+  '>rakudoc</span>' \s*/,'');
+                         $code .= subst(/ \s* '<span' <-[ > ]>+ '>=end</span> <span' <-[ > ]>+  '>rakudoc</span>' \s* /,'')
                     }
                 }
                 else {
