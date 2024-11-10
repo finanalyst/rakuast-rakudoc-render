@@ -123,13 +123,14 @@ method templates {
             my %mapping := %mappings{ $engine };
             my $code;
             my $syntax-label;
+            my $source = %prm<contents>.Str.trim;
             my Bool $hilite = %prm<syntax-highlighting> // True;
             if %prm<allow> {
                 $syntax-label = '<b>allow</b> styling';
                 $code = qq:to/NOHIGHS/;
-                        <pre class="nohighlights">
-                        $tmpl<escape-code>
-                        </pre>
+                    <pre class="nohighlights">
+                    $tmpl<escape-code>
+                    </pre>
                     NOHIGHS
             }
             elsif $hilite {
@@ -140,7 +141,7 @@ method templates {
                         $code = qq:to/HILIGHT/;
                             <pre class="browser-hl">
                             <code class="language-{ %!hilight-langs{ $_ } }">
-                            { $tmpl.globals.escape.( %prm<contents>.Str ) }
+                            { $tmpl('escape',%(:contents($source))) }
                             </code></pre>
                             HILIGHT
                     }
@@ -150,9 +151,9 @@ method templates {
                     when ! /^ 'RAKU' » / {
                         $syntax-label = $lang;
                         $code = qq:to/NOHIGHS/;
-                                <pre class="nohighlights">
-                                $tmpl<escape-code>
-                                </pre>
+                            <pre class="nohighlights">
+                            $tmpl('escape',%(:contents($source)))
+                            </pre>
                             NOHIGHS
                     }
                     default {
@@ -164,12 +165,11 @@ method templates {
                 $syntax-label = %prm<lang> // 'Text';
                 $code = qq:to/NOHIGHS/;
                     <pre class="nohighlights">
-                    { $tmpl.globals.escape.( %prm<contents>.Str ) }
+                    { $tmpl('escape',%(:contents($source))) }
                     </pre>
                     NOHIGHS
             }
             without $code { # so need Raku highlighting
-                my $source = %prm<contents>.Str;
                 if $engine eq 'deparse' {
                     # for RakuDoc, deparse needs an explicit =rakudoc block
                     if $syntax-label eq 'RakuDoc' {
@@ -195,7 +195,7 @@ method templates {
                                     ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
                                     !! $source.trim ) ~
                                 '｣' ~ "\nbecause\n" ~ .message );
-                            $code = $tmpl.globals.escape.( $source );
+                            $code = $tmpl('escape',%(:contents($source)));
                         }
                     }
                     if $syntax-label eq 'RakuDoc' {
