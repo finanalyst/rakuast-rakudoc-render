@@ -214,13 +214,15 @@ B<debug> and B<verbose> flags.
 By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped.
 
 For example,
-    POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
+=for code :lang<text>
+POSTPROCESSING=1 bin/RenderTextify --pretty rakudociem-ipsum
 
 If the environment variable WIDTH is also set, the text output will be
 wrapped to the value.
 
 WIDTH by default is set at 80 chars. To set at 70, use:
-    POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
+=for code :lang<text>
+POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
 
 =head1 Paragraph id
 
@@ -255,7 +257,8 @@ method will need to be over-ridden.
 =begin numitem
 A Renderer class which must be called C<RakuDoc::To::NEWFORMAT>. This is required so that
 the code
-    raku --rakudoc=NEWFORMAT input-file.rakudoc > output-filename.newformat
+=for code :lang<text>
+raku --rakudoc=NEWFORMAT input-file.rakudoc > output-filename.newformat
 
 will work.
 =end numitem

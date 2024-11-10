@@ -26,7 +26,7 @@ It can be given metadata options, which describe the file.
 
 For example, the documentation files for the C<RakuAST::RakuDoc::Render>
 distribution all contain the option C<:type>, eg.
-=begin code
+=begin code :lang<RakuDoc>
     =begin rakudoc :type<plugin>
 =end code
 In the distribution, the I<type> option is given the values:
@@ -34,7 +34,7 @@ B<plugin>, B<renderer>, B<fundamental>, and B<minor>.
 
 Using the C<ListFiles> block, an index source can be written
 so that the files are sorted according to the type values, eg.
-=begin code
+=begin code :lang<RakuDoc>
 The documentation can be split as follows:
 =for ListFiles :select<type=fundamental> :caption<Fundamental>
 Sources containing key concepts and information

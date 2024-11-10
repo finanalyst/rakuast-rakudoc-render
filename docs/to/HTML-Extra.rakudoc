@@ -11,7 +11,8 @@ use the terminal command
 =code RAKUDO_RAKUAST=1 raku -MRakuDoc::Render -MRakuDoc::To::HTML --rakudoc=HTML-Extra wp.rakudoc > wp.html
 
 Easier (once the distribution has been installed, see L<README|README>)
-=code RenderDocs --html --extra --src='.' --to='.' wp
+=for code :lang<text>
+RenderDocs --html --extra --src='.' --to='.' wp
 
 Both will cause the file C<wp.html> to be generated in the current working directory from C<wp.rakudoc> in CWD.
 
@@ -147,7 +148,8 @@ which should then be installed in the environment.
 
 The plugin can be enabled, for example by running the following in the
 repo root directory
-    zef install -/precompile-install .
+=for code :lang<text>
+zef install -/precompile-install .
 
 Note the option C<-/precompile-install> turning off the precompilation. This is because currently
 this distribution has some modules that depend on the RakuAST compiler, and

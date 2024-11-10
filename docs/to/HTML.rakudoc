@@ -17,7 +17,8 @@ are relative to local repo of L<RakuDoc::Render repo|https://github.com/finanaly
 
 Use the utility B<force-recompile> with the current working directory being the root of
 the C<RakuDoc::Render> repo
-    bin/force-recompile
+=for code :lang<text>
+bin/force-recompile
 
 Assuming (the assumptions are for clarity and can be changed):
 =item there is a RakuDoc source C<new-doc.rakudoc> in the current working directory,
@@ -27,7 +28,8 @@ Assuming (the assumptions are for clarity and can be changed):
 =item a recent Rakudo build is needed; B<v2024.05-34-g5dd0ad6f5> works.
 
 Then:
-    RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+=for code :lang<text>
+RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
 
 generates B<new-doc.html> in the current working directory.
 
@@ -47,7 +49,8 @@ The module C<RakuDoc::To::HTML> attaches a minimum set of templates. It is possi
 to override any or all of the templates by adding the C<MORE_HTML> environment variable.
 Assuming the file C<my_new_html.raku> exists in the current working directory, and
 the file follows the L<Template specification|Templates>, then
-    MORE_HTML=my_new_html.raku RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+=for code :lang<text>
+MORE_HTML=my_new_html.raku RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
 
 will utilise the new templates. An example can be seen in C<xt/600-R-2-HTML.rakutest>.
 The intention of each template can be found in the comments within C<lib.RakuDoc/To/HTML.rakumod>.
@@ -61,7 +64,8 @@ eg. C<~/tweaks/strawberry.scss>
 =item2 the C<sass> command is usefully run as C<--update -s compressed ~/tweaks/strawberry.scss>
 =item use the C<ALT_CSS> environment variable to load the new CSS.
 
-    ALT_CSS=~/tweaks/strawberry.sss RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+=for code :lang<text>
+ALT_CSS=~/tweaks/strawberry.sss RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
 
 Both C<ALT_CSS> and C<MORE_HTML> can be used, adding new HTML tags, or changing class names, then
 including CSS definitions in the file accessed by C<ALT_CSS>.
@@ -78,7 +82,8 @@ C<vanilla.css>.
 
 The debug options described in L<Render|Render> can be invoked using , eg.,
 
-    RAKURENDEROPTS='Templates BlockType' RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
+=for code :lang<text>
+RAKURENDEROPTS='Templates BlockType' RAKUDO_RAKUAST=1 raku -I. -MRakuDoc::Render --rakudoc=HTML new-doc.rakudoc > new-doc.html
 
 
 =place semantic:AUTHOR :caption<Credits>

@@ -31,7 +31,7 @@ will be used.
 =end Graphviz
 
 This simple example is from the dot documentation, and included in a Rakudoc source as
-=begin code
+=begin code :lang<text>
 =begin Graphviz :headlevel(2) :caption<Simple example>
     digraph G {
         main -> parse -> execute;
@@ -106,7 +106,7 @@ digraph G {bgcolor="#0000FF44:#FF000044" gradientangle=90
 =end Graphviz
 
 The diagram L<source| https://graphviz.org/Gallery/gradient/cluster.html> is included in a Rakudoc source file as:
-=begin code
+=begin code :lang<RakuDoc>
 =begin Graphviz :headlevel(2) :caption<Cluster gradients>
 digraph G {bgcolor="#0000FF44:#FF000044" gradientangle=90
 	fontname="Helvetica,Arial,sans-serif"
@@ -194,7 +194,7 @@ digraph G {
 The figure's L<source|https://graphviz.org/Gallery/directed/neural-network.html>
 is included in a Rakudoc source file as:
 
-=begin code
+=begin code :lang<RakuDoc>
 =begin Graphviz :caption<Neural network> :headlevel(2)
 digraph G {
   fontname="Helvetica,Arial,sans-serif"
@@ -440,7 +440,7 @@ graph Color_wheel {
 =end Graphviz
 The figure's L<source| https://graphviz.org/Gallery/neato/color_wheel.html>, with an extra C<graph/size option>,
 is included in a Rakudoc source file as:
-=begin code
+=begin code :lang<RakuDoc>
 =begin Graphviz :caption<Color wheel> :headlevel(2)
 graph Color_wheel {
 	graph [

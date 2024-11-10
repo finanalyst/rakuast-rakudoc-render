@@ -1404,10 +1404,11 @@ class RakuDoc::Processor {
         }
         else { # not known so create another warning
             $prs.warnings.push:
-                '｢' ~ $ast.type ~ '｣' ~ 'is not a valid builtin block, is it a misspelt Custom block?'
+                '｢' ~ $ast.type ~ '｣' ~ ' is not a valid builtin block, is it a misspelt Custom block?'
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
         }
-        $prs.body ~= %!templates<unknown>( %( :$contents, ) )
+        my $target = $.name-id($ast.type);
+        $prs.body ~= %!templates<unknown>( %( :$contents, :block-name($ast.type), :$target ) )
     }
     #| Semantic blocks defined by spelling
     #| embedded content is rendered and passed to template as contents

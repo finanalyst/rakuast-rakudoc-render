@@ -36,39 +36,39 @@ will be possible to determine whether to render a source again, or not.
 String of rendered source, may contain Promises during rendering
 
 =head3 C<Hash @.toc >
-
-    Table of Contents data
-    Ordered array of { :level, :text, :target, :is-heading }
-    level - in heading hierarchy, text - to be shown in TOC
-    target - of item in text, is-heading - used for Index placing
+=nested
+Table of Contents data
+Ordered array of { :level, :text, :target, :is-heading }
+level - in heading hierarchy, text - to be shown in TOC
+target - of item in text, is-heading - used for Index placing
 
 =head3 C<Array @.head-numbering >
-
-    heading numbering data
-    Ordered array of [ $id, $level ]
-    $id is the PCell id of where the numeration structure is to be placed
-    level - in heading hierarchy
+=nested
+heading numbering data
+Ordered array of [ $id, $level ]
+$id is the PCell id of where the numeration structure is to be placed
+level - in heading hierarchy
 
 =head3 C<%.index >
-
-    Index (from V«X<>» markup)
-    Hash entry => Hash of :refs, :sub-index
-     :sub-index (maybe empty) is Hash of sub-entry => :refs, :sub-index
-     :refs is Array of (Hash :target, :place, :is-header)
-     :target is for link, :place is section name
-     :is-header because V«X<>» in headings treated differently to ordinary text
+=nested
+Index (from V«X<>» markup)
+Hash entry => Hash of :refs, :sub-index
+ :sub-index (maybe empty) is Hash of sub-entry => :refs, :sub-index
+ :refs is Array of (Hash :target, :place, :is-header)
+ :target is for link, :place is section name
+ :is-header because V«X<>» in headings treated differently to ordinary text
 
 =head3 C<@.footnotes >
-
-    Footnotes (from V«N<>» markup)
-    Ordered Array of :$text, :$retTarget, :$fnNumber, :$fnTarget
-    text is content of footnote, fnNumber is footNote number
-    fnTarget is link to rendered footnote
-    retTarget is link to where footnote is defined to link back form footnote
+=nested
+Footnotes (from V«N<>» markup)
+Ordered Array of :$text, :$retTarget, :$fnNumber, :$fnTarget
+text is content of footnote, fnNumber is footNote number
+fnTarget is link to rendered footnote
+retTarget is link to where footnote is defined to link back form footnote
 
 =head3 C<Array %.semantics >
 
-Semantic blocks (which includes TITLE & SUBTITLE) can be hidden 
+Semantic blocks (which includes TITLE & SUBTITLE) can be hidden
 Hash of SEMANTIC => [ PStr | Str ]
 
 =head3 C<@.warnings >
@@ -118,11 +118,11 @@ The output format that the source has been rendered into
 Text between =TITLE and first header, used for X<> place before first header
 
 =head3 C<< Str $.name is rw >>
-
-    Name to be used in titles and files
-    name can be modified after creation of Object
-    name can be set when creating object
-    if name is not set, then it is taken from source name + format
+=nested
+Name to be used in titles and files
+name can be modified after creation of Object
+name can be set when creating object
+if name is not set, then it is taken from source name + format
 
 =head3 C<< Str $.title is rw = 'NO_TITLE' >>
 
@@ -147,11 +147,12 @@ target data generated from block names and :id metadata
 A set of unique targets inside the file, new targets must be unique
 
 =head3 C<< Hash %.links >>
-
+=nested
 Links (from L<link-label|destination> markup)
-    Hash of destination => :target, :type, :place, :link-label
-    target = computed URL (for local files), place = anchor inside file
-    type has following values:
+Hash of destination => :target, :type, :place, :link-label
+target = computed URL (for local files), place = anchor inside file
+type has following values:
+
 =item Internal are of the form '#this is a heading' and refer to anchors inside the file
 =item Local are of the form 'some-type#a heading there', where 'some-type' is a file name in the same directory
 =item External is a fully qualified URL

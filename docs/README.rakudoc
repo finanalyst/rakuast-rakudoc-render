@@ -32,13 +32,15 @@ This is software using bleeding edge Rakudo, so look L<at troubleshooting below|
 
 Using the I<Generic> renderer, the B<canonical method> for generating rendered text is possible
 (which sends output to STDOUT, so pipe to a file), namely
-=code   RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
+=for code :lang<text>
+RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
 Some L<naive wrapping and width modification|#Wrapping> is possible using environment variables.
 
 The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc>
 is the file for testing RakuDoc v2 compliance. An uptodate copy can be obtained with:
-=code   bin/get-compliance-document
+=for code :lang<text>
+bin/get-compliance-document
 
 A copy of C<rakudociem-ipsum.rakudoc> is also contained in C<resources/compliance-rendering>, together with
 renderings of the file using the output renderers in this distribution.
@@ -46,14 +48,16 @@ renderings of the file using the output renderers in this distribution.
 In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered
 to Text using the L<RenderTextify|#RenderTextify utility>. It
 avoids some installation problems, stores the output and offers some other output options, eg.
-=code bin/RenderTextify rakudociem-ipsum
+=for code  :lang<text>
+bin/RenderTextify rakudociem-ipsum
 
 (the .rakudoc extension may be omitted if desired)
 
 Rendering into the other output formats provided in this distribution can be done using
 L<RenderDocs|#RenderDocs utility>. By default, sources are located in C<docs/> and rendered
 to the current working directory into MarkDown, eg.,
-=code bin/RenderDocs README
+=for code :lang<text>
+bin/RenderDocs README
 
 =head Documentation
 
@@ -69,10 +73,12 @@ The utility C<bin/RenderTexify> can be called with a RakuDoc source and it saves
 result directly to a file, rather than to STDOUT.
 
 For example,
-=code bin/RenderTextify rakudociem-ipsum
+=for code  :lang<text>
+bin/RenderTextify rakudociem-ipsum
 
 will produce the file
-=code rakudociem-ipsum.rakudoc.text
+=for code :lang<text>
+rakudociem-ipsum.rakudoc.text
 
 The executable C<bin/RenderTexify> can also be called with the flags C<test> and C<pretty>
 and the name of a file to render. The use case of these options is to see what templates
@@ -82,32 +88,39 @@ The file is output to text files with the flag and C<.text>
 appended to the name. The file format C<.rakudoc> is assumed, and added if missing.
 
 For example,
-=code bin/RenderTextify --pretty rakudociem-ipsum
+=for code :lang<text>
+bin/RenderTextify --pretty rakudociem-ipsum
 
 will produce the file
-=code rakudociem-ipsum.rakudoc.pretty.text
+=for code :lang<text>
+rakudociem-ipsum.rakudoc.pretty.text
 
 =head Wrapping
 
 The text output will be naively wrapped (the algorithm is still being developed), either
 by setting the environment variable POSTPROCESSING=1 or using RenderTextify.
 For example,
-=code POSTPROCESSING=1 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
+=for code :lang<text>
+POSTPROCESSING=1 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
 
 or
-=code bin/RenderTextify --post-processing doc
+=for code :lang<text>
+bin/RenderTextify --post-processing doc
 
 If the environment variable WIDTH (--width) is also set, the text output will be
 wrapped to the value. WIDTH by default is set at 80 chars. To set at 70, use:
-=code POSTPROCESSING=1 WIDTH=70 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
+=for code :lang<text>
+POSTPROCESSING=1 WIDTH=70 RAKUDO_RAKUAST=1 raku --rakudoc=Generic doc.rakudoc > store-output
 
 or
-=code bin/RenderTextify --post-processing --width=70 doc
+=for code :lang<text>
+bin/RenderTextify --post-processing --width=70 doc
 
 The utility can also be used for debugging new templates. For more information, see the
 Render and Templates documents. To get all the debugging information, and information on
 the template for C<C-markup> try
-=code bin/RenderTextify --debug='All' --verbose='C-markup' doc
+=for code :lang<text>
+bin/RenderTextify --debug='All' --verbose='C-markup' doc
 
 =head RenderDocs utility
 
@@ -118,23 +131,29 @@ I<RenderDoc> is similar to RenderTextify, but uses the other formats in this dis
 
 By default, the utility renders all the I<rakudoc> sources from C<docs/> and outputs them in
 I<markdown> to the current working directory, eg.
-=code bin/RenderDocs
+=for code :lang<text>
+bin/RenderDocs
 
 In order to get the useage try
-=code bin/RenderDocs -h
+=for code :lang<text>
+bin/RenderDocs -h
 
 In order to render a single file, put the basename without I<.rakudoc> as a string parameter, eg.
-=code bin/RenderDocs README
+=for code :lang<text>
+bin/RenderDocs README
 
 In order to override the source and output defaults use C<--src> and C<--to> options, eg.
-=code bin/RenderDocs --src='sources/' --to='rendered/' some-file
+=for code :lang<text>
+bin/RenderDocs --src='sources/' --to='rendered/' some-file
 
 In order to get single file HTML, rather than markdown
-=code bin/Render --to='rendered' --html --single README
+=for code :lang<text>
+bin/Render --to='rendered' --html --single README
 
 In order to get the possibilities offered by RakuDoc::To::HTML-Extra, including maps, graphs, themes
 and the Bulma CSS framework, use C<--html> and C<--extra>, eg.
-=code bin/Render --html Graphviz
+=for code :lang<text>
+bin/Render --html Graphviz
 
 The B<html> variants allow for C<--debug> and C<--verbose>, which are described in L<Render|Render.*>.
 
@@ -144,11 +163,12 @@ In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recen
 version of the Rakudoc compiler is needed, after v2024.07.
 
 If the cannonical command above fails, perhaps with a message such as
-=code     ===SORRY!===
-    This element has not been resolved. Type: RakuAST::Type::Simple
+=for code :lang<text>
+===SORRY!===
+This element has not been resolved. Type: RakuAST::Type::Simple
 
 or
-=begin code
+=begin code :lang<text>
 Out-of-sync package detected in LANG1 at r => Str=｢{ $!front-matter }｣
 
   (value in braid: RakuAST::Class, value in $*PACKAGE: RakuAST::Class)
@@ -157,7 +177,8 @@ No such method 'IMPL-REGEX-QAST' for invocant of type 'RakuAST::Regex'
 =end code
 
 then try
-=code bin/force-compile
+=for code :lang<text>
+bin/force-compile
 
 This deletes the C<.precomp> files in the current directory, and runs C<prove6 -I.>,
 which causes a recompilation of all the modules.

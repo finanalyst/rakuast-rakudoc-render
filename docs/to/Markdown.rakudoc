@@ -9,10 +9,12 @@ v0.4.0
 =begin SYNOPSIS
 To render a RakuDoc source, eg. I<some-docs.rakudoc>, into I<some-docs.md>, either use the
 terminal command
-=code     RAKUDO_RAKUAST=1 raku --rakudoc=Markdown some-docs.rakudoc > some-docs.md
+=for code :lang<text>
+RAKUDO_RAKUAST=1 raku --rakudoc=Markdown some-docs.rakudoc > some-docs.md
 
 or (see L<below for more detail|#RenderDocs utility>)
-=code bin/RenderDocs some-docs
+=for code :lang<text>
+bin/RenderDocs some-docs
 
 There is a section on Troubleshooting in the L<general README file|README> if this fails.
 =end SYNOPSIS
@@ -39,12 +41,14 @@ These templates can be added to, without overriding the previous templates, (L<s
 If a file exists in the local directory called I<new-temp.raku> and conforms to
 the requirements described in L<Templates|Templates>, then the templates in it will be
 added to the generic Markdown templates as follows:
-=code     MORE_MARKDOWN=new-temp.raku RAKUDO_RAKUAST=1 raku --rakudoc=Markdown some-docs.rakudoc > store.md
+=for code :lang<text>
+MORE_MARKDOWN=new-temp.raku RAKUDO_RAKUAST=1 raku --rakudoc=Markdown some-docs.rakudoc > store.md
 
 For instance if the contents of I<new-temp.raku> is
-=code     %(
-        final => -> %prm, $tmpl { "# Customisation message\n\n" ~ $tmpl.prev }
-    )
+=code
+ %(
+    final => -> %prm, $tmpl { "# Customisation message\n\n" ~ $tmpl.prev }
+)
 
 Then after running the command above, B<store.md> will contain a new title at the top, followed
 by the remainder of the Markdown as rendered before the new template was added.
@@ -62,10 +66,12 @@ working directory. If any RakuDoc source has a modified date later than the curr
 Markdown output, then the Markdown file is updated.
 
 Usage
-=code     bin/RenderDocs
+=for code :lang<text>
+bin/RenderDocs
 
 More granularity can be obtained by specifying a single file and a I<to> destination, eg.
-=code bin/RenderDocs --to=README docs/README
+=for code :lang<text>
+bin/RenderDocs --to=README docs/README
 
 Here, there must be a file C<docs/README.rakudoc>, which is rendered to the current working directory as
 I<README.md>.

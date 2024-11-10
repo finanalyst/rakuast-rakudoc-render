@@ -15,7 +15,7 @@ The templates also provides for ℱV«<»>, where ℱ is U+2131.
 The code only uses the free icons. See L<font search page|https://fontawesome.com/icons>.
 Make sure to filter for the free icons.
 
-=begin code
+=begin code :lang<text>
 Some FontAwesome icons
 
 ℱ<fas fa-ambulance> Example of ambulance
@@ -51,8 +51,7 @@ Some FontAwesome icons
 ℱ<fab fa-accessible-icon> Example of accessible-icon (was wheelchair-alt in fontawesome v4)
 
 FontAwesome has some other options.
-=begin code
-
+=begin code :lang<text>
 Train normal size ℱ<fas fa-train> Triple size train ℱ<fas fa-train fa-3x>
 
 An animated spinner ℱ<fas fa-sync fa-spin fa-3x fa-fw>

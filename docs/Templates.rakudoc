@@ -41,7 +41,7 @@ each Template is reported whenever a Template is called.
 A I<Template-directory> object is an extended Hash structure.
 
 Templates are specified as a list of Pairs of the form
-=begin code
+=begin code :lang<text>
     # psuedocode
     <key> => -> <Hash>, <Template object> <Block>
     # or as an example
@@ -161,10 +161,10 @@ especially when templates have content that is derived from other templates:
 =head2 C<.debug> attribute
 
 When set to True, eg
-
-    my Template-directory %template-dir;
-    # assign some templates to %template-dir
-    %template-dir.debug = True;
+=nested
+my Template-directory %template-dir;
+# assign some templates to %template-dir
+%template-dir.debug = True;
 
 information about the name of the template being used, and the source of the template
 is sent to STDOUT via C<say>. This is used by the C<debug(Templates)> command in a C<Rakudoc::Processor> object.

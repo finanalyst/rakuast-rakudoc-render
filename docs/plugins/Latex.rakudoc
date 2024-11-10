@@ -9,7 +9,7 @@ v0.1.0
 
 This plugin block sends the Latex-style markup to the L<CodeCogs online equation editor|https://editor.codecogs.com/>. For example,
 
-=begin code
+=begin code :lang<RakuDoc>
 =for LatexFormula :headlevel(2) :caption<Simple formula>
 \begin{align*}
 \sum_{i=1}^{k+1} i^{3}
@@ -36,7 +36,7 @@ This plugin block sends the Latex-style markup to the L<CodeCogs online equation
 The RakuDoc v2 specification has a builtin block C<=formula> and the recommended formula
 markup is Latex. This plugin overrides the formula template, effectively aliasing it
 to LatexFormula. So the following will work too:
-=begin code
+=begin code :lang<RakuDoc>
     =for formula :caption<Fabulous identity>
     e^{i\pi}+1=0
 =end code
