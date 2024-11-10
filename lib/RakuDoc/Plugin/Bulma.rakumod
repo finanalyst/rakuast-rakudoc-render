@@ -193,8 +193,11 @@ method templates {
         #| adapt head for Bulma by adding class
         #| renders =head block
         head => -> %prm, $tmpl {
-            my $del = %prm<delta> // '';
-            %prm<classes> = "heading {'delta' if $del} py-2";
+            %prm<classes> = "heading py-2";
+            $tmpl.prev(%prm)
+        },
+        table => -> %prm, $tmpl {
+            %prm<classes> = 'table is-striped is-bordered';
             $tmpl.prev(%prm)
         },
     )

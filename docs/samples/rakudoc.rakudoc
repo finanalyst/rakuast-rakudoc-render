@@ -1,7 +1,7 @@
 =begin rakudoc :kind("Language") :subkind("Language") :category("reference")
 =TITLE RakuDoc
 =SUBTITLE A Raku slang for documenting Raku software to aid development and use.
-=VERSION 2.8.0
+=VERSION 2.8.1
 
 RakuDoc is a markup language with simple instructions for simple tasks and more
 complex structures to suit larger projects. There is a clear distinction between
@@ -110,7 +110,7 @@ The markup language is called B<RakuDoc> with the I<CamelCase> spelling in order
 both the I<Raku> and I<Doc> parts for a newcomer. Some authors may prefer B<Rakudoc> with
 I<Titlecase> spelling, which is considered a possible but non-canonical variant.
 
-A file with mainly RakuDoc source has a file extension B<.rakudoc>.
+The file extension for a file containing RakuDoc source is B<.rakudoc>.
 
 =begin nested
 As it will become apparent, whitespace and indentation plays an important role in RakuDoc.
@@ -377,7 +377,7 @@ Metadata is specified using a Raku option pair, where the value portion
 is always parsed using Raku semantics.
 The following table contains some typical examples.
 
-=begin table
+=begin table :!toc
  Value is...       Specify with...
  ===============   ===================
  True              :key
@@ -626,7 +626,7 @@ An in-line version of C<=place> is C<P<...>>, which is described in more detail 
 markup codes.
 
 The schema of the URL specified in a C<=place> directive specifies where to look for the external content:
-=begin table
+=begin table :!toc
 | Schema      | Where to look for the resource                  |
 |=============|=================================================|
 | C<http(s):> | Look on the web                                 |
@@ -638,7 +638,7 @@ The schema of the URL specified in a C<=place> directive specifies where to look
 
 Meanwhile, the kind of content being placed is inferred from the
 final extension of the URL. For example:
-=begin table
+=begin table :!toc
 | Extension   | How to treat the contents        |
 |=============|==================================|
 | C<.txt>     | Render the contents as plaintext |
@@ -664,7 +664,7 @@ In the case where a URL does not end in a recognized extension:
 
 ...then the type of content (and hence rendering) may be inferred from the schema:
 
-=begin table
+=begin table :!toc
 | Schema      | Inferred content type if no final extension |
 |=============|=============================================|
 | C<http(s):> | XHTML                                       |
@@ -848,6 +848,11 @@ A C<rakudoc> block reverses this assumption.
 
 Files that are intended to contain text-oriented documentation alone should be entirely
 enclosed in a C<rakudoc> block.
+
+However, files whose filename ends in a C<.rakudoc> extension are always presumed
+to contain only text-oriented documentation, and any renderer must always treat
+the file's contents as being enclosed in an implicit C<=begin rakudoc>...C<=end rakudoc>,
+unless those contents are already explicitly enclosed in a C<rakudoc> block.
 
 Historically the name C<pod> was used for this functionality.
 For compatibility it will still be possible to use the name C<pod>
@@ -1491,7 +1496,7 @@ This would produce something like:
 
 The numbering scheme is at the discretion of the renderer. A renderer might, for example,
 provide a scheme similar to the examples here, and also provide an enhancement, such as
-`:html-ordered` that leverages the `<ul type="A">` markup.
+C<:html-ordered> that leverages the C«<»C«ul type="A">» markup.
 
 The numbering of successive C<=numitem1> list items increments automatically,
 but is reset to 1 whenever any other kind of non-ambient RakuDoc block appears
@@ -2983,7 +2988,7 @@ arguments: the first is the version specification, and the second is an optional
 The mnemonic is I<Delta>, which is commonly used to indicate an incremental component.
 
 The version specification is summarised as follows:
-=table
+=for table :!toc
 Syntax                              | Meaning
 ------                              | ------
 '*'                                 | Any version
@@ -3027,7 +3032,7 @@ appropriate visual representation. Thus C< B<> > is for the Basis of a sentence,
 equivalent might involve a bold font.
 
 The following should be made available in all renderers.
-=table
+=for table :!toc
         Inline markup   Instruction   Mnemonic              HTML equivalent     Markdown equivalent
         =============   ===========   ===================   ===============     ===================
         Basis           B<text>       "B for Basis"         <b>text</b>         **text**
@@ -3636,7 +3641,7 @@ is used by the renderer to identify the functionality being provided.
 For example, suppose a RakuDoc document is used to create part of a website in which a button is to be styled
 that accesses the API of a payment service (e.g. 'PayMe'). A developer can then create some functionality according
 to the rules of a RakuDoc renderer, and present it to the service point. In an HTML document, this might be coded
-as a C< <button class="PayMeApp" data-token="vendor-id" data-price="$0.99"> > with a specific class and structure.
+as a C«<»C«button class="PayMeApp" data-token="vendor-id" data-price="$0.99"> » with a specific class and structure.
 The RakuDoc instruction might then be:
 =begin code :lang<Raku> :allow<B>
     To sample this marvelous libation B<M<order now by PayMeApp|PayMeApp; vendor-id; $0.99>>
@@ -3736,13 +3741,12 @@ the use of unimplemented built-ins
 =item3 rendering unhandled blocks or codes inline (in a distinctive style) and providing the associated error message
 in a pop-up that activates on hover or mouse-click
 
-=place semantic:AUTHORS :caption<Authors>
+
+P<semantic:AUTHORS>
 
 =head1 Summary
 
-=head2 Directives
-
-=begin table :!toc
+=begin table :caption<Directives> :headlevel(2)
     =row :header
         =cell Directive
         =cell Specifies
@@ -3773,9 +3777,7 @@ in a pop-up that activates on hover or mouse-click
     =row
 =end table
 
-=head2 Blocks
-
-=begin table  :!toc
+=begin table  :caption<Blocks> :headlevel(2)
     =row
         =cell Block typename
         =cell Specifies
@@ -3853,8 +3855,7 @@ in a pop-up that activates on hover or mouse-click
         =cell User-defined block
 =end table
 
-=head2 Metadata options
-=begin table :!toc
+=begin table :caption<Metadata options> :headlevel(2)
     =row :header
         =cell Metadata option
         =cell Blocks applied to
@@ -4055,9 +4056,8 @@ in a pop-up that activates on hover or mouse-click
 
 =end table
 
-=head2 Markup instructions
+=begin table :caption<Markup instructions> :headlevel(2)
 
-=begin table :!toc
     =row
         =cell Markup instruction
         =cell Specifies

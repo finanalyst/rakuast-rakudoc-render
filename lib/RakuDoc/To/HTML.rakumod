@@ -207,7 +207,7 @@ class RakuDoc::To::HTML {
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                my $classes = %prm<classes> // "heading {'delta' if $del}" ;
+                my $classes = ( %prm<classes> // "heading" ) ~ ( 'delta' if $del ) ;
                 my $h = 'h' ~ (%prm<level> // '1') + 1 ;
                 my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
                 my $targ := %prm<target>;
@@ -342,7 +342,8 @@ class RakuDoc::To::HTML {
             table => -> %prm, $tmpl {
                 my $level = %prm<headlevel> // 1;
                 my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
-                my $rv = PStr.new: $head ~ '<table class="table">';
+                my $classes = ( %prm<classes> // "table" );
+                my $rv = PStr.new: $head ~ '<table class="' ~ $classes ~ '">';
                 if %prm<procedural> {
                     for %prm<grid>.list -> @row {
                         $rv ~= "\n<tr>";
