@@ -4,7 +4,7 @@ use Rainbow;
 use RakuDoc::Render;
 
 unit class RakuDoc::Plugin::Hilite;
-has $!default-engine = 'deparse';
+has $!default-engine;
 has %.config = %(
     :name-space<hilite>,
 	:license<Artistic-2.0>,
@@ -66,7 +66,7 @@ has %!hilight-langs = %(
     'HASKELL' => 'haskell',
 );
 method enable( RakuDoc::Processor:D $rdp ) {
-    $!default-engine = (%*ENV<HIGHLIGHTER> // 'deparse').lc;
+    $!default-engine = (%*ENV<HIGHLIGHTER> // 'rainbow').lc;
     $rdp.add-templates( $.templates, :source<Hilite plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
