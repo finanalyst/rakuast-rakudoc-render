@@ -102,7 +102,7 @@ my %mappings =
             REGEX_SPECIAL => 'success',
             REGEX_LITERAL => 'black',
             REGEX_DELIMITER => 'primary',
-            POD_TEXT => 'warning',
+            POD_TEXT => 'success',
             POD_MARKUP => 'danger',
     )
 ;

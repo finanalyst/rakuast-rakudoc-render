@@ -341,7 +341,11 @@ class RakuDoc::To::HTML {
             #| renders =table block
             table => -> %prm, $tmpl {
                 my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
+                my $head = '';
+                $head = $tmpl('head',
+                    %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>))
+                    )
+                    if %prm<caption>;
                 my $classes = ( %prm<classes> // "table" );
                 my $rv = PStr.new: $head ~ '<table class="' ~ $classes ~ '">';
                 if %prm<procedural> {
@@ -490,7 +494,7 @@ class RakuDoc::To::HTML {
             },
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
-            markup-C => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
+            markup-C => -> %prm, $tmpl { CODE-ON ~ $tmpl<escape> ~ CODE-OFF },
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
             markup-H => -> %prm, $tmpl { HIGH-ON ~ %prm<contents> ~ HIGH-OFF },
