@@ -71,7 +71,7 @@ method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-data( %!config<name-space>, %!config );
 }
 sub wrapper(str $color, str $c) {
-    $c.trim ?? "<span style=\"color:var(--bulma-$color);font-weight:600;\">$c\</span>" !! $c
+    $c.trim ?? "<span style=\"color:var(--bulma-$color);font-weight:500;\">$c\</span>" !! $c
 }
 my %mappings =
      deparse => mapper(
@@ -86,24 +86,24 @@ my %mappings =
           white     => -> $c { wrapper( "white",   $c ) },
      ),
      rainbow => %(
-            NAME_SCALAR => 'link',
+            NAME_SCALAR => 'link-40',
             NAME_ARRAY => 'link',
-            NAME_HASH => 'link',
+            NAME_HASH => 'link-60',
             NAME_CODE => 'info',
             KEYWORD => 'primary',
             OPERATOR => 'success',
             TYPE => 'danger',
-            ROUTINE => 'info',
-            STRING => 'warning',
-            STRING_DELIMITER => 'black',
+            ROUTINE => 'info-30',
+            STRING => 'info-40',
+            STRING_DELIMITER => 'primary-40',
             ESCAPE => 'black',
             TEXT => 'black',
             COMMENT => 'black',
-            REGEX_SPECIAL => 'success',
+            REGEX_SPECIAL => 'success-60',
             REGEX_LITERAL => 'black',
-            REGEX_DELIMITER => 'primary',
-            POD_TEXT => 'success',
-            POD_MARKUP => 'danger',
+            REGEX_DELIMITER => 'primary-60',
+            POD_TEXT => 'success-40',
+            POD_MARKUP => 'danger-40',
     )
 ;
 method templates {
