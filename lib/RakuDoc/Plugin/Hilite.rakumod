@@ -73,8 +73,7 @@ method enable( RakuDoc::Processor:D $rdp ) {
 sub wrapper(str $color, str $c) {
     $c.trim ?? "<span style=\"color:var(--bulma-$color);font-weight:500;\">$c\</span>" !! $c
 }
-my %mappings =
-     deparse => mapper(
+my %mapping = mapper(
           black     => -> $c { wrapper( "black",   $c ) },
           blue      => -> $c { wrapper( "link",    $c ) },
           cyan      => -> $c { wrapper( "info",    $c ) },
@@ -84,28 +83,7 @@ my %mappings =
           red       => -> $c { wrapper( "danger",  $c ) },
           yellow    => -> $c { wrapper( "warning", $c ) },
           white     => -> $c { wrapper( "white",   $c ) },
-     ),
-     rainbow => %(
-            NAME_SCALAR => 'link-40',
-            NAME_ARRAY => 'link',
-            NAME_HASH => 'link-60',
-            NAME_CODE => 'info',
-            KEYWORD => 'primary',
-            OPERATOR => 'success',
-            TYPE => 'danger',
-            ROUTINE => 'info-30',
-            STRING => 'info-40',
-            STRING_DELIMITER => 'primary-40',
-            ESCAPE => 'black',
-            TEXT => 'black',
-            COMMENT => 'black',
-            REGEX_SPECIAL => 'success-60',
-            REGEX_LITERAL => 'black',
-            REGEX_DELIMITER => 'primary-60',
-            POD_TEXT => 'success-40',
-            POD_MARKUP => 'danger-40',
-    )
-;
+);
 method templates {
     constant CUT-LENG = 500; # crop length in error message
     %(
@@ -120,10 +98,9 @@ method templates {
             my $engine = $!default-engine;
             $engine = %prm<highlighter>.lc
                 if (%prm<highlighter>:exists && %prm<highlighter> ~~ /:i 'Deparse' | 'Rainbow' /);
-            my %mapping := %mappings{ $engine };
             my $code;
             my $syntax-label;
-            my $source = %prm<contents>.Str.trim;
+            my $source = %prm<contents>.Str;
             my Bool $hilite = %prm<syntax-highlighting> // True;
             if %prm<allow> {
                 $syntax-label = '<b>allow</b> styling';
@@ -205,13 +182,20 @@ method templates {
                 }
                 else {
                     $code = Rainbow::tokenize($source).map( -> $t {
-                        my $col = %mapping{$t.type.key} // %mapping<TEXT>;
-                        wrapper($col,$t.text);
-                    }).join;
+                        my $cont = $tmpl('escape',%(:contents($t.text)));
+                        if $t.type.key ne 'TEXT' {
+                            qq[<span class="rainbow-{$t.type.key.lc}">$cont\</span>]
+                        }
+                        else {
+                            $cont .= subst(/ ' ' /, '&nbsp;',:g);
+                        }
+                    }).join('');
+                    $code .= subst( / \v /, '<br>', :g);
+                    $code .= subst( / "\t" /, '&nbsp' x 4, :g );
                 }
                 $code = qq:to/NOHIGHS/;
                         <pre class="nohighlights">
-                        $tmpl('escape-code', %( :contents($code) ) )
+                        $code
                         </pre>
                         NOHIGHS
             }
@@ -260,44 +244,116 @@ method scss-str {
     q:to/SCSS/
     /* Raku code highlighting */
     .raku-code {
-      position: relative;
-      margin: 1rem 0;
-      button.copy-code {
-        cursor: pointer;
-        opacity: 0;
-        padding: 0 0.25rem 0.25rem 0.25rem;
-        position: absolute;
-      }
-      &:hover button.copy-code {
-        opacity: 0.5;
-      }
-      label {
-        float: right;
-        font-size: xx-small;
-        font-style: italic;
-        height: auto;
-        padding-right: 50px;
-      }
-    /* required to match highlights-js css with raku highlighter css */
-      pre.browser-hl { padding: 7px; }
+        position: relative;
+        margin: 1rem 0;
+        button.copy-code {
+            cursor: pointer;
+            opacity: 0;
+            padding: 0 0.25rem 0.25rem 0.25rem;
+            position: absolute;
+        }
+        &:hover button.copy-code {
+            opacity: 0.5;
+        }
+        label {
+            float: right;
+            font-size: xx-small;
+            font-style: italic;
+            height: auto;
+            padding-right: 50px;
+        }
+        /* required to match highlights-js css with raku highlighter css */
+        pre.browser-hl { padding: 7px; }
 
-      .code-name {
-        padding-top: 0.75rem;
-        padding-left: 1.25rem;
-        font-weight: 500;
-      }
-       pre {
-        display: inline-block;
-        overflow: scroll;
-        width: 96%;
-      }
-      .rakudoc-in-code {
-        padding: 1.25rem 1.5rem;
-      }
-      .section {
-        /* https://github.com/Raku/doc-website/issues/144 */
-        padding: 0rem;
-      }
+        .code-name {
+            padding-top: 0.75rem;
+            padding-left: 1.25rem;
+            font-weight: 500;
+        }
+        pre {
+            display: inline-block;
+            overflow: scroll;
+            width: 96%;
+        }
+        .rakudoc-in-code {
+            padding: 1.25rem 1.5rem;
+        }
+        .section {
+            /* https://github.com/Raku/doc-website/issues/144 */
+            padding: 0rem;
+        }
+        .rainbow-name_scalar {
+            color: var(--bulma-link-40);
+            font-weight:500;
+        }
+        .rainbow-name_array {
+            color: var(--bulma-link);
+            font-weight:500;
+        }
+        .rainbow-name_hash {
+            color: var(--bulma-link-60);
+            font-weight:500;
+        }
+        .rainbow-name_code {
+            color: var(--bulma-info);
+            font-weight:500;
+        }
+        .rainbow-keyword {
+            color: var(--bulma-primary);
+            font-weight:500;
+        }
+        .rainbow-operator {
+            color: var(--bulma-success);
+            font-weight:500;
+        }
+        .rainbow-type {
+            color: var(--bulma-danger-60);
+            font-weight:500;
+        }
+        .rainbow-routine {
+            color: var(--bulma-info-30);
+            font-weight:500;
+        }
+        .rainbow-string {
+            color: var(--bulma-info-40);
+            font-weight:500;
+        }
+        .rainbow-string_delimiter {
+            color: var(--bulma-primary-40);
+            font-weight:500;
+        }
+        .rainbow-escape {
+            color: var(--bulma-black-60);
+            font-weight:500;
+        }
+        .rainbow-text {
+            color: var(--bulma-black);
+            font-weight:500;
+        }
+        .rainbow-comment {
+            color: var(--bulma-success-30);
+            font-weight:500;
+        }
+        .rainbow-regex_special {
+            color: var(--bulma-success-60);
+            font-weight:500;
+        }
+        .rainbow-regex_literal {
+            color: var(--bulma-black-60);
+            font-weight:500;
+        }
+        .rainbow-regex_delimiter {
+            color: var(--bulma-primary-60);
+            font-weight:500;
+        }
+        .rainbow-pod_text {
+            color: var(--bulma-success-40);
+            font-weight:500;
+        }
+        .rainbow-pod_markup {
+            color: var(--bulma-danger-40);
+            font-weight:500;
+        }
     }
     SCSS
 }

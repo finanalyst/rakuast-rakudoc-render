@@ -147,13 +147,13 @@ class RakuDoc::To::HTML {
             escape => -> %prm, $tmpl {
                 my $cont = %prm<contents> // '';
                 if $cont {
-                    $cont .= Str.trim.trans(qw｢ & " > < ｣ => qw｢ &amp; &quot; &gt; &lt;｣);
+                    $cont .= Str.trans(qw｢ & " > < ｣ => qw｢ &amp; &quot; &gt; &lt;｣);
                 }
                 else { '' }
             },
             #| escape contents of code block
             escape-code => -> %prm, $tmpl {
-                my $cont = %prm<contents>.trim // '';
+                my $cont = %prm<contents>.Str // '';
                 if $cont {
                     $cont .= Str.trans(qw｢ & " ｣ => qw｢ &amp; &quot; ｣);
                     while $cont ~~ m:c/ <tab> / {

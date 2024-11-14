@@ -1,7 +1,7 @@
 =begin rakudoc :kind("Language") :subkind("Language") :category("reference")
 =TITLE RakuDoc
 =SUBTITLE A Raku slang for documenting Raku software to aid development and use.
-=VERSION 2.8.1
+=VERSION 2.8.3
 
 RakuDoc is a markup language with simple instructions for simple tasks and more
 complex structures to suit larger projects. There is a clear distinction between
@@ -22,18 +22,18 @@ Consider the two ways in which documentation is used.
 
 =head2 Case 1: You are writing internal documentation to aid software design
 =begin code :allow<B> :lang<raku>
-unit class Beginners;
+    unit class Beginners;
 
-B<#| a variable to hold number of people>
-has $.participants;
+    B<#| a variable to hold number of people>
+    has $.participants;
 
-B<#| data that is initially provided by default, but will be overwritten>
-has $.new-participant = $=finish;
+    B<#| data that is initially provided by default, but will be overwritten>
+    has $.new-participant = $=finish;
 
-... # code
+    ... # code
 
-B<=finish>
-default data string for a new participant
+    B<=finish>
+    default data string for a new participant
 =end code
 
 A RakuDoc compliant editor or Integrated Design Environment will pick up the text following C<#|>
@@ -211,8 +211,8 @@ The C<=> of each directive must be the first non-whitespace character on a given
 B<=alias> specifies a text substitution available in subsequent C<A<...>> markup instructions.
 The general syntax for an alias directive is:
 =begin code :lang<RakuDoc>
-=alias ALIAS_NAME Text for substitution
-=                 Optional extra text
+    =alias ALIAS_NAME Text for substitution
+    =                 Optional extra text
 =end code
 =end item
 =begin item
@@ -221,8 +221,8 @@ within the remainder of the current block-scope. These default options apply fro
 the C<=config> directive up to the end of the innermost surrounding block.
 The general syntax for configuration directives is:
 =begin code  :allow< R > :lang<RakuDoc>
-=config R<BLOCK_TYPE>  R<CONFIG OPTIONS>
-=                   R<OPTIONAL EXTRA CONFIG OPTIONS>
+    =config R<BLOCK_TYPE>  R<CONFIG OPTIONS>
+    =                   R<OPTIONAL EXTRA CONFIG OPTIONS>
 =end code
 If the block-type is single uppercase character R<X>,
 the C<=config> directive applies the specified configuration options to the R<X> markup instruction.
@@ -239,8 +239,8 @@ To avoid ambiguities L<Naming rules|#Naming rules> are applied to blocks and mar
 B<=place> specifies a source of information that is to be placed in the current block. The general
 syntax of B<=place> is
 =begin code :lang<RakuDoc>
-=place R<URL> R<OPTIONS>
-=             R<More Options if necessary>
+    =place R<URL> R<OPTIONS>
+    =             R<More Options if necessary>
 =end code
 =end item
 =head2 Block syntax
@@ -258,20 +258,20 @@ by an C<=end> directive followed by the same block name. A delimited block that 
 an C<=end same-block-name> instruction throws an error.
 
 For example, to specify a C<para> block in delimited form:
-=begin code :lang<RakuDoc>
-    =begin para :meta<data>
-    This text is the content of the block.
+    =begin code :lang<RakuDoc>
+        =begin para :meta<data>
+        This text is the content of the block.
 
-    The preceding blank line is also a part of the block,
-    as are these two non-blank lines.
-    =end para
-=end code
+        The preceding blank line is also a part of the block,
+        as are these two non-blank lines.
+        =end para
+    =end code
 The general syntax is:
 =begin code :lang<RakuDoc> :allow<R>
- =begin R<BLOCK_TYPE>  R<OPTIONAL CONFIG INFO>
- =                  R<OPTIONAL EXTRA CONFIG INFO>
- R<BLOCK CONTENTS>
- =end R<BLOCK_TYPE>
+     =begin R<BLOCK_TYPE>  R<OPTIONAL CONFIG INFO>
+     =                  R<OPTIONAL EXTRA CONFIG INFO>
+     R<BLOCK CONTENTS>
+     =end R<BLOCK_TYPE>
 =end code
 =end item
 =begin item
@@ -281,19 +281,19 @@ An D<extended block> begins with the directive C<=for> as the first non-whitespa
 followed by optional metadata. The next non-blank lines after the metadata
 specify the content of the block, which is terminated either by the first entirely blank line after the
 content or by the first line that begins with a RakuDoc directive. For example, to specify a C<para> block in extended format:
-=begin code :lang<RakuDoc>
-    =for para :meta<data>
-    This text is the content of the block.
+    =begin code :lang<RakuDoc>
+        =for para :meta<data>
+        This text is the content of the block.
 
-    This text is NOT content of the block.
-    After a blank line, a new block is started.
-=end code
+        This text is NOT content of the block.
+        After a blank line, a new block is started.
+    =end code
 
 The general syntax is:
 =begin code :lang<RakuDoc> :allow<R>
- =for R<BLOCK_TYPE>  R<OPTIONAL CONFIG INFO>
- =                R<OPTIONAL EXTRA CONFIG INFO>
- R<BLOCK DATA>
+     =for R<BLOCK_TYPE>  R<OPTIONAL CONFIG INFO>
+     =                R<OPTIONAL EXTRA CONFIG INFO>
+     R<BLOCK DATA>
 =end code
 =end item
 =begin item
@@ -302,12 +302,12 @@ B<Abbreviated form>
 In an D<abbreviated block>, the name of the block immediately follows an C<=> sign, which must be the first non-whitespace character
 on the line. Everything after the block name (up to the first blank line or directive line) is considered the content of the block. For example,
 to specify a C<para> block in abbreviated form:
-=begin code :lang<RakuDoc>
-=para This text is the content of the block.
+    =begin code :lang<RakuDoc>
+        =para This text is the content of the block.
 
-This text is NOT content of the block.
-After a blank line, a new block is started.
-=end code
+        This text is NOT content of the block.
+        After a blank line, a new block is started.
+    =end code
 
 Note that abbreviated blocks cannot be specified with metadata.
 Any apparent metadata elements placed after an abbreviated block name
@@ -420,10 +420,10 @@ by at least one horizontal whitespace character.
 
 For example:
 =begin code :lang<RakuDoc>
- =for head1 :a-first-line-key<firstvalue> :another-first-line-key<xyz>
- =          :a-second-line-key(42)
- = :a-third-line-key<third>
- Content for the header block
+     =for head1 :a-first-line-key<firstvalue> :another-first-line-key<xyz>
+     =          :a-second-line-key(42)
+     = :a-third-line-key<third>
+     Content for the header block
 =end code
 
 =head1 Directives
@@ -465,16 +465,16 @@ replacement text on the C<=alias> line.
 For example:
 
 =begin code :lang<RakuDoc>
-=alias PROGNAME    Earl Irradiatem Evermore
-=alias VENDOR      4D Kingdoms
-=alias TERMS_URLS  =item L<http://www.4dk.com/eie>
-=                  =item L<http://www.4dk.co.uk/eie.io/>
-=                  =item L<http://www.fordecay.ch/canttouchthis>
+    =alias PROGNAME    Earl Irradiatem Evermore
+    =alias VENDOR      4D Kingdoms
+    =alias TERMS_URLS  =item L<http://www.4dk.com/eie>
+    =                  =item L<http://www.4dk.co.uk/eie.io/>
+    =                  =item L<http://www.fordecay.ch/canttouchthis>
 
-The use of A<PROGNAME> is subject to the terms and conditions
-laid out by A<VENDOR>, as specified at:
+    The use of A<PROGNAME> is subject to the terms and conditions
+    laid out by A<VENDOR>, as specified at:
 
-    A<TERMS_URLS>
+        A<TERMS_URLS>
 
 =end code
 
@@ -495,9 +495,9 @@ reused in multiple places in the documentation. Then, if the replacement
 text ever has to be changed, it need only be modified in a single place:
 
 =begin code :lang<RakuDoc>
-=alias PROGNAME    Count Krunchem Constantly
-=alias VENDOR      Last Chance Receivers Intl
-=alias TERMS_URLS  L<http://www.c11.com/generic_conditions>
+    =alias PROGNAME    Count Krunchem Constantly
+    =alias VENDOR      Last Chance Receivers Intl
+    =alias TERMS_URLS  L<http://www.c11.com/generic_conditions>
 =end code
 
 Alias placement codes may also specify a default display text, before the
@@ -506,10 +506,10 @@ it will be used if the requested alias cannot be found (and an I<"unknown alias"
 warning will be issued in that case):
 
 =begin code :lang<RakuDoc> :allow<B>
-The use of A<B<this program |> PROGNAME> is subject to the terms and conditions
-laid out by A<B<our company |> VENDOR>, as specified at:
+    The use of A<B<this program |> PROGNAME> is subject to the terms and conditions
+    laid out by A<B<our company |> VENDOR>, as specified at:
 
-    A<B<(Please visit our website) |> TERMS_URLS>
+        A<B<(Please visit our website) |> TERMS_URLS>
 =end code
 
 =head2 Block specifiers
@@ -532,10 +532,10 @@ Rather than add a C<:delta> modifier to every individual C<=code>, we could conf
 V<=code> block to be automatically given the same developer note, like so:
 
 =begin code :allow< B V > :lang<RakuDoc>
-B<<V<=>config code :delta(v2.3.2+, 'oFun enhancements') >>
-=code method droll { say 'what a cool operator' }
-=code method drool { say 'what a slob' }
-=code method drill { say 'keep up' }
+    B<<V<=>config code :delta(v2.3.2+, 'oFun enhancements') >>
+    =code method droll { say 'what a cool operator' }
+    =code method drool { say 'what a slob' }
+    =code method drill { say 'keep up' }
 =end code
 
 Within the same block scope, eg., between C<=begin section> and C<=end section> instructions,
@@ -1402,16 +1402,23 @@ Abscond to the Bahamas with the cash
 =end code
 ... would produce something like a list with checkboxes, thus:
 =begin nested
-=begin code :lang<text>
 The project originally consisted of five phases, of which
 two are already complete and two have been abandoned:
 
-☑︎ Investigate existing solutions
-☑︎ Define a minimal initial feature set
-☐ Implement this minimal set of features
-☒ Secure 100 million in venture capital
-☒ Abscond to the Bahamas with the cash
-=end code
+=for item :bullet« \c[BALLOT BOX WITH CHECK] »
+Investigate existing solutions
+
+=for item :bullet« \c[BALLOT BOX WITH CHECK] »
+Define a minimal initial feature set
+
+=for item :bullet« \c[BALLOT BOX] »
+Implement this minimal set of features
+
+=for item :bullet« \c[BALLOT BOX WITH X] »
+Secure 100 million in venture capital
+
+=for item :bullet« \c[BALLOT BOX WITH X] »
+Abscond to the Bahamas with the cash
 =end nested
 
 However, more interesting bullets are possible, including multiple characters. For example:
@@ -1428,18 +1435,25 @@ Implement this minimal set of features
 =for item B<:bullet« \c[prohibited sign] »>
 Secure 100 million in venture capital
 
-=for item B<:bullet« \c[prohibited sign; palm tree] »>
+=for item B<:bullet« \c[prohibited sign, palm tree] »>
 Abscond to the Bahamas with the cash
 =end code
 ... to produce
 =begin nested
-=begin code  :lang<text>
-✅     Investigate existing solutions
-✅     Define a minimal initial feature set
-🔄    Implement this minimal set of features
-🚫    Secure 100 million in venture capital
-🚫 🌴 Abscond to the Bahamas with the cash
-=end code
+=for item :bullet« \c[Heavy Check Mark] »
+Investigate existing solutions
+
+=for item :bullet« \c[Heavy Check Mark] »
+Define a minimal initial feature set
+
+=for item :bullet« \c[Anticlockwise Downwards And Upwards Open Circle Arrows] »
+Implement this minimal set of features
+
+=for item :bullet« \c[prohibited sign] »
+Secure 100 million in venture capital
+
+=for item :bullet« \c[prohibited sign, palm tree] »
+Abscond to the Bahamas with the cash
 =end nested
 
 By using the C<=config> directive, it is also possible to change the default bullets for
@@ -1460,15 +1474,19 @@ the duration of a section. For example,
 =end code
 ...which would produce:
 =begin nested
-=begin code :lang<text>
+=begin section
+=config item1 :bullet« \c[Earth Globe Europe-Africa] »
+=config item2 :bullet« \c[Hand with Index and Middle Fingers Crossed] »
+
 The major sources of sustainable energy are:
-🌍 wind
-🌍 hydroelectric
-🌍 solar
-🌍 geothermal
-🌍 fusion
-   🤞(eventually)
-=end code
+=item1 wind
+=item1 hydroelectric
+=item1 solar
+=item1 geothermal
+=item1 fusion
+=item2 (eventually)
+=end section
+
 =end nested
 
 In the event that a custom bullet cannot be rendered (e.g. a specified Unicode glyph is unrecognised or unrenderable in the target format),
@@ -3649,11 +3667,11 @@ The RakuDoc instruction might then be:
 
 An HTML renderer would the convert this to, for example,
 =begin code :lang<HTML>
-<p>To sample this marvelous libation
-    <button class="PayMeApp" data-token="vendor-id" data-price="$0.99">
-    order now by PayMeApp
-    </button>
-</p>
+    <p>To sample this marvelous libation
+        <button class="PayMeApp" data-token="vendor-id" data-price="$0.99">
+        order now by PayMeApp
+        </button>
+    </p>
 =end code
 
 =head3 Display and metadata
