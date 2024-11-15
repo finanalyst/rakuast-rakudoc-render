@@ -238,7 +238,7 @@ To avoid ambiguities L<Naming rules|#Naming rules> are applied to blocks and mar
 =begin item
 B<=place> specifies a source of information that is to be placed in the current block. The general
 syntax of B<=place> is
-=begin code :lang<RakuDoc>
+=begin code :lang<RakuDoc> :allow<R>
     =place R<URL> R<OPTIONS>
     =             R<More Options if necessary>
 =end code
@@ -378,13 +378,13 @@ is always parsed using Raku semantics.
 The following table contains some typical examples.
 
 =begin table :!toc :caption('')
- Value is...       Specify with...
- ===============   ===================
- True              :key
- False             :!key
- Literal           :key<answer>
- List              :key("foo", 42)
- Hash              :key{ :note('Rosebud, they said'), :emphasize }
+Value is...       Specify with...
+===============   ===================
+True              :key
+False             :!key
+Literal           :key<answer>
+List              :key("foo", 42)
+Hash              :key{ :note('Rosebud, they said'), :emphasize }
 =end table
 
 Numerical values can be specified in any Raku-compatible format
@@ -475,18 +475,22 @@ For example:
     laid out by A<VENDOR>, as specified at:
 
         A<TERMS_URLS>
-
 =end code
 
 This would produce:
 
 =begin nested
-    The use of Earl Irradiatem Evermore is subject to the terms and
-    conditions laid out by 4D Kingdoms Inc, as specified at:
 
-        =item L<http://www.4dk.com/eie>
-        =item L<http://www.4dk.co.uk/eie.io/>
-        =item L<http://www.fordecay.ch/canttouchthis>
+    =alias PROGNAME    Earl Irradiatem Evermore
+    =alias VENDOR      4D Kingdoms
+    =alias TERMS_URLS  =item L<http://www.4dk.com/eie>
+    =                  =item L<http://www.4dk.co.uk/eie.io/>
+    =                  =item L<http://www.fordecay.ch/canttouchthis>
+
+    The use of A<PROGNAME> is subject to the terms and conditions
+    laid out by A<VENDOR>, as specified at:
+
+        A<TERMS_URLS>
 
 =end nested
 
@@ -511,6 +515,12 @@ warning will be issued in that case):
 
         A<B<(Please visit our website) |> TERMS_URLS>
 =end code
+produces ...
+=begin nested
+The use of A<B<this program |> PROGNAME> is subject to the terms and conditions
+laid out by A<B<our company |> VENDOR>, as specified at:
+A<B<(Please visit our website) |> TERMS_URLS>
+=end nested
 
 =head2 Block specifiers
 
@@ -677,6 +687,9 @@ a reference can be made in the Table of Contents, or to provide an ALT text. For
 =begin code :lang<RakuDoc>
   =place https://raku.org/camelia-logo.png  :caption<Raku's mascot>  :alt<A multicoloured butterfly>
 =end code
+will produce ...
+
+=place https://raku.org/camelia-logo.png  :caption<Raku's mascot>  :alt<A multicoloured butterfly>
 
 =head1 Code-oriented RakuDoc
 
@@ -1662,17 +1675,20 @@ For example:
 =end code
 
 will yield something like:
-=begin code :allow< B > :lang<RakuDoc>
-1. B<AAA>
-  first letters
-2. B<BBB>
-  second letters
-A normal paragraph
-1. B<XXX>
-  ending letters
-2. B<YYY>
-  finals
-=end code
+=numdefn AAA
+first letters
+
+=numdefn BBB
+second letters
+
+A normal para
+
+=numdefn XXX
+ending letters
+
+=numdefn YYY
+finals
+
 In order to continue a list, an explicit C<:continued> is needed, such as:
 =begin code :allow< B > :lang<RakuDoc>
     =numdefn AAA
@@ -1692,17 +1708,21 @@ In order to continue a list, an explicit C<:continued> is needed, such as:
 =end code
 
 will yield something like
-=begin code :allow< B > :lang<RakuDoc>
-1. B<AAA>
-  first letters
-2. B<BBB>
-  second letters
-A normal paragraph
-3. B<XXX>
-  ending letters
-4. B<YYY>
-  finals
-=end code
+
+=numdefn AAA
+first letters
+
+=numdefn BBB
+second letters
+
+A normal para
+
+=for numdefn :continued
+XXX
+ending letters
+
+=numdefn YYY
+finals
 
 Suppose a writer needs every numbered definition to form a single monotonic sequence
 within some block scope (e.g. for every definition within a document section,
@@ -3051,15 +3071,15 @@ equivalent might involve a bold font.
 
 The following should be made available in all renderers.
 =for table :!toc :caption('')
-        Inline markup   Instruction   Mnemonic              HTML equivalent     Markdown equivalent
-        =============   ===========   ===================   ===============     ===================
-        Basis           B<text>       "B for Basis"         <b>text</b>         **text**
-        Important       I<text>       "I for Important"     <i>text</i>         *text*
-        Unusual         U<text>       "U for Unusual"       <u>text</u>         __text__
-        Strikethrough   O<text>       "O for Overstrike"    <s>text</s>         ~~text~~
-        Superscript     H<text>       "H for High text"     <sup>text</sup>     ^text^
-        Subscript       J<text>       "J for Junior text"   <sub>text</sub>     ~text~
-        Code            C<text>       "C for Code"          <code>text</code>   `text`
+    Inline markup   Instruction      Mnemonic              HTML equivalent        Markdown equivalent
+    =============   ===========      ===================   ==================     ===================
+    Basis           V«B<text>»       "B for Basis"         C«<b>text</b>»         **text**
+    Important       V«I<text>»       "I for Important"     C«<i>text</i>»         *text*
+    Unusual         V«U<text>»       "U for Unusual"       C«<u>text</u>»         __text__
+    Strikethrough   V«O<text>»       "O for Overstrike"    C«<s>text</s>»         ~~text~~
+    Superscript     V«H<text>»       "H for High text"     C«<sup>text</sup>»     ^text^
+    Subscript       V«J<text>»       "J for Junior text"   C«<sub>text</sub>»     ~text~
+    Code            V«C<text>»       "C for Code"          C«<code>text</code>»   `text`
 
 The table contains suggested HTML and Markdown equivalents; a renderer may
 choose other representations.

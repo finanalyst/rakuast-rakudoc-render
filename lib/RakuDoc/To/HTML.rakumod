@@ -311,7 +311,7 @@ class RakuDoc::To::HTML {
                     }
                     when .contains('image') {
                         my $alt = '';
-                        $alt = ' alt="' ~ $_ ~ '"' with %prm<alt>;
+                        $alt = qq[ alt="$_" title="$_"] with %prm<alt>;
                         $rv ~= qq[<div class="rakudoc-image-placement">
                             <img src="{ %prm<uri> }"$alt>%prm<caption>\</img></div> ]
                     }
