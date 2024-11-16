@@ -10,9 +10,9 @@
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Overview">Overview</a>   
 <a href="#Documentation">Documentation</a>   
-<a href="#RenderTextify_utility">RenderTextify utility</a>   
+<a href="#RenderTextify utility">RenderTextify utility</a>   
 <a href="#Wrapping">Wrapping</a>   
-<a href="#RenderDocs_utility">RenderDocs utility</a>   
+<a href="#RenderDocs utility">RenderDocs utility</a>   
 <a href="#Troubleshooting">Troubleshooting</a>   
 <a href="#Credits">Credits</a>   
 
@@ -56,7 +56,7 @@ RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 ```
 <span class="para" id="81696a6"></span>Some [naive wrapping and width modification](Wrapping) is possible using environment variables. 
 
-<span class="para" id="8769247"></span>The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. An uptodate copy can be obtained with: 
+<span class="para" id="40878f3"></span>The file [rakudociem-ipsum.rakudoc](https://github.com/Raku/RakuDoc-GAMMA/blob/main/compliance-document/rakudociem-ipsum.rakudoc) is the file for testing RakuDoc v2 compliance. An uptodate copy can be obtained with: 
 
 
 ```
@@ -64,7 +64,7 @@ bin/get-compliance-document
 ```
 <span class="para" id="f4a51f3"></span>A copy of `rakudociem-ipsum.rakudoc` is also contained in `resources/compliance-rendering`, together with renderings of the file using the output renderers in this distribution. 
 
-<span class="para" id="084d11c"></span>In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered to Text using the [RenderTextify](RenderTextify_utility). It avoids some installation problems, stores the output and offers some other output options, eg. 
+<span class="para" id="bba4fc2"></span>In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered to Text using the [RenderTextify](RenderTextify utility). It avoids some installation problems, stores the output and offers some other output options, eg. 
 
 
 ```
@@ -72,7 +72,7 @@ bin/RenderTextify rakudociem-ipsum
 ```
 <span class="para" id="416d7d2"></span>(the .rakudoc extension may be omitted if desired) 
 
-<span class="para" id="fbe7947"></span>Rendering into the other output formats provided in this distribution can be done using [RenderDocs](RenderDocs_utility). By default, sources are located in `docs/` and rendered to the current working directory into MarkDown, eg., 
+<span class="para" id="c26bad9"></span>Rendering into the other output formats provided in this distribution can be done using [RenderDocs](RenderDocs utility). By default, sources are located in `docs/` and rendered to the current working directory into MarkDown, eg., 
 
 
 ```
@@ -97,7 +97,7 @@ bin/RenderDocs README
 
 ----
 
-## RenderTextify utility<div id="RenderTextify_utility"> </div>
+## RenderTextify utility<div id="RenderTextify utility"> </div>
 <span class="para" id="ab8d800"></span>The utility `bin/RenderTexify` can be called with a RakuDoc source and it saves the result directly to a file, rather than to STDOUT. 
 
 <span class="para" id="c976c61"></span>For example, 
@@ -165,7 +165,7 @@ bin/RenderTextify --debug='All' --verbose='C-markup' doc
 
 ----
 
-## RenderDocs utility<div id="RenderDocs_utility"> </div>
+## RenderDocs utility<div id="RenderDocs utility"> </div>
 <span class="para" id="05fee90"></span>*RenderDoc* is similar to RenderTextify, but uses the other formats in this distribution, namely 
 
 
@@ -207,15 +207,15 @@ bin/RenderDocs --src='sources/' --to='rendered/' some-file
 
 
 ```
-bin/Render --to='rendered' --html README
+bin/Render --to='rendered' --html --single README
 ```
 <span class="para" id="651cfd2"></span>In order to get the possibilities offered by RakuDoc::To::HTML-Extra, including maps, graphs, themes and the Bulma CSS framework, use `--html` and `--extra`, eg. 
 
 
 ```
-bin/Render --html --extra Graphviz
+bin/Render --html Graphviz
 ```
-<span class="para" id="9fe8e7e"></span>The **html** variants allow for `--debug` and `--verbose`. 
+<span class="para" id="bb9fe7d"></span>The **html** variants allow for `--debug` and `--verbose`, which are described in [Render](Render.txt). 
 
 
 ----
@@ -228,7 +228,7 @@ bin/Render --html --extra Graphviz
 
 ```
 ===SORRY!===
-    This element has not been resolved. Type: RakuAST::Type::Simple
+This element has not been resolved. Type: RakuAST::Type::Simple
 ```
 <span class="para" id="7fa2f84"></span>or 
 
@@ -270,8 +270,8 @@ v0.5.0
 
 ----
 
-Rendered from docs/docs/README.rakudoc at 21:43 UTC on 2024-09-22
+Rendered from docs/docs/README.rakudoc at 13:12 UTC on 2024-11-16
 
-Source last modified at 21:42 UTC on 2024-09-22
+Source last modified at 12:25 UTC on 2024-11-16
 
 
