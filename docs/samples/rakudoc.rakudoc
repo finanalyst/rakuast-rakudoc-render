@@ -473,7 +473,6 @@ For example:
 
     The use of A<PROGNAME> is subject to the terms and conditions
     laid out by A<VENDOR>, as specified at:
-
         A<TERMS_URLS>
 =end code
 
@@ -489,7 +488,6 @@ This would produce:
 
     The use of A<PROGNAME> is subject to the terms and conditions
     laid out by A<VENDOR>, as specified at:
-
         A<TERMS_URLS>
 
 =end nested

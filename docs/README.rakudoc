@@ -37,7 +37,7 @@ RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
 Some L<naive wrapping and width modification|#Wrapping> is possible using environment variables.
 
-The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/rakudociem-ipsum.rakudoc>
+The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/compliance-document/rakudociem-ipsum.rakudoc>
 is the file for testing RakuDoc v2 compliance. An uptodate copy can be obtained with:
 =for code :lang<text>
 bin/get-compliance-document

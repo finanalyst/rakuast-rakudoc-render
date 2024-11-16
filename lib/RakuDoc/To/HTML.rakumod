@@ -275,7 +275,7 @@ class RakuDoc::To::HTML {
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
-                "\n<ul>" ~ ([~] %prm<item-list>) ~ "</ul>\n"
+                "\n<ul class=\"item-list\">" ~ ([~] %prm<item-list>) ~ "</ul>\n"
             },
             #| renders =numitem block
             numitem => -> %prm, $tmpl {
@@ -284,7 +284,7 @@ class RakuDoc::To::HTML {
             },
             #| special template to render a numbered item list data structure
             numitem-list => -> %prm, $tmpl {
-                "\n<ol>" ~ ([~] %prm<numitem-list>) ~ "</ol>\n"
+                "\n<ol class=\"item-list\">" ~ ([~] %prm<numitem-list>) ~ "</ol>\n"
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
