@@ -880,6 +880,10 @@ class RakuDoc::Processor {
         }
         my Bool $is-in-heading = $!scoped-data.in-head;
         my PStr $contents = $.contents($ast, $parify);
+        $contents ~= $.complete-item-list;
+        $contents ~= $.complete-defn-list;
+        $contents ~= $.complete-numitem-list;
+        $contents ~= $.complete-numdefn-list;
         $*prs.body ~= %!templates{ $template }(
             %( :$contents, :$is-in-heading, %config)
         );
