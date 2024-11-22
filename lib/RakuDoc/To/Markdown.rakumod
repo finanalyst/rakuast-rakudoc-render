@@ -134,13 +134,6 @@ class RakuDoc::To::Markdown {
                 ~ %prm<contents>
                 ~ "\n```\n"
             },
-            #| renders implicit code from an indented paragraph
-            implicit-code => -> %prm, $tmpl {
-                my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n```\n"
-                ~ %prm<contents>
-                ~ "\n```\n"
-            },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';

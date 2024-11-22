@@ -409,8 +409,9 @@ method toc-scss {
 method bulma-additions-scss {
     q:to/GENERAL/;
     .content p + ul.item-list { margin-top: 0; }
-    .content p:not( ul.item-list ) { margin-bottom: 0; }
+    // .content p:not( ul.item-list ) { margin-bottom: 0; }
     .content p + ol.item-list { margin-top: 0; }
-    .content p:not( ol.item-list ) { margin-bottom: 0; }
+    // .content p:not( ol.item-list ) { margin-bottom: 0; }
+    .delta:hover { border: var(--bulma-border-hover) 1px solid; }
     GENERAL
 }

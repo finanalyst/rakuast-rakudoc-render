@@ -106,7 +106,7 @@ method templates {
                 $syntax-label = '<b>allow</b> styling';
                 $code = qq:to/NOHIGHS/;
                     <pre class="nohighlights">
-                    $tmpl<escape-code>
+                    { $tmpl<escape-code> }
                     </pre>
                     NOHIGHS
             }
@@ -118,7 +118,7 @@ method templates {
                         $code = qq:to/HILIGHT/;
                             <pre class="browser-hl">
                             <code class="language-{ %!hilight-langs{ $_ } }">
-                            { $tmpl('escape',%(:contents($source))) }
+                            { $tmpl.globals.escape.($source) }
                             </code></pre>
                             HILIGHT
                     }
@@ -129,7 +129,7 @@ method templates {
                         $syntax-label = $lang;
                         $code = qq:to/NOHIGHS/;
                             <pre class="nohighlights">
-                            $tmpl('escape',%(:contents($source)))
+                            $tmpl.globals.escape.($source)
                             </pre>
                             NOHIGHS
                     }
@@ -142,7 +142,7 @@ method templates {
                 $syntax-label = %prm<lang> // 'Text';
                 $code = qq:to/NOHIGHS/;
                     <pre class="nohighlights">
-                    { $tmpl('escape',%(:contents($source))) }
+                    { $tmpl.globals.escape.($source) }
                     </pre>
                     NOHIGHS
             }
@@ -172,7 +172,7 @@ method templates {
                                     ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
                                     !! $source.trim ) ~
                                 '｣' ~ "\nbecause\n" ~ .message );
-                            $code = $tmpl('escape',%(:contents($source)));
+                            $code = $tmpl.globals.escape.($source);
                         }
                     }
                     if $syntax-label eq 'RakuDoc' {
@@ -182,7 +182,7 @@ method templates {
                 }
                 else {
                     $code = Rainbow::tokenize($source).map( -> $t {
-                        my $cont = $tmpl('escape',%(:contents($t.text)));
+                        my $cont = $tmpl.globals.escape.($t.text);
                         if $t.type.key ne 'TEXT' {
                             qq[<span class="rainbow-{$t.type.key.lc}">$cont\</span>]
                         }
@@ -190,6 +190,7 @@ method templates {
                             $cont .= subst(/ ' ' /, '&nbsp;',:g);
                         }
                     }).join('');
+                    $code .= subst( / \v+ <?before $> /, '');
                     $code .= subst( / \v /, '<br>', :g);
                     $code .= subst( / "\t" /, '&nbsp' x 4, :g );
                 }

@@ -1,7 +1,7 @@
 =begin rakudoc :kind("Language") :subkind("Language") :category("reference")
 =TITLE RakuDoc
 =SUBTITLE A Raku slang for documenting Raku software to aid development and use.
-=VERSION 2.8.3
+=VERSION 2.9.1
 
 RakuDoc is a markup language with simple instructions for simple tasks and more
 complex structures to suit larger projects. There is a clear distinction between
@@ -473,6 +473,7 @@ For example:
 
     The use of A<PROGNAME> is subject to the terms and conditions
     laid out by A<VENDOR>, as specified at:
+
         A<TERMS_URLS>
 =end code
 
@@ -488,6 +489,7 @@ This would produce:
 
     The use of A<PROGNAME> is subject to the terms and conditions
     laid out by A<VENDOR>, as specified at:
+
         A<TERMS_URLS>
 
 =end nested
@@ -508,16 +510,16 @@ it will be used if the requested alias cannot be found (and an I<"unknown alias"
 warning will be issued in that case):
 
 =begin code :lang<RakuDoc> :allow<B>
-    The use of A<B<this program |> PROGNAME> is subject to the terms and conditions
-    laid out by A<B<our company |> VENDOR>, as specified at:
+    The use of A<B<this program |> SOFTWARE> is subject to the terms and conditions
+    laid out by A<B<our company |> COMPANY>, as specified at:
 
-        A<B<(Please visit our website) |> TERMS_URLS>
+        A<B<(Please visit our website) |> OURTERMS>
 =end code
 produces ...
 =begin nested
-The use of A<B<this program |> PROGNAME> is subject to the terms and conditions
-laid out by A<B<our company |> VENDOR>, as specified at:
-A<B<(Please visit our website) |> TERMS_URLS>
+The use of A<this program | SOFTWARE> is subject to the terms and conditions
+laid out by A<our company | COMPANY>, as specified at:
+A<(Please visit our website) | OURTERMS>
 =end nested
 
 =head2 Block specifiers
@@ -983,6 +985,17 @@ For example, suppose the following RakuDoc text was included in a source file
 
     =end section
 =end code
+which might render as:
+=begin nested
+    =begin section :delta(v2.3.2-, 'removed due to conflict with chancellors')
+    =for head2 :!toc
+    role fool
+
+    This role is especially important in authoritarian kingdoms to remind kings of their humanity.
+
+    =end section
+=end nested
+
 If a user indicates to a renderer that they wish to view documentation valid today, which
 corresponds (for example) to C<v3.1.1> then, because C<v3.1.1> is after C<v2.3.2>, the section above – including the nested C<=head2> block and the following plain paragraph – would not be rendered.
 
@@ -2505,13 +2518,12 @@ We will use the identity: F<\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}>
 
 ...may either be rendered “accurately”:
 =begin nested
-=begin code :lang<text>
 We will use the identity: F<\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}>
 
 ...where the value of pi can be inferred from Euler’s Identity:
 
-=formula e^{i\pi}+1=0
-=end code
+=for formula :!toc :caption('')
+e^{i\pi}+1=0
 =end nested
 
 ... or may be converted to a suitable Unicode approximation:
@@ -2669,36 +2681,18 @@ and custom blocks are never mixed up.
 The way in which a renderer styles the contents of a custom block depends on the renderer, and each renderer
 may specify a procedure for using user-supplied templates or code.
 
-The DOC phaser in Raku is the way an author can define which renderer to use, e.g.:
-=begin code :lang<text>
-    DOC use My::Special::Renderer;
-    DOC use My::Other::Special::Renderer;
-
-    =begin rakudoc
-    ...
-    =end rakudoc
-=end code
-
-Non-Raku environments might specify their own mechanisms for loading custom renderers.
-For example, they might require a RakuDoc comment at the start of the document:
-=begin code :lang<RakuDoc>
-    =begin rakudoc
-    =comment load MySpecialRenderer, MyOtherSpecialRenderer
-    ...
-    =end rakudoc
-=end code
-Or they might require that any special handlers be specified as metadata on the C<rakudoc> block itself:
-=begin code :lang<RakuDoc>
-    =begin rakudoc :Load< MySpecialRenderer MyOtherSpecialRenderer >
-    ...
-    =end rakudoc
-=end code
-
-If a renderer does not recognise a custom block, then the renderer should treat the block name as the contents of a
+If a renderer does not recognise a custom block, then by default the renderer should treat the block name as the contents of a
 C<=head1> block, which can be overridden as described in L<Table of Contents|#Table of Contents and Index>. The
 contents of the unrecognised custom block should be rendered verbatim, like a C<=code> block.
 
-Consequently, multi-paragraph contents should be enclosed using the I<delimited> form of the block.
+It is possible that a custom block contains data, eg., the text form of an image, which should only
+be displayed with the custom block. If the renderer does not recognise the custom block, the
+document author should include an C< :alt<...> > option. The contents of the option will be rendered
+in place of the contents of the custom block.
+
+By default an unrecognised custom block will generate an error message.
+
+Multi-paragraph contents should be enclosed using the I<delimited> form of the block.
 
 =head2 Naming rules
 
@@ -2899,6 +2893,8 @@ That’s because each of them specifies explicitly what type of information thei
 are supposed to be, so there’s no need to infer anything. In particular, C<=para> and C<=code>
 are specifically provided to I<circumvent> inference from indentation.
 
+A C<=config code> directive will also apply to any implicit code block in the block scope.
+
 Finally, user-defined custom blocks should always pass their contents verbatim
 to whatever appropriate user-defined handler is in scope, and it’s up to
 that handler to infer the meaning of any indentation.
@@ -3098,16 +3094,10 @@ Markup instructions, including all customisable instructions, will typically hav
 =head3 Links
 
 To create a link, enclose it in C<L< >>. RakuDoc links are more general than the conventional HTML links.
-
-The general syntax is C< L< LABEL | TARGET > >
-=begin comment
-    When section and config for formatting are working,
-    the last line should be rewritten as
     =begin section
     =config C :allow<R>
     The general syntax is C< L< R<LABEL> | R<TARGET> > >
     =end section
-=end comment
 
 where the optional label is text that is rendered and the target may include a schema.
 If the label is omitted, then the target is used as the label. Whitespace on either side
@@ -3126,22 +3116,24 @@ However, a collection of RakuDoc sources may be intended as the base for multipl
 as C< .html >, C< .md >, or C< .pdf >, and so links within the collection may need to delegate
 the selection of an appropriate file format (if one is needed) to the renderer. This is accomplished explicitly using the C< .* >
 pseudo extension, for example:
+=begin section
+=config code :lang<RakuDoc>
 
     L< dealing with the filesystem | type/IO.Path.* >
 
 or for a heading within another resource:
 
     L< getting a directory listing | type/IO.Path.*#routine_dir >
-
+=end section
 For example, if the output format is Markdown, these links would be rendered
 with C<.md> extensions replacing the C<.*> pseudo-extensions:
-
+=for code :lang<MarkDown>
     [dealing with the filesystem](type/IO.Path.md)
     [getting a directory listing](type/IO.Path.md#routine_dir)
 
 Or, if the output format is HTML, these links would be rendered
 with C<.html> extensions instead:
-
+=for code :lang<HTML>
     <a href="type/IO.Path.html">             dealing with the filesystem </a>
     <a href="type/IO.Path.html#routine_dir"> getting a directory listing </a>
 
@@ -3309,6 +3301,8 @@ The C<toc:> form is a special pseudo-scheme that inserts a table of contents
 in place of the C<P<>> code. After the colon, list the block types that you
 wish to include in the table of contents. For example, to place a table of
 contents listing only top- and second-level headings:
+=begin section
+=config code :lang<RakuDoc>
 
     P<toc:1,2 >
 
@@ -3316,6 +3310,7 @@ To place a table of contents that lists the top four levels of headings:
 
     P<toc:1..4 >
 
+=end section
 In order to include the whole table of contents, use C<toc:*>. The C<*> is needed to make
 this term a valid URI.
 
@@ -3324,14 +3319,10 @@ A document may have as many C<P<toc:...>> placements as necessary.
 The C<index:*> form is a special pseudo-scheme that inserts an index table
 in place of the C<P<>> code.
 
-The C<semantic:XXX> form places the XXX semantic block at the position of the C<P<>> instruction.
-=begin comment
-    When =section/=config working, above line should be
-    =begin section
-    =config C :allow<R>
-    The C<semantic:R<NAME>> form places the R<NAME> semantic block at the position of the C<P<>> instruction.
-    =end section
-=end comment
+=begin section
+=config C :allow<R>
+The C<semantic:R<NAME>> form places the R<NAME> semantic block at the position of the C<P<>> instruction.
+=end section
 
 =head3 Alias placement
 
@@ -3533,7 +3524,12 @@ E<REGIONAL INDICATOR SYMBOL LETTER U, REGIONAL INDICATOR SYMBOL LETTER A> Ukrain
  E<RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK>
 =end code
 
-will be rendered as: « 🇺🇦 Ukraine ».
+will be rendered as:
+=begin nested
+E<LEFT-POINTING DOUBLE ANGLE QUOTATION MARK>
+E<REGIONAL INDICATOR SYMBOL LETTER U, REGIONAL INDICATOR SYMBOL LETTER A> Ukraine
+E<RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK>
+=end nested
 
 Since emojis are graphemes that can be described by Unicode, C<E< >> will
 also generate emojis. For example:
@@ -3573,11 +3569,11 @@ to avoid using quotes.
 =end code
 
 An ASCII-only renderer would then render those like so:
-
+=begin nested
 Raku makes considerable use of the left- and right-double-angle characters.
 
 Raku code often contains the left- and right-corner bracketing characters to avoid using quotes.
-
+=end nested
 
 =head3 Verbatim text
 

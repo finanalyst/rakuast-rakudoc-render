@@ -14,12 +14,16 @@ class HTML::Processor is RakuDoc::Processor {
     ## - indexed text, where Raku HTML has anchors that depend on context and meta
     ## - external links to other documents, which do not have to be unique
 
-    multi method escape( Str:D $s ) { $s
-        .subst(/ \s /, '_', :g)
-        .trans(qw｢ & " > < ｣ => qw｢ &amp; &quot; &gt; &lt;｣)
+    multi method escape( Str:D $s ) {
+        # will not double escape
+        $s.trans(qw｢ &lt; &gt; & " > < ｣ => qw｢ &lt; &gt; &amp; &quot; &gt; &lt;｣)
     }
     #| Stringify if not string
-    multi method escape( $s ) { self.escape( $s.gist ) }
+    multi method escape( $s ) { self.escape( $s.Str ) }
+    #| mangle an id to make sure it will be a valid id in the output
+    method mangle( $s ) {
+        self.escape( $s ).subst(/ \s /, '_', :g)
+    }
     #| name-id takes an ast
     #| returns a unique Str to be used as an anchor / target
     #| Used by any name (block) that is placed in the ToC
@@ -28,7 +32,7 @@ class HTML::Processor is RakuDoc::Processor {
     #| This method should be sub-classed by Renderers for different outputs
     #| renderers can use method is-target-unique to test for uniqueness
     method name-id($ast --> Str) {
-        my $target = self.escape($ast.Str.trim);
+        my $target = self.mangle($ast.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -41,7 +45,7 @@ class HTML::Processor is RakuDoc::Processor {
     #| Target should be unique
     #| Should be sub-classed by Renderers
     method index-id(:$context, :$contents, :$meta ) {
-        my $target = 'index-entry-' ~ self.escape($contents.Str.trim);
+        my $target = 'index-entry-' ~ self.mangle($contents.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -54,7 +58,7 @@ class HTML::Processor is RakuDoc::Processor {
     #| A local-heading is assumed to exist because specified by document author
     #| Should be sub-classed by Renderers
     method local-heading($ast) {
-        self.escape($ast.Str.trim)
+        self.mangle($ast.Str.trim)
     }
 }
 
@@ -143,32 +147,18 @@ class RakuDoc::To::HTML {
         %(
             #| special key to name template set
             _name => -> %, $ { 'markdown templates' },
-            #| differs from escape helper because it does not subst space for _
-            escape => -> %prm, $tmpl {
-                my $cont = %prm<contents> // '';
-                if $cont {
-                    $cont .= Str.trans(qw｢ & " > < ｣ => qw｢ &amp; &quot; &gt; &lt;｣);
-                }
-                else { '' }
-            },
             #| escape contents of code block
             escape-code => -> %prm, $tmpl {
                 my $cont = %prm<contents>.Str // '';
-                if $cont {
-                    $cont .= Str.trans(qw｢ & " ｣ => qw｢ &amp; &quot; ｣);
-                    while $cont ~~ m:c/ <tab> / {
-                        my $name = ~$<tab><name>;
-                        $cont = $/.replace-with('&lt;' ~ $<tab><name> ~ $<tab><cont> ~ '&gt;')
-                            unless ($name eq <span /span>.any).so
-                    }
-                    $cont
+                while $cont ~~ m:c/ <tab> / {
+                    my $name = ~$<tab><name>;
+                    $cont = $/.replace-with('&lt;' ~ $<tab><name> ~ $<tab><cont> ~ '&gt;')
+                        unless ($name eq <span /span>.any).so
                 }
-                else { '' }
+                $cont
             },
             #| renders =code blocks
             code => -> %prm, $tmpl {
-                %prm<html-tags> = True;
-                my $contents := %prm<contents>;
                 my $del = %prm<delta> // '';
                 PStr.new: ('<div class="delta">' ~ $del if $del) ~
                 q[<pre class="code-block">] ~
@@ -176,8 +166,6 @@ class RakuDoc::To::HTML {
                 "\n</pre>\n" ~
                 (</div> if $del)
             },
-            #| renders implicit code from an indented paragraph
-            implicit-code => -> %prm, $tmpl { $tmpl<code> },
             #| renders =input block
             input => -> %prm, $tmpl {
                 %prm<html-tags> = True;
@@ -211,30 +199,32 @@ class RakuDoc::To::HTML {
                 my $h = 'h' ~ (%prm<level> // '1') + 1 ;
                 my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
                 my $targ := %prm<target>;
-                my $esc-cap = $tmpl('escape',%(:contents( $caption )));
+                my $esc-cap = $tmpl.globals.escape.( $caption );
                 $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
                 my $id-target = %prm<id>:exists && %prm<id>
-                    ?? qq[[\n<div class="id-target" id="{ $tmpl('escape',%(:contents(%prm<id>))) }"></div>]]
+                    ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                     !! '';
                 PStr.new:
                     $id-target ~
                     ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
-                    qq[[<$h id="$targ" class="$classes">]] ~
+                    qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
                     ($del if $del) ~
+                    $caption ?? (
                     qq[[<a href="#" title="go to top of document">]] ~
                     $caption ~
                     qq[[</a><a class="raku-anchor" title="direct link" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>]] ~
                     qq[[</$h>\n]]
+                    ) !! ''
             },
             #| renders =numhead block
             numhead => -> %prm, $tmpl {
                 my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
                 my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-                my $targ = $tmpl('escape',%(:contents(%prm<target>)));
-                qq[[\n<div class="id-target" id="{ $tmpl('escape',%(:contents(%prm<id>))) }"></div>]] ~
+                my $targ = $tmpl.globals.escape.(%prm<target>);
+                qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]] ~
                     ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
                     qq[[<$h id="$targ" class="heading">]] ~
-                    qq[[<a href="#{ $tmpl('escape',%(:contents(%prm<top>))) }" title="go to top of document">]] ~
+                    qq[[<a href="#{ $tmpl.globals.escape.(%prm<top>) }" title="go to top of document">]] ~
                     $title ~
                     qq[[</a></$h>\n]] ~
                     (%prm<delta> // '')
@@ -325,8 +315,9 @@ class RakuDoc::To::HTML {
             rakudoc => -> %prm, $tmpl { %prm<contents> ~ "\n" }, #pass through without change
             #| renders =section block
             section => -> %prm, $tmpl {
-                (%prm<delta> // '') ~
-                %prm<contents> ~ "\n"
+                qq[<div class="rakudoc-section { 'delta' if %prm<delta>}">] ~
+                %prm<delta> ~
+                %prm<contents> ~ "\n</div>\n"
             },
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
@@ -393,7 +384,7 @@ class RakuDoc::To::HTML {
                 my $level = %prm<headlevel> // 1;
                 my $contents = qq[UNKNOWN { %prm<block-name> }];
                 my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption("Unknown %prm<block-name>"), :$contents, :delta('')));
-                PStr.new: $head ~ $tmpl<escape>
+                PStr.new: $head ~ $tmpl.globals.escape.(%prm<contents>)
                         .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                         .subst(/ \v /, '<br>', :g) ~
                          "\n\n"
@@ -476,7 +467,7 @@ class RakuDoc::To::HTML {
                         <h2 class="warnings-caption">Warnings</h2>
                             <ol>
                             { [~] %prm<warnings>.map({
-                                '<li>' ~ $tmpl('escape',%(:contents( $_ ))) ~ "</li>\n"
+                                '<li>' ~ $tmpl.globals.escape.( $_ ) ~ "</li>\n"
                                 })
                             }
                             </ol>
@@ -494,7 +485,7 @@ class RakuDoc::To::HTML {
             },
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
-            markup-C => -> %prm, $tmpl { CODE-ON ~ $tmpl<escape> ~ CODE-OFF },
+            markup-C => -> %prm, $tmpl { CODE-ON ~ $tmpl<escape-code> ~ CODE-OFF },
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
             markup-H => -> %prm, $tmpl { HIGH-ON ~ %prm<contents> ~ HIGH-OFF },
@@ -524,7 +515,7 @@ class RakuDoc::To::HTML {
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
             markup-S => -> %prm, $tmpl {
-                $tmpl<escape>
+                $tmpl.globals.escape.(%prm<contents>)
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g)
             },
@@ -537,7 +528,7 @@ class RakuDoc::To::HTML {
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
             markup-V => -> %prm, $tmpl {
-                $tmpl<escape>
+                $tmpl<escape-code>
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g)
             },
@@ -637,7 +628,7 @@ class RakuDoc::To::HTML {
                 }
             },
             #| Unknown markup, render minimally
-            markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl<escape> ~ BAD-MARK-OFF },
+            markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl.globals.escape.(%prm<contents>) ~ BAD-MARK-OFF },
             #| special template to encapsulate all the output to save to a file
             #| These sub-templates should allow sub-classes of RakuDoc::To::HTML
             #| to provide replacement templates on a more granular basis
@@ -677,7 +668,7 @@ class RakuDoc::To::HTML {
                 my $rv = '';
                 if %prm<title-target>:exists and %prm<title-target> ne '' {
                     $rv ~= qq[<div id="{
-                        $tmpl('escape',%(:contents( %prm<title-target> )))
+                        $tmpl.globals.escape.( %prm<title-target> )
                     }"></div>]
                 }
                 $rv ~= '<h1 class="title">' ~ %prm<title> ~ "</h1>\n\n" ~
@@ -695,7 +686,7 @@ class RakuDoc::To::HTML {
                 qq:to/FOOTER/;
                 \n<div class="footer">
                     Rendered from<span class="footer-field">&nbsp;{%prm<source-data><path>}/{%prm<source-data><name>}</span>
-                <span class="footer-field">{sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
+                <span class="footer-field">{sprintf( "&nbsp;at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
                 <span class="footer-line">Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
                 { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }
                 </div>

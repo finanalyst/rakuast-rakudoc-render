@@ -286,8 +286,9 @@ class RakuDoc::Processor {
                     $prs.warnings.push: "Invalid alias ｢{ $ast.Str }｣"
                 }
             }
+            # =implicit code created by indenting, but by specification is treated as code
+            when 'implicit-code' { $.gen-paraish( $ast, 'code', $parify ) }
             # =code
-            # implicit code created by indenting
             # =para block, as opposed to unmarked paragraphs in a block
             # not the same as a logical Doc::Paragraph, which has atoms, not paragraphs
             # =nested
@@ -297,7 +298,7 @@ class RakuDoc::Processor {
             # Pre-formatted sample input
             # =output
             # Pre-formatted sample output
-            when any(<code implicit-code para nested input output>)
+            when any(<code para nested input output>)
             {
                 $.gen-paraish( $ast, $ast.type, $parify )
             }
@@ -432,9 +433,9 @@ class RakuDoc::Processor {
         if (
             $!scoped-data.verbatim(:called-by) eq <code markup-C markup-V>.any
             )
-            and !%*ALLOW{ $letter }
+            && %*ALLOW.defined && !%*ALLOW{ $letter }
             {
-            $prs.body ~= $ast.DEPARSE;
+            $prs.body ~= $ast.letter ~ self.escape($ast.opener) ~ self.markup-contents( $ast ) ~ self.escape($ast.closer);
             return
         }
         my %config = $.merged-config( $, $letter );
@@ -869,17 +870,23 @@ class RakuDoc::Processor {
             $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target );
             %config<target> = $target;
         }
-        my %*ALLOW;
+        my PStr $contents .= new;
         $!scoped-data.start-scope(:starter($template), :verbatim )
             if $template ~~ any(<code implicit-code input output>);
         if $template eq 'code' {
-            %config<in_code_context> = True;
-            %*ALLOW = %config<allow>:exists
-                ?? %config<allow>.map({ $_ => True }).hash
-                !! {}
+            if %config<allow>:exists {
+                %config<in_code_context> = True;
+                my %*ALLOW = %config<allow>.map({ $_ => True }).hash;
+                $contents ~= $.contents($ast, $parify);
+            }
+            else {
+                $contents ~= $ast.paragraphs.map( *.Str ).join
+            }
+        }
+        else {
+            $contents ~= $.contents($ast, $parify);
         }
         my Bool $is-in-heading = $!scoped-data.in-head;
-        my PStr $contents = $.contents($ast, $parify);
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
         $contents ~= $.complete-numitem-list;
@@ -1694,6 +1701,7 @@ class RakuDoc::Processor {
                 $*prs.warnings.push: "The delta option is ignored because it must have the form / 'v' \\S+ \\s* (['|'] .+)? \$ / ｢{ ~$ast.DEPARSE }｣"
             }
         }
+        else { %config<delta> = '' }
         %config
     }
 
@@ -1815,8 +1823,6 @@ class RakuDoc::Processor {
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
-            #| renders implicit code from an indented paragraph, same as code
-            implicit-code => -> %prm, $tmpl { $tmpl<code> },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
