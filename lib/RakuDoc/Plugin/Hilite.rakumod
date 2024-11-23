@@ -181,15 +181,28 @@ method templates {
                     }
                 }
                 else {
-                    $code = Rainbow::tokenize($source).map( -> $t {
-                        my $cont = $tmpl.globals.escape.($t.text);
-                        if $t.type.key ne 'TEXT' {
-                            qq[<span class="rainbow-{$t.type.key.lc}">$cont\</span>]
-                        }
-                        else {
-                            $cont .= subst(/ ' ' /, '&nbsp;',:g);
-                        }
-                    }).join('');
+                    if $syntax-label eq 'RakuDoc' {
+                        $code = Rainbow::tokenize-rakudoc($source).map( -> $t {
+                            my $cont = $tmpl.globals.escape.($t.text);
+                            if $t.type.key ne 'TEXT' {
+                                qq[<span class="rainbow-{$t.type.key.lc}">$cont\</span>]
+                            }
+                            else {
+                                $cont .= subst(/ ' ' /, '&nbsp;',:g);
+                            }
+                        }).join('');
+                    }
+                    else {
+                        $code = Rainbow::tokenize($source).map( -> $t {
+                            my $cont = $tmpl.globals.escape.($t.text);
+                            if $t.type.key ne 'TEXT' {
+                                qq[<span class="rainbow-{$t.type.key.lc}">$cont\</span>]
+                            }
+                            else {
+                                $cont .= subst(/ ' ' /, '&nbsp;',:g);
+                            }
+                        }).join('');
+                    }
                     $code .= subst( / \v+ <?before $> /, '');
                     $code .= subst( / \v /, '<br>', :g);
                     $code .= subst( / "\t" /, '&nbsp' x 4, :g );
@@ -347,11 +360,11 @@ method scss-str {
             color: var(--bulma-primary-60);
             font-weight:500;
         }
-        .rainbow-pod_text {
+        .rainbow-rakudoc_text {
             color: var(--bulma-success-40);
             font-weight:500;
         }
-        .rainbow-pod_markup {
+        .rainbow-rakudoc_markup {
             color: var(--bulma-danger-40);
             font-weight:500;
         }

@@ -465,33 +465,31 @@ replacement text on the C<=alias> line.
 For example:
 
 =begin code :lang<RakuDoc>
-    =alias PROGNAME    Earl Irradiatem Evermore
-    =alias VENDOR      4D Kingdoms
-    =alias TERMS_URLS  =item L<http://www.4dk.com/eie>
-    =                  =item L<http://www.4dk.co.uk/eie.io/>
-    =                  =item L<http://www.fordecay.ch/canttouchthis>
+=alias PROGNAME    Earl Irradiatem Evermore
+=alias VENDOR      4D Kingdoms
+=alias TERMS_URLS  =item L<http://www.4dk.com/eie>
+=                  =item L<http://www.4dk.co.uk/eie.io/>
+=                  =item L<http://www.fordecay.ch/canttouchthis>
 
-    The use of A<PROGNAME> is subject to the terms and conditions
-    laid out by A<VENDOR>, as specified at:
+The use of A<PROGNAME> is subject to the terms and conditions
+laid out by A<VENDOR>, as specified at:
 
-        A<TERMS_URLS>
+A<TERMS_URLS>
 =end code
 
 This would produce:
 
 =begin nested
+=alias PROGNAME    Earl Irradiatem Evermore
+=alias VENDOR      4D Kingdoms
+=alias TERMS_URLS  =item L<http://www.4dk.com/eie>
+=                  =item L<http://www.4dk.co.uk/eie.io/>
+=                  =item L<http://www.fordecay.ch/canttouchthis>
 
-    =alias PROGNAME    Earl Irradiatem Evermore
-    =alias VENDOR      4D Kingdoms
-    =alias TERMS_URLS  =item L<http://www.4dk.com/eie>
-    =                  =item L<http://www.4dk.co.uk/eie.io/>
-    =                  =item L<http://www.fordecay.ch/canttouchthis>
+The use of A<PROGNAME> is subject to the terms and conditions
+laid out by A<VENDOR>, as specified at:
 
-    The use of A<PROGNAME> is subject to the terms and conditions
-    laid out by A<VENDOR>, as specified at:
-
-        A<TERMS_URLS>
-
+A<TERMS_URLS>
 =end nested
 
 The advantage of using aliases is, obviously, that the same alias can be
@@ -2533,7 +2531,9 @@ We will use the identity: ∑ 1/n² = 𝜋²/6
 
 ...where the value of pi can be inferred from Euler’s Identity:
 
-eⁱᐢ + 1 = 0
+=for formula :!toc :caption('')
+e^{i\pi}+1=0
+
 =end nested
 
 ... or may even left as raw LaTeX (perhaps with some kind of visual marker indicating
@@ -2681,16 +2681,12 @@ and custom blocks are never mixed up.
 The way in which a renderer styles the contents of a custom block depends on the renderer, and each renderer
 may specify a procedure for using user-supplied templates or code.
 
-If a renderer does not recognise a custom block, then by default the renderer should treat the block name as the contents of a
-C<=head1> block, which can be overridden as described in L<Table of Contents|#Table of Contents and Index>. The
-contents of the unrecognised custom block should be rendered verbatim, like a C<=code> block.
-
-It is possible that a custom block contains data, eg., the text form of an image, which should only
-be displayed with the custom block. If the renderer does not recognise the custom block, the
-document author should include an C< :alt<...> > option. The contents of the option will be rendered
-in place of the contents of the custom block.
-
-By default an unrecognised custom block will generate an error message.
+If a renderer does not recognize a custom block, then the renderer should replace that block with the contents of the
+block's C< :alt<...> > option (if provided). If the document author did not include an C< :alt<...> > option, then the
+renderer should treat the block name as the contents of a C<=head1> block, which can be overridden as described in
+L<Table of Contents|#Table of Contents and Index> and should render the contents of the unrecognized custom block verbatim,
+like a C<=code> block. Any unrecognized custom block (with or without an C< :alt<...> > option) should generate a warning
+message unless the custom block is passed the C< :!warn > option.
 
 Multi-paragraph contents should be enclosed using the I<delimited> form of the block.
 
@@ -3094,10 +3090,10 @@ Markup instructions, including all customisable instructions, will typically hav
 =head3 Links
 
 To create a link, enclose it in C<L< >>. RakuDoc links are more general than the conventional HTML links.
-    =begin section
-    =config C :allow<R>
-    The general syntax is C< L< R<LABEL> | R<TARGET> > >
-    =end section
+=begin section
+=config C :allow<R>
+The general syntax is C< L< R<LABEL> | R<TARGET> > >
+=end section
 
 where the optional label is text that is rendered and the target may include a schema.
 If the label is omitted, then the target is used as the label. Whitespace on either side

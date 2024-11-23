@@ -278,6 +278,10 @@ class RakuDoc::Processor {
                     $ast.paragraphs[1 .. *-1 ].map({ $.handle( $_ ) });
                     my $prs := $*prs;
                     my $expansion = $prs.body.trim-trailing;
+                    $expansion ~= $.complete-item-list;
+                    $expansion ~= $.complete-defn-list;
+                    $expansion ~= $.complete-numitem-list;
+                    $expansion ~= $.complete-numdefn-list;
                     $!scoped-data.aliases{ $term } = $expansion;
                     $prs.body .= new;
                     CALLERS::<$*prs> += $prs;
@@ -435,7 +439,11 @@ class RakuDoc::Processor {
             )
             && %*ALLOW.defined && !%*ALLOW{ $letter }
             {
-            $prs.body ~= $ast.letter ~ self.escape($ast.opener) ~ self.markup-contents( $ast ) ~ self.escape($ast.closer);
+            my $cont = $ast.letter eq 'E'
+            ?? $ast.DEPARSE
+            !! self.markup-contents( $ast )
+            ;
+            $prs.body ~= $ast.letter ~ self.escape($ast.opener) ~ $cont ~ self.escape($ast.closer);
             return
         }
         my %config = $.merged-config( $, $letter );

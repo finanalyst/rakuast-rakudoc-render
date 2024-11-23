@@ -209,12 +209,12 @@ class RakuDoc::To::HTML {
                     ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
                     qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
                     ($del if $del) ~
-                    $caption ?? (
+                    ($caption ?? (
                     qq[[<a href="#" title="go to top of document">]] ~
                     $caption ~
                     qq[[</a><a class="raku-anchor" title="direct link" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>]] ~
                     qq[[</$h>\n]]
-                    ) !! ''
+                    ) !! '')
             },
             #| renders =numhead block
             numhead => -> %prm, $tmpl {
