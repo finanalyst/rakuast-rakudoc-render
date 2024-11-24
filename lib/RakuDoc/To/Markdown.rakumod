@@ -4,13 +4,19 @@ use RakuDoc::PromiseStrings;
 
 class MarkDown::Processor is RakuDoc::Processor {
     #| Escape characters in a string, needs to be over-ridden
-    multi method escape( Str:D $s ) { $s.trans(
-                   qw｢ <    >    &     "       `   ｣
-                => qw｢ &lt; &gt; &amp; &quot;  ``  ｣
-    ) }
+    multi method escape( Str:D $s ) {
+        # will not double escape
+        $s.trans(
+                   qw｢ &lt; &gt; <    >    &     "       `   ｣
+                => qw｢ &lt; &gt; &lt; &gt; &amp; &quot;  ``  ｣
+        )
+    }
     #| Stringify if not string
-    multi method escape( $s ) { self.escape( $s.gist ) }
-
+    multi method escape( $s ) { self.escape( $s.Str ) }
+    #| mangle an id to make sure it will be a valid id in the output
+    method mangle( $s ) {
+        self.escape( $s ).subst(/ \s /, '_', :g)
+    }
     #| name-id takes an ast
     #| returns a unique Str to be used as an anchor / target
     #| Used by any name (block) that is placed in the ToC
@@ -19,7 +25,7 @@ class MarkDown::Processor is RakuDoc::Processor {
     #| This method should be sub-classed by Renderers for different outputs
     #| renderers can use method is-target-unique to test for uniqueness
     method name-id($ast --> Str) {
-        my $target = self.escape($ast.Str.trim);
+        my $target = self.mangle($ast.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix

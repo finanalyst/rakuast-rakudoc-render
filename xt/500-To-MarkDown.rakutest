@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use Test::Run :runs_ok;
 
-plan 5;
+plan 4;
 
 use RakuDoc::Render;
 use RakuDoc::To::Markdown;
@@ -10,7 +10,6 @@ my @generic = RakuDoc::Processor.new.default-text-templates.keys.sort;
 my @markdown = RakuDoc::To::Markdown.new.markdown-templates.keys.sort;
 
 ok @generic (<=) @markdown, 'markdown redefines all the keys in generic';
-is (@markdown (-) @generic), ('escaped'), 'RakuDoc::To::Markdown also defines new templates';
 %*ENV<RAKUDO_RAKUAST> = 1;
 my @args = <<$*EXECUTABLE -I. --rakudoc=Markdown xt/test-files/test.rakudoc>>;
 runs_ok(

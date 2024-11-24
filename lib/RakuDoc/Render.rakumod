@@ -271,25 +271,7 @@ class RakuDoc::Processor {
         given $ast.type {
             # =alias
             # Define a RakuDoc macro, scoped to the current block
-            when 'alias' {
-                if $ast.paragraphs.elems >= 2 {
-                    my $term = $ast.paragraphs[0].Str; # it should be a string without embedded codes
-                    my ProcessedState $*prs .= new;
-                    $ast.paragraphs[1 .. *-1 ].map({ $.handle( $_ ) });
-                    my $prs := $*prs;
-                    my $expansion = $prs.body.trim-trailing;
-                    $expansion ~= $.complete-item-list;
-                    $expansion ~= $.complete-defn-list;
-                    $expansion ~= $.complete-numitem-list;
-                    $expansion ~= $.complete-numdefn-list;
-                    $!scoped-data.aliases{ $term } = $expansion;
-                    $prs.body .= new;
-                    CALLERS::<$*prs> += $prs;
-                }
-                else {
-                    $prs.warnings.push: "Invalid alias ｢{ $ast.Str }｣"
-                }
-            }
+            when 'alias' { $.manage-alias( $ast ) }
             # =implicit code created by indenting, but by specification is treated as code
             when 'implicit-code' { $.gen-paraish( $ast, 'code', $parify ) }
             # =code
@@ -302,8 +284,7 @@ class RakuDoc::Processor {
             # Pre-formatted sample input
             # =output
             # Pre-formatted sample output
-            when any(<code para nested input output>)
-            {
+            when any(<code para nested input output>) {
                 $.gen-paraish( $ast, $ast.type, $parify )
             }
             # =comment
@@ -314,49 +295,35 @@ class RakuDoc::Processor {
             when 'config' { $.manage-config($ast); }
             # =formula
             # Render content as LaTex formula
-            when 'formula' { $.gen-formula($ast) } #toc
+            when 'formula' { $.gen-formula($ast) }
             # =head
             # First-level heading
             # =headN
             # Nth-level heading
-            when 'head' { #toc
-                $.gen-headish($ast, $parify);
-            }
+            when 'head' { $.gen-headish($ast, $parify) }
             # =numhead
             # First-level numbered heading
             # =numheadN
             # Nth-level numbered heading
             # heading numeration is fixed when TOC is generated and all headers are known
-            when 'numhead' {
-                $.gen-headish( $ast, $parify, :template<numhead>, :numerate)
-            }
+            when 'numhead' { $.gen-headish( $ast, $parify, :template<numhead>, :numerate) }
             # =item
             # First-level list item
             # =itemN
             # Nth-level list item
-            when 'item' {
-                $.gen-item($ast, $parify)
-            }
+            when 'item' { $.gen-item($ast, $parify) }
             # =defn
             # Definition of a term
-            when 'defn' {
-                $.gen-defn($ast)
-            }
+            when 'defn' { $.gen-defn($ast) }
             # =numitem
             # First-level numbered list item
             # =numitemN
             # Nth-level numbered list item
-            when 'numitem' {
-                $.gen-numitem($ast, $parify)
-            }
+            when 'numitem' { $.gen-numitem($ast, $parify) }
             # =numdefn
-            when 'numdefn' {
-                $.gen-defn($ast, :numerate)
-            }
+            when 'numdefn' { $.gen-defn($ast, :numerate) }
             # =place block, mostly mimics P<>, but allows for TOC and caption
-            when 'place' { #toc
-                 $.gen-place($ast);
-            }
+            when 'place' { $.gen-place($ast) }
             # =rakudoc
             # No "ambient" blocks inside
             # could be called if P<> embeds a RakuDoc file
@@ -506,11 +473,10 @@ class RakuDoc::Processor {
             # Alias to be replaced by contents of specified V<=alias> directive
             when 'A' {
                 my $term = self.markup-contents($ast).Str;
-                my Bool $error = False;
-                my $error-text = '';
+                my $alt = '';
                 # check to see if there is a text to over-ride automatic failure message
                 if $term ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
-                    $error-text = ~$0.trim;
+                    $alt = ~$0.trim;
                     $term = ~$1.trim
                 }
                 my $contents;
@@ -518,15 +484,15 @@ class RakuDoc::Processor {
                     $contents = $!scoped-data.aliases{ $term }
                 }
                 else {
-                    $error = True;
                     $contents = $term;
-                    $contents = $error-text if $error-text;
-                    $prs.warnings.push:
+                    $contents = $alt if $alt;
+                    $prs.warnings.push(
                         "Unknown or as yet undeclared alias ｢$term｣"
                         ~ " in block ｢$context｣ with heading ｢$place｣"
-                        ~ ( $error-text ?? " over-riden by ｢$error-text｣" !! ''  )
+                        ~ ( $alt ?? " over-riden by ｢$alt｣" !! ''  ))
+                        if %config<error>
                 }
-                $prs.body ~ %!templates<markup-A>( %( :$contents, :$error, :$error-text, %config ) )
+                $prs.body ~ %!templates<markup-A>( %( :$contents, %config ) )
             }
             # E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             # Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
@@ -646,8 +612,9 @@ class RakuDoc::Processor {
                    }
                 }
                 else {
-                    $prs.warnings.push: "Ignored unparsable definition synonyms ｢{ ~$ast.meta }｣"
-                        ~ " in block ｢$context｣ with heading ｢$place｣."
+                    $prs.warnings.push("Ignored unparsable definition synonyms ｢{ ~$ast.meta }｣"
+                        ~ " in block ｢$context｣ with heading ｢$place｣.")
+                        if %config<error>
                 }
                 my $rv = %!templates{"markup-$letter"}(
                     %( :$contents, %config )
@@ -680,8 +647,9 @@ class RakuDoc::Processor {
                     )
                 }
                 else {
-                    $prs.warnings.push: "Δ<> markup ignored because it has no version/note content ｢{ ~$ast.DEPARSE }｣"
-                        ~ " in block ｢$context｣ with heading ｢$place｣.";
+                    $prs.warnings.push("Δ<> markup ignored because it has no version/note content ｢{ ~$ast.DEPARSE }｣"
+                        ~ " in block ｢$context｣ with heading ｢$place｣.")
+                        if %config<error>;
                     # treat as verbatim text
                     $prs.body ~= %!templates<markup-V>( %( :$contents, %config ))
                 }
@@ -692,7 +660,8 @@ class RakuDoc::Processor {
                 my $contents = self.markup-contents($ast);
                 unless $ast.meta {
                     $prs.body ~= %!templates<markup-M>( %(:$contents ) );
-                    $prs.warnings.push: "Markup-M failed: no meta information. Got ｢{ $ast.DEPARSE }｣";
+                    $prs.warnings.push("Markup-M failed: no meta information. Got ｢{ $ast.DEPARSE }｣")
+                        if %config<error>;
                     return
                 }
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
@@ -705,13 +674,15 @@ class RakuDoc::Processor {
                     }
                     else {
                         $prs.body ~= %!templates<markup-M>( %(:$contents, :$target ) );
-                        $prs.warnings.push: "Markup-M failed: template ｢$template｣ does not exist. Got ｢{ $ast.DEPARSE }｣"
+                        $prs.warnings.push("Markup-M failed: template ｢$template｣ does not exist. Got ｢{ $ast.DEPARSE }｣")
+                        if %config<error>
                     }
                 }
                 else {
                     # template is spelt like a SEMANTIC or builtin
                     $prs.body ~= %!templates<markup-M>( %(:$contents ) );
-                    $prs.warnings.push: "Markup-M failed: first meta string must conform to Custom template spelling. Got ｢{ $ast.DEPARSE }｣"
+                    $prs.warnings.push("Markup-M failed: first meta string must conform to Custom template spelling. Got ｢{ $ast.DEPARSE }｣")
+                        if %config<error>
                 }
             }
             # X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
@@ -737,9 +708,10 @@ class RakuDoc::Processor {
                 elsif $ast.meta {
                     $prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $prs.index{$contents}:exists;
                     $prs.index{$contents}<refs>.push: %ref;
-                    $prs.warnings.push: 'Ignoring content of L<> after | ｢'
+                    $prs.warnings.push('Ignoring content of L<> after | ｢'
                         ~ $ast.meta.Str ~ '｣'
-                        ~ " in block ｢$context｣ with heading ｢$place｣."
+                        ~ " in block ｢$context｣ with heading ｢$place｣.")
+                        if %config<error>
                 }
                 else {
                     $prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $prs.index{$contents}:exists;
@@ -763,9 +735,10 @@ class RakuDoc::Processor {
             # do not go through templates as these cannot be redefined
             when any(<G Q W Y>) {
                 $prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
-                $prs.warnings.push:
+                $prs.warnings.push(
                     "｢$letter｣ is not defined, but is reserved for future use"
-                        ~ " in block ｢$context｣ with heading ｢$place｣."
+                        ~ " in block ｢$context｣ with heading ｢$place｣.")
+                    if %config<error>
             }
             when (.uniprop ~~ / Lu / and %!templates{ "markup-$letter" }:exists) {
                 my $contents = self.markup-contents($ast);
@@ -775,14 +748,16 @@ class RakuDoc::Processor {
             }
             when (.uniprop ~~ / Lu /) {
                 $prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
-                $prs.warnings.push:
+                $prs.warnings.push(
                     "｢$letter｣ does not have a template, but could be a custom code"
-                        ~ " in block ｢$context｣ with heading ｢$place｣."
+                        ~ " in block ｢$context｣ with heading ｢$place｣.")
+                    if %config<error>
             }
             default {
                 $prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
-                $prs.warnings.push: "｢$letter｣ may not be a markup code"
-                        ~ " in block ｢$context｣ with heading ｢$place｣."
+                $prs.warnings.push("｢$letter｣ may not be a markup code"
+                        ~ " in block ｢$context｣ with heading ｢$place｣.")
+                    if %config<error>
             }
         }
     }
@@ -813,10 +788,10 @@ class RakuDoc::Processor {
             # deal with possible inline definitions
             if $prs.inline-defns.elems {
                 for $prs.inline-defns.list -> $term {
-                    $prs.warnings.push:
+                    $prs.warnings.push(
                         "Definition ｢$term｣ has been redefined as an inline"
-                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
-                        if $prs.definitions{ $term }:exists;
+                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
+                        if $prs.definitions{ $term }:exists && %config<error>;
                     $prs.definitions{ $term } = $rv, $target;
                     $!register.add-payload(:payload($rv), :id($term));
                     $!register.add-payload(:payload($target), :id($term ~ '_target'))
@@ -925,7 +900,8 @@ class RakuDoc::Processor {
                 $id = self.register-target( $_ );
             }
             else {
-                $prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣";
+                $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣")
+                if %config<error>
             }
         }
         else { $id = '' }
@@ -971,7 +947,8 @@ class RakuDoc::Processor {
                 $id = self.register-target( $_ );
             }
             else {
-                $prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$alt｣";
+                $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$alt｣")
+                if %config<error>
             }
         }
         # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
@@ -1018,6 +995,7 @@ class RakuDoc::Processor {
     method gen-defn($ast, :$numerate = False) {
         my $term;
         my $defn-expansion;
+        my %config = $.merged-config($ast, $numerate ?? 'numdefn' !! 'defn');
         if $ast.paragraphs.elems == 2 {
             $term = $ast.paragraphs[0].Str.trim; # the term may not contain embedded code
             $defn-expansion = $ast.paragraphs[1];
@@ -1025,14 +1003,14 @@ class RakuDoc::Processor {
         else {
             my $string = $ast.Str;
             $*prs.body ~= $string;
-            $*prs.warnings.push:
+            $*prs.warnings.push(
                 "Invalid definition: ｢$string｣"
-                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.";
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
+                if %config<error>;
             return
         }
         my $target = $.name-id("defn_$term");
         my $contents;
-        my %config = $.merged-config($ast, $numerate ?? 'numdefn' !! 'defn');
         # generate contents from second str/paragraph
         do {
             my ProcessedState $*prs .= new;
@@ -1058,10 +1036,10 @@ class RakuDoc::Processor {
             );
             $prs.defns.push: $defn-expansion; # for the defn list to be render
         }
-        $prs.warnings.push:
+        $prs.warnings.push(
             "Definition ｢$term｣ has been redefined"
-            ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
-            if $prs.definitions{ $term }:exists;
+            ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
+            if $prs.definitions{ $term }:exists and %config<error>;
         $prs.definitions{ $term } = $defn-expansion, $target;
         # define for previously referenced
         $!register.add-payload(:payload($defn-expansion), :id($term));
@@ -1087,7 +1065,8 @@ class RakuDoc::Processor {
                 %config<id> = self.register-target( $_ )
             }
             else {
-                $*prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣";
+                $*prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣")
+                if %config<error>
             }
         }
         my $toc = %config<toc> // True;
@@ -1139,7 +1118,7 @@ class RakuDoc::Processor {
                         default {
                             my $error = "Link ｢$uri｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
                             $contents = %config<fallback> // $error;
-                            $prs.warnings.push: $error
+                            $prs.warnings.push($error) if %config<error>
                         }
                     }
                 }
@@ -1152,7 +1131,7 @@ class RakuDoc::Processor {
                 else {
                     my $error = "No file found at ｢$f-uri｣";
                     $contents = %config<fallback> // $error;
-                    $prs.warnings.push: $error
+                    $prs.warnings.push($error) if %config<error>
                 }
             }
             when 'defn' {
@@ -1170,9 +1149,9 @@ class RakuDoc::Processor {
             }
             default {
                     $contents = %config<fallback> // "See $uri";
-                    $prs.warnings.push:
+                    $prs.warnings.push(
                         "The schema ｢$schema｣ is not implemented. Full link was ｢$uri｣"
-                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.") if %config<error>
             }
         }
         # trap contents that have RakuDoc, could be from https, or file and attempt to process it.
@@ -1219,9 +1198,9 @@ class RakuDoc::Processor {
                 $id = $_
             }
             else {
-                $*prs.warnings.push:
+                $*prs.warnings.push(
                     "Attempt to register already existing id ｢$_｣ as new target in ｢section｣"
-                    ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                    ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.") if %config<error>
             }
         }
         $*prs.body ~= %!templates<section>( %( :$contents, :$id, %config ) )
@@ -1240,7 +1219,7 @@ class RakuDoc::Processor {
                 $id = self.register-target( $_ );
             }
             else {
-                $prs.warnings.push: "Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣";
+                $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣") if %config<error>
             }
         }
         my $level = %config<headlevel> // 1 ;
@@ -1309,7 +1288,8 @@ class RakuDoc::Processor {
             for $ast.paragraphs -> $grid-instruction {
                 unless $grid-instruction.^can('type') {
                     $prs.body ~= $ast.Str;
-                    $prs.warnings.push: "｢{$grid-instruction.Str}｣ is illegal as an immediate child of a =table";
+                    $prs.warnings.push("｢{$grid-instruction.Str}｣ is illegal as an immediate child of a =table")
+                    if %config<error>;
                     return
                 }
                 next if $grid-instruction.type eq 'comment';
@@ -1369,7 +1349,8 @@ class RakuDoc::Processor {
                     }
                     default { # only =cell =row =column allowed after a =grid
                         $prs.body ~= $ast.Str;
-                        $prs.warnings.push: "｢{$grid-instruction.DEPARSE}｣ is illegal as an immediate child of a =table";
+                        $prs.warnings.push("｢{$grid-instruction.DEPARSE}｣ is illegal as an immediate child of a =table")
+                        if %config<error>;
                         return
                     }
                 }
@@ -1383,7 +1364,8 @@ class RakuDoc::Processor {
                 next if $row ~~ Str; # rows as strings are row/header separators
                 unless $row ~~ RakuAST::Doc::LegacyRow {
                     $prs.body ~= $ast.DEPARSE;
-                    $prs.warnings.push: "｢{$row.Str}｣ is illegal as an immediate child of a =table";
+                    $prs.warnings.push("｢{$row.Str}｣ is illegal as an immediate child of a =table")
+                    if %config<error>;
                     return
                 }
                 my @this-row;
@@ -1410,21 +1392,24 @@ class RakuDoc::Processor {
     #| DEPARSED Str is rendered with 'unknown' template
     #| Nothing added to ToC
     method gen-unknown-builtin($ast) {
+        my %config = $.merged-config( $ast, '*' );
         my $contents = $ast.DEPARSE;
         my $prs := $*prs;
         if $ast.type ~~ any(<
                 cell code input output comment head numhead defn item numitem nested para
                 rakudoc section pod table formula
             >) { # a known built-in, but to get here the block is unimplemented
-            $prs.warnings.push:
+            $prs.warnings.push(
                 '｢' ~ $ast.type ~ '｣'
                 ~ 'is a valid, but unimplemented builtin block'
-                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
+                if %config<error>
         }
         else { # not known so create another warning
-            $prs.warnings.push:
+            $prs.warnings.push(
                 '｢' ~ $ast.type ~ '｣' ~ ' is not a valid builtin block, is it a misspelt Custom block?'
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                ) if %config<error>
         }
         my $target = $.name-id($ast.type);
         $prs.body ~= %!templates<unknown>( %( :$contents, :block-name($ast.type), :$target ) )
@@ -1476,7 +1461,8 @@ class RakuDoc::Processor {
                 }
             }
             default {
-                $hidden = %config<hidden>.so // False; # other SEMANTIC by default rendered in place
+                $hidden = %config<hidden>.so // False;
+                # other SEMANTIC by default rendered in place
                 # allows for a plugin to add a SEMANTIC blockname to templates
                 my $template = %!templates{ $block-name }:exists ?? $block-name !! 'semantic';
                 my $target = $.name-id($block-name);
@@ -1487,9 +1473,10 @@ class RakuDoc::Processor {
                         $id = $_
                     }
                     else {
-                        $prs.warnings.push:
+                        $prs.warnings.push(
                             "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣"
                             ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                            ) if %config<error>
                     }
                 }
                 $rv = %!templates{$template}(
@@ -1526,9 +1513,10 @@ class RakuDoc::Processor {
                 $id = $_
             }
             else {
-                $prs.warnings.push:
+                $prs.warnings.push(
                     "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣"
                     ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                ) if %config<error>
             }
         }
         my $target = %config<id>:delete // $.name-id($caption);
@@ -1544,9 +1532,11 @@ class RakuDoc::Processor {
             # by spec, the name of an unrecognised Custom is treated like =head1
             # the contents are treated like =code
             my $contents = $ast.DEPARSE;
-            $prs.warnings.push:
+            $contents = %config<alt> if %config<alt>:exists;
+            $prs.warnings.push(
             "No template exists for custom block ｢$block-name｣. It has been rendered as unknown"
-                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.";
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+            ) if %config<error>;
             $prs.body ~= %!templates<unknown>( %( :$contents, :$block-name, :$target, :$caption) )
         }
     }
@@ -1556,6 +1546,27 @@ class RakuDoc::Processor {
         my $name = $ast.paragraphs[0].Str;
         $name = $name ~ '1' if $name eq <item head numitem numhead>.any;
         $!scoped-data.config( { $name => %options } );
+    }
+    method manage-alias($ast) {
+        my %config = $ast.resolved-config;
+        my $prs := $*prs;
+        if $ast.paragraphs.elems >= 2 {
+            my $term = $ast.paragraphs[0].Str; # it should be a string without embedded codes
+            my ProcessedState $*prs .= new;
+            $ast.paragraphs[1 .. *-1 ].map({ $.handle( $_ ) });
+            my $prs := $*prs;
+            my $expansion = $prs.body.trim-trailing;
+            $expansion ~= $.complete-item-list;
+            $expansion ~= $.complete-defn-list;
+            $expansion ~= $.complete-numitem-list;
+            $expansion ~= $.complete-numdefn-list;
+            $!scoped-data.aliases{ $term } = $expansion;
+            $prs.body .= new;
+            CALLERS::<$*prs> += $prs;
+        }
+        else {
+            $prs.warnings.push("Invalid alias ｢{ $ast.Str }｣") if %config<error>
+        }
     }
     ## completion methods
 
@@ -1700,13 +1711,18 @@ class RakuDoc::Processor {
         %scoped{ $block-name }.pairs.map({
             %config{ .key } = .value unless %config{ .key }:exists
         });
+        %scoped{ '*' }.pairs.map({
+            %config{ .key } = .value unless %config{ .key }:exists
+        });
+        %config<error> = True unless %config<error>:exists;
         if %config<delta>:exists {
             my $contents = %config<delta>:delete;
             if $contents.join(' ') ~~ / (<-[;]>+) ';'? ( .* ) $ / {
                 %config<delta> = %!templates<delta>(%( :note( ~$1.trim), :versions(~$0.trim) ));
             }
             else {
-                $*prs.warnings.push: "The delta option is ignored because it must have the form / 'v' \\S+ \\s* (['|'] .+)? \$ / ｢{ ~$ast.DEPARSE }｣"
+                $*prs.warnings.push("The delta option is ignored because it must have the form / 'v' \\S+ \\s* (['|'] .+)? \$ / ｢{ ~$ast.DEPARSE }｣")
+                if %config<error>
             }
         }
         else { %config<delta> = '' }
@@ -1724,7 +1740,11 @@ class RakuDoc::Processor {
     ## - external links to other documents, which do not have to be unique
 
     #| Escape characters in a string, needs to be over-ridden
-    method escape( Str:D $s ) { $s.subst(/ \s /, '_', :g) }
+    multi method escape( Str:D $s ) { $s }
+    #| Stringify if not string
+    multi method escape( $s ) { self.escape( $s.Str ) }
+    #| mangle an id to make sure it will be a valid id in the output
+    method mangle( $s ) { self.escape( $s ).subst(/ \s /, '_', :g) }
 
     #| name-id takes an ast
     #| returns a unique Str to be used as an anchor / target
@@ -1734,7 +1754,7 @@ class RakuDoc::Processor {
     #| This method should be sub-classed by Renderers for different outputs
     #| renderers can use method is-target-unique to test for uniqueness
     method name-id($ast --> Str) {
-        my $target = self.escape($ast.Str.trim);
+        my $target = self.mangle($ast.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -1747,7 +1767,7 @@ class RakuDoc::Processor {
     #| Target should be unique
     #| Should be sub-classed by Renderers
     method index-id(:$context, :$contents, :$meta ) {
-        my $target = 'index-entry-' ~ self.escape($contents.Str.trim);
+        my $target = 'index-entry-' ~ self.mangle($contents.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -1760,7 +1780,7 @@ class RakuDoc::Processor {
     #| A local-heading is assumed to exist because specified by document author
     #| Should be sub-classed by Renderers
     method local-heading($ast) {
-        self.escape($ast.Str.trim);
+        self.mangle($ast.Str.trim);
     }
 
     method para-target( $contents ) {
