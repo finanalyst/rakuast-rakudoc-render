@@ -1,7 +1,7 @@
 =begin rakudoc :kind("Language") :subkind("Language") :category("reference")
 =TITLE RakuDoc
 =SUBTITLE A Raku slang for documenting Raku software to aid development and use.
-=VERSION 2.9.1
+=VERSION 2.10.1
 
 RakuDoc is a markup language with simple instructions for simple tasks and more
 complex structures to suit larger projects. There is a clear distinction between
@@ -519,6 +519,8 @@ The use of A<this program | SOFTWARE> is subject to the terms and conditions
 laid out by A<our company | COMPANY>, as specified at:
 A<(Please visit our website) | OURTERMS>
 =end nested
+Furthermore, since none of the aliases were specified in this document, error messages will be produced
+by the renderer (perhaps at the end of the rendered page).
 
 =head2 Block specifiers
 
@@ -552,46 +554,69 @@ Successive C<=config> directives within the same scope are cumulative in effect.
 Because C<=config> directives specify I<default> behaviours, whenever a particular kind of metadata
 is explicitly specified for an instance of that block type, that option overrides the defaults set by any active C<=config> blocks.
 For example:
-=begin code :lang<RakuDoc>
-    =config code :allow< B C I >
-    # The default metadata for any code block is now:  :allow< B C I >
+=begin code :allow<B>
+    B<=config item1 :bullet« \c[Earth Globe Europe-Africa] » >
+    B<=config item2 :bullet« \c[Hand with Index and Middle Fingers Crossed] » >
+    =comment  In the following list, =item1 and =item2 will now have non-standard bullets
 
-    =begin code
-       # In this paragraph B<this phrase will be shown as basis (possibly in bold font)>
-       # and I<this will be shown as important (possibly italics)>.
-       # But other markup such as R<placeholder> and K<input> will be shown verbatim.
-       #
-       # Because no :lang<> option was configured, the language for the block
-       # is the universal default:  :lang<Raku>
-    =end code
-
-    =config code :lang<RakuDoc>
-    # The default metadata for any code block is now:  :allow< B C I > :lang<RakuDoc>
-
-    =begin code :allow< R K >
-       # Here the explicit :allow on the block overrides the default :allow from the =config
-       # so B<markup> and I<markup> are shown verbatim, while R<this will be shown as a replacement text>.
-       #
-       # There is no explicit :lang on the code block,
-       # so the language for the block is the configured default:  :lang<RakuDoc.
-    =end code
-
-    =code # Now we're back to B<basic> and I<important>, but not R<placeholder> or K<input>
+    The major sources of sustainable energy are:
+        =item1 geothermal
+        =item1 fusion
+        =item2 (eventually)
 
     =begin section
-    =config code :allow< R K >
-        # The default metadata for any code block is now:  :allow< R K > :lang<RakuDoc>
+        B<=config item1 :toc :headerlevel(2)>
+        =comment  The following items still have non-standard bullets but now they will
+                  also be added to the table of contents as if they were =head2 blocks
 
-    =begin code :lang<JavaScript>
-            // The format codes R and K are activated by default,
-            // but B<> C<> I<> markup will be shown verbatim
-            //
-            // The language has been explicitly set to Javascript
-            // (important if syntax highlighting is turned on),
-            // so the configured default language (RakuDoc) is overridden
-    =end code
+        Important items are:
+            =item1 small scale fusion
+            =item1 room temperature superconductors
+
     =end section
+
+    =comment  The following list items will NOT be added to the Table of Contents
+              because the section containing that particular =config has now ended.
+              They will still have the non-standard Earth bullets though,
+              because those two =config directives are still in scope.
+
+        =item1 matter-antimatter annihilation
+        =item1 zero-point energy
 =end code
+
+When an option needs to be associated with all blocks, the config statement may take a
+whatever C<*> instead of a specific block name, like so:
+=for code :lang<RakuDoc>
+    =config * :!error
+
+This particular example signals to the renderer that no warning messages should be issued
+if errors are encountered by I<any> block type in the current block scope.
+
+The general principle that more block-specific configurations of metadata take precedence over
+more generic configurations. For example, suppose in the same block scope, we have:
+=begin code :lang<RakuDoc>
+=config *    :!error
+=config item  :error
+
+=for item :!error
+    Item 1
+
+=for item
+    Item 2
+
+=for numitem
+    Item 3
+=end code
+
+Then the configuration would applied in the following order:
+=numitem V<=>for item V<:!error>  (specific metadata applied to a specific block)
+=numitem V<=config item :error>   (default metadata applied to a specific kind of block)
+=numitem V<=config * :!error>     (default metadata applied to any kind of block)
+
+Which means that I<Item 1> would never generate a warning (because its C<item> block
+is specifically configured not to do so), while I<Item 2> could generate warnings
+(because C<item> blocks are generically configured to do so), and I<Item 3> would never
+never generate a warning (because generic blocks are generically configured not to do so).
 
 There is more discussion of C<=config> in the context of L<Formatting codes|#Formatting codes>.
 
@@ -2683,7 +2708,7 @@ may specify a procedure for using user-supplied templates or code.
 
 If a renderer does not recognize a custom block, then the renderer should replace that block with the contents of the
 block's C< :alt<...> > option (if provided). If the document author did not include an C< :alt<...> > option, then the
-renderer should treat the block name as the contents of a C<=head1> block, which can be overridden as described in
+renderer should treat the block name as the contents of a C<=head1> block, which can be overridden as described in 
 L<Table of Contents|#Table of Contents and Index> and should render the contents of the unrecognized custom block verbatim,
 like a C<=code> block. Any unrecognized custom block (with or without an C< :alt<...> > option) should generate a warning
 message unless the custom block is passed the C< :!warn > option.
@@ -3038,6 +3063,15 @@ correspond to the version information. A block that does not have a C<:delta> is
 C<:delta<*>>.
 
 An example is given in the description of the L<C<section> block |#Sections>
+
+=head2 Error messages
+
+If the metadata option C<:error> is false for a block, then no warning is generated.
+
+=head2 Alternative rendering
+
+If the metadata option C<:alt> associated with a block has a string value, and an error is encountered when
+rendering a block, then the value of C<:alt> is rendered in place of the block.
 
 =head1 Markup instructions
 
@@ -3768,7 +3802,6 @@ the use of unimplemented built-ins
 =item3 appending error messages to the end of the rendered output in a distinctive style that indicates they are errors
 =item3 rendering unhandled blocks or codes inline (in a distinctive style) and providing the associated error message
 in a pop-up that activates on hover or mouse-click
-
 
 =place semantic:AUTHORS
 

@@ -19,7 +19,7 @@ class HTML::Processor is RakuDoc::Processor {
         $s.trans(qw｢ &lt; &gt; & " > < ｣ => qw｢ &lt; &gt; &amp; &quot; &gt; &lt;｣)
     }
     #| Stringify if not string
-    multi method escape( $s ) { self.escape( $s.Str ) }
+    multi method escape( $s ) { self.escape( $s ?? $s.Str !! '' ) }
     #| mangle an id to make sure it will be a valid id in the output
     method mangle( $s ) {
         self.escape( $s ).subst(/ \s /, '_', :g)
