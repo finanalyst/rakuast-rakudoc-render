@@ -38,7 +38,7 @@ class MarkDown::Processor is RakuDoc::Processor {
     #| Target should be unique
     #| Should be sub-classed by Renderers
     method index-id(:$context, :$contents, :$meta ) {
-        my $target = 'index-entry-' ~ self.escape($contents.Str.trim);
+        my $target = 'index-entry-' ~ self.mangle($contents.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
@@ -354,7 +354,7 @@ class RakuDoc::To::Markdown {
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
                 "----\n\n## " ~ qq[<div id="{ %prm<target> }">UNKNOWN { %prm<block-name> }</div>\n\n] ~
-                $tmpl.globals.escape(%prm<contents>)
+                $tmpl.globals.escape.(%prm<contents>)
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                      .subst(/ \v /, '<br>', :g) ~
                      "\n\n"
@@ -417,7 +417,7 @@ class RakuDoc::To::Markdown {
                 if %prm<warnings>.elems {
                     PStr.new: "\n\n----\n\n----\n\n## WARNINGS\n\n" ~
                     %prm<warnings>.kv.map( -> $n, $val {
-                        $n + 1 ~ ': ' ~ $tmpl.globals.escape( $val )
+                        $n + 1 ~ ': ' ~ $tmpl.globals.escape.( $val )
                     }).join("\n\n") ~ "\n\n"
                 }
                 else { '' }
@@ -461,7 +461,7 @@ class RakuDoc::To::Markdown {
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
             markup-S => -> %prm, $tmpl {
-                $tmpl.globals.escape( %prm<contents> )
+                $tmpl.globals.escape.( %prm<contents> )
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g)
             },
@@ -474,7 +474,7 @@ class RakuDoc::To::Markdown {
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
             markup-V => -> %prm, $tmpl {
-                $tmpl.globals.escape( %prm<contents> )
+                $tmpl.globals.escape.( %prm<contents> )
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g)
             },
@@ -544,7 +544,7 @@ class RakuDoc::To::Markdown {
                 '</span>'
             },
             #| Unknown markup, render minimally
-            markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl.globals.escape( %prm<contents> ) ~ BAD-MARK-OFF },
+            markup-bad => -> %prm, $tmpl { BAD-MARK-ON ~ $tmpl.globals.escape.( %prm<contents> ) ~ BAD-MARK-OFF },
         ); # END OF TEMPLATES (this comment is to simplify documentation generation)
     }
 }
