@@ -397,6 +397,7 @@ class RakuDoc::Processor {
             ｢{ $ast.DEPARSE }｣ is a declarator block and not rendered for text-based output formats.
             WARN
     }
+    my @format-codes = <B H I J K R T U O>;
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         my $letter = $ast.letter;
         my $prs := $*prs;
@@ -406,11 +407,7 @@ class RakuDoc::Processor {
             )
             && %*ALLOW.defined && !%*ALLOW{ $letter }
             {
-            my $cont = $ast.letter eq 'E'
-            ?? $ast.DEPARSE
-            !! self.markup-contents( $ast )
-            ;
-            $prs.body ~= $ast.letter ~ self.escape($ast.opener) ~ $cont ~ self.escape($ast.closer);
+            $prs.body ~= self.escape($ast.DEPARSE);
             return
         }
         my %config = $.merged-config( $, $letter );
@@ -420,7 +417,7 @@ class RakuDoc::Processor {
         given $letter {
             ## Markup codes with only display (format codes), no meta data allowed
             ## meta data via Config is allowed
-            when any( <B H I J K R T U O> ) {
+            when @format-codes {
                 my $contents = self.markup-contents($ast);
                 $prs.body ~= %!templates{"markup-$letter"}(
                     %( :$contents, %config )
@@ -436,9 +433,11 @@ class RakuDoc::Processor {
             when any( <C V> ) {
                 my %*ALLOW = %( CALLERS::<%*ALLOW> );
                 # replace contents of %*ALLOW if so configured
-                with %config<allow> {
+                if %config<allow>:exists {
                     %*ALLOW = Empty;
-                    %*ALLOW{$_} = True for $_.list
+                    %*ALLOW = %config<allow>
+                    .grep({ any(@format-codes) })
+                    .map({ $_ => True }).hash;
                 }
                 $!scoped-data.start-scope(:starter("markup-$letter"), :verbatim);
                 my $contents = $.markup-contents($ast);
@@ -859,7 +858,9 @@ class RakuDoc::Processor {
         if $template eq 'code' {
             if %config<allow>:exists {
                 %config<in_code_context> = True;
-                my %*ALLOW = %config<allow>.map({ $_ => True }).hash;
+                my %*ALLOW = %config<allow>
+                    .grep({ any(@format-codes) })
+                    .map({ $_ => True }).hash;
                 $contents ~= $.contents($ast, $parify);
             }
             else {

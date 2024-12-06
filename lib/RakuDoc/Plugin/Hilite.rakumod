@@ -100,7 +100,7 @@ method templates {
                 if (%prm<highlighter>:exists && %prm<highlighter> ~~ /:i 'Deparse' | 'Rainbow' /);
             my $code;
             my $syntax-label;
-            my $source = %prm<contents>.Str;
+            my $source = %prm<contents>.Str.trim-trailing;
             my Bool $hilite = %prm<syntax-highlighting> // True;
             if %prm<allow> {
                 $syntax-label = '<b>allow</b> styling';

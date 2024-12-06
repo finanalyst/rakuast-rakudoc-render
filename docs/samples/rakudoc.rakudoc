@@ -1,7 +1,7 @@
 =begin rakudoc :kind("Language") :subkind("Language") :category("reference")
 =TITLE RakuDoc
 =SUBTITLE A Raku slang for documenting Raku software to aid development and use.
-=VERSION 2.10.1
+=VERSION 2.10.2
 
 RakuDoc is a markup language with simple instructions for simple tasks and more
 complex structures to suit larger projects. There is a clear distinction between
@@ -586,8 +586,9 @@ For example:
 
 When an option needs to be associated with all blocks, the config statement may take a
 whatever C<*> instead of a specific block name, like so:
-=for code :lang<RakuDoc>
+=begin code :lang<RakuDoc>
     =config * :!error
+=end code
 
 This particular example signals to the renderer that no warning messages should be issued
 if errors are encountered by I<any> block type in the current block scope.
@@ -810,7 +811,7 @@ Each C<=data> block can be given a C<:key> option, to name it. The contents
 of any C<=data> block with a key are accessible (as a single string) via
 the Associative aspect of C<$=data> object. For example:
 
-=begin code :allow<B> :lang<RakuDoc>
+=begin code
 
     =begin data :key<Virtues>
     Laziness
@@ -1256,7 +1257,8 @@ emphasize a particular keyword in an example (using a C<B<>> code). Or you may w
 part of the example is metasyntactic (using the C<R<>> code). Or you might need to insert a non-ASCII
 character (using the C<E<>> code).
 
-You can specify a list of markup instructions that should still be recognized within a code block using
+You can specify a list of L<display only|#Display only codes> markup instructions (B C H I J K N O R S T U V)
+that should still be recognized within a code block using
 the C<:allow> option. The value of the C<:allow> option must be a list of the (single-letter)
 names of one or more markup instructions. Those codes will then remain active inside the code block.
 For example:
@@ -3551,7 +3553,7 @@ Multiple codepoints separated by C<,> will be considered as a single grapheme. S
 =begin code :lang<RakuDoc>
 E<LEFT-POINTING DOUBLE ANGLE QUOTATION MARK>
 E<REGIONAL INDICATOR SYMBOL LETTER U, REGIONAL INDICATOR SYMBOL LETTER A> Ukraine
- E<RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK>
+E<RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK>
 =end code
 
 will be rendered as:
@@ -3738,13 +3740,13 @@ HV«< » I<DISPLAY-TEXT> V« >»
 IV«< » I<DISPLAY-TEXT> V« >»
 JV«< » I<DISPLAY-TEXT> V« >»
 KV«< » I<DISPLAY-TEXT> V« >»
+NV«< » I<DISPLAY-TEXT> V« >»
+OV«< » I<DISPLAY-TEXT> V« >»
 RV«< » I<DISPLAY-TEXT> V« >»
 SV«< » I<DISPLAY-TEXT> V« >»
 TV«< » I<DISPLAY-TEXT> V« >»
 UV«< » I<DISPLAY-TEXT> V« >»
 VV«< » I<DISPLAY-TEXT> V« >»
-NV«< » I<DISPLAY-TEXT> V« >»
-OV«< » I<DISPLAY-TEXT> V« >»
 =end code
 =end nested
 

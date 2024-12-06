@@ -1,4 +1,4 @@
-# Default ignored files
+ Default ignored files
 /shelf/
 /workspace.xml
 /modules.xml
@@ -6,3 +6,5 @@
 /dictionaries/richard.xml
 /misc.xml.iml
 /vcs.xml
+/csv-editor.xml
+/misc.xml
