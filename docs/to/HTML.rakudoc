@@ -1,6 +1,6 @@
 =begin rakudoc :type<renderer>
 =TITLE Rendering RakuDoc v2 to HTML
-=for AUTHORS :hidden
+=for AUTHOR :hidden
 Richard Hainsworth, aka finanalyst
 =for VERSION :hidden
 v0.1.0
