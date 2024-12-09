@@ -1,5 +1,8 @@
 FROM docker.io/rakuland/raku
 
+# Install make, gcc, etc.
+RUN apk add build-base
+
 # install a SASS compiler
 ADD dart-sass-1.81.0-linux-x64.tar.gz /opt/
 RUN ln -s /opt/dart-sass/sass /usr/local/bin/sass
@@ -13,7 +16,10 @@ RUN zef install . -/precompile-install
 # symlink executable to location on PATH
 RUN ln -s /opt/rakuast-rakudoc-render/bin/RenderDocs /usr/local/bin/RenderDocs
 
-# Make a new WORKDIR where users will mount their code
+# Make a new WORKDIR where users will mount their documents
 RUN mkdir /src
 WORKDIR /src
+# Directory where rendered files go
+RUN mkdir /to
+WORKDIR /to
 
