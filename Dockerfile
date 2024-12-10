@@ -20,10 +20,9 @@ RUN zef install . -/precompile-install
 # symlink executable to location on PATH
 RUN ln -s /opt/rakuast-rakudoc-render/bin/RenderDocs /usr/local/bin/RenderDocs
 
-# Make a new WORKDIR where users will mount their documents
-RUN mkdir /src
-WORKDIR /src
+# Directory where users will mount their documents
+RUN mkdir /doc
 # Directory where rendered files go
 RUN mkdir /to
-WORKDIR /to
+WORKDIR /
 
