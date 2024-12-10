@@ -23,9 +23,9 @@ multi sub MAIN(
     })>>.key;
     unless $quiet {
         if +@to-be-rendered {
-            say "Rendering into $format the following modified / new files: @to-be-rendered"
+            say "Rendering to ｢$format｣ format the following modified / new files: ", @to-be-rendered
         }
-        else { say "All files in $src rendered to $format in $to"}
+        else { say "All files in $src rendered to ｢$format｣ format in $to"}
     }
     my $nformat = ($format eq 'html' && $single) ?? 'html-extra' !! $format;
     render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
