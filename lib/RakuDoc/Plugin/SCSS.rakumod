@@ -15,7 +15,7 @@ has %.config = %(
 
 submethod TWEAK {
     my $proc = shell( <<sass --version>>, :out, :merge);
-    exit note 'Cannot run sass.' unless $proc.out.slurp(:close) ~~ / \d \. \d+ /;
+    exit note 'RakuDoc::Plugin::SCSS Plugin fails because the program sass is not reachable.' unless $proc.out.slurp(:close) ~~ / \d \. \d+ /;
 }
 method enable( RakuDoc::Processor:D $rdp ) {
     self.convert-scss( $rdp );

@@ -21,7 +21,12 @@ multi sub MAIN(
     my @to-be-rendered = %docs.pairs.grep({
         %rendered{.key}:exists.not ||(%rendered{.key} < .value)
     })>>.key;
-    say "Documents with .{ $format } in CWD, but not in docs/ : ", (%rendered.keys (-) %docs.keys).keys unless $quiet;
+    unless $quiet {
+        if +@to-be-rendered {
+            say "Rendering into $format the following modified / new files: @to-be-rendered"
+        }
+        else { say "All files in $src rendered to $format in $to"}
+    }
     my $nformat = ($format eq 'html' && $single) ?? 'html-extra' !! $format;
     render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
 }
