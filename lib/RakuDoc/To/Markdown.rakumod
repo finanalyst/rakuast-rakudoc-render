@@ -26,7 +26,7 @@ class MarkDown::Processor is RakuDoc::Processor {
     #| renderers can use method is-target-unique to test for uniqueness
     method name-id($ast --> Str) {
         my $target = self.mangle($ast.Str.trim);
-        return self.register-target($target) if $.is-target-unique($target);
+        return self.register-target($target) if self.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
         $target ~= '_0';
@@ -39,7 +39,7 @@ class MarkDown::Processor is RakuDoc::Processor {
     #| Should be sub-classed by Renderers
     method index-id(:$context, :$contents, :$meta ) {
         my $target = 'index-entry-' ~ self.mangle($contents.Str.trim);
-        return self.register-target($target) if $.is-target-unique($target);
+        return self.register-target($target) if self.is-target-unique($target);
         my @rejects = $target, ;
         # if plain target is rejected, then start adding a suffix
         $target ~= '_0';
@@ -391,7 +391,7 @@ class RakuDoc::To::Markdown {
                 my $n = %prm<level>;
                 PStr.new:
                     ("&nbsp;&nbsp;&nbsp;" x $n - 1 ) ~ INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': ' ~
-                    %prm<refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }</a>] }).join(', ')
+                    %prm<refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }\</a>] }).join(', ')
                     ~ "\n\n"
             },
             #| special template to render the index data structure

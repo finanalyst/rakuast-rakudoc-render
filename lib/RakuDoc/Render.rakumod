@@ -1667,7 +1667,7 @@ class RakuDoc::Processor {
     }
     # helper methods
     method is-target-unique($targ --> Bool) {
-        !$!current.targets{$targ}
+        $!current.targets{$targ}.not
     }
     method register-target($targ) {
         $!current.targets{$targ}++;

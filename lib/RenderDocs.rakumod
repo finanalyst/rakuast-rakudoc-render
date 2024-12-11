@@ -2,6 +2,7 @@ use experimental :rakuast;
 use RakuDoc::Render;
 use RakuDoc::To::HTML;
 use RakuDoc::To::HTML-Extra;
+use File::Directory::Tree;
 
 proto sub MAIN(|) is export {*}
 
@@ -15,17 +16,21 @@ multi sub MAIN(
         Str :$verbose,
         Bool :$pretty,
     ) {
-    my %docs = $src.IO.dir(test => *.ends-with('.rakudoc')).map({ .extension('').basename => .modified });
+    my %docs = list-files( $src, < .rakudoc .rakumod >);
     my $extension = $format eq 'html' ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
-    my %rendered = $to.IO.dir(test => *.ends-with($extension)).map({ .extension('').basename => .modified });
+    mktree $to unless $to.IO ~~ :e & :d; # just make sure the rendered directory exist
+    my %rendered = list-files( $to, ( $extension, ) );
     my @to-be-rendered = %docs.pairs.grep({
-        %rendered{.key}:exists.not ||(%rendered{.key} < .value)
-    })>>.key;
+            %rendered{.key}:!exists || (%rendered{.key}<modified> < .value<modified>)
+        })>>.key;
+    @to-be-rendered.map({
+        mktree "$to/$_".IO.dirname unless "$to/$_".IO.dirname.IO ~~ :e & :d;
+    });
     unless $quiet {
-        if +@to-be-rendered {
-            say "Rendering to ｢$format｣ format the following modified / new files: ", @to-be-rendered
+        if +@to-be-rendered -> $n {
+            say "New or modified files to render: $n"
         }
-        else { say "All files in $src rendered to ｢$format｣ format in $to"}
+        else { say "All files in $src rendered to ｢$format｣ format in ｢$to/｣"}
     }
     my $nformat = ($format eq 'html' && $single) ?? 'html-extra' !! $format;
     render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
@@ -48,6 +53,24 @@ multi sub MAIN(
 multi sub MAIN(
         Bool :version(:$v)! #= Return version of distribution
 ) { say 'Using version ', $?DISTRIBUTION.meta<version>, ' of rakuast-rakudoc-render distribution.' if $v };
+
+sub list-files( $src, @exts --> Hash ) {
+    my @todo = $src.IO;
+    my %docs;
+    while @todo {
+        for @todo.pop.dir -> $path {
+            if $path.d { @todo.push: $path }
+            elsif $path.ends-with( @exts.any ) {
+                %docs{$path.relative($src).IO.extension('')} = %(
+                    :$path,
+                    modified => $path.modified
+                )
+            }
+            # ignore all other files
+        }
+    }
+    %docs
+}
 
 multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose, :$pretty) {
     for @to-be-rendered.sort {
