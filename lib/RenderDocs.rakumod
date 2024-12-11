@@ -8,7 +8,7 @@ proto sub MAIN(|) is export {*}
 
 multi sub MAIN(
         :$src = 'docs',
-        :$to = $*CWD,
+        :$rendered,
         Bool :q($quiet) = False,
         Str :$format = 'md',
         Bool :$single = False,
@@ -16,6 +16,7 @@ multi sub MAIN(
         Str :$verbose,
         Bool :$pretty,
     ) {
+    my $to = $rendered // $*CWD;
     my %docs = list-files( $src, < .rakudoc .rakumod >);
     my $extension = $format eq 'html' ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
     mktree $to unless $to.IO ~~ :e & :d; # just make sure the rendered directory exist
@@ -38,7 +39,7 @@ multi sub MAIN(
 multi sub MAIN(
         Str:D $file,               #= a single file name that must exist in src directory
         Str :$src = 'docs',        #= the directory containing the source files, defaults to docs/
-        :$to = $*CWD,              #= the directory to which the output is directed, defaults to $*CWD,
+        :$rendered = 'to',         #= the directory to which the output is directed, defaults to $*CWD,
         Bool :q($quiet) = False,   #= Don't output info
         Str :$format = 'md',       #= Output file extension, must be 'html' if not 'md'
         Bool :$single = False,     #= Use ::HTML renderer, otherwise ::HTML-Extra renderer
@@ -47,6 +48,7 @@ multi sub MAIN(
         Bool :$pretty              #= set Template response to pretty
      ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
+    my $to = $rendered.IO ~~ :e & :d ?? $rendered !! $*CWD;
     my $nformat = ($format eq 'html' && $single) ?? 'html-single' !! $format;
     render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
 }

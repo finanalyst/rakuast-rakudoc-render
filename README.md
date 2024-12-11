@@ -303,7 +303,7 @@ Richard Hainsworth aka finanalyst
 ----
 
 ## VERSION<div id="VERSION_0"> </div>
-v0.5.0
+v0.16.2
 
 
 
@@ -313,8 +313,8 @@ v0.5.0
 
 ----
 
-Rendered from docs/docs/README.rakudoc at 23:24 UTC on 2024-11-26
+Rendered from docs/docs/README.rakudoc at 23:41 UTC on 2024-12-11
 
-Source last modified at 12:25 UTC on 2024-11-16
+Source last modified at 12:49 UTC on 2024-12-08
 
 
