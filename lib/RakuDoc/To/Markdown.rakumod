@@ -56,6 +56,7 @@ class MarkDown::Processor is RakuDoc::Processor {
 }
 
 class RakuDoc::To::Markdown {
+    has MarkDown::Processor $.rdp .=new;
 
     method render($ast) {
         my $fn = $*PROGRAM;
@@ -64,7 +65,8 @@ class RakuDoc::To::Markdown {
             modified => $fn.modified,
             path     => $fn.dirname
         );
-        my $rdp = MarkDown::Processor.new;
+        my $r2md = self.new;
+        my $rdp := $r2md.rdp;
         $rdp.add-templates( $.markdown-templates, :source<RakuDoc::To::Markdown> );
         if %*ENV<MORE_MARKDOWN>:exists {
             exit note( "｢{%*ENV<MORE_MARKDOWN>}｣ is not a file" ) unless %*ENV<MORE_MARKDOWN>.IO ~~ :e & :f;

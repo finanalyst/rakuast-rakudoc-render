@@ -2,6 +2,7 @@ use experimental :rakuast;
 use RakuDoc::Render;
 use RakuDoc::To::HTML;
 use RakuDoc::To::HTML-Extra;
+use RakuDoc::To::Markdown;
 use File::Directory::Tree;
 
 proto sub MAIN(|) is export {*}
@@ -75,13 +76,19 @@ sub list-files( $src, @exts --> Hash ) {
 multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose, :$pretty) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
-        say "Processing ｢$src/$_.rakudoc｣ to ｢$dest.md｣" unless $quiet;
-        my $p = shell ('RAKUDO_RAKUAST=1', $*EXECUTABLE, '-I.', '-MRakuDoc::Render', '--rakudoc=Markdown',
-                       "$src/$_.rakudoc"), :err, :out;
-        my $err = $p.err.slurp(:close);
-        $err.say if $err;
-        my $out = $p.out.slurp(:close);
-        "$dest.md".IO.spurt($out) if $out;
+        my $from = "$src/$_.rakudoc";
+        say "Processing ｢$from｣ to ｢{ $dest }.md｣" unless $quiet;
+        my $ast = $from.IO.slurp.AST;
+        my %source-data = %(
+            name     => $_,
+            modified => $from.IO.modified,
+            path     => $from.IO.path
+        );
+        my RakuDoc::Processor $rdp = RakuDoc::To::Markdown.new.rdp;
+        $rdp.debug( $debug ) with $debug;
+        $rdp.verbose( $verbose ) with $verbose;
+        $rdp.pretty( $pretty ) with $pretty;
+        "$dest.md".IO.spurt($rdp.render($ast, :%source-data));
     }
 }
 multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-single', :$debug, :$verbose, :$pretty) {
