@@ -8,7 +8,7 @@ proto sub MAIN(|) is export {*}
 
 multi sub MAIN(
         :$src = 'docs',
-        :$rendered,
+        :$to = $*CWD,
         Bool :q($quiet) = False,
         Str :$format = 'md',
         Bool :$single = False,
@@ -16,7 +16,6 @@ multi sub MAIN(
         Str :$verbose,
         Bool :$pretty,
     ) {
-    my $to = $rendered // $*CWD;
     my %docs = list-files( $src, < .rakudoc .rakumod >);
     my $extension = $format eq 'html' ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
     mktree $to unless $to.IO ~~ :e & :d; # just make sure the rendered directory exist
