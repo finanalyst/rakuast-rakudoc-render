@@ -313,8 +313,7 @@ v0.16.2
 
 ----
 
-Rendered from docs/docs/README.rakudoc at 23:41 UTC on 2024-12-11
+Rendered from docs/README.rakudoc/README at 11:07 UTC on 2024-12-14
 
 Source last modified at 12:49 UTC on 2024-12-08
-
 

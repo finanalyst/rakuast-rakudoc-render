@@ -56,7 +56,11 @@ class MarkDown::Processor is RakuDoc::Processor {
 }
 
 class RakuDoc::To::Markdown {
-    has MarkDown::Processor $.rdp .=new;
+    has MarkDown::Processor $.rdp .=new(:output-format<md>);
+
+    submethod TWEAK {
+        $!rdp.add-templates( self.markdown-templates, :source<RakuDoc::To::Markdown> );
+    }
 
     method render($ast) {
         my $fn = $*PROGRAM;
@@ -67,7 +71,6 @@ class RakuDoc::To::Markdown {
         );
         my $r2md = self.new;
         my $rdp := $r2md.rdp;
-        $rdp.add-templates( $.markdown-templates, :source<RakuDoc::To::Markdown> );
         if %*ENV<MORE_MARKDOWN>:exists {
             exit note( "｢{%*ENV<MORE_MARKDOWN>}｣ is not a file" ) unless %*ENV<MORE_MARKDOWN>.IO ~~ :e & :f;
             try {

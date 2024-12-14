@@ -63,7 +63,7 @@ class HTML::Processor is RakuDoc::Processor {
 }
 
 class RakuDoc::To::HTML {
-    has HTML::Processor $.rdp .=new;
+    has HTML::Processor $.rdp .=new(:output-format<html>);
 
     submethod TWEAK {
         $!rdp.add-templates( self.html-templates, :source<RakuDoc::To::HTML> );
