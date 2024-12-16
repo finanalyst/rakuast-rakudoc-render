@@ -407,7 +407,14 @@ class RakuDoc::Processor {
             )
             && %*ALLOW.defined && !%*ALLOW{ $letter }
             {
-            $prs.body ~= self.escape($ast.DEPARSE);
+            given $letter {
+                when 'L' {
+                    $prs.body ~= 'L' ~ $ast.opener ~ self.markup-contents($ast);
+                    with $ast.meta { $prs.body ~= '|' ~ self.markup-contents( $ast, :meta )}
+                    $prs.body ~= $ast.closer
+                }
+                default { $prs.body ~= self.escape($ast.DEPARSE) }
+            }
             return
         }
         my %config = $.merged-config( $, $letter );
@@ -1697,9 +1704,10 @@ class RakuDoc::Processor {
         $text
     }
     #| similar to contents but expects atoms structure
-    method markup-contents($ast) {
+    method markup-contents($ast, :$meta = False) {
         my ProcessedState $*prs .= new;
-        for $ast.atoms { $.handle($_) }
+        if $meta { for $ast.meta { $.handle($_) } }
+        else { for $ast.atoms { $.handle($_) } }
         my $prs := $*prs;
         my $text = $prs.body;
         $prs.body .= new;
