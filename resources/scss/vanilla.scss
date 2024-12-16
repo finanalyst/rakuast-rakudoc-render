@@ -99,6 +99,7 @@ div.defn-text {
 }
 div.defn-term {
 	font-weight: bold;
+	font-style: italic;
 }
 div.id-target {
 	display: none;
@@ -253,7 +254,7 @@ li.item {
 }
 div.rakudoc-image-placement {
     display: flex;
-    justify-content: space-around;
+    flex-direction: column;
     align-items: center;
 }
 .rakudoc-placement-error {

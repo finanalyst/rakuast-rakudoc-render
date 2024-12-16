@@ -131,14 +131,14 @@ are inserted into the TOC, but markers are rarely put in the TOC.
 =for LeafMarker
 =    :map-id<map-four>
 =    :lat<51.529269> :long<-3.188109>
-=    :fa-icon<fa fa-solid fa-utensils fa-spin fa-3x fa-fww>
+=    :fa-icon<fa-solid fa-utensils fa-spin fa-3x fa-fw>
 =    :!toc
 =    :title<Fintans Fish & Chip Co>
 
 =for LeafMarker
 =    :map-id<map-four>
 =    :lat<51.502576> :long<-3.190222>
-=    :fa-icon<fas fa-solid fa-utensils>
+=    :fa-icon<fa-solid fa-utensils>
 =    :!toc
 =    :popup<Yan’s Fish Bar>
 

@@ -227,8 +227,8 @@ class RakuDoc::Processor {
     }
 
     method compactify( Str:D $s ) {
-        $s .subst(/ \v+ /,' ',:g )
-        .subst(/ <?after \S\s> \s+ /, '', :g)
+        self.escape($s.subst(/ \v+ /,' ',:g )
+        .subst(/ <?after \S\s> \s+ /, '', :g))
     }
 
     #| All handle methods may generate debug reports
