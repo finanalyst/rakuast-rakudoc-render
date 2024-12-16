@@ -19,10 +19,6 @@ comment
 =cell V«renders =comment block»
 =row
 =for cell :label
-custom
-=cell V«renders =custom block»
-=row
-=for cell :label
 defn
 =cell V«renders =defn block»
 =row
@@ -55,10 +51,6 @@ formula
 =for cell :label
 head
 =cell V«renders =head block»
-=row
-=for cell :label
-implicit-code
-=cell V«renders implicit code from an indented paragraph»
 =row
 =for cell :label
 index

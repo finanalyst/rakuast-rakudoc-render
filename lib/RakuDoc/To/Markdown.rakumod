@@ -344,18 +344,6 @@ class RakuDoc::To::Markdown {
                 }
                 $rv
             },
-            #| renders =custom block
-            custom => -> %prm, $tmpl {
-                my $del = %prm<delta> // '';
-                # using level + 1 so that TITLE is always larger
-                # a line above heading level one to separate sections
-                ('----' if %prm<level> == 1) ~
-                "\n" ~ $del ~ "\n" ~
-                '#' x ( %prm<level> + 1)  ~ ' ' ~
-                %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~
-                "\n" ~
-                %prm<raw> ~ "\n\n"
-            },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
                 "----\n\n## " ~ qq[<div id="{ %prm<target> }">UNKNOWN { %prm<block-name> }</div>\n\n] ~

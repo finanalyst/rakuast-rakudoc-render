@@ -373,12 +373,6 @@ class RakuDoc::To::HTML {
                 }
                 $rv ~= "</table>\n"
             },
-            #| renders =custom block
-            custom => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
-                PStr.new: $head ~ %prm<raw> ~ "\n\n"
-            },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
                 my $level = %prm<headlevel> // 1;
@@ -392,13 +386,14 @@ class RakuDoc::To::HTML {
             #| Version numbers should appear on the same line as the heading
             VERSION => -> %prm, $tmpl {
                 my $level = %prm<headlevel> // 1;
+                my $content := %prm<contents>.Str;
                 my $head = $tmpl('head', %(
                     :$level, :id(%prm<id>), :target(%prm<target>),
-                    :caption(%prm<caption> ~ '&nbsp' x 4 ~ %prm<contents>.Str ),
+                    :caption(%prm<caption> ~ '&nbsp' x 4 ~  $content ),
                     :delta(%prm<delta>)
                 ));
-
-                ( $head unless %prm<hidden> ) ~ "\n"
+                if %prm<hidden> { qq| <div class="rakudoc-version">$content\</div> | }
+                else { $head }
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {

@@ -26,6 +26,7 @@ has %.config =
 	:provider<OpenStreetMap>,
 	:zoom(16),
 	:map-id<html-extra-leaflet-map>,
+	:scss([self.map-scss,2],),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates, :source<LeafletMaps plugin> );
@@ -34,14 +35,8 @@ method enable( RakuDoc::Processor:D $rdp ) {
 method templates {
     %(
         LeafletMap => sub (%prm, $tmpl) {
-            my $proc = run <ping -c 1 unpkg.com>, :err, :out;
-            unless $proc.out.slurp(:close) { # if ping does not give output can't reach libraries
-                return q:to/RSP/
-                <div style="color: red">
-                    Internet access to ｢unpkg.com｣ is needed for map libraries, so map cannot be shown.
-                </div>
-                RSP
-            }
+            my $level = %prm<headlevel> // 1;
+            my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
             my %leaflet := $tmpl.globals.data<leafletmap>;
             my $map-id = %prm<map-id> // %leaflet<map-id>;
             my $var-name = 'v' ~ $map-id.trans('-' => '_');
@@ -53,9 +48,12 @@ method templates {
             my $provider = %prm<provider> // %leaflet<provider>;
             my $apikey = %leaflet<api-key> // ''; # only put secret info in config file
             qq:to/MAP/;
+            $rv
+            <div class="leaflet-map-rakudoc">
             <div id="$map-id"
-            style="height: { $height // '200px' }; { "width: $width;" if $width }"
+                style="height: { $height // '200px' }; { "width: $width;" if $width }"
             >
+            </div>
             </div>
             <script>
                 var $var-name = L.map('$map-id').setView([$lat, $long], $zoom);
@@ -85,7 +83,6 @@ method templates {
             qq:to/MARKER/;
             <script>
             { $icon if $icon }
-
             L.marker(\[$lat, $long], \{ {
                 ("icon: $name" if $icon)
                 ~ (',' if ($icon and $title))
@@ -96,4 +93,14 @@ method templates {
             MARKER
         },
     )
+}
+method map-scss() {
+    q:to/MAPSCSS/
+    .leaflet-map-rakudoc {
+        margin-bottom: 1rem;
+        div {
+            margin: auto;
+        }
+    }
+    MAPSCSS
 }

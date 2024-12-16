@@ -1521,13 +1521,16 @@ class RakuDoc::Processor {
             }
         }
         my $target = %config<id>:delete // $.name-id($caption);
-        unless %config<toc> {
-            $prs.toc.push: %( :$caption, :$level, :$numeration, :$target )
-        }
+        my $toc = %config<toc>:delete // True;
+        # attach numeration to caption and contents separately, allowing template
+        # developer to add numeration to caption if wanted by changing the template
+        $prs.toc.push(
+            { :$caption, :$target, :$level, :$numeration }
+        ) if $toc;
         if %!templates{ $block-name }:exists {
             my $contents = $.contents( $ast, $parify );
             my $raw = $ast.paragraphs.Str.join;
-            $prs.body ~= %!templates{ $block-name }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, %config ) )
+            $prs.body ~= %!templates{ $block-name }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, :$toc, %config ) )
         }
         else {
             # by spec, the name of an unrecognised Custom is treated like =head1
@@ -2060,13 +2063,6 @@ class RakuDoc::Processor {
                             '| ' ~ $_.join(' | ') ~ " |\n"
                         }).join('') ~ "\n\n"
                 }
-            },
-            #| renders =custom block
-            custom => -> %prm, $tmpl {
-                my $del = %prm<delta> // '';
-                PStr.new: HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n" ~
-                $del ~
-                %prm<raw> ~ "\n\n"
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
