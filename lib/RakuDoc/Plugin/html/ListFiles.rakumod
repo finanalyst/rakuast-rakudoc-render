@@ -2,7 +2,7 @@ use v6.d;
 use RakuDoc::Templates;
 use RakuDoc::Render;
 
-unit class RakuDoc::Plugin::ListFiles;
+unit class RakuDoc::Plugin::HTML::ListFiles;
 has %.config =
     :name-space<listfiles>,
 	:version<0.1.0>,

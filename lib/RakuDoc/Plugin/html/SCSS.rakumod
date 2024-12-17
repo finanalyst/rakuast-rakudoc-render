@@ -3,7 +3,7 @@ use RakuDoc::Templates;
 use RakuDoc::PromiseStrings;
 use RakuDoc::Render;
 
-unit class RakuDoc::Plugin::SCSS;
+unit class RakuDoc::Plugin::HTML::SCSS;
 has %.config = %(
     :name-space<SCSS>,
 	:license<Artistic-2.0>,

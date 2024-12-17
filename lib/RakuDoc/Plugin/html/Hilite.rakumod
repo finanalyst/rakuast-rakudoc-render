@@ -3,7 +3,7 @@ use RakuAST::Deparse::Highlight;
 use Rainbow;
 use RakuDoc::Render;
 
-unit class RakuDoc::Plugin::Hilite;
+unit class RakuDoc::Plugin::HTML::Hilite;
 has $!default-engine;
 has %.config = %(
     :name-space<hilite>,

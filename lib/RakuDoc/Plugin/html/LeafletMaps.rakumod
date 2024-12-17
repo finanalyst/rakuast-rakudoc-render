@@ -2,7 +2,7 @@ use v6.d;
 use RakuDoc::Templates;
 use RakuDoc::Render;
 
-unit class RakuDoc::Plugin::LeafletMaps;
+unit class RakuDoc::Plugin::HTML::LeafletMaps;
 has %.config =
     :name-space<leafletmap>,
     :block-name('LeafletMap'),

@@ -2,7 +2,7 @@ use v6.d;
 use RakuDoc::Templates;
 use RakuDoc::Render;
 
-unit class RakuDoc::Plugin::Graphviz;
+unit class RakuDoc::Plugin::HTML::Graphviz;
 has %.config =
     :name-space<graphviz>,
     :block-name('Graphviz'),

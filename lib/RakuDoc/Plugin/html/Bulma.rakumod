@@ -3,7 +3,7 @@ use RakuDoc::Templates;
 use RakuDoc::PromiseStrings;
 use RakuDoc::Render;
 
-unit class RakuDoc::Plugin::Bulma;
+unit class RakuDoc::Plugin::HTML::Bulma;
 has %.config = %(
     :name-space<bulma>,
 	:license<Artistic-2.0>,

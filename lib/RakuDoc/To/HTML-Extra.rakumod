@@ -18,16 +18,16 @@ class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
             note 'Plugins required are: ', @HTML-Extra-plugins;
         }
         for @HTML-Extra-plugins -> $plugin {
-            require ::("RakuDoc::Plugin::$plugin");
+            require ::("RakuDoc::Plugin::HTML::$plugin");
             CATCH {
-                note "RakuDoc::Plugin::$plugin is not installed";
+                note "RakuDoc::Plugin::HTML::$plugin is not installed";
                 .resume
             }
             try {
-                ::("RakuDoc::Plugin::$plugin").new.enable( $rdp )
+                ::("RakuDoc::Plugin::HTML::$plugin").new.enable( $rdp )
             }
             with $! {
-                note "Could not enable RakuDoc::Plugin::$plugin\. Error: ", .message;
+                note "Could not enable RakuDoc::Plugin::HTML::$plugin\. Error: ", .message;
             }
         }
         for <css-link js-link js css> {

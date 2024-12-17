@@ -2,7 +2,7 @@ use experimental :rakuast;
 use RakuDoc::Templates;
 use RakuDoc::Render;
 
-unit class RakuDoc::Plugin::FontAwesome;
+unit class RakuDoc::Plugin::HTML::FontAwesome;
 has %.config = %(
     :name-space<fontawesom>,
 	:license<Artistic-2.0>,

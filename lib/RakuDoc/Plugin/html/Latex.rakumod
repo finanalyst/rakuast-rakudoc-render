@@ -3,7 +3,7 @@ use RakuDoc::Templates;
 use RakuDoc::Render;
 use RakuDoc::PromiseStrings;
 
-unit class RakuDoc::Plugin::Latex;
+unit class RakuDoc::Plugin::HTML::Latex;
 has %.config =
     :name-space<latexformula>,
 	:version<0.1.0>,
