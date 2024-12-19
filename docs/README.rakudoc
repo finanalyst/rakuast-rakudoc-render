@@ -115,30 +115,35 @@ of a recent distribution can be found at C<docker.io/finanalyst/rakuast-rakudoc-
 
 The docker image was designed for use as a I<github CI action>. For example, place the following
 content in the file C<.workflows/GenerateDocs.yml> in the root of a I<github> repository:
-=begin code :lang<text>
-    name: RakuDoc to MD
-    on:
-      # Runs on pushes targeting the main branch
-      push:
-        branches: ["main"]
-      # Allows you to run this workflow manually from the Actions tab
-      workflow_dispatch:
-    jobs:
-        container-job:
-            runs-on: ubuntu-latest
-            steps:
-                - name: Checkout code
-                  uses: actions/checkout@master
-                  with:
-                    persist-credentials: false
-                    fetch-depth: 0
-                - name: Render docs/sources
-                  uses: addnab/docker-run-action@v3
-                  with:
-                    image: finanalyst/rakuast-rakudoc-render:latest
-                    registry: docker.io
-                    options: -v ${{github.workspace}}/docs:/docs -v ${{github.workspace}}:/to
-                    run: RenderDocs
+=begin code
+name: RakuDoc to MD
+on:
+  # Runs on pushes targeting the main branch
+  push:
+    branches: ["main"]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+jobs:
+    container-job:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@master
+              with:
+                persist-credentials: false
+                fetch-depth: 0
+            - name: Render docs/sources
+              uses: addnab/docker-run-action@v3
+              with:
+                image: finanalyst/rakuast-rakudoc-render:latest
+                registry: docker.io
+                options: -v ${{github.workspace}}/docs:/docs -v ${{github.workspace}}:/to
+                run: RenderDocs
+            - name: Commit and Push changes
+              uses: Andro999b/push@v1.3
+              with:
+                github_token: ${{ secrets.GITHUB_TOKEN }}
+                branch: 'main'
 =end code
 
 Then whenever commits are pushed to the repository, all new or modified documents in B<docs/> are
