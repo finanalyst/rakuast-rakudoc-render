@@ -6,7 +6,7 @@
 Richard Hainsworth aka finanalyst
 
 =for VERSION :hidden
-v0.16.2
+v0.20.0
 
 =begin SYNOPSIS
 =item Clone the repository
@@ -17,28 +17,40 @@ v0.16.2
 
 Note that C<zef> runs the tests in C<t/>, and those cause compilation of the
 modules in the distribution.
+
+Also a docker container is available as described in L<Docker image|#Docker image>
 =end SYNOPSIS
 
 =head Overview
 
 This distribution is intended to provide several renderers from RakuDoc v2 into commonly used
-output formats.
+output formats. For those reading this file on I<finanalyst.github.io>, the distribution can
+be found at L<Github repo|https://github.com/finanalyst/rakuast-rakudoc-render>.
 
 The basic render engine is C<RakuDoc::Render>, which renders a RakuDoc source into text for display on a terminal.
 
 The Renderer class is designed to be extended to other output formats by subclassing.
 
-This is software using bleeding edge Rakudo, so look L<at troubleshooting below|#Troubleshooting>.
+It is easier to use L<RenderDocs|#RenderDocs utility>, which handles output to different formats and saves to a file.
 
-Using the I<Generic> renderer, the B<canonical method> for generating rendered text is possible
-(which sends output to STDOUT, so pipe to a file), namely
+This software uses bleeding edge Rakudo, so look L<at troubleshooting below|#Troubleshooting>.
+
+=head Command line invocation
+
+The RakuDoc documentation describes a command line invocation, which is described here, but
+L<RenderDocs|#RenderDocs utility> is recommended.
+
+The B<canonical method> for generating rendered text is possible using the I<Generic> renderer
+and sends the output to STDOUT, so its best to pipe to a file, namely
+
 =for code :lang<text>
 RAKUDO_RAKUAST=1 raku --rakudoc=Generic rakudociem-ipsum.rakudoc > store-output
 
 Some L<naive wrapping and width modification|#Wrapping> is possible using environment variables.
 
 The file L<rakudociem-ipsum.rakudoc|https://github.com/Raku/RakuDoc-GAMMA/blob/main/compliance-document/rakudociem-ipsum.rakudoc>
-is the file for testing RakuDoc v2 compliance. An uptodate copy can be obtained with:
+is the file for testing RakuDoc v2 compliance. An up-to-date copy can be obtained with:
+
 =for code :lang<text>
 bin/get-compliance-document
 
@@ -48,20 +60,94 @@ renderings of the file using the output renderers in this distribution.
 In order to avoid environment variables, eg for Windows, a RakuDoc file can be rendered
 to Text using the L<RenderTextify|#RenderTextify utility>. It
 avoids some installation problems, stores the output and offers some other output options, eg.
+
 =for code  :lang<text>
 bin/RenderTextify rakudociem-ipsum
 
 (the .rakudoc extension may be omitted if desired)
 
-Rendering into the other output formats provided in this distribution can be done using
-L<RenderDocs|#RenderDocs utility>. By default, sources are located in C<docs/> and rendered
-to the current working directory into MarkDown, eg.,
+=head RenderDocs utility
+
+I<RenderDoc> has several advantages over a C<raku> invocation:
+=item Output to different formats is managed using the C<--format> command line option:
+=item2 I<no --format> or C<--format=md>: generates a file in Markdown with an K<.md> extension
+=item2 C<--format=HTML --single>: generates a file in HTML, ending K<_singlefile.html>, which can be opened directly in a browser without internet connection.
+=item2 C<--format=HTML>: generates a file in HTML, ending K<.html>, the HTML is intended for use with an
+internet connection and has a number of custom blocks.
+=item Simpler file specification
+=item2 By default, B<all> the I<rakudoc> sources from C<docs/> are rendered
+=item2 By default, all the output files are stored at the I<Current working directory>
+=item2 The first word after the options (eg R<documents>) is taken to be the file B<docs/documents.rakudoc>
+=item2 The source location can be given with C<--src=...> and the output with C<--to=...>
+
+Given these defaults, the following will render all the I<*.rakudocs> in I<docs/> to <./*.md> in Markdown.
+
+=for code :lang<text>
+bin/RenderDocs
+
+In order to get the command line options try
+=for code :lang<text>
+bin/RenderDocs -h
+
+An example of rendering a single file, put the basename without I<.rakudoc> as a string parameter, eg.
 =for code :lang<text>
 bin/RenderDocs README
 
+In order to override the source and output defaults use C<--src> and C<--to> options, eg.
+=for code :lang<text>
+bin/RenderDocs --src='sources/' --to='rendered/' some-file
+
+In order to get single file HTML, rather than markdown, and output it into I<rendered/>
+=for code :lang<text>
+bin/Render --to='rendered' --html --single README
+
+In order to get the possibilities offered by RakuDoc::To::HTML-Extra, including maps, graphs, themes
+and the Bulma CSS framework, use C<--format=html>, eg.
+=for code :lang<text>
+bin/Render --format=html src=docs/plugins Graphviz
+
+Two debug options C<--debug> and C<--verbose> are available and are described in L<Render|Render.*>.
+
+=head Docker image
+
+The distribution contains a C<Dockerfile>, which shows the installation steps needed. An image
+of a recent distribution can be found at C<docker.io/finanalyst/rakuast-rakudoc-render:latest>
+
+The docker image was designed for use as a I<github CI action>. For example, place the following
+content in the file C<.workflows/GenerateDocs.yml> in the root of a I<github> repository:
+=begin code :lang<text>
+    name: RakuDoc to MD
+    on:
+      # Runs on pushes targeting the main branch
+      push:
+        branches: ["main"]
+      # Allows you to run this workflow manually from the Actions tab
+      workflow_dispatch:
+    jobs:
+        container-job:
+            runs-on: ubuntu-latest
+            steps:
+                - name: Checkout code
+                  uses: actions/checkout@master
+                  with:
+                    persist-credentials: false
+                    fetch-depth: 0
+                - name: Render docs/sources
+                  uses: addnab/docker-run-action@v3
+                  with:
+                    image: finanalyst/rakuast-rakudoc-render:latest
+                    registry: docker.io
+                    options: -v ${{github.workspace}}/docs:/docs -v ${{github.workspace}}:/to
+                    run: RenderDocs
+=end code
+
+Then whenever commits are pushed to the repository, all new or modified documents in B<docs/> are
+rendered into Markdown and copied to the root of the repository (remember to C<git pull> locally).
+
 =head Documentation
 
-All documentation can be found at L<finanalyst.github.io| https://finanalyst.github.io>.
+If you are reading this from the repo, an HTML version of the documentation can be found
+at L<finanalyst.github.io| https://finanalyst.github.io>.
 
 The two main documentation sources are:
 =item L<An overview of the generic renderer|https://finanalyst.github.io/Render>
@@ -122,47 +208,12 @@ the template for C<C-markup> try
 =for code :lang<text>
 bin/RenderTextify --debug='All' --verbose='C-markup' doc
 
-=head RenderDocs utility
-
-I<RenderDoc> is similar to RenderTextify, but uses the other formats in this distribution, namely
-=item B<.md> - Markdown (default)
-=item B<-singlefile.html> - HTML that can be opened directly in a browser without internet connection.
-=item B<.html> - HTML that is intended for use with an internet connection
-
-By default, the utility renders all the I<rakudoc> sources from C<docs/> and outputs them in
-I<markdown> to the current working directory, eg.
-=for code :lang<text>
-bin/RenderDocs
-
-In order to get the useage try
-=for code :lang<text>
-bin/RenderDocs -h
-
-In order to render a single file, put the basename without I<.rakudoc> as a string parameter, eg.
-=for code :lang<text>
-bin/RenderDocs README
-
-In order to override the source and output defaults use C<--src> and C<--to> options, eg.
-=for code :lang<text>
-bin/RenderDocs --src='sources/' --to='rendered/' some-file
-
-In order to get single file HTML, rather than markdown
-=for code :lang<text>
-bin/Render --to='rendered' --html --single README
-
-In order to get the possibilities offered by RakuDoc::To::HTML-Extra, including maps, graphs, themes
-and the Bulma CSS framework, use C<--html> and C<--extra>, eg.
-=for code :lang<text>
-bin/Render --html Graphviz
-
-The B<html> variants allow for C<--debug> and C<--verbose>, which are described in L<Render|Render.*>.
-
 =head1 Troubleshooting
 
 In order to get the RakuDoc render test file (rakudociem-ipsum) to work, a recent
 version of the Rakudoc compiler is needed, after v2024.07.
 
-If the cannonical command above fails, perhaps with a message such as
+If the cannonical command C<raku> invocation fails, perhaps with a message such as
 =for code :lang<text>
 ===SORRY!===
 This element has not been resolved. Type: RakuAST::Type::Simple

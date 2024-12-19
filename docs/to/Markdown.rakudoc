@@ -33,6 +33,20 @@ For this description, it is assumed that the I<RakuAST::RakuDoc::Render> distrib
 is B<NOT> installed using zef, although it can be.
 Consequently, all commands are assumed to be inside the repo directory root.
 
+=head Custom block
+
+The Markdown renderer comes with one custom block for generating Graphs.
+More information can be found about the L<Graphviz plugin|plugins/Graphviz.*>
+
+Some caveats:
+=item Since a widespread use of Markdown is for I<Github> and cross-server sources are forbidden,
+diagrams have to be in an asset file within the I<Github> repository.
+=item The diagrams are generated using C<dot>, which must exist in the environment
+=item Each diagram given in a single source whose name is (eg) R<my-document.rakudoc> is stored in the file
+B<my-document-this_is_a_diagram.svg>, where the C< :caption<this is a diagram> > is in the metadata
+options of the custom block. For more detail see L<the Graphviz documentation|plugins/Graphviz.*>.
+=item The diagram files will be stored in the same directory as the main output file B<my-document.md>.
+
 =head Customising templates
 
 All output from I<Rakuast::RakuDoc::Render> modules is generated through templates.
