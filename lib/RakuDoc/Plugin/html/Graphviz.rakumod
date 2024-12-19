@@ -8,7 +8,7 @@ has %.config =
     :block-name('Graphviz'),
 	:license<Artistic-2.0>,
 	:credit<https://graphviz.org/credits/ Common Public License Version 1.0>,
-	:version<0.1.0>,
+	:version<0.2.0>,
 	:scss( [ self.scss-str, 1], ),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
@@ -18,10 +18,12 @@ method enable( RakuDoc::Processor:D $rdp ) {
 method templates {
     %(
         Graphviz => sub (%prm, $tmpl) {
+            my $level = %prm<headlevel> // 1;
+            my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
             # check that dot executes
             my $proc = shell 'command -v dot', :out;
             unless $proc.out.slurp(:close) { # if dot does not exist, then no output
-                    return "\n"~'<div class="graphviz">The program ｢dot｣ fom Graphviz needs installing to get an image</div>'
+                return qq|$rv\n<div class="graphviz">The program ｢dot｣ fom Graphviz needs installing to get an image\</div>|
             }
             my $data = %prm<raw>;
             my $attrs = '';
@@ -40,10 +42,6 @@ method templates {
                     default {}
                 }
             }
-            my $level = %prm<headlevel> // 1;
-            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
-
-            my $rv = $head;
             if $proc-rv { $rv ~= qq[<div class="graphviz">$proc-rv\</div>] }
             elsif $proc-err {
                $rv ~= '<div class="graphviz-error">'
@@ -65,6 +63,8 @@ method scss-str {
         display: flex;
         justify-content: space-around;
         align-items: center;
+        margin: auto;
+        margin-bottom: 1rem;
     }
     .graphviz-error {
         display: flex;

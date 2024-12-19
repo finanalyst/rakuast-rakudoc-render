@@ -48,6 +48,7 @@ multi sub MAIN(
         Bool :$pretty              #= set Template response to pretty
      ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
+    mktree "$to/$file".IO.dirname unless "$to/$file".IO.dirname.IO ~~ :e & :d;
     my $nformat = ($format eq 'html' && $single) ?? 'html-single' !! $format;
     render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
 }

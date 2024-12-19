@@ -34,6 +34,9 @@ span.indexed {
         content: attr(data-index-text);
         translate: 0 -1.5em;
         position: absolute;
+        opacity: 75%;
+        background-color: turquoise;
+        color: indigo;
     }
 }
 span.keyboard {

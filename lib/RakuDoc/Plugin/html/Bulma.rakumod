@@ -162,7 +162,8 @@ method templates {
             my @inds = %prm<index-list>.grep({ .isa(Str) || .isa(PStr) });
             if @inds.elems {
                 PStr.new: '<div class="index">' ~ "\n" ~
-                ([~] @inds ) ~ "\n</div>\n"
+                ([~] @inds ) ~
+                "</div>\n"
             }
             else { 'No indexed items' }
         },

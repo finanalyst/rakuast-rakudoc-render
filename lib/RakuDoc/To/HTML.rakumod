@@ -196,8 +196,9 @@ class RakuDoc::To::HTML {
             head => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
                 my $classes = ( %prm<classes> // "heading" ) ~ ( 'delta' if $del ) ;
-                my $h = 'h' ~ (%prm<level> // '1') + 1 ;
+                my $h = 'h' ~ (%prm<level> // '1');
                 my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
+                $caption = "%prm<numeration> $caption" if %prm<numeration>;
                 my $targ := %prm<target>;
                 my $esc-cap = $tmpl.globals.escape.( $caption );
                 $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
@@ -217,18 +218,7 @@ class RakuDoc::To::HTML {
                     ) !! '')
             },
             #| renders =numhead block
-            numhead => -> %prm, $tmpl {
-                my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
-                my $h = 'h' ~ (%prm<level> // '1') + 1 ;
-                my $targ = $tmpl.globals.escape.(%prm<target>);
-                qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]] ~
-                    ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
-                    qq[[<$h id="$targ" class="heading">]] ~
-                    qq[[<a href="#{ $tmpl.globals.escape.(%prm<top>) }" title="go to top of document">]] ~
-                    $title ~
-                    qq[[</a></$h>\n]] ~
-                    (%prm<delta> // '')
-            },
+            numhead => -> %prm, $tmpl { $tmpl<head> },
             #| renders the numeration part for a toc
             toc-numeration => -> %prm, $tmpl { %prm<contents> },
             #| rendering the content from the :delta option
@@ -405,7 +395,7 @@ class RakuDoc::To::HTML {
             toc => -> %prm, $tmpl {
                 if %prm<toc>:exists && %prm<toc>.elems {
                     PStr.new: qq[<div class="toc">\n] ~
-                    ( "<h2 class=\"toc-caption\">$_\</h2>" with  %prm<caption> ) ~
+                    ( "<h2 class=\"toc-caption\">%prm<caption>\</h2>" if  %prm<caption> ) ~
                     ([~] %prm<toc-list>) ~
                     "</div>\n"
                 }
@@ -417,7 +407,8 @@ class RakuDoc::To::HTML {
             index-item => -> %prm, $tmpl {
                 my $n = %prm<level>;
                 my @refs = %prm<refs>.grep(*.isa(Hash)).grep( *.<is-in-heading>.not ).map({
-                        qq[<a class="index-ref" href="#{ .<target> }">&nbsp;§&nbsp;</a><span>{ .<place> }</span>] });
+                        qq[<a class="index-ref" href="#{ .<target> }">&nbsp;§&nbsp;</a><span>{ .<place> }</span>]
+                    });
                 if @refs.elems {
                     PStr.new:
                         qq[<div class="index-section" data-index-level="$n" style="--level:$n">\n] ~
@@ -429,10 +420,13 @@ class RakuDoc::To::HTML {
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                my $cap = %prm<caption>:exists ?? qq[<h2 class="index-caption">{%prm<caption>}</h2>] !! '';
-                PStr.new: '<div class="index">' ~ $cap ~ "\n" ~
-                ([~] %prm<index-list>) ~ "\n</div>\n"
-
+                my @inds = %prm<index-list>.grep({ .isa(Str) || .isa(PStr) });
+                if @inds.elems {
+                    PStr.new: '<div class="index">' ~ "\n" ~
+                    ( "<h2 class=\"index-caption\">%prm<caption>\</h2>" if  %prm<caption> ) ~
+                    ([~] @inds ) ~ "\n</div>\n"
+                }
+                else { 'No indexed items' }
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {

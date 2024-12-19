@@ -402,6 +402,8 @@ class RakuDoc::Processor {
         my $letter = $ast.letter;
         my $prs := $*prs;
         say "Doc::Markup letter: $letter" if $.debug (cont) MarkUp;
+        my %config = $.merged-config( $, $letter );
+        %config<in-code> = $!scoped-data.verbatim;
         if (
             $!scoped-data.verbatim(:called-by) eq <code markup-C markup-V>.any
             )
@@ -417,7 +419,6 @@ class RakuDoc::Processor {
             }
             return
         }
-        my %config = $.merged-config( $, $letter );
         # for X<> and to help with warnings
         my $place = $!scoped-data.last-title;
         my $context = $!scoped-data.last-starter;

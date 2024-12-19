@@ -7,8 +7,8 @@ class MarkDown::Processor is RakuDoc::Processor {
     multi method escape( Str:D $s ) {
         # will not double escape
         $s.trans(
-                   qw｢ &lt; &gt; <    >    &     "       `   ｣
-                => qw｢ &lt; &gt; &lt; &gt; &amp; &quot;  ``  ｣
+                   qw｢ `   ｣
+                => qw｢ ``  ｣
         )
     }
     #| Stringify if not string
@@ -130,7 +130,7 @@ class RakuDoc::To::Markdown {
         my constant DEVEL-NOTE-OFF = "</span>";
         my constant DEFN-TEXT-ON = '&nbsp;&nbsp;<span style="background-color: lightgrey;">';
         my constant DEFN-TEXT-OFF = '</span>';
-        my constant DEFN-TERM-ON = '<span style="font-weight: 600;">';
+        my constant DEFN-TERM-ON = '<span style="font-weight: 600; font-style: italic">';
         my constant DEFN-TERM-OFF = '</span>';
         my constant BAD-MARK-ON = "`";
         my constant BAD-MARK-OFF = "`";
@@ -142,7 +142,7 @@ class RakuDoc::To::Markdown {
             code => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
                 PStr.new: $del ~ "\n```\n"
-                ~ %prm<contents>
+                ~ %prm<contents>.Str.trim-trailing
                 ~ "\n```\n"
             },
             #| renders =input block
@@ -163,36 +163,32 @@ class RakuDoc::To::Markdown {
             comment => -> %prm, $tmpl { '' },
             #| renders =formula block
             formula => -> %prm, $tmpl {
-                my $del = %prm<delta> // '';
-                "\n\n" ~ "----\n" ~
-                $del ~ "\n" ~
-                '#' x %prm<level>  ~ ' ' ~ %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~ "\n\n" ~
-                %prm<formula> ~ "\n\n"
+                my $level = %prm<headlevel> // 1;
+                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
+                PStr.new: $head ~ %prm<formula> ~ "\n\n"
             },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
                 # using level + 1 so that TITLE is always larger
-                # a line above heading level one to separate sections
-                ("\n----" if %prm<level> == 1) ~
-                "\n" ~ $del ~ "\n" ~
-                '#' x ( %prm<level> + 1)  ~ ' ' ~
-                %prm<contents> ~ qq[<div id="{ %prm<target> }"> </div>] ~
-                ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~
-                "\n"
+                my $h = '#' x ( %prm<level> + 1)  ~ ' ' ;
+                my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
+                $caption = "%prm<numeration> $caption" if %prm<numeration>;
+                my $targ := %prm<target>;
+                my $esc-cap = $tmpl.globals.escape.( $caption );
+                $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
+                my $id-target = %prm<id>:exists && %prm<id>
+                    ?? qq[[\n<div id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
+                    !! '';
+                PStr.new:
+                    $id-target ~
+                    ( $esc-cap ?? qq[[\n<div id="$esc-cap"></div>]] !! '') ~
+                    qq[[<div id="$targ"></div>]] ~
+                    ($del if $del) ~ "\n\n" ~
+                    $h ~ $caption ~ "\n"
             },
             #| renders =numhead block
-            numhead => -> %prm, $tmpl {
-                my $del = %prm<delta> // '';
-                my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
-                # using level + 1 so that TITLE is always larger
-                # a line above heading level one to separate sections
-                ('----' if %prm<level> == 1) ~
-                "\n" ~ $del ~ "\n" ~
-                '#' x ( %prm<level> + 1)  ~ ' ' ~
-                $title ~ qq[<div id="{ %prm<target> }"> </div>] ~
-                ('<div id="' ~ %prm<id> ~ '"> </div>' ~ "\n\n" if %prm<id>) ~ "\n"
-            },
+            numhead => -> %prm, $tmpl { $tmpl<head> },
             #| renders the numeration part for a toc
             toc-numeration => -> %prm, $tmpl { %prm<contents> },
             #| rendering the content from the :delta option
@@ -249,14 +245,19 @@ class RakuDoc::To::Markdown {
             },
             #| renders =para block
             para => -> %prm, $tmpl {
-                PStr.new:
-                    (%prm<target> ?? '<span class="para" id="' ~ %prm<target> ~ '"></span>' !! '') ~
-                    %prm<contents> ~ ("\n\n" unless %prm<inline>)
+                if %prm<is-in-head> {
+                    PStr.new: %prm<contents>
+                }
+                else {
+                    PStr.new:
+                        (%prm<target> ?? '<span class="para" id="' ~ %prm<target> ~ '"></span>' !! '') ~
+                        %prm<contents> ~ ("\n\n" unless %prm<inline>)
+                }
             },
             #| renders =place block
             place => -> %prm, $tmpl {
                 my $level = %prm<headlevel> // 1;
-                my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+                my $rv = $tmpl('head', %(:$level, |( %prm<id target caption delta>:p )));
                 given %prm<content-type> {
                     when .contains('text') {
                         $rv ~= %prm<contents>
@@ -280,7 +281,7 @@ class RakuDoc::To::Markdown {
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
                 my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :contents(%prm<caption>), :delta(%prm<delta>)));
+                my $head = $tmpl('head', %(:$level, |( %prm<id target caption delta>:p )));
 
                 ( $head unless %prm<hidden> ) ~
                 %prm<contents> ~ "\n\n"
@@ -346,11 +347,25 @@ class RakuDoc::To::Markdown {
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                "----\n\n## " ~ qq[<div id="{ %prm<target> }">UNKNOWN { %prm<block-name> }</div>\n\n] ~
-                $tmpl.globals.escape.(%prm<contents>)
-                    .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
-                     .subst(/ \v /, '<br>', :g) ~
-                     "\n\n"
+                my $level = %prm<headlevel> // 1;
+                my $contents = qq[UNKNOWN { %prm<block-name> }];
+                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption("Unknown %prm<block-name>"), :$contents, :delta('')));
+                PStr.new: $head ~
+                    "```\n" ~
+                    $tmpl.globals.escape.( %prm<contents>.Str.trim-trailing ) ~
+                    "\n```\n\n"
+            },
+            #| Version numbers should appear on the same line as the heading
+            VERSION => -> %prm, $tmpl {
+                my $level = %prm<headlevel> // 1;
+                my $content := %prm<contents>.Str;
+                my $head = $tmpl('head', %(
+                    :$level, :id(%prm<id>), :target(%prm<target>),
+                    :caption(%prm<caption> ~ '&nbsp' x 4 ~  $content ),
+                    :delta(%prm<delta>)
+                ));
+                if %prm<hidden> { qq| <div class="rakudoc-version">$content\</div> | }
+                else { $head }
             },
             #| special template to encapsulate all the output to save to a file
             final => -> %prm, $tmpl {
@@ -369,29 +384,44 @@ class RakuDoc::To::Markdown {
             },
             #| renders a single item in the toc
             toc-item => -> %prm, $tmpl {
-                my $pref = '&nbsp;' x ( %prm<toc-entry><level> > 4 ?? 4 !! (%prm<toc-entry><level> - 1) * 2 )
+                my $pref = '&nbsp;' x ( %prm<toc-entry><level> > 3 ?? 3 !! (%prm<toc-entry><level> - 1) * 2 )
                     ~ (%prm<toc-entry><level> > 1 ?? '- ' !! '');
                 PStr.new: qq[$pref\<a href="#{ %prm<toc-entry><target> }">{%prm<toc-entry><caption>}</a>   \n]
             },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
-                my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
-                PStr.new: $cap ~
-                ([~] %prm<toc-list>) ~ "\n\n"
+                if %prm<toc>:exists && %prm<toc>.elems {
+                    my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
+                    PStr.new: $cap ~
+                    ([~] %prm<toc-list>) ~ "\n\n"
+                }
+                else {
+                    PStr.new: ''
+                }
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
                 my $n = %prm<level>;
-                PStr.new:
+                my @refs = %prm<refs>.grep(*.isa(Hash)).grep( *.<is-in-heading>.not ).map({
+                        qq[<a href="#{ .<target> }">{ .<place> }\</a>]
+                    });
+                if @refs.elems {
+                    PStr.new:
                     ("&nbsp;&nbsp;&nbsp;" x $n - 1 ) ~ INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': ' ~
-                    %prm<refs>.map({ qq[<a href="#{ .<target> }">{ .<place> }\</a>] }).join(', ')
+                    @refs.join(', ') ~
                     ~ "\n\n"
+                }
+                else { Nil }
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-                my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
-                PStr.new: $cap ~
-                ([~] %prm<index-list>) ~ "\n\n"
+                my @inds = %prm<index-list>.grep({ .isa(Str) || .isa(PStr) });
+                if @inds.elems {
+                    my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
+                    PStr.new: $cap ~
+                    ([~] @inds ) ~ "\n\n"
+                }
+                else { PStr.new: 'No indexed items'  ~ "\n\n" }
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
@@ -420,23 +450,39 @@ class RakuDoc::To::Markdown {
             #| B< DISPLAY-TEXT >
             #| Basis/focus of sentence (typically rendered bold)
             markup-B => -> %prm, $ {
-                BOLD-ON ~ %prm<contents> ~ BOLD-OFF
+                if %prm<in-code> { %prm<contents> }
+                else { BOLD-ON ~ %prm<contents> ~ BOLD-OFF }
             },
             #| C< DISPLAY-TEXT >
             #| Code (typically rendered fixed-width)
-            markup-C => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
+            markup-C => -> %prm, $tmpl {
+                if %prm<in-code> { %prm<contents> }
+                else { CODE-ON ~ %prm<contents> ~ CODE-OFF }
+            },
             #| H< DISPLAY-TEXT >
             #| High text (typically rendered superscript)
-            markup-H => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
+            markup-H => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF }
+			},
             #| I< DISPLAY-TEXT >
             #| Important (typically rendered in italics)
-            markup-I => -> %prm, $tmpl { ITALIC-ON ~ %prm<contents> ~ ITALIC-OFF },
+            markup-I => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { ITALIC-ON ~ %prm<contents> ~ ITALIC-OFF }
+			},
             #| J< DISPLAY-TEXT >
             #| Junior text (typically rendered subscript)
-            markup-J => -> %prm, $tmpl { SUBSCR-ON ~ %prm<contents> ~ SUBSCR-OFF },
+            markup-J => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { SUBSCR-ON ~ %prm<contents> ~ SUBSCR-OFF }
+			},
             #| K< DISPLAY-TEXT >
             #| Keyboard input (typically rendered fixed-width)
-            markup-K => -> %prm, $tmpl { KEYBOARD-ON ~ %prm<contents> ~ KEYBOARD-OFF },
+            markup-K => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { KEYBOARD-ON ~ %prm<contents> ~ KEYBOARD-OFF }
+			},
             #| N< DISPLAY-TEXT >
             #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
             markup-N => -> %prm, $tmpl {
@@ -447,10 +493,16 @@ class RakuDoc::To::Markdown {
             },
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
-            markup-O => -> %prm, $tmpl { STRIKE-ON ~ %prm<contents> ~ STRIKE-OFF },
+            markup-O => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { STRIKE-ON ~ %prm<contents> ~ STRIKE-OFF }
+			},
             #| R< DISPLAY-TEXT >
             #| Replaceable component or metasyntax
-            markup-R => -> %prm, $tmpl { REPLACE-ON ~ %prm<contents> ~ REPLACE-OFF },
+            markup-R => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { REPLACE-ON ~ %prm<contents> ~ REPLACE-OFF }
+			},
             #| S< DISPLAY-TEXT >
             #| Space characters to be preserved
             markup-S => -> %prm, $tmpl {
@@ -460,16 +512,20 @@ class RakuDoc::To::Markdown {
             },
             #| T< DISPLAY-TEXT >
             #| Terminal output (typically rendered fixed-width)
-            markup-T => -> %prm, $tmpl { TERMINAL-ON ~ %prm<contents> ~ TERMINAL-OFF },
+            markup-T => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { TERMINAL-ON ~ %prm<contents> ~ TERMINAL-OFF }
+			},
             #| U< DISPLAY-TEXT >
             #| Unusual (typically rendered with underlining)
-            markup-U => -> %prm, $tmpl { UNDERLINE-ON ~ %prm<contents> ~ UNDERLINE-OFF },
+            markup-U => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { UNDERLINE-ON ~ %prm<contents> ~ UNDERLINE-OFF }
+			},
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
             markup-V => -> %prm, $tmpl {
                 $tmpl.globals.escape.( %prm<contents> )
-                    .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
-                    .subst(/ \v /, '<br>', :g)
             },
 
             ##| Markup codes, optional display and meta data
@@ -528,7 +584,10 @@ class RakuDoc::To::Markdown {
             },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
-            markup-M => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
+            markup-M => -> %prm, $tmpl {
+				if %prm<in-code> { %prm<contents> }
+				else { CODE-ON ~ %prm<contents> ~ CODE-OFF }
+			},
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
             markup-X => -> %prm, $tmpl {
