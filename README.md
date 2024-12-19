@@ -35,7 +35,7 @@
   
 <span class="para" id="351913a"></span>Note that `zef` runs the tests in `t/`, and those cause compilation of the modules in the distribution. 
 
-<span class="para" id="22a894d"></span>Also a docker container is available as described in [Docker image](Docker image) 
+<span class="para" id="08f44b5"></span>Also a docker container is available as described in [ Docker image ]() 
 
 
 
@@ -325,7 +325,7 @@ Richard Hainsworth aka finanalyst
 
 ----
 
-Rendered from docs/README.rakudoc/README at 21:03 UTC on 2024-12-19
+Rendered from docs/README.rakudoc/README at 21:10 UTC on 2024-12-19
 
-Source last modified at 20:53 UTC on 2024-12-19
+Source last modified at 21:09 UTC on 2024-12-19
 

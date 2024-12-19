@@ -18,7 +18,7 @@ v0.20.0
 Note that C<zef> runs the tests in C<t/>, and those cause compilation of the
 modules in the distribution.
 
-Also a docker container is available as described in L<Docker image|#Docker image>
+Also a docker container is available as described in L< Docker image | #Docker image >
 =end SYNOPSIS
 
 =head Overview
