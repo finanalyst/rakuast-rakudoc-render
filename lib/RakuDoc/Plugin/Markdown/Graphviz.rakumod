@@ -9,7 +9,6 @@ has %.config =
 	:license<Artistic-2.0>,
 	:credit<https://graphviz.org/credits/ Common Public License Version 1.0>,
 	:version<0.2.0>,
-	:scss( [ self.scss-str, 1], ),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates, :source<GraphViz plugin> );
@@ -43,14 +42,14 @@ method templates {
                 }
             }
             if $proc-rv {
-                my $fn = %prm<targ>;
+                my $fn = $tmpl.globals.data<source-data><name> ~ '_' ~ $tmpl.globals.mangle.(%prm<caption>);
                 if "$fn.svg".IO ~~ :e & :f {
                     $fn ~= '_0';
                     $fn++ while "$fn.svg".IO ~~ :e & :f
                 }
                 $fn ~= '.svg';
                 $fn.IO.spurt: $proc-rv;
-                $rv ~= qq[<div class="graphviz"><img href="$fn"></div>]
+                $rv ~= qq|![]($fn)|
             }
             elsif $proc-err {
                $rv ~= '<div class="graphviz-error">'

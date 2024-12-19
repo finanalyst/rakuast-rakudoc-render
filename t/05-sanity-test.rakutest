@@ -5,7 +5,7 @@ my @modules = <MarkupMeta Numeration PromiseStrings ScopedData Templates Process
     Plugin::HTML::Bulma Plugin::HTML::Graphviz Plugin::HTML::Latex Plugin::HTML::LeafletMaps
     Plugin::HTML::ListFiles Plugin::HTML::FontAwesome Plugin::HTML::Hilite Plugin::HTML::SCSS
     To::HTML-Extra
-    Plugin::MarkDown::Graphviz
+    Plugin::Markdown::Graphviz
     To::Markdown>;
 
 plan @modules.elems;

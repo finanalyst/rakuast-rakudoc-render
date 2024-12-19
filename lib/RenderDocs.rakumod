@@ -92,7 +92,7 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         $rdp.pretty( $pretty ) with $pretty;
         "$dest.md".IO.spurt($rdp.render($ast, :%source-data));
         for dir(test => *.ends-with('.svg')) {
-            .rename("{$dest}_{$_}".IO)
+            .rename("{$to}/{$_}".IO)
         }
     }
 }

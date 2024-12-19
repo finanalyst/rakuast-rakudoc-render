@@ -66,16 +66,16 @@ class RakuDoc::To::Markdown {
         my $rdp := self.rdp;
         $rdp.add-templates( self.markdown-templates, :source<RakuDoc::To::Markdown> );
         for @Markup-plugins -> $plugin {
-            require ::("RakuDoc::Plugin::Markup::$plugin");
+            require ::("RakuDoc::Plugin::Markdown::$plugin");
             CATCH {
-                note "RakuDoc::Plugin::Markup::$plugin is not installed";
+                note "RakuDoc::Plugin::Markdown::$plugin is not installed";
                 .resume
             }
             try {
-                ::("RakuDoc::Plugin::Markup::$plugin").new.enable( $rdp )
+                ::("RakuDoc::Plugin::Markdown::$plugin").new.enable( $rdp )
             }
             with $! {
-                note "Could not enable RakuDoc::Plugin::Markup::$plugin\. Error: ", .message;
+                note "Could not enable RakuDoc::Plugin::Markdown::$plugin\. Error: ", .message;
             }
         }
     }

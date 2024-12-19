@@ -85,6 +85,7 @@ class RakuDoc::Processor {
         %!templates.pretty = $pretty;
         %!templates.helper = self.default-helpers;
         %!templates.escape = -> $s { self.escape( $s ) };
+        %!templates.mangle = -> $s { self.mangle( $s ) };
         if $debug ~~ List { self.debug($debug.list) }
         else { self.debug( $debug ) }
     }
@@ -104,6 +105,7 @@ class RakuDoc::Processor {
     #| but returns ProcessedState object if pre-finalised = True
     multi method render( $ast, :%source-data, :pre-finalized(:$pre-finalised) = False ) {
         $!current .= new(:%source-data, :$!output-format );
+        %!templates.data<source-data> := $!current.source-data;
         $!register .= new;
         $!scoped-data .= new;
         $!scoped-data.debug = $!debug-modes{ Scoping }.so;

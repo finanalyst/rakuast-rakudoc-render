@@ -98,6 +98,7 @@ class Template-directory does Associative {
     has %.data;
     has %.helper;
     has &.escape is rw;
+    has &.mangle is rw;
     has $.source is rw = 'Initial';
     has Bool $.debug is rw = False;
     has Bool $.test is rw = False;
