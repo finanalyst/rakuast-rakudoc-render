@@ -2,6 +2,8 @@ FROM docker.io/rakuland/raku
 
 # Install make, gcc, etc.
 RUN apk add build-base
+# Install Graphviz dot
+RUN apk add graphviz
 
 # install a SASS compiler
 ARG DART_SASS_VERSION=1.82.0
@@ -15,6 +17,8 @@ RUN ln -s /opt/dart-sass/sass /usr/local/bin/sass
 RUN mkdir -p /opt/rakuast-rakudoc-render
 COPY . /opt/rakuast-rakudoc-render
 WORKDIR /opt/rakuast-rakudoc-render
+RUN zef install . --deps-only
+
 RUN zef install . -/precompile-install
 
 # symlink executable to location on PATH

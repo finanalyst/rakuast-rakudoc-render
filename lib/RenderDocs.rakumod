@@ -75,6 +75,7 @@ sub list-files( $src, @exts --> Hash ) {
 }
 
 multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose, :$pretty) {
+    # Markdown calls plugins that create extra files in the current directory, which need to be transferred
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
         my $from = "$src/$_.rakudoc";
@@ -90,6 +91,9 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         $rdp.verbose( $verbose ) with $verbose;
         $rdp.pretty( $pretty ) with $pretty;
         "$dest.md".IO.spurt($rdp.render($ast, :%source-data));
+        for dir(test => *.ends-with('.svg')) {
+            .rename("{$dest}_{$_}".IO)
+        }
     }
 }
 multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-single', :$debug, :$verbose, :$pretty) {

@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, HTML-Extra, Markdown",
-  "version": "0.19.1",
+  "version": "0.20.0",
   "authors": [
     "Richard Hainsworth"
   ],
@@ -28,14 +28,15 @@
   "provides": {
     "RakuDoc::MarkupMeta": "lib/RakuDoc/MarkupMeta.rakumod",
     "RakuDoc::Numeration": "lib/RakuDoc/Numeration.rakumod",
-    "RakuDoc::Plugin::HTML::Bulma": "lib/RakuDoc/Plugin/html/Bulma.rakumod",
-    "RakuDoc::Plugin::HTML::FontAwesome": "lib/RakuDoc/Plugin/html/FontAwesome.rakumod",
-    "RakuDoc::Plugin::HTML::Graphviz": "lib/RakuDoc/Plugin/html/Graphviz.rakumod",
-    "RakuDoc::Plugin::HTML::Hilite": "lib/RakuDoc/Plugin/html/Hilite.rakumod",
-    "RakuDoc::Plugin::HTML::Latex": "lib/RakuDoc/Plugin/html/Latex.rakumod",
-    "RakuDoc::Plugin::HTML::LeafletMaps": "lib/RakuDoc/Plugin/html/LeafletMaps.rakumod",
-    "RakuDoc::Plugin::HTML::ListFiles": "lib/RakuDoc/Plugin/html/ListFiles.rakumod",
-    "RakuDoc::Plugin::HTML::SCSS": "lib/RakuDoc/Plugin/html/SCSS.rakumod",
+    "RakuDoc::Plugin::HTML::Bulma": "lib/RakuDoc/Plugin/HTML/Bulma.rakumod",
+    "RakuDoc::Plugin::HTML::FontAwesome": "lib/RakuDoc/Plugin/HTML/FontAwesome.rakumod",
+    "RakuDoc::Plugin::HTML::Graphviz": "lib/RakuDoc/Plugin/HTML/Graphviz.rakumod",
+    "RakuDoc::Plugin::HTML::Hilite": "lib/RakuDoc/Plugin/HTML/Hilite.rakumod",
+    "RakuDoc::Plugin::HTML::Latex": "lib/RakuDoc/Plugin/HTML/Latex.rakumod",
+    "RakuDoc::Plugin::HTML::LeafletMaps": "lib/RakuDoc/Plugin/HTML/LeafletMaps.rakumod",
+    "RakuDoc::Plugin::HTML::ListFiles": "lib/RakuDoc/Plugin/HTML/ListFiles.rakumod",
+    "RakuDoc::Plugin::HTML::SCSS": "lib/RakuDoc/Plugin/HTML/SCSS.rakumod",
+    "RakuDoc::Plugin::Markdown::Graphviz": "lib/RakuDoc/Plugin/Markdown/Graphviz.rakumod",
     "RakuDoc::Processed": "lib/RakuDoc/Processed.rakumod",
     "RakuDoc::PromiseStrings": "lib/RakuDoc/PromiseStrings.rakumod",
     "RakuDoc::Render": "lib/RakuDoc/Render.rakumod",
