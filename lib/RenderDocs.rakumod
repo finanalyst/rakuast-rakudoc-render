@@ -16,13 +16,14 @@ multi sub MAIN(
         :$debug,
         Str :$verbose,
         Bool :$pretty,
+        Bool :$force = False
     ) {
     my %docs = list-files( $src, < .rakudoc .rakumod >);
     my $extension = $format eq 'html' ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
     mktree $to unless $to.IO ~~ :e & :d; # just make sure the rendered directory exist
     my %rendered = list-files( $to, ( $extension, ) );
     my @to-be-rendered = %docs.pairs.grep({
-            %rendered{.key}:!exists || (%rendered{.key}<modified> < .value<modified>)
+           $force or %rendered{.key}:!exists or (%rendered{.key}<modified> < .value<modified>)
         })>>.key;
     @to-be-rendered.map({
         mktree "$to/$_".IO.dirname unless "$to/$_".IO.dirname.IO ~~ :e & :d;
@@ -45,12 +46,13 @@ multi sub MAIN(
         Bool :$single = False,     #= Use ::HTML renderer, otherwise ::HTML-Extra renderer
         :$debug,                   #= apply debug parameters. Valid names are: None (default) All AstBlock BlockType Scoping Templates MarkUp
         Str :$verbose,             #= name of a template gives more detail about parameters / output
-        Bool :$pretty              #= set Template response to pretty
+        Bool :$pretty,             #= set Template response to pretty
+        Bool :$force = False       #= force render of all files
      ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
     mktree "$to/$file".IO.dirname unless "$to/$file".IO.dirname.IO ~~ :e & :d;
     my $nformat = ($format eq 'html' && $single) ?? 'html-single' !! $format;
-    render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
+    render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty, :$force)
 }
 multi sub MAIN(
         Bool :version(:$v)! #= Return version of distribution
@@ -74,7 +76,7 @@ sub list-files( $src, @exts --> Hash ) {
     %docs
 }
 
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose, :$pretty) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'md', :$debug, :$verbose, :$pretty, :$force) {
     # Markdown calls plugins that create extra files in the current directory, which need to be transferred
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
@@ -92,11 +94,12 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         $rdp.pretty( $pretty ) with $pretty;
         "$dest.md".IO.spurt($rdp.render($ast, :%source-data));
         for dir(test => *.ends-with('.svg')) {
-            .rename("{$to}/{$_}".IO)
+            say "moving «$_» to «{$to}/{ .subst(/ '%2f' /, '/',:g ) }»" unless $quiet;
+            .move("{$to}/{ .subst(/ '%2f' /, '/',:g ) }".IO)
         }
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-single', :$debug, :$verbose, :$pretty) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html-single', :$debug, :$verbose, :$pretty, :$force) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
         my $from = "$src/$_.rakudoc";
@@ -114,7 +117,7 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         "{ $dest }_singlefile.html".IO.spurt($rdp.render($ast, :%source-data));
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html', :$debug, :$verbose, :$pretty) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where 'html', :$debug, :$verbose, :$pretty, :$force ) {
     for @to-be-rendered.sort {
         my $dest = "$to\/$_";
         my $from = "$src/$_.rakudoc";
@@ -132,6 +135,6 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         "{ $dest }.html".IO.spurt($rdp.render($ast, :%source-data));
     }
 }
-multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty) {
+multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty, :$f ) {
     note "The ｢$nformat｣ is not yet implemented, try ｢$*PROGRAM -h｣ for options"
 }

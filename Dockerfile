@@ -28,5 +28,7 @@ RUN ln -s /opt/rakuast-rakudoc-render/bin/RenderDocs /usr/local/bin/RenderDocs
 RUN mkdir /doc
 # Directory where rendered files go
 RUN mkdir /to
-WORKDIR /
+# Dir for temporary files
+RUN mkdir /working
+WORKDIR /working
 

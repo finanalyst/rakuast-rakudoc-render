@@ -43,13 +43,19 @@ method templates {
             }
             if $proc-rv {
                 my $fn = $tmpl.globals.data<source-data><name> ~ '_' ~ $tmpl.globals.mangle.(%prm<caption>);
+                my $fnref = $fn.IO.basename;
+                $fn .= subst(/ \/ /,'%2f',:g );
                 if "$fn.svg".IO ~~ :e & :f {
+                    $fnref ~= '_0';
                     $fn ~= '_0';
-                    $fn++ while "$fn.svg".IO ~~ :e & :f
+                    while "$fn.svg".IO ~~ :e & :f {
+                        $fn++;
+                        $fnref++
+                    }
                 }
                 $fn ~= '.svg';
                 $fn.IO.spurt: $proc-rv;
-                $rv ~= qq|![]($fn)|
+                $rv ~= qq|![]({$fnref}.svg)|
             }
             elsif $proc-err {
                $rv ~= '<div class="graphviz-error">'
