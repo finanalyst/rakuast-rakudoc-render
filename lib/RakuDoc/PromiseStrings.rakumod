@@ -46,7 +46,13 @@ class PCell {
 
 class PStr {
     has @.string = ('', );
-    multi method new( *@string ) {
+    multi method new( *@seq ) {
+        my @string;
+        for @seq {
+            if .isa(PStr) { @string.append( .string ) }
+            elsif .isa(PCell) { @string.append( $_ ) }
+            else { @string.append( .Str ) }
+        }
         self.bless(:@string)
     }
     method Str {

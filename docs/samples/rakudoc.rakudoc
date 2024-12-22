@@ -2579,7 +2579,7 @@ Both C<=formula> and C«F<>» may take explicit
 ALT texts, so that the author can decide how their formula should be rendered
 in cases where the renderer cannot handle the specification.
 
-That is, the C<=formula> block accepts an `:alt` metaoption,
+That is, the C<=formula> block accepts an C<:alt> metaoption,
 and the syntax for the C«F<>» instruction is either
 C«F< FORMULA >» or C«F< ALT | FORMULA >».
 

@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::PromiseStrings;
 
-plan 46;
+plan 47;
 
 my $register = PCellTracker.new;
 my $payload;
@@ -65,6 +65,7 @@ is $s.lead, 'more at front start', 'concatenated front strings';
 $s ~= ' with stuff at end' ~ ' <end>';
 is $s.tail, ' with stuff at end <end>', 'concatenated final strings';
 
+# test trim
 lives-ok { $s .= new: ' one ', PCell.new(:$register, :id('QQQ')), ' two '},
         'creates a new Pstr from a list';
 $rv = $s;
@@ -83,6 +84,11 @@ $s .= new( '  just a single string ');
 is $s.segments, 1, 'simple string is one segment';
 $s.trim;
 like $s.Str, / ^ 'just a single string' $ /, 'trims start/end space without repeating';
+
+$s .= new: ' one ', PCell.new(:$register, :id('QQQ')), ' two ';
+my PStr $v .= new: ' three ', PCell.new(:$register, :id('QQQ')), ' four ', $s;
+is $v.segments, 6, 'new takes segments from a PStr';
+
 my $str = 'string';
 $str ~= PCell.new(:$register, :id('NewID'));
 isa-ok $str, PStr, 'string coerced to PStr if PCell added to it';

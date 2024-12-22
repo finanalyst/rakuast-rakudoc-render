@@ -241,7 +241,7 @@ class RakuDoc::To::Markdown {
                 my $indent = '&nbsp;&nbsp;' x %prm<level>;
                 $num = @bullets.elems - 1 if $num >= @bullets.elems;
                 my $bullet = %prm<bullet> // @bullets[$num];
-                $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "  \n"
+                $indent ~ $bullet ~ ' ' ~ %prm<contents>.trim ~ "  \n"
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
