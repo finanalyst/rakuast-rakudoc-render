@@ -73,6 +73,32 @@ method templates {
                             <button id="changeTheme" class="button">Change theme</button>
                         </div>
                     </div>
+                    <nav class="panel is-hidden-tablet" id="mobile-nav">
+                      <div class="panel-block">
+                        <p class="control has-icons-left">
+                          <input class="input" type="text" placeholder="Search" id="mobile-nav-search"/>
+                          <span class="icon is-left">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                          </span>
+                        </p>
+                      </div>
+                      <p class="panel-tabs">
+                        <a id="mtoc-tab">Table of Contents</a>
+                        <a id="mindex-tab">Index</a>
+                      </p>
+                        <aside id="mtoc-menu" class="panel-block">
+                        { %prm<rendered-toc>
+                            ?? %prm<rendered-toc>
+                            !! '<p>No Table of contents for this page</p>'
+                        }
+                        </aside>
+                        <aside id="mindex-menu" class="panel-block is-hidden">
+                        { %prm<rendered-index>
+                            ?? %prm<rendered-index>
+                            !! '<p>No Index for this page</p>'
+                        }
+                        </aside>
+                    </nav>
                 </div>
             </nav>
             BLOCK
@@ -118,7 +144,7 @@ method templates {
         sidebar => -> %prm, $tmpl { '' },
         page-navigation => -> %prm, $tmpl {
             qq:to/SIDEBAR/;
-            <nav class="panel" id="page-nav">
+            <nav class="panel is-hidden-mobile" id="page-nav">
               <div class="panel-block">
                 <p class="control has-icons-left">
                   <input class="input" type="text" placeholder="Search" id="page-nav-search"/>
@@ -216,12 +242,16 @@ method js-text {
     var persisted_tocState = function () { return localStorage.getItem('tocOpen') };
     var persist_tocState = function (tocState) { localStorage.setItem('tocOpen', tocState ) };
 
+    var originalIndex;
+    var originalTOC;
+
     document.addEventListener('DOMContentLoaded', function () {
         // set up functions needing document variables.
         var matchTocState = function ( state ) {
             if ( state ) {
                 document.getElementById("TOC").classList.remove('is-hidden');
                 document.getElementById("page-nav").classList.remove('is-hidden');
+                document.getElementById("mobile-nav").classList.remove('is-hidden');
                 document.getElementById("MainText").classList.add('is-three-quarters');
                 document.getElementById("MainText").classList.add('column');
                 document.getElementById("MainText").classList.remove('px-5');
@@ -230,6 +260,7 @@ method js-text {
             else {
                 document.getElementById("TOC").classList.add('is-hidden');
                 document.getElementById("page-nav").classList.add('is-hidden');
+                document.getElementById("mobile-nav").classList.add('is-hidden');
                 document.getElementById("MainText").classList.remove('is-three-quarters');
                 document.getElementById("MainText").classList.remove('column');
                 document.getElementById("MainText").classList.add('px-5');
@@ -240,6 +271,7 @@ method js-text {
             if ( state === 'closed') {
                 document.getElementById("TOC").classList.add('is-hidden');
                 document.getElementById("page-nav").classList.add('is-hidden');
+                document.getElementById("mobile-nav").classList.add('is-hidden');
                 document.getElementById("MainText").classList.remove('is-three-quarters');
                 document.getElementById("MainText").classList.remove('column');
                 document.getElementById("MainText").classList.add('px-5');
@@ -248,6 +280,7 @@ method js-text {
             else {
                 document.getElementById("TOC").classList.remove('is-hidden');
                 document.getElementById("page-nav").classList.remove('is-hidden');
+                document.getElementById("mobile-nav").classList.remove('is-hidden');
                 document.getElementById("MainText").classList.add('is-three-quarters');
                 document.getElementById("MainText").classList.add('column');
                 document.getElementById("MainText").classList.remove('px-5');
@@ -293,48 +326,54 @@ method js-text {
         document.getElementById("navbar-toc-toggle").addEventListener('change', function() {
             matchTocState( this.checked )
         });
-        document.getElementById('toc-tab').addEventListener('click', function () { swap_toc_index('toc') });
-        document.getElementById('index-tab').addEventListener('click', function () { swap_toc_index('index') });
-        var TOC = document.getElementById('toc-menu');
-        var Index = document.getElementById('index-menu');
-        var originalTOC = TOC.getHTML();
-        var originalIndex = Index.getHTML();
+        document.getElementById('toc-tab').addEventListener('click', function () { swap_toc_index('','toc') });
+        document.getElementById('index-tab').addEventListener('click', function () { swap_toc_index('','index') });
+        document.getElementById('mtoc-tab').addEventListener('click', function () { swap_toc_index('m','toc') });
+        document.getElementById('mindex-tab').addEventListener('click', function () { swap_toc_index('m','index') });
+        originalTOC = document.getElementById('toc-menu').getHTML();
+        originalIndex = document.getElementById('index-menu').getHTML();
         document.getElementById("page-nav-search").addEventListener('keyup', function (event) {
-            TOC.innerHTML = originalTOC;
-            Index.innerHTML = originalIndex;
-            var searchText = event.srcElement.value.toLowerCase();
-            if (searchText.length === 0) return;
-            var menuListElements = document.getElementById('page-nav').querySelectorAll('.toc-item, .index-section');
-            var matchingListElements = Array.from(menuListElements).filter(function (item) {
-                var el;
-                if ( item.classList.contains('toc-item') ) {
-                    el = item.querySelector('a');
-                } else {
-                    el = item.querySelector('.index-entry')
-                }
-                var listItemHTML = el.innerHTML;
-                var fuzzyRes = fuzzysort.go(searchText, [listItemHTML])[0];
-                if (fuzzyRes === undefined || fuzzyRes.score <= 0) {
-                    return false;
-                }
-                var res = fuzzyRes.highlight('<b>','</b>');
-                if (res !== null) {
-                    el.innerHTML = res;
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-        menuListElements.forEach(function(elem){elem.classList.add('is-hidden')});
-        matchingListElements.forEach(function(elem){elem.classList.remove('is-hidden')});
+            filtersearch(event, 'toc-menu', 'index-menu', 'page-nav')
+        });
+        document.getElementById("mobile-nav-search").addEventListener('keyup', function (event) {
+            filtersearch(event, 'mtoc-menu', 'mindex-menu', 'mobile-nav')
         });
     });
-    function swap_toc_index(activate) {
+    function filtersearch(event, toc,index,nav) {
+        document.getElementById(toc).innerHTML = originalTOC;
+        document.getElementById(index).innerHTML = originalIndex;
+        var searchText = event.srcElement.value.toLowerCase();
+        if (searchText.length === 0) return;
+        var menuListElements = document.getElementById(nav).querySelectorAll('.toc-item, .index-section');
+        var matchingListElements = Array.from(menuListElements).filter(function (item) {
+            var el;
+            if ( item.classList.contains('toc-item') ) {
+                el = item.querySelector('a');
+            } else {
+                el = item.querySelector('.index-entry')
+            }
+            var listItemHTML = el.innerHTML;
+            var fuzzyRes = fuzzysort.go(searchText, [listItemHTML])[0];
+            if (fuzzyRes === undefined || fuzzyRes.score <= 0) {
+                return false;
+            }
+            var res = fuzzyRes.highlight('<b>','</b>');
+            if (res !== null) {
+                el.innerHTML = res;
+                return true;
+            } else {
+                return false;
+            }
+        });
+        menuListElements.forEach(function(elem){elem.classList.add('is-hidden')});
+        matchingListElements.forEach(function(elem){elem.classList.remove('is-hidden')});
+    };
+    function swap_toc_index(div, activate) {
         let disactivate = (activate == 'toc') ? 'index' : 'toc';
-        document.getElementById( activate + '-tab').classList.add('is-active');
-        document.getElementById( disactivate + '-menu').classList.add('is-hidden');
-        document.getElementById( disactivate + '-tab').classList.remove('is-active');
-        document.getElementById( activate + '-menu').classList.remove('is-hidden');
+        document.getElementById( div + activate + '-tab').classList.add('is-active');
+        document.getElementById( div + disactivate + '-menu').classList.add('is-hidden');
+        document.getElementById( div + disactivate + '-tab').classList.remove('is-active');
+        document.getElementById( div + activate + '-menu').classList.remove('is-hidden');
     }
     SCRIPT
 }
@@ -414,5 +453,6 @@ method bulma-additions-scss {
     .content p + ol.item-list { margin-top: 0; }
     // .content p:not( ol.item-list ) { margin-bottom: 0; }
     .delta:hover { border: var(--bulma-border-hover) 1px solid; }
+    .navbar-start { margin-bottom: 1rem; }
     GENERAL
 }
