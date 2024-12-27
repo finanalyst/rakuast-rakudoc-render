@@ -412,10 +412,10 @@ class RakuDoc::Processor {
             && %*ALLOW.defined && !%*ALLOW{ $letter }
             {
             given $letter {
-                when 'L' {
-                    $prs.body ~= 'L' ~ $ast.opener ~ self.markup-contents($ast);
+                when 'A' | 'D' | 'F' | 'L' | 'M' | 'P' | 'X' | 'Δ'  {
+                    $prs.body ~= $letter ~ self.escape($ast.opener) ~ self.markup-contents($ast);
                     with $ast.meta { $prs.body ~= '|' ~ self.markup-contents( $ast, :meta )}
-                    $prs.body ~= $ast.closer
+                    $prs.body ~= self.escape($ast.closer)
                 }
                 default { $prs.body ~= self.escape($ast.DEPARSE) }
             }

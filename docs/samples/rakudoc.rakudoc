@@ -1,7 +1,7 @@
 =begin rakudoc :kind("Language") :subkind("Language") :category("reference")
 =TITLE RakuDoc
 =SUBTITLE A Raku slang for documenting Raku software to aid development and use.
-=VERSION 2.10.3
+=VERSION 2.10.4
 
 RakuDoc is a markup language with simple instructions for simple tasks and more
 complex structures to suit larger projects. There is a clear distinction between
@@ -507,12 +507,20 @@ Alias placement codes may also specify a default display text, before the
 alias name and separated from it by a C<|>. When a display is specified,
 it will be used if the requested alias cannot be found (and an I<"unknown alias">
 warning will be issued in that case):
+=begin comment
+Not possible to parse this correctly, postponed for future
+    =begin code :lang<RakuDoc> :allow<B>
+        The use of A<B<this program |> SOFTWARE> is subject to the terms and conditions
+        laid out by A<B<our company |> COMPANY>, as specified at:
 
+            A<B<(Please visit our website) |> OURTERMS>
+    =end code
+=end comment
 =begin code :lang<RakuDoc> :allow<B>
-    The use of A<B<this program |> SOFTWARE> is subject to the terms and conditions
-    laid out by A<B<our company |> COMPANY>, as specified at:
+    The use of A<B<this program >| SOFTWARE> is subject to the terms and conditions
+    laid out by A<B<our company >| COMPANY>, as specified at:
 
-        A<B<(Please visit our website) |> OURTERMS>
+        A<B<(Please visit our website) >| OURTERMS>
 =end code
 produces ...
 =begin nested
@@ -3285,13 +3293,23 @@ EMPLOYEES, SO DON'T EVEN *THINK* ABOUT SUING US. HAVE A NICE DAY.
 The C<P<>> markup code can also be specified with an optional display text,
 which will be rendered if the renderer cannot find or access the external
 data source for the placement link. For example:
+=begin comment
+Not possible to parse this correctly, postponed for future
+    =begin code :lang<RakuDoc> :allow<B>
+    =COPYRIGHT
+    P<B<The document is copyright. |> file:/shared/docs/std_copyright.rakudoc>
+
+    =DISCLAIMER
+    P<B<NO WARRANTY. NONE. NIL. NADA. |> http://www.MegaGigaTeraPetaCorp.com/std/disclaimer.txt>
+=end code
+=end comment
 
 =begin code :lang<RakuDoc> :allow<B>
 =COPYRIGHT
-P<B<The document is copyright. |> file:/shared/docs/std_copyright.rakudoc>
+P<B<The document is copyright. >| file:/shared/docs/std_copyright.rakudoc>
 
 =DISCLAIMER
-P<B<NO WARRANTY. NONE. NIL. NADA. |> http://www.MegaGigaTeraPetaCorp.com/std/disclaimer.txt>
+P<B<NO WARRANTY. NONE. NIL. NADA. >| http://www.MegaGigaTeraPetaCorp.com/std/disclaimer.txt>
 =end code
 
 If the filesystem or internet is inaccessible, this might produce:
@@ -3593,11 +3611,19 @@ When an alternate text is specified, it is used if the specified entity
 cannot be represented by the renderer (e.g. if the renderer only supports ASCII).
 
 For example:
+=begin comment
+Not possible to parse this correctly, postponed for future
+    =begin code :lang<RakuDoc> :allow<B>
+    Raku makes considerable use of the E<B<left- |>laquo> and E<B<right-double-angle |>raquo> characters.
 
+    Raku code often contains the E<B<left- and right-corner |>0xff62;0xff63> bracketing characters
+    to avoid using quotes.
+    =end code
+=end comment
 =begin code :lang<RakuDoc> :allow<B>
-Raku makes considerable use of the E<B<left- |>laquo> and E<B<right-double-angle |>raquo> characters.
+Raku makes considerable use of the E<B<left- >|laquo> and E<B<right-double-angle >|raquo> characters.
 
-Raku code often contains the E<B<left- and right-corner |>0xff62;0xff63> bracketing characters
+Raku code often contains the E<B<left- and right-corner >|0xff62;0xff63> bracketing characters
 to avoid using quotes.
 =end code
 
