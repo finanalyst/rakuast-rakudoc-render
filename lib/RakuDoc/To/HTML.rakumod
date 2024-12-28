@@ -336,8 +336,8 @@ class RakuDoc::To::HTML {
                         for @row -> $cell {
                             next if $cell<no-cell>;
                             my $content;
-                            $content ~= ' rowspan="' ~ $cell<span>[0] ~'"' if $cell<span>:exists and $cell<span>[0] != 1;
-                            $content ~= ' colspan="' ~ $cell<span>[1] ~'"' if $cell<span>:exists and $cell<span>[1] != 1;
+                            $content ~= ' colspan="' ~ $cell<span>[0] ~'"' if $cell<span>:exists and $cell<span>[0] != 1;
+                            $content ~= ' rowspan="' ~ $cell<span>[1] ~'"' if $cell<span>:exists and $cell<span>[1] != 1;
                             $content ~= ' class="';
                             with $cell<align> { for .list {
                                 $content ~= "procedural-cell-$_ "

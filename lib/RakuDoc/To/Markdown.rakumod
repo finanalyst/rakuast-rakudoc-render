@@ -7,8 +7,8 @@ class MarkDown::Processor is RakuDoc::Processor {
     multi method escape( Str:D $s ) {
         # will not double escape
         $s.trans(
-                   qw｢ `   ｣
-                => qw｢ ``  ｣
+                   qw｢ ` < &lt;  ｣
+                => qw｢ `` &lt; &lt; ｣
         )
     }
     #| Stringify if not string
