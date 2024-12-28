@@ -330,13 +330,14 @@ class RakuDoc::To::HTML {
                 my $classes = ( %prm<classes> // "table" );
                 my $rv = PStr.new: $head ~ '<table class="' ~ $classes ~ '">';
                 if %prm<procedural> {
+                    $rv ~= '<tbody class="procedural">';
                     for %prm<grid>.list -> @row {
-                        $rv ~= "\n<tr>";
+                        $rv ~= "\n<tr class=\"procedural\">";
                         for @row -> $cell {
                             next if $cell<no-cell>;
                             my $content;
-                            $content ~= ' colspan="' ~ $cell<span>[0] ~'"' if $cell<span>:exists and $cell<span>[0] != 1;
-                            $content ~= ' rowspan="' ~ $cell<span>[1] ~'"' if $cell<span>:exists and $cell<span>[1] != 1;
+                            $content ~= ' rowspan="' ~ $cell<span>[0] ~'"' if $cell<span>:exists and $cell<span>[0] != 1;
+                            $content ~= ' colspan="' ~ $cell<span>[1] ~'"' if $cell<span>:exists and $cell<span>[1] != 1;
                             $content ~= ' class="';
                             with $cell<align> { for .list {
                                 $content ~= "procedural-cell-$_ "
@@ -353,6 +354,7 @@ class RakuDoc::To::HTML {
                         }
                         $rv ~= "</tr>"
                     }
+                    $rv ~= "\n</tbody>"
                 }
                 else {
                     $rv ~= "\t<thead>\n\t\t<tr><th>" ~ $_>>.trim.join( '</th><th>') ~ "</th></tr>\n\t</thead>"

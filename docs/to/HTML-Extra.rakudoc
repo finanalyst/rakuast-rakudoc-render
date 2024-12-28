@@ -61,6 +61,16 @@ By default, the following plugins are provided, and more can be added by the use
 =cell L<Local documentation|plugins/ListFiles.*>
 =cell Provides C<=ListFiles> custom block
 =cell Artistic-2.0
+=row
+=cell SCSS
+=cell L<Sass webpage | https://sass-lang.com/>
+=cell Creates CSS files from SCSS declared in other plugins configuration
+=cell MIT
+=row
+=cell Hilite
+=cell L<Local documentation|plugins/Hilite.*>
+=cell Syntax highlights code blocks
+=cell Artistic-2.0
 =end table
 
 =head RakuDoc::Render plugins

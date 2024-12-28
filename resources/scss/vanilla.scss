@@ -224,28 +224,28 @@ table, th, td {
   border: 1px solid;
   border-collapse: collapse;
 }
-.procedural-cell-left {
+tbody.procedural tr.procedural .procedural-cell-left {
 	text-align: left;
 }
-.procedural-cell-centre {
+tbody.procedural tr.procedural .procedural-cell-centre {
 	text-align: center;
 }
-.procedural-cell-center {
+tbody.procedural tr.procedural .procedural-cell-center {
 	text-align: center;
 }
-.procedural-cell-right {
+tbody.procedural tr.procedural .procedural-cell-right {
 	text-align: right;
 }
-.procedural-cell-top {
+tbody.procedural tr.procedural .procedural-cell-top {
 	vertical-align: text-top;
 }
-.procedural-cell-middle {
+tbody.procedural tr.procedural .procedural-cell-middle {
 	vertical-align: baseline;
 }
-.procedural-cell-bottom {
+tbody.procedural tr.procedural .procedural-cell-bottom {
 	vertical-align: text-bottom;
 }
-.procedural-cell-label {
+tbody.procedural tr.procedural .procedural-cell-label {
 	font-weight: bold;
 }
 li.item {
