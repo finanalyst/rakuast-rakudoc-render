@@ -30,9 +30,13 @@ class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
                 note "Could not enable RakuDoc::Plugin::HTML::$plugin\. Error: ", .message;
             }
         }
-        for <css-link js-link js css> {
-            # prevent duplication of CSS if both css and scss are provided in a plugin
-            next if $_ eq 'css' and ( 'SCSS' (elem) @HTML-Extra-plugins ) and $rdp.templates.data<scss>:exists;
+        # run the scss to css conversion after all plugins have been enabled
+        # makes SCSS position independent
+        if $rdp.templates.data<SCSS>:exists {
+            $rdp.templates.data<SCSS><run-sass>.( $rdp )
+        }
+        else { self.gather-flatten($rdp, 'css') }
+        for <css-link js-link js> {
             self.gather-flatten($rdp, $_)
         }
     }

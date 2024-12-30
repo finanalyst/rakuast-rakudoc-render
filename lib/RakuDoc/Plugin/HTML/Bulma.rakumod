@@ -12,7 +12,7 @@ has %.config = %(
 	:version<0.1.0>,
 	:css-link(['href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"',1],),
 	:js-link(['src="https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js"',1],),
-    :js([self.js-text,2],), # 1st element is replaced in TWEAK
+    :js([self.js-text,2],),
     :scss([self.chyron-scss,1], [ self.toc-scss, 1], [ self.bulma-additions-scss, 1]),
 );
 method enable( RakuDoc::Processor:D $rdp ) {

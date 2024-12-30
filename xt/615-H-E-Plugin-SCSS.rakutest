@@ -1,0 +1,23 @@
+use v6.d;
+use Test;
+
+use RakuDoc::To::HTML;
+
+plan 5;
+
+my $html-instance = RakuDoc::To::HTML.new;
+my $rdp := $html-instance.rdp;
+my %d := $rdp.templates.data;
+isa-ok %d<css>, Str, 'default CSS is attached';
+like %d<css>, / '/*! Vanilla' /, 'got default CSS';
+unlike %d<css>, / '/*! Vanilla' .+ '/*!' /, 'only got Vanilla';
+lives-ok {
+    require RakuDoc::Plugin::HTML::SCSS;
+    RakuDoc::Plugin::HTML::SCSS.new.enable( $rdp );
+}, 'SCSS plugin enabled';
+
+$rdp.add-data( 'Test', %( :scss( [ '/*! testing scss */.bolding { font-weight:543; }', 1 ],   ) ) );
+%d<SCSS><run-sass>.( $rdp );
+like %d<css>, / '/*! Vanilla' .+ '/*! testing scss' /, 'got default CSS';
+
+done-testing;

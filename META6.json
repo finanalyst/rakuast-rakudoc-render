@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, HTML-Extra, Markdown",
-  "version": "0.20.7",
+  "version": "0.20.8",
   "authors": [
     "Richard Hainsworth"
   ],
@@ -10,7 +10,6 @@
     "PrettyDump",
     "Test::Deeply::Relaxed",
     "Test::Output",
-    "Temp::Path",
     "LibCurl",
     "URI",
     "Digest::SHA1::Native",
@@ -18,8 +17,7 @@
     "Method::Protected",
     "Test::Run",
     "RakuAST::Deparse::Highlight",
-    "Trap",
-    "Rainbow"
+    "Rainbow:ver<0.3.0+>"
   ],
   "test-depends": [
     "Test",

@@ -10,17 +10,34 @@ v0.1.0
 Uses the L<Dart CASS program|https://sass-lang.com/> to convert SCSS input into CSS output that is
 added to the RPO structure.
 
-The plugin is intended to be run B<once> and B<after> any other plugin that defines a C<scss:> field
+The plugin has a SCSS to CSS converter that is intended to be run B<once> and B<after> any other plugin that defines a C<scss:> field
 in its C<%.config> attribute in the correct manner for HTML-Extra, eg.,
 =begin code
     %!config =
         :scss( [ self.add-scss-string, 2], ),
 =end code
 
+In order to accomplish this, the SCSS workspace has a closure to be called with the RakuDoc-Processor (rdp) object.
+A renderer, eg. C<RakuDoc::To::HTML-Extra>, will call the closure after all plugins have been enabled, eg.
+
+    $rdp.template.data<SCSS><run-sass>.( $rdp )
+
+After which C«$rdp.templates.data<css>» will contain a string of all the CSS from each of the C<:scss> fields
+concatenated in the correct order. Any existing value of C<:css> provided by the renderer itself is assumed to have
+order 0.
+
 =head Warnings
-=item The B<scss> attribute must be a sequence of Str,Int tuples, so the comma inside the I<)> is important.
-=item This plugin adds CSS to the Processor instance, but a previous plugin may have
-added CSS as well as SCSS. HTML-Extra gives precedence to SCSS.
+=begin item
+The B<scss> attribute must be a sequence of Str,Int tuples, eg.,
+=for code
+:scss( [ '/*! Test */.bolder { font-weight:450; } ', 1 ] , ),
+
+so the comma inside the last I<)> is important.
+=end item
+=item This plugin adds CSS to the Processor instance for each plugin. If a plugin has
+both a C<:css> and a C<:scss> attribute set in its config, SCSS will ignore the C<:css> and
+render the C<:scss>. If a plugin only has a C<:css> and no C<:scss>, the C<:css> value will be
+concatenated with the order set or with an implied order of 0.
 
 =item It is assumed that a shell call to C<sass -v> will yield a version number, otherwise the plugin
 will C<die>.
