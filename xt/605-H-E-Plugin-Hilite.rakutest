@@ -6,8 +6,8 @@ my $html-instance = RakuDoc::To::HTML.new;
 my $rdp := $html-instance.rdp;
 
 lives-ok {
-    require RakuDoc::Plugin::Hilite;
-    RakuDoc::Plugin::Hilite.new.enable( $rdp );
+    require RakuDoc::Plugin::HTML::Hilite;
+    RakuDoc::Plugin::HTML::Hilite.new.enable( $rdp );
 }, 'hilite plugin enabled';
 #my $src = q[my $var = 2;];
 #my $hl = highlight( $src, 'HTML' );

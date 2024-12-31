@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, HTML-Extra, Markdown",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "authors": [
     "Richard Hainsworth"
   ],
@@ -17,7 +17,8 @@
     "Method::Protected",
     "Test::Run",
     "RakuAST::Deparse::Highlight",
-    "Rainbow:ver<0.3.0+>"
+    "Rainbow:ver<0.3.0+>",
+    "File::Directory::Tree"
   ],
   "test-depends": [
     "Test",
