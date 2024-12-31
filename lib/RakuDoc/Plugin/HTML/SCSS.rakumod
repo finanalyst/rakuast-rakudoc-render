@@ -11,7 +11,7 @@ has %.config = %(
 	:author<Richard Hainsworth, aka finanalyst>,
 	:version<0.1.2>,
     :css([]),
-    :run-sass( -> $r { say 'inside closure rdp type ', $r.^name; self.convert-scss($r) } ),
+    :run-sass( -> $r { self.convert-scss($r) } ),
 );
 
 submethod TWEAK {
