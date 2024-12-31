@@ -461,12 +461,12 @@ class RakuDoc::Processor {
             given $letter {
                 when 'A' | 'D' | 'F' | 'L' | 'M' | 'P' | 'X' | 'Δ'  {
                     $prs.body ~= $letter ~ self.escape($ast.opener) ~ self.markup-contents($ast);
-                    with $ast.meta { $prs.body ~= '|' ~ self.markup-contents( $ast, :meta ) }
+                    if $ast.meta -> $_ { $prs.body ~= '|' ~ self.markup-contents( $ast, :meta ) }
                     $prs.body ~= self.escape($ast.closer)
                 }
                 when 'E' {
                     $prs.body ~= $letter ~ self.escape($ast.opener) ~ self.markup-contents($ast);
-                    with $ast.meta { $prs.body ~= '|' ~ .map(*.key).join('; ') }
+                    if $ast.meta -> $_ { $prs.body ~= '|' ~ .map(*.key).join('; ') }
                     $prs.body ~= self.escape($ast.closer)
                 }
                 default { $prs.body ~= self.escape($ast.DEPARSE) }
@@ -536,7 +536,11 @@ class RakuDoc::Processor {
                 my $term = self.markup-contents($ast).Str;
                 my $alt = '';
                 # check to see if there is a text to over-ride automatic failure message
-                if $term ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
+                if $ast.meta {
+                    $alt = $term;
+                    $term = $ast.meta.Str
+                }
+                elsif $term ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
                     $alt = ~$0.trim;
                     $term = ~$1.trim
                 }
@@ -644,14 +648,16 @@ class RakuDoc::Processor {
             # Placement link
             when 'P' {
                 # The contents of P<> markup must be a Str.
-                my $contents = self.markup-contents($ast).Str;
-                my $uri;
+                my $uri = self.markup-contents($ast).Str;
                 # check to see if there is a text to over-ride automatic failure message
-                if $contents ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
+                if $ast.meta {
+                    %config<fallback> = $uri;
+                    $uri = $ast.meta.Str
+                }
+                elsif $uri ~~ / ^ (<-[ | ]>+) \| (.+) $ / {
                     %config<fallback> = ~$0;
                     $uri = ~$1
                 }
-                else { $uri = $contents }
                 $.make-placement(:$uri, :%config, :template<markup-P>);
             }
 
