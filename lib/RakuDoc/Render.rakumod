@@ -20,6 +20,9 @@ class RakuDoc::Processor {
     has RakuDoc::ScopedData $!scoped-data .= new;
     #| debug modes that are checked
     has SetHash $!debug-modes .= new;
+    #| installed plugins to prevent re-installation
+    has SetHash $.installed-plugins .= new;
+
     multi method debug(RDProcDebug $type --> Nil ) {
         given $type {
             when None {
@@ -238,6 +241,11 @@ class RakuDoc::Processor {
     #| typically the enable method will create the plugin's dataspace and add templates
     method add-plugins( @plugin-list ) {
         for @plugin-list -> $plugin {
+            if $plugin (elem) $!installed-plugins {
+                note "Attempted to re-install ｢$plugin｣, ignoring duplicate installation";
+                next
+            }
+            else { $!installed-plugins{ $plugin }++ }
             require ::($plugin);
             CATCH {
                 note "$plugin is not installed";

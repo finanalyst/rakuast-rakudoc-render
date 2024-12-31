@@ -1,0 +1,18 @@
+use v6.d;
+use Test;
+use Test::Output;
+test-output-verbosity(:on);
+use RakuDoc::Render;
+
+plan 2;
+
+my RakuDoc::Processor $rdp .= new(:test);
+my @plugs = < FontAwesome ListFiles >;
+$rdp.add-plugins('RakuDoc::Plugin::HTML::' «~« @plugs );
+is-deeply $rdp.installed-plugins.keys.sort, ('RakuDoc::Plugin::HTML::' «~« @plugs).sort, 'installed plugin list';
+@plugs.push: 'ListFiles';
+$rdp .= new(:test);
+stderr-like { $rdp.add-plugins('RakuDoc::Plugin::HTML::' «~« @plugs ) },
+    / 're-install ｢' .+ 'ListFiles｣' /, 'trapped duplicate plugin';
+
+done-testing;
