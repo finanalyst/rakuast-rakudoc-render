@@ -1,7 +1,7 @@
 use v6.d;
 use Test;
 use Test::Output;
-test-output-verbosity(:on);
+#test-output-verbosity(:on);
 use RakuDoc::Render;
 
 plan 2;
