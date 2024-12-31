@@ -1,44 +1,31 @@
 use v6.d;
 use RakuDoc::To::HTML;
 
-#| the plugins to be attached to the processor
-#| the order of the plugins matters as templates names
-#| attached last are used first
-our @HTML-Extra-plugins = <LeafletMaps Latex Graphviz Bulma FontAwesome ListFiles Hilite SCSS>;
-
 class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
     #| keys reserved for assets in HTML page, so Plugins may not claim any as a name-space.
     has @!reserved = <css css-link js js-link>;
 
     submethod TWEAK {
         my $rdp := self.rdp;
+        # templates are attached first as plugins may over-ride base templates
         $rdp.add-templates(self.templates, :source<HTML-Extra>);
+
+        #| the plugins to be attached to the processor
+        #| the order of the plugins matters as templates names
+        #| attached last are used first
+        my @HTML-Extra-plugins = <LeafletMaps Latex Graphviz Bulma FontAwesome ListFiles Hilite SCSS>;
         if 'rakudoc-config.raku'.IO ~~ :e & :f {
             @HTML-Extra-plugins = EVALFILE('rakudoc-config.raku');
             note 'Plugins required are: ', @HTML-Extra-plugins;
         }
-        for @HTML-Extra-plugins -> $plugin {
-            require ::("RakuDoc::Plugin::HTML::$plugin");
-            CATCH {
-                note "RakuDoc::Plugin::HTML::$plugin is not installed";
-                .resume
-            }
-            try {
-                ::("RakuDoc::Plugin::HTML::$plugin").new.enable( $rdp )
-            }
-            with $! {
-                note "Could not enable RakuDoc::Plugin::HTML::$plugin\. Error: ", .message;
-            }
-        }
+        $rdp.add-plugins( 'RakuDoc::Plugin::HTML::' «~« @HTML-Extra-plugins );
         # run the scss to css conversion after all plugins have been enabled
         # makes SCSS position independent
         if $rdp.templates.data<SCSS>:exists {
             $rdp.templates.data<SCSS><run-sass>.( $rdp )
         }
-        else { self.gather-flatten($rdp, 'css') }
-        for <css-link js-link js> {
-            self.gather-flatten($rdp, $_)
-        }
+        else { $rdp.gather-flatten( 'css', :@!reserved) }
+        $rdp.gather-flatten(<css-link js-link js>, :@!reserved )
     }
 
     method render($ast) {
@@ -49,31 +36,6 @@ class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
             path     => $fn.dirname,
         ;
         self.new.rdp.render( $ast, :%source-data  )
-    }
-    #| plugins provide config information about css/js & cdn as arrays of Str/order arrays
-    #| This needs to be gathered from all plugins, and processed for templates
-    method gather-flatten( $rdp, $key ) {
-        my %d := $rdp.templates.data;
-        my %valid = %d.pairs
-            .grep({ .key ~~ none(@!reserved) })
-            .grep({ .value.{ $key } ~~ Positional })
-            .map( { .key => .value.{ $key } });
-        my @p-tuples;
-        for %valid.kv -> $plugin, $tuple-list {
-            if $tuple-list ~~ Positional {
-                for $tuple-list.list {
-                    if .[0] ~~ Str && .[1] ~~ Int {
-                        @p-tuples.push: $_
-                    }
-                    else { note "Element ｢$_｣ of config attribute ｢$key｣ for plugin ｢$plugin｣ not a [Str, Int] tuple"}
-                }
-            }
-            else { note "Config attribute ｢$key｣ for plugin ｢$plugin｣ must be a Positional, but got ｢$tuple-list｣"}
-        }
-        if %d{ $key }:exists { # this is true for css from HTML, add it with zero order.
-            @p-tuples.push: [ %d{ $key }, 0]
-        }
-        %d{ $key } = @p-tuples.sort({ .[1], .[0] }).map( *.[0] ).list;
     }
     method templates {
         %( # replace the template that governs where CSS and JS go

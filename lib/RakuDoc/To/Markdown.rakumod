@@ -54,30 +54,18 @@ class MarkDown::Processor is RakuDoc::Processor {
         self.escape($ast.Str.trim);
     }
 }
-#| the plugins to be attached to the processor
-#| the order of the plugins matters as templates names
-#| attached last are used first
-our @Markup-plugins = 'Graphviz' , ;
-
 class RakuDoc::To::Markdown {
     has MarkDown::Processor $.rdp .=new(:output-format<md>);
 
     submethod TWEAK {
         my $rdp := self.rdp;
         $rdp.add-templates( self.markdown-templates, :source<RakuDoc::To::Markdown> );
-        for @Markup-plugins -> $plugin {
-            require ::("RakuDoc::Plugin::Markdown::$plugin");
-            CATCH {
-                note "RakuDoc::Plugin::Markdown::$plugin is not installed";
-                .resume
-            }
-            try {
-                ::("RakuDoc::Plugin::Markdown::$plugin").new.enable( $rdp )
-            }
-            with $! {
-                note "Could not enable RakuDoc::Plugin::Markdown::$plugin\. Error: ", .message;
-            }
-        }
+
+        #| the plugins to be attached to the processor
+        #| the order of the plugins matters as templates names
+        #| attached last are used first
+        my @Markup-plugins = 'Graphviz' , ;
+        $rdp.add-plugins( 'RakuDoc::Plugin::Markdown::' «~« @Markup-plugins );
     }
 
     method render($ast) {

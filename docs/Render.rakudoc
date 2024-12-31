@@ -3,11 +3,12 @@
 =SUBTITLE Overview of rendering engine.
 =for AUTHOR :hidden
 Richard Hainsworth aka finanalyst
-
+=for LICENSE :hidden
+Artistic-2.0
 =for VERSION :hidden
-v0.3.0
+v0.4.0
 
-=head1 Overview
+=head Overview
 
 The module contains the RakuDoc::Processor class.
 
@@ -31,7 +32,7 @@ output control.
 
 The following describes choices that are left by RakuDoc v2 to the renderer.
 
-=head2 Templates
+=head Templates
 
 An B<RPO> contains a default set of Text templates.
 
@@ -52,7 +53,7 @@ The set of template keys needed to create a renderer is L<tabulated here|default
 
 All aspects of the output can be defined using the templates.
 
-=head2 Process
+=head Process
 
 The generic render method transforms the AST of the input file using a handle method for each
 type of Block and Markup code. A template exists for each block and markup code.
@@ -70,7 +71,7 @@ The final rendering is done by the 'final' template.
 Once a string has been obtained, it can be post-processed using the post-process method.
 For example, text output can be transformed by wrapping lines.
 
-=head2 Warnings
+=head Warnings
 
 In order to offer the maximum flexibility to a RakuDoc author, if there
 is an error condition after the RakuDoc source has been compiled,
@@ -79,12 +80,12 @@ a set of warnings are generated.
 By default these are rendered using the 'warnings' template, and the rendered
 version is appended to the output file.
 
-=head2 Customisability
+=head Customisability
 
 RakuDoc allows for customisability. This renderer handles customisability
-via the template mechanism.
+via the template mechanism and L<Plugins|#Plugins>.
 
-=head3 Custom blocks
+=head2 Custom blocks
 
 When custom block is detected according to the RakuDoc v2 spelling rules,
 an B<RPO> will check whether a template exists with that name.
@@ -97,20 +98,20 @@ no renderering will be provided as C<raw>.
 So a new block can be created by attaching a template with the blockname
 to the B<RPO>.
 
-=head3 Custom markup codes
+=head2 Custom markup codes
 
 RakuDoc v2 allows for custom markup codes in two ways:
 =item the C<< M< DISPLAY | FUNCTION ; list of comma delimited strings > >>
 =item a single Unicode (not ASCII ) character with the I<upper> property.
 
-=head4 Markup M
+=head3 Markup M
 
 When a C<< M< DISPLAY | FUNCTION ; LIST > >> is encountered, the renderer
 will look for a template named in the R<FUNCTION> position. If no
 such template exists,  the text will be rendered verbatim and a warning
 logged.
 
-=head4 Markup UNICODE[upper]
+=head3 Markup UNICODE[upper]
 
 When some custom markup is encountered, the renderer will
 =item check that the character, eg Ɵ (Greek Capital Theta), has
@@ -123,7 +124,54 @@ by B<markup-> in order to name the template.
 Thus in order to create a new markup code, create an appropriately
 named template and add it to the B<RPO>.
 
-=head3 Global data accessible in templates
+=head Plugins
+
+Typically an output, such as HTML, will require the content of the text
+to be organised in some way, but it will also need additional files
+such CSS or JS content. The templates can handle the content organisation,
+but obtaining JS and CSS libraries, or converting SASS to CSS involves
+other code to be run.
+
+These can be organised using plugins.
+
+A plugin can attach assets (such as Javascript content) to a hash in its
+I<data> workspace. Other plugins can operate on the data in these workspaces.
+An example is the C<RakuDoc::Plugin::HTML::SCSS> plugin.
+
+To enable plugins to work, the C<add-plugins( @plugin-list )> method of the
+RakuDoc-Processor (rdp) object is called by the renderer. The C<@plugin-list>
+must contain the full name of each plugin.
+
+Each plugin must have a C<enable> method that takes an B<rdp>. Typically, the
+B<enable> method will attach its config attribute to the workspace, and attach
+its templates.
+
+=head2 gather-flatten( $key ) / gather-flatten( @keys )
+
+Typically many of the plugins will define SCSS, Javascript, or links. Since
+the relative order in which (eg) css style sheets are attached matter, each
+attribute needs to be defined as a sequence of 'Str',<order> tuples.
+
+This method takes all the B<$key> attributes, sorts them by order, then forms
+a single sequence that is then used in the templates, eg. to form stylesheets
+in the head part of an HTML file.
+
+=head Global functions
+
+Each output format requires a different escaping strategy both for content
+and file names.
+
+This is handled by subclassing Processor object and over-riding C<escape>
+and C<mangle> methods for each output. See for example how C<RakuDoc::To::HTML>
+manages this.
+
+Since these functions are also needed inside templates, they can be called
+as follows:
+
+=item $tmpl.globals.escape.($s), where C<$s> is a string. B<Note> the mandatory C<.> before the I< ( ) >
+=item $tmpl.globals.mangle.($s)
+
+=head Global data accessible in templates
 
 More information is available in L<Templates|Templates>.
 
@@ -148,8 +196,6 @@ The following helper methods are available:
 =item2 :fnTarget(Str)
 =item2 :fnNumber(Str}
 
-=item escape.($s), where C<$s> is a string. B<Note> the C<.> after C<escape>
-
 =item add-to-warnings( $warning )
 
 In addition, within a template, it is possible to attach data
@@ -158,7 +204,7 @@ to globals, and to retrieve the data in another template.
 For an example of this, see test B<xt/030-customisation-data.rakutest>.
 (test number may be changed, but otherwise the filename will be the same).
 
-=head2 Debugging
+=head Debugging
 
 When developing new templates or renderers based on an B<RPO>, several
 debug options can be attached to the B<RPO>, eg.
@@ -185,7 +231,7 @@ Commentary on the code
 =item if called with C<:pre-finalised>, calling C<finalise> returns a
 Str that can then be stored as a file.
 
-=head3 Debug options
+=head2 Debug options
 
 The following options are available:
 =item None removes all previous debugging
@@ -209,7 +255,7 @@ be set on an B<RPO>, eg.
 Bear in mind that the B<pretty> flag overrides the B<test> flag, and both override the
 B<debug> and B<verbose> flags.
 
-=head1 Environment variables
+=head Environment variables
 
 By setting the environment variable POSTPROCESSING=1 the text output will be naively wrapped.
 
@@ -224,7 +270,7 @@ WIDTH by default is set at 80 chars. To set at 70, use:
 =for code :lang<text>
 POSTPROCESSING=1 WIDTH=70 bin/RenderTextify rakudociem-ipsum
 
-=head1 Paragraph id
+=head Paragraph id
 
 Since sometimes it is necessary to target a specific paragraph, some
 paragraphs get an automated id based on the last Seven hex chars of
@@ -272,4 +318,5 @@ are not included, then the default 'text' templates will be used.
 
 =place semantic:VERSION :!toc
 
+=place semantic:LICENSE
 =end rakudoc

@@ -233,6 +233,53 @@ class RakuDoc::Processor {
         .subst(/ <?after \S\s> \s+ /, '', :g))
     }
 
+    # Section dealing with plugins
+    #| plugins are enabled by calling their .enable method on the processor
+    #| typically the enable method will create the plugin's dataspace and add templates
+    method add-plugins( @plugin-list ) {
+        for @plugin-list -> $plugin {
+            require ::($plugin);
+            CATCH {
+                note "$plugin is not installed";
+                .resume
+            }
+            try {
+                ::($plugin).new.enable( self )
+            }
+            with $! {
+                note "Could not enable $plugin\. Error: ", .message;
+            }
+        }
+    }
+
+    #| plugins attach information about assets (eg. css/js & cdn for html) as arrays of Str/order tuples
+    #| This needs to be gathered from all plugins, and processed for templates
+    multi method gather-flatten( @keys, :@reserved ) { $.gather-flatten( $_, :@reserved ) for @keys }
+    multi method gather-flatten( $key, :@reserved = () ) {
+        my %d := $.templates.data;
+        my %valid = %d.pairs
+            .grep({ .key ~~ none(@reserved) })
+            .grep({ .value.{ $key } ~~ Positional })
+            .map( { .key => .value.{ $key } });
+        my @p-tuples;
+        for %valid.kv -> $plugin, $tuple-list {
+            if $tuple-list ~~ Positional {
+                for $tuple-list.list {
+                    if .[0] ~~ Str && .[1] ~~ Int {
+                        @p-tuples.push: $_
+                    }
+                    else { note "Element ｢$_｣ of config attribute ｢$key｣ for plugin ｢$plugin｣ not a [Str, Int] tuple"}
+                }
+            }
+            else { note "Config attribute ｢$key｣ for plugin ｢$plugin｣ must be a Positional, but got ｢$tuple-list｣"}
+        }
+        if %d{ $key }:exists { # this is true for css from HTML, add it with zero order.
+            @p-tuples.push: [ %d{ $key }, 0]
+        }
+        %d{ $key } = @p-tuples.sort({ .[1], .[0] }).map( *.[0] ).list;
+    }
+
+
     #| All handle methods may generate debug reports
     proto method handle( $ast ) {
         say "Handling: { $ast.WHICH.Str.subst(/ \| .+ $/, '') }"
