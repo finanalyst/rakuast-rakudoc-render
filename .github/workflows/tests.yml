@@ -8,7 +8,7 @@ on:
 
 jobs:
   unit_tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     container:
       image: rakudo-star:2024.12
@@ -22,7 +22,7 @@ jobs:
 
 
   integration_tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
