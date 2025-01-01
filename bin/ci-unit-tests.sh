@@ -18,9 +18,8 @@ echo "Installing Raku library dependencies."
 zef install --deps-only .
 zef install -/precompile-install .
 
-# prove6 is pre-installed in the open source rakudo-star image
-echo "Running tests with prove6."
-prove6 xt/*
+echo "Running unit tests."
+zef test .
 
 echo "Done."
 
