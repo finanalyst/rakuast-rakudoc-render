@@ -8,12 +8,10 @@ on:
 
 jobs:
   test_script:
-    # The if directive can be used to skip individual steps
-    if: false
     runs-on: ubuntu-latest
 
     container:
-      image: rakudo-star:latest
+      image: rakudo-star:2024.12
 
     steps:
       - name: Checkout code
