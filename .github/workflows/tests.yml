@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  test_script:
+  unit_tests:
     runs-on: ubuntu-latest
 
     container:
@@ -17,6 +17,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run Test Script
-        run: sh ./bin/test-script.sh
+      - name: Run unit tests
+        run: sh ./bin/ci-unit-tests.sh
 
+
+  integration_tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build custom image with all our tools
+        run: docker build -f ./Dockerfile -t project-test-image .
+
+      - name: Run integration tests
+        run: docker run --rm -w /opt/rakuast-rakudoc-render project-test-image sh -c 'prove6 xt/*'
