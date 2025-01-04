@@ -11,3 +11,8 @@
 /test.rakudoc
 /test.rakudoc.text
 /docs/rakudociem-ipsum.rakudoc
+
+# Editors and IDEs
+.idea/
+.vscode/
+
