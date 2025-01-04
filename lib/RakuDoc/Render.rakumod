@@ -255,7 +255,7 @@ class RakuDoc::Processor {
                 ::($plugin).new.enable( self )
             }
             with $! {
-                note "Could not enable $plugin\. Error: ", .message;
+                note "Could not enable «$plugin» in Render. Error: ", .message;
             }
         }
     }
