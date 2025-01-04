@@ -1,0 +1,20 @@
+{
+	｢Language/operators｣  => {
+		｢title｣    => "Operators",
+		｢config｣   => {
+			｢subkind｣  => "Language",
+			｢kind｣     => "Language",
+			｢category｣ => "fundamental"
+		},
+		｢subtitle｣ => "Common Raku infixes, prefixes, postfixes, and more!"
+	},
+	｢Language/101-basics｣ => {
+		｢config｣   => {
+			｢kind｣     => "Language",
+			｢subkind｣  => "Language",
+			｢category｣ => "beginning"
+		},
+		｢title｣    => "Raku by example 101",
+		｢subtitle｣ => "A basic introductory example of a Raku program"
+	}
+}

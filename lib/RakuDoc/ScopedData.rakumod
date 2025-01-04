@@ -29,8 +29,6 @@ method start-scope(:$starter!, :$title, :$verbatim ) {
     @!titles.push: $title // 'Block # ' ~ @!starters.elems;
     @!config.push: @!config.tail.pairs.hash;
     @!aliases.push: @!aliases.tail.pairs.hash;
-#    say "@ $?LINE ScopedData verbatim space-save ", $verbatim.raku ,'  ss: ', $starter.raku, ' ss.tail: ',@!save-spacer.tail;
-#    say "@ $?LINE diag", $.diagnostic;
     with $verbatim and @!save-spacer.tail.not {
         @!save-spacer.push: $starter => $verbatim.so
     }

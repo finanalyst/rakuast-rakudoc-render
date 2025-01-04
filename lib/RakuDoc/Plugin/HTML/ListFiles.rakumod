@@ -18,7 +18,7 @@ method enable( RakuDoc::Processor:D $rdp ) {
 }
 method templates {
     my regex s-pair {
-        (<-[=]>+) \= (.+)
+        (<-[=]>+) \= (.+?)
     };
     my regex select {
         ^ <s-pair>+ % [\,\s] $
@@ -31,7 +31,7 @@ method templates {
                 </div>
                 ERROR
 
-            my $sel = %prm<select>;
+            my $sel = %prm<select>.Str;
             my %criteria;
             if $sel ~~ / <select> / {
                 for $/<select><s-pair> { %criteria{~$_[0].trim} = ~$_[1] }

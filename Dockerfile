@@ -37,13 +37,15 @@ ADD ${DART_SASS_URL} /opt/
 RUN cd /opt/ && tar -xzf ${DART_SASS_TAR} && rm ${DART_SASS_TAR}
 RUN ln -s /opt/dart-sass/sass /usr/local/bin/sass
 
+# install deps in stage that does not depend on copy
+RUN zef install PrettyDump Test::Deeply::Relaxed Test::Output LibCurl URI Digest::SHA1::Native Text::MiscUtils Method::Protected Test::Run "Rainbow:ver<0.3.0+>" File::Directory::Tree Test::META
+
 # Copy in Raku source code and build
 RUN mkdir -p /opt/rakuast-rakudoc-render
 COPY . /opt/rakuast-rakudoc-render
 WORKDIR /opt/rakuast-rakudoc-render
-RUN zef install . --deps-only
 
-RUN zef install . -/precompile-install
+RUN zef install . -/precompile-install -/test
 RUN bin/force-compile
 
 # symlink executable to location on PATH

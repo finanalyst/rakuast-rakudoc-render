@@ -1,0 +1,32 @@
+use v6.d;
+use Test;
+
+use RakuDoc::To::HTML;
+
+plan 7;
+
+my $html-instance = RakuDoc::To::HTML.new;
+my $rdp := $html-instance.rdp;
+my %d := $rdp.templates.data;
+lives-ok {
+    require RakuDoc::Plugin::HTML::ListFiles;
+    RakuDoc::Plugin::HTML::ListFiles.new.enable( $rdp );
+}, 'ListFiles plugin enabled';
+isa-ok %d<listfiles>, Associative, 'ListFiles plugin config available';
+my %lf := %d<listfiles>;
+%lf<meta> = EVALFILE 'xt/test-files/file-data.rakuon';
+my $temp-out;
+lives-ok { $temp-out = $rdp.templates<ListFiles>( %(
+    :raw("Getting started\n\n"),
+    :select($("kind=Language,", "category=fundamental"))
+    )
+    )},
+    'template produces output';
+like $temp-out, /
+        'Getting started'
+    /, 'got caption';
+like $temp-out, / 'Language/operators' /, 'got link';
+like $temp-out, / 'Operators' /, 'got title';
+like $temp-out, / 'Common Raku infixes, prefixes' /, 'got subtitle';
+say $temp-out;
+done-testing;
