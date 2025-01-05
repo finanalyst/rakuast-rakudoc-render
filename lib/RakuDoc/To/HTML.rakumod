@@ -409,7 +409,7 @@ class RakuDoc::To::HTML {
             index-item => -> %prm, $tmpl {
                 my $n = %prm<level>;
                 my @refs = %prm<refs>.grep(*.isa(Hash)).grep( *.<is-in-heading>.not ).map({
-                        qq[<a class="index-ref" href="#{ .<target> }">&nbsp;§&nbsp;</a><span>{ .<place> }</span>]
+                        qq[<a class="index-ref" href="#{ .<target> }">&nbsp;§&nbsp;</a><span>{ $tmpl.globals.escape.( .<place> ) }</span>]
                     });
                 if @refs.elems {
                     PStr.new:
@@ -600,7 +600,7 @@ class RakuDoc::To::HTML {
             #| X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
             #| Index entry ( X<display text|entry,subentry;...>)
             markup-X => -> %prm, $tmpl {
-                my $contents = %prm<contents> // '';
+                my $contents = (%prm<contents> // '');
                 if %prm<is-in-heading> {
 #                    my $indexedheader = %prm<meta>.elems ?? %prm<meta>[0].join(';') !! $contents;
 #                    '<span class="indexed-header" id="' ~ %prm<target> ~ '"' ~
