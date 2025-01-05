@@ -179,6 +179,13 @@ All templates can attach items to the Table of Contents, Index,
 Footnotes, and Warnings structures of the rendered source using
 the helper methods.
 
+Currently, templates can I<add> but not B<substitute> or B<remove> items from
+structures. For example, within a template with a custom block, the ToC structure
+has been changed when the block is specified, so adding to the ToC within the
+custom block's templates will add information to the ToC structure immediately
+under the heading for the block. It is necessary, therefore to add a
+I<:caption> to the custom block in order to over-ride the default ToC behaviour.
+
 The following helper methods are available:
 
 =item add-to-toc( %h ), where %h is a hash with the following keys:

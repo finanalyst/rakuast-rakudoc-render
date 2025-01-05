@@ -1,0 +1,22 @@
+#!/usr/bin/env raku
+use v6.d;
+sub MAIN (
+        $fn #| the filename of a rakudoc source to be verified
+          ) {
+    if $fn.IO ~~ :e & :f { test($fn) }
+    elsif "$fn.rakudoc".IO ~~ :e & :f {
+        test("$fn.rakudoc")
+    }
+    else {
+        exit note "Neither ｢$fn｣ nor ｢$fn\.rakudoc｣ exist"
+    }
+}
+sub test($f) {
+    my $v = run <raku -v>, :out, :err, :merge;
+    my $r0 = run << raku -c $f >>, :out, :err, :merge;
+    %*ENV<RAKUAST_RAKUDO>=1;
+    my $r1 = run << raku -c $f >>, :out, :err, :merge;
+    say "Compilation of $f using\n{ $v.out.slurp(:close) }yields\n",
+        $r0.out.slurp(:close), "without RakuAST and\n",
+        $r1.out.slurp(:close), "with RakuAST flag"
+}

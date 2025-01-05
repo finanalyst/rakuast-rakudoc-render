@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, HTML-Extra, Markdown",
-  "version": "0.23.0",
+  "version": "0.23.1",
   "authors": [
     "Richard Hainsworth"
   ],
@@ -73,7 +73,8 @@
     "bin/force-compile",
     "bin/get-compliance-document",
     "bin/RenderDocs",
-    "bin/test-script.sh"
+    "bin/test-script.sh",
+    "bin/verify-rakudoc"
   ],
   "raku": "6.d",
   "docs": [

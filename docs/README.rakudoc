@@ -18,6 +18,12 @@ v0.20.0
 Note that C<zef> runs the tests in C<t/>, and those cause compilation of the
 modules in the distribution.
 
+To eliminate the possibility of RakuDoc errors, use
+=for code :allow<R>
+verify-rakudoc R<filename>
+
+where R<filename> is a RakuDoc source. If necessary, I<.rakudoc> will be appended.
+
 Also a docker container is available as described in L< Docker image | #Docker image >
 =end SYNOPSIS
 

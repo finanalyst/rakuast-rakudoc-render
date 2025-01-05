@@ -29,6 +29,14 @@
 &nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="8f021ca"></span>`zef install . -/precompile-install`  
 <span class="para" id="351913a"></span>Note that `zef` runs the tests in `t/`, and those cause compilation of the modules in the distribution. 
 
+<span class="para" id="c15635f"></span>To eliminate the possibility of RakuDoc errors, use 
+
+
+```
+verify-rakudoc filename
+```
+<span class="para" id="145bd38"></span>where **__filename__** is a RakuDoc source. If necessary, *.rakudoc* will be appended. 
+
 <span class="para" id="08f44b5"></span>Also a docker container is available as described in [ Docker image ]()
 
 <div id="Overview"></div>
@@ -297,7 +305,7 @@ Richard Hainsworth aka finanalyst
 
 ----
 
-Rendered from docs/README.rakudoc/README at 11:55 UTC on 2025-01-05
+Rendered from docs/README.rakudoc/README at 17:16 UTC on 2025-01-05
 
-Source last modified at 14:06 UTC on 2024-12-20
+Source last modified at 17:15 UTC on 2025-01-05
 
