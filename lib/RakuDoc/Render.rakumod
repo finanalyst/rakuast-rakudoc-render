@@ -2336,3 +2336,5 @@ class RakuDoc::Processor {
         )
     }
 }
+
+RakuDoc::Processor.^set_ver( $?DISTRIBUTION.meta<version> );
