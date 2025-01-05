@@ -1,7 +1,7 @@
 {
   "name": "Rakuast::RakuDoc::Render",
   "description": "Renders RakuDoc v2 to text, HTML, HTML-Extra, Markdown",
-  "version": "0.23.1",
+  "version": "0.23.2",
   "authors": [
     "Richard Hainsworth"
   ],
