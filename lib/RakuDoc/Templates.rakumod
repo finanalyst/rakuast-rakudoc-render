@@ -110,7 +110,7 @@ class Template-directory does Associative {
             .debug = $!debug;
             .test = $!test;
             .pretty = $!pretty;
-            .verbose = $.verbose eq $key;
+            .verbose = $.verbose.contains( $key );
             $_
         }
         else {

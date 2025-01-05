@@ -28,5 +28,5 @@ like $temp-out, /
 like $temp-out, / 'Language/operators' /, 'got link';
 like $temp-out, / 'Operators' /, 'got title';
 like $temp-out, / 'Common Raku infixes, prefixes' /, 'got subtitle';
-say $temp-out;
+
 done-testing;

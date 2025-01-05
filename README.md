@@ -23,21 +23,13 @@
 
 ## SYNOPSIS
 &nbsp;&nbsp;• Clone the repository  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="fc2dfe0"></span>`git clone https://github.com/finanalyst/rakuast-rakudoc-render.git` 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="6846695"></span>`cd rakuast-rakudoc-render` 
-
-  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="fc2dfe0"></span>`git clone https://github.com/finanalyst/rakuast-rakudoc-render.git`  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="6846695"></span>`cd rakuast-rakudoc-render`  
 &nbsp;&nbsp;• Install using zef as follows (flag is important)  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="8f021ca"></span>`zef install . -/precompile-install` 
-
-  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="8f021ca"></span>`zef install . -/precompile-install`  
 <span class="para" id="351913a"></span>Note that `zef` runs the tests in `t/`, and those cause compilation of the modules in the distribution. 
 
-<span class="para" id="08f44b5"></span>Also a docker container is available as described in [ Docker image ]() 
-
-
+<span class="para" id="08f44b5"></span>Also a docker container is available as described in [ Docker image ]()
 
 <div id="Overview"></div>
 
@@ -90,32 +82,16 @@ bin/RenderTextify rakudociem-ipsum
 
 
 
-&nbsp;&nbsp;• <span class="para" id="475e1a6"></span>Output to different formats is managed using the `--format` command line option: 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="9d4694b"></span>*no --format* or `--format=md`: generates a file in Markdown with an ***.md*** extension 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="cfc1ecd"></span>`--format=HTML --single`: generates a file in HTML, ending ***_singlefile.html***, which can be opened directly in a browser without internet connection. 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="bed871e"></span>`--format=HTML`: generates a file in HTML, ending ***.html***, the HTML is intended for use with an internet connection and has a number of custom blocks. 
-
-  
+&nbsp;&nbsp;• <span class="para" id="475e1a6"></span>Output to different formats is managed using the `--format` command line option:  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="9d4694b"></span>*no --format* or `--format=md`: generates a file in Markdown with an ***.md*** extension  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="cfc1ecd"></span>`--format=HTML --single`: generates a file in HTML, ending ***_singlefile.html***, which can be opened directly in a browser without internet connection.  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="bed871e"></span>`--format=HTML`: generates a file in HTML, ending ***.html***, the HTML is intended for use with an internet connection and has a number of custom blocks.  
 &nbsp;&nbsp;• Simpler file specification  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="9e2a82b"></span>By default, **all** the *rakudoc* sources from `docs/` are rendered 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="64b1baa"></span>By default, all the output files are stored at the *Current working directory* 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="0392c7f"></span>The first word after the options (eg **__documents__**) is taken to be the file **docs/documents.rakudoc** 
-
-  
-&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="6e5245c"></span>The source location can be given with `--src=...` and the output with `--to=...` 
-
-  
-<span class="para" id="65a4ea7"></span>Given these defaults, the following will render all the **.rakudocs* in *docs/* to <./*.md> in Markdown. 
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="9e2a82b"></span>By default, **all** the *rakudoc* sources from `docs/` are rendered  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="64b1baa"></span>By default, all the output files are stored at the *Current working directory*  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="0392c7f"></span>The first word after the options (eg **__documents__**) is taken to be the file **docs/documents.rakudoc**  
+&nbsp;&nbsp;&nbsp;&nbsp;▹ <span class="para" id="6e5245c"></span>The source location can be given with `--src=...` and the output with `--to=...`  
+<span class="para" id="12269ee"></span>Given these defaults, the following will render all the **.rakudocs* in *docs/* to &lt;./*.md> in Markdown. 
 
 
 ```
@@ -185,7 +161,7 @@ jobs:
                 image: finanalyst/rakuast-rakudoc-render:latest
                 registry: docker.io
                 options: -v ${{github.workspace}}/docs:/docs -v ${{github.workspace}}:/to
-                run: RenderDocs
+                run: RenderDocs --src=/docs --to=/to --force
             - name: Commit and Push changes
               uses: Andro999b/push@v1.3
               with:
@@ -203,12 +179,8 @@ jobs:
 
 
 
-&nbsp;&nbsp;• <span class="para" id="8c91600"></span>[An overview of the generic renderer](https://finanalyst.github.io/Render) 
-
-  
-&nbsp;&nbsp;• <span class="para" id="0b80cbf"></span>[The templating system](https://finanalyst.github.io/Templates) 
-
-  
+&nbsp;&nbsp;• <span class="para" id="8c91600"></span>[An overview of the generic renderer](https://finanalyst.github.io/Render)  
+&nbsp;&nbsp;• <span class="para" id="0b80cbf"></span>[The templating system](https://finanalyst.github.io/Templates)  
 
 <div id="RenderTextify utility"></div><div id="RenderTextify_utility"></div>
 
@@ -325,7 +297,7 @@ Richard Hainsworth aka finanalyst
 
 ----
 
-Rendered from docs/README.rakudoc/README at 21:10 UTC on 2024-12-19
+Rendered from docs/README.rakudoc/README at 11:55 UTC on 2025-01-05
 
-Source last modified at 21:09 UTC on 2024-12-19
+Source last modified at 14:06 UTC on 2024-12-20
 
