@@ -404,6 +404,8 @@ method chyron-scss {
         line-height: 0.5rem;
         font-size: 1.75rem;
         margin-right: 0.25rem;
+        width: 3rem;
+        display: inline-block;
     }
     label.chyronToggle:hover span.checkmark::before {
         content: '[ \21e8';
