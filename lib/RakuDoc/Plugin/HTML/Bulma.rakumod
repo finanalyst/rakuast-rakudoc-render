@@ -220,11 +220,11 @@ method templates {
         #| adapt head for Bulma by adding class
         #| renders =head block
         head => -> %prm, $tmpl {
-            %prm<classes> = "heading py-2";
+            %prm<classes> = "heading py-2" ~ (%prm<classes>:exists ?? ' ' ~ %prm<classes> !! '');
             $tmpl.prev(%prm)
         },
         table => -> %prm, $tmpl {
-            %prm<classes> = 'table is-striped is-bordered';
+            %prm<classes> = 'table is-striped is-bordered' ~ (%prm<classes>:exists ?? ' ' ~ %prm<classes> !! '');
             $tmpl.prev(%prm)
         },
     )
