@@ -70,6 +70,7 @@ class Template {
     multi method prev(%params) {
         return '' unless $!depth - 1 >= 0;
         say "Previous template used: ｢$!name｣, source: {$!source}, with new params" if $!debug;
+        say("Template params:\n" ~ %params ) if $!verbose;
         ($.globals.prior($!name, $!depth))(%params);
     }
 }
