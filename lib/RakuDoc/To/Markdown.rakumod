@@ -299,10 +299,9 @@ class RakuDoc::To::Markdown {
                 my $del = %prm<delta> // '';
                 # using level + 1 so that TITLE is always larger
                 # a line above heading level one to separate sections
-                my $rv = PStr.new: ('----' if %prm<level> == 1) ~
-                "\n" ~ $del ~ "\n" ~
-                '#' x ( %prm<level> + 1)  ~ ' ' ~
-                %prm<caption> ~ qq[<div id="{ %prm<target> }"> </div>] ~ "\n" ;
+                my $rv = PStr.new: $del ~ "\n";
+                $rv ~= qq[<div id="{%prm<target>}"></div>\n] if %prm<target>:exists and %prm<target>;
+                $rv ~= qq[<div>{%prm<caption>}</div>] if %prm<caption>;
                 if %prm<procedural> {
                     # Markdown appears to only allow, but require one header row
                     # so insert header separator once after first row

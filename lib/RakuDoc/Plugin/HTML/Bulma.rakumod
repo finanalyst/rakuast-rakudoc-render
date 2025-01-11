@@ -456,5 +456,12 @@ method bulma-additions-scss {
     // .content p:not( ol.item-list ) { margin-bottom: 0; }
     .delta:hover { border: var(--bulma-border-hover) 1px solid; }
     .navbar-start { margin-bottom: 1rem; }
+    table {
+        width: fit-content;
+        margin: auto;
+        caption {
+            font-weight: bold;
+        }
+    }
     GENERAL
 }

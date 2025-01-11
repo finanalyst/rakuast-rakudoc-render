@@ -125,7 +125,9 @@ So the code in the template block can call
         :caption<...>, :target<...>, :level(1)
     )
 =end code
+
 =head2 Calling the escape method
+
 Each output (eg HTML or MarkDown) may have its own escape method. The escape method can be called within
 a template as follows:
     $tmpl.globals.escape.( $string-to-be-escaped )

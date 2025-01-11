@@ -1282,13 +1282,14 @@ class RakuDoc::Processor {
         }
         $*prs.body ~= %!templates<section>( %( :$contents, :$id, %config ) )
     }
-    #| Table is added to ToC with level 1 as TABLE unless overriden by toc/headlevel/caption
+    #| Table is a captionless paragraph and not added to ToC
+    #| unless overriden by toc/headlevel/caption
     #| contents is processed and rendered using table template
     multi method gen-table($ast) {
         my %config = $.merged-config($ast, 'table');
-        my $caption = %config<caption>:delete // 'Table';
+        my $caption = %config<caption>:delete // '';
         my $prs := $*prs;
-        my $target = $.name-id($caption);
+        my $target = $.name-id($caption) if $caption;
         $!scoped-data.last-title( $target );
         my $id = %config<id>:delete;
         with $id {
@@ -1307,7 +1308,7 @@ class RakuDoc::Processor {
             $numeration ~= PCell.new( :$!register, :id('table_' ~ $target ) );
             $prs.head-numbering.push: ['table_' ~ $target, $level ];
         }
-        my $toc = %config<toc>:delete // True;
+        my $toc = %config<toc>:delete // False;
         # attach numeration to caption and contents separately, allowing template
         # developer to add numeration to caption if wanted by changing the template
         $prs.toc.push(

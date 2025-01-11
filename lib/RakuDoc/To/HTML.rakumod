@@ -321,14 +321,12 @@ class RakuDoc::To::HTML {
             pod => -> %prm, $tmpl { %prm<contents> },
             #| renders =table block
             table => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $head = '';
-                $head = $tmpl('head',
-                    %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>))
-                    )
-                    if %prm<caption>;
                 my $classes = ( %prm<classes> // "table" );
-                my $rv = PStr.new: $head ~ '<table class="' ~ $classes ~ '">';
+                my $del = %prm<delta> // '';
+                my $rv = PStr.new: $del;
+                $rv ~= qq[<div id="{%prm<target>}"></div>\n] if %prm<target>:exists and %prm<target>;
+                $rv ~= '<table class="' ~ $classes ~ '">';
+                $rv ~= qq[<caption>{%prm<caption>}</caption>] if %prm<caption>;
                 if %prm<procedural> {
                     $rv ~= '<tbody class="procedural">';
                     for %prm<grid>.list -> @row {
