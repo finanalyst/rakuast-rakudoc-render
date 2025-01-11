@@ -274,7 +274,7 @@ method scss-str {
             font-size: xx-small;
             font-style: italic;
             height: auto;
-            padding-right: 50px;
+            padding-right: 0;
         }
         /* required to match highlights-js css with raku highlighter css */
         pre.browser-hl { padding: 7px; }
@@ -287,7 +287,7 @@ method scss-str {
         pre {
             display: inline-block;
             overflow: scroll;
-            width: 96%;
+            width: 100%;
         }
         .rakudoc-in-code {
             padding: 1.25rem 1.5rem;
