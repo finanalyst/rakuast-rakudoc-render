@@ -772,7 +772,7 @@ class RakuDoc::Processor {
                 my $contents = self.markup-contents($ast);
                 # stringify contents without processing for targets
                 my $stripped-contents = $ast.atoms.Str;
-                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
+                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta.trim, actions => RMActions.new ).made<value>;
                 my $target = self.index-id(:$context, :contents($stripped-contents), :$meta);
                 #| Add to index structure whether X<> is within a head block
                 my Bool $is-in-heading = $!scoped-data.in-head;
@@ -783,7 +783,7 @@ class RakuDoc::Processor {
                 elsif $ast.meta {
                     $prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $prs.index{$contents}:exists;
                     $prs.index{$contents}<refs>.push: %ref;
-                    $prs.warnings.push('Ignoring content of L<> after | ｢'
+                    $prs.warnings.push('Ignoring content of X<> after | ｢'
                         ~ $ast.meta.Str ~ '｣'
                         ~ " in block ｢$context｣ with heading ｢$place｣.")
                         if %config<error>

@@ -1,9 +1,11 @@
 use v6.d;
 #| A meta string, used by X<> and M<>, may be
 #| an unquoted string not containing ',' or ';',
-#| a '|" quoted string containing ',' or ';'
 #| an array of strings delimited by ','
 #| an array of arrays of string delimited by ';'
+#| Any quoting marks are left to the user to interpret
+#| RakuDoc documents contain X< ... | ..." "> markup where the "/' are significant
+#| RakuDoc documents contain X< ... | ..." > markup where the "/' are significant
 grammar RakuDoc::MarkupMeta {
 
     token TOP {
@@ -12,19 +14,10 @@ grammar RakuDoc::MarkupMeta {
         | <array-of-ps-arrays>
     }
 
-    token plain-string-word { <-[' " , ; \h]>+ }
+    token plain-string-word { <-[ , ; \h]>+ }
     token plain-string {
         <plain-string-word>+ % \h+
-        | \h* <quoted-chars>
     }
-    token quoted-chars {
-        \' ~ \' <inside-sng-quotes>
-        |
-        \" ~ \" <inside-dbl-quotes>
-    }
-    token inside-dbl-quotes { <-[ " ]>+ }
-    token inside-sng-quotes { <-[ ' ]>+ }
-
     token plain-string-array { <plain-string>* % [\s* ',' \s*] }
     # Comma-separated 0-or-more substr
     token array-of-ps-arrays { <plain-string-array>* % [\s* ';' \s*] }
@@ -43,17 +36,7 @@ class RMActions {
         }
     }
     method plain-string( $/ ) {
-        if $/<quoted-chars>:exists {
-            if $/<quoted-chars><inside-dbl-quotes>:exists {
-                make $/<quoted-chars><inside-dbl-quotes>.Str
-            }
-            else {
-                make $/<quoted-chars><inside-sng-quotes>.Str
-            }
-        }
-        else {
-            make ~$/
-        }
+        make ~$/
     }
     method plain-string-array( $/ ) {
         make $/<plain-string>>>.made

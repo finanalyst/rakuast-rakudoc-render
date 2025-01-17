@@ -1,7 +1,7 @@
 use v6.d;
 use Test;
 use RakuDoc::MarkupMeta;
-plan 9;
+plan 12;
 my $actions = RMActions.new;
 my $metastr = 'Simple markup string';
 
@@ -9,9 +9,6 @@ my $meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
 ok $meta-obj, 'sane test';
 is $meta-obj.made<type>, 'plain-string', 'simple string';
 is $meta-obj.made<value>, $metastr, 'string no quotes';
-$metastr = q[Quoting "markup string];
-$meta-obj = RakuDoc::MarkupMeta.parse( qq['$metastr'], :$actions );
-is $meta-obj.made<value> , $metastr, 'string quotes stripped';
 $metastr = 'one two, "three", four';
 $meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
 is $meta-obj.made<type>, 'plain-string-array', 'array type';
@@ -21,4 +18,13 @@ $meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
 is $meta-obj.made<type>, 'array-of-ps-arrays', 'array of arrays';
 is $meta-obj<array-of-ps-arrays><plain-string-array>[1]<plain-string>[1], 'eight', 'got (1,1)';
 is $meta-obj.made<value>.[1][1], 'eight', 'got (1,1) from value';
+$metastr = q[Syntax,::($c).m;Syntax,A."$m"()];
+$meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
+is $meta-obj.made<type>, 'array-of-ps-arrays', 'array of arrays';
+is $meta-obj.made<value>.[1][1], 'A."$m"()', 'got value with quoted chars';
+$metastr = q[Other languages,$" (Perl)];
+$meta-obj = RakuDoc::MarkupMeta.parse( $metastr, :$actions );
+is $meta-obj.made<type>, 'plain-string-array', 'plain array';
+is $meta-obj.made<value>.[0][1], '$" (Perl)', 'got value with single quote char';
+
 done-testing;

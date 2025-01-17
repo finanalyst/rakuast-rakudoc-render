@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 23;
+plan 24;
 
 my $ast;
 my $rv;
@@ -121,4 +121,16 @@ $ast = Q:to/QAST/.AST;
     =end rakudoc
     QAST
 lives-ok { $rv = $rdp.render( $ast, :pre-finalised ) }, 'runs double X markup separated by blank line';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head2 X«Lookaround assertions| Regexes,positive lookaround assertion <?>;Regexes,negative lookaround assertion <!>;Regexes,?[ »
+    =head2 X<Direct lookup|Syntax,::($c).m;Syntax,A."$m"()>
+	=head3 X<$LIST_SEPARATOR, $"|Other languages,$" (Perl)>
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+is +$rv.warnings, 0, 'No warnings issued';
+
 done-testing;
