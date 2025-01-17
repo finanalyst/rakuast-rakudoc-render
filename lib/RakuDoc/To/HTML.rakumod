@@ -143,19 +143,23 @@ class RakuDoc::To::HTML {
         my constant BAD-MARK-ON = '<span class="bad-markdown">';
         my constant BAD-MARK-OFF = '</span>';
         my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
-        my regex tab { '<' $<name> = (<-[>\s]>+) $<cont> = (.*?) '>'};
+        my regex spantab { '<' \/? 'span' <-[>]>* '>'};
         %(
             #| special key to name template set
             _name => -> %, $ { 'markdown templates' },
-            #| escape contents of code block
+            #| escape contents of code block, which may contain <span ...> & </span> tabs, not to be escaped
             escape-code => -> %prm, $tmpl {
                 my $cont = %prm<contents>.Str // '';
-                while $cont ~~ m:c/ <tab> / {
-                    my $name = ~$<tab><name>;
-                    $cont = $/.replace-with('&lt;' ~ $<tab><name> ~ $<tab><cont> ~ '&gt;')
-                        unless ($name eq <span /span>.any).so
+                if $cont ~~ / <spantab> / {
+                    ( $cont ~~ / ^ [ .*? <spantab> ]+ .*? $ / )
+                    .chunks
+                    .map({
+                        $tmpl.globals.escape.( .value ) if .key eq '~';
+                        .value
+                    })
+                    .join
                 }
-                $cont
+                else { $tmpl.globals.escape.( $cont ) }
             },
             #| renders =code blocks
             code => -> %prm, $tmpl {

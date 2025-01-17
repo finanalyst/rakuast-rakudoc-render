@@ -5,19 +5,33 @@ use RakuDoc::To::HTML;
 my $html-instance = RakuDoc::To::HTML.new;
 my $rdp := $html-instance.rdp;
 
+plan 2;
+
 lives-ok {
     require RakuDoc::Plugin::HTML::Hilite;
     RakuDoc::Plugin::HTML::Hilite.new.enable( $rdp );
 }, 'hilite plugin enabled';
-#my $src = q[my $var = 2;];
-#my $hl = highlight( $src, 'HTML' );
-#like $hl, /
-#    '<span' .+ 'magenta' .+ 'my</span>' .+
-#    'cyan' .+ '$var</span>' .+
-#    'yellow' .+ '=</span' .+
-#    'red' .+ '2</span>'
-#    /, 'statement highlighted with default colors';
-#my $hl-pl = $rdp.templates<code>(%(:contents($src), :lang<raku>) );
-#like $hl-pl, / '<pre' .+ 'lights">' \s* $hl /, 'similar highlighting';
+
+my $ast = q:to/CODE/.AST;
+=begin rakudoc
+=begin code
+	=head2 X<C<hyper>|Syntax,hyper (statement prefix)>, X<C<race>|Syntax,race (statement prefix)>
+=end code
+=begin code
+	=head2 X<<<Hyper operators|Operators,<<;Operators,>>;Operators,«;Operators,»;Operators,»=«;Operators,«=»>>>
+=end code
+=begin code
+	=head2 X<<<Word quoting with interpolation and quote protection: qqww|Syntax,qqww>>>
+=end code
+=end rakudoc
+CODE
+
+my $rv = $html-instance.rdp.render( $ast, :pre-finalized ).body.Str;
+
+like $rv, /
+    '<label>Raku highlighting</label>' .+?
+    '<span class="rainbow-operator">X</span>' .+?
+    'C&lt;<span class="rainbow-routine">hyper</span>&gt;'
+/, 'got Rainbow hilighting in code';
 
 done-testing;

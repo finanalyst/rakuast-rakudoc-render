@@ -1,7 +1,7 @@
 =begin rakudoc :kind("Language") :subkind("Language") :category("reference")
 =TITLE RakuDoc
 =SUBTITLE A Raku slang for documenting Raku software to aid development and use.
-=VERSION 2.11.0
+=VERSION 2.11.1
 
 RakuDoc is a markup language with simple instructions for simple tasks and more
 complex structures to suit larger projects. There is a clear distinction between
@@ -3025,7 +3025,7 @@ information can be rendered using L<a C<P<>> markup instruction|#Placement links
 
 Builtin, semantic and custom blocks are considered by default to be equivalent to C<=head> for the
 purposes of a Table of Contents. The following are considered to be equivalent to paragraphs (not
-included in a Table of Contents) by default: C<=para>, C<=nested>, C<c=ode>, C<=input>, C<=output>,
+included in a Table of Contents) by default: C<=para>, C<=nested>, C<=code>, C<=input>, C<=output>,
 <=table>, C<=defn>, C<=item>, C<=alias>, and their I<num> variants if they exist.
 
 This default can be changed with the C<:toc> and C<:headlevel> meta tabs.
