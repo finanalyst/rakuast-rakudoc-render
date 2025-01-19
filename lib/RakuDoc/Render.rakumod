@@ -740,7 +740,7 @@ class RakuDoc::Processor {
                     return
                 }
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
-                my $target = self.index-id(:$context, :$contents, :$meta);
+                my $target = self.index-id(:$contents);
                 my $template = $meta[0].Str;
                 if any($template.uniprops) ~~ / Lu / and any($template.uniprops) ~~ / Ll / {
                     # template has an acceptable custom template spelling
@@ -770,14 +770,16 @@ class RakuDoc::Processor {
             #| :is-header because X<> in headings treated differently to ordinary text
             when 'X' {
                 my $contents = self.markup-contents($ast);
+                #| if not in a head, then in-head is '', which has a False truth value
+                my Bool $is-in-heading = $!scoped-data.in-head.so;
                 # stringify contents without processing for targets
-                my $stripped-contents = $ast.atoms.Str;
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta.trim, actions => RMActions.new );
-                my $target = self.index-id(:$context, :contents($stripped-contents), :$meta);
-                #| Add to index structure whether X<> is within a head block
-                my Bool $is-in-heading = $!scoped-data.in-head;
-                my %ref = %( :$target, :$is-in-heading );
-                %ref<place> = $is-in-heading ?? $stripped-contents !! $place;
+                # if in a heading, then the scoped is-head attribute is a target for that title
+                my $target = $is-in-heading ?? $!scoped-data.in-head
+                    !! self.index-id(:contents($ast.atoms.Str));
+                my %ref = %( :$target, :$is-in-heading, :$place );
+                %ref<place> = PCell.new(:id($target),:$.register )
+                    if $is-in-heading; # the title of the header is not known until later
                 if $ast.meta and $meta { # this will be true if the MarkupMeta grammar parsed
                     if $meta.made<type> eq 'plain-string' {
                         $.merge-index( $prs.index, $.add-index( $meta.made<value>, %ref ))
@@ -851,7 +853,7 @@ class RakuDoc::Processor {
             $ast.atoms.map({ $.handle($_) });
             return
         }
-        my $inline = $!scoped-data.last-starter eq "table";
+        my $inline = $!scoped-data.last-starter eq 'table';
         my %config = $.merged-config($, 'para' );
         my $rem = $.complete-item-list ~ $.complete-defn-list
         ~ $.complete-numitem-list ~ $.complete-numdefn-list;
@@ -862,9 +864,10 @@ class RakuDoc::Processor {
             my PStr $contents = $prs.body;
             # each para should have a target, generate a SHA if no id given
             my $target = %config<id> // $.para-target($contents);
+            my $is-in-head = $!scoped-data.in-head.so;
             $prs.body .= new( $rem );
             my $rv = %!templates<para>(
-                %( :$contents, :$target, :$inline, %config)
+                %( :$contents, :$target, :$inline, :$is-in-head, %config)
             );
             # deal with possible inline definitions
             if $prs.inline-defns.elems {
@@ -954,7 +957,7 @@ class RakuDoc::Processor {
         else {
             $contents ~= $.contents($ast, $parify);
         }
-        my Bool $is-in-heading = $!scoped-data.in-head;
+        my Bool $is-in-heading = $!scoped-data.in-head.so;
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
         $contents ~= $.complete-numitem-list;
@@ -969,16 +972,23 @@ class RakuDoc::Processor {
     #| The id option may be used to create a target
     #| An automatic target is also created from the contents
     method gen-headish($ast, $parify, :$template = 'head', :$numerate = False ) {
-        $!scoped-data.in-head = True;
+        # stringify ast for internal use
+        # set up data for embedded markup in header, eg., X
+        my $title = $ast.Str.trim;
+        my $target = $.name-id($title);
+        $!scoped-data.start-scope(:starter('head'), :$title ) if $parify;
+        # must set in-head in case of other inner scopes.
+        $!scoped-data.in-head = $target;
         my $contents = $.contents($ast, $parify).strip.trim.Str;
-        #| stringify ast for internal use
-        my $title = $ast.Str.trim; # unprocessed content
         my $prs := $*prs;
         my $level = $ast.level > 1 ?? $ast.level !! 1;
-        $!scoped-data.last-title( $title );
-        $!scoped-data.start-scope(:starter('head'), :$title ) if $parify;
         my %config = $.merged-config($ast,($template ~ $level) );
-        my $target = $.name-id($title);
+        my $caption = %config<caption>:delete;
+        $caption = $contents without $caption;
+        # allow internal X<> to have the final rendered title
+        $!register.add-payload(:payload($caption), :id( $target ) );
+        # set the last title for paragraphs following the title
+        $!scoped-data.last-title( $caption );
         my $id = %config<id>:delete ;
         with $id {
             if self.is-target-unique( $_ ) {
@@ -999,9 +1009,6 @@ class RakuDoc::Processor {
             $numeration ~= PCell.new( :$!register, :id('heading_' ~ $target ) );
             $prs.head-numbering.push: ['heading_' ~ $target, $level ];
         }
-        #| may have embedded content, so TOC template will need to handle it
-        my $caption = %config<caption>:delete;
-        $caption = $contents without $caption;
         my $toc = %config<toc>:delete // True;
         # attach numeration to caption and contents separately, allowing template
         # developer to add numeration to caption if wanted by changing the template
@@ -1011,7 +1018,7 @@ class RakuDoc::Processor {
         $prs.body ~= %!templates{ $template }(
             %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
         );
-        $!scoped-data.in-head = False;
+        $!scoped-data.in-head = '';
         $!scoped-data.end-scope if $parify;
     }
     #| Formula at level 1 is added to ToC unless overriden by toc/headlevel/caption
@@ -1852,7 +1859,7 @@ class RakuDoc::Processor {
     #| Like name-id, index-id returns a unique Str to be used as a target
     #| Target should be unique
     #| Should be sub-classed by Renderers
-    method index-id(:$context, :$contents, :$meta ) {
+    method index-id(:$contents) {
         my $target = 'index-entry-' ~ self.mangle($contents.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;

@@ -44,7 +44,7 @@ class HTML::Processor is RakuDoc::Processor {
     #| Like name-id, index-id returns a unique Str to be used as a target
     #| Target should be unique
     #| Should be sub-classed by Renderers
-    method index-id(:$context, :$contents, :$meta ) {
+    method index-id(:$contents) {
         my $target = 'index-entry-' ~ self.mangle($contents.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
         my @rejects = $target, ;
@@ -416,7 +416,7 @@ class RakuDoc::To::HTML {
 #                    .grep( .<is-in-heading>.not ) # do not render if in heading
                     .map({
                         $rv ~= qq[<a class="index-ref" href="#{ .<target> }">{
-                            $tmpl.globals.escape.( .<place> )
+                            $tmpl('escape-code', %( :contents( .<place> ) ))
                             }</a>]
                     });
                 $rv ~= "\n</div>\n";
