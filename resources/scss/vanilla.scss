@@ -134,6 +134,13 @@ div.index-section {
     &[data-index-level="1"] {
         text-shadow: 1px 1px orange;
     }
+    > a.index-ref {
+        margin-left: calc(var(--level) * 1rem);
+        display:block;
+        width:auto;
+        white-space:normal;
+    }
+/*
 	> a.index-ref {
 	    white-space: nowrap;
 	    display:inline-block;
@@ -150,6 +157,7 @@ div.index-section {
 	        background-color: seashell;
 	    }
 	}
+	*/
 }
 h2.index-caption {
 }

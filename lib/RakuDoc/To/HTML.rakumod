@@ -122,8 +122,6 @@ class RakuDoc::To::HTML {
         my constant JUNIOR-OFF = '</span>';
         my constant REPLACE-ON = '<span class="replace">';
         my constant REPLACE-OFF = '</span>';
-        my constant INDEX-ENTRY-ON = '<span class="index-entry">';
-        my constant INDEX-ENTRY-OFF = '</span>';
         my constant KEYBOARD-ON = '<span class="keyboard">';
         my constant KEYBOARD-OFF = '</span>';
         my constant TERMINAL-ON = '<span class="terminal">';
@@ -407,23 +405,25 @@ class RakuDoc::To::HTML {
                     PStr.new: ''
                 }
             },
-            #| renders a single item in the index, but only if it has a non-heading ref
+            #| renders a single item in the index
             index-item => -> %prm, $tmpl {
+            # expecting a level, and entry name, whether its in a heading, and
+            # a list (possibly empty) of hashes with information for link(s)
                 my $n = %prm<level>;
-                my @refs = %prm<refs>.grep(*.isa(Hash)).grep( *.<is-in-heading>.not ).map({
-                        qq[<a class="index-ref" href="#{ .<target> }">&nbsp;§&nbsp;</a><span>{ $tmpl.globals.escape.( .<place> ) }</span>]
+                my $rv =  qq[<div class="index-section" data-index-level="$n" style="--level:$n">\n] ~
+                        '<span class="index-entry">' ~ %prm<entry> ~ '</span>';
+                %prm<refs>.list
+#                    .grep( .<is-in-heading>.not ) # do not render if in heading
+                    .map({
+                        $rv ~= qq[<a class="index-ref" href="#{ .<target> }">{
+                            $tmpl.globals.escape.( .<place> )
+                            }</a>]
                     });
-                if @refs.elems {
-                    PStr.new:
-                        qq[<div class="index-section" data-index-level="$n" style="--level:$n">\n] ~
-                        INDEX-ENTRY-ON ~ %prm<entry> ~ INDEX-ENTRY-OFF ~ ': ' ~
-                        @refs.join(', ') ~
-                        "\n</div>\n"
-                }
-                else { Nil }
+                $rv ~= "\n</div>\n";
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
+            say "@ $?LINE  html rend", %prm<index-list>;
                 my @inds = %prm<index-list>.grep({ .isa(Str) || .isa(PStr) });
                 if @inds.elems {
                     PStr.new: '<div class="index">' ~ "\n" ~

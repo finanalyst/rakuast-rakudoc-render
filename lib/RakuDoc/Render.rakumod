@@ -772,15 +772,21 @@ class RakuDoc::Processor {
                 my $contents = self.markup-contents($ast);
                 # stringify contents without processing for targets
                 my $stripped-contents = $ast.atoms.Str;
-                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta.trim, actions => RMActions.new ).made<value>;
+                my $meta = RakuDoc::MarkupMeta.parse( $ast.meta.trim, actions => RMActions.new );
                 my $target = self.index-id(:$context, :contents($stripped-contents), :$meta);
                 #| Add to index structure whether X<> is within a head block
                 my Bool $is-in-heading = $!scoped-data.in-head;
-                my %ref = %( :$target, :$place, :$is-in-heading );
-                if $ast.meta and $meta {
-                    $.merge-index( $prs.index, $.add-index( $_, %ref )) for $meta.list
+                my %ref = %( :$target, :$is-in-heading );
+                %ref<place> = $is-in-heading ?? $stripped-contents !! $place;
+                if $ast.meta and $meta { # this will be true if the MarkupMeta grammar parsed
+                    if $meta.made<type> eq 'plain-string' {
+                        $.merge-index( $prs.index, $.add-index( $meta.made<value>, %ref ))
+                    }
+                    else {
+                        $.merge-index( $prs.index, $.add-index( $_, %ref )) for $meta.made<value>.list
+                    }
                 }
-                elsif $ast.meta {
+                elsif $ast.meta { # this is true if MarkupMeta grammar failed on an existing $ast.meta
                     $prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $prs.index{$contents}:exists;
                     $prs.index{$contents}<refs>.push: %ref;
                     $prs.warnings.push('Ignoring content of X<> after | ｢'
@@ -788,7 +794,7 @@ class RakuDoc::Processor {
                         ~ " in block ｢$context｣ with heading ｢$place｣.")
                         if %config<error>
                 }
-                else {
+                else { # no meta
                     $prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $prs.index{$contents}:exists;
                     $prs.index{$contents}<refs>.push: %ref
                 }
@@ -904,9 +910,11 @@ class RakuDoc::Processor {
         @refs.push: $ref;
         %( $r => %( :@refs, sub-index => %( ) ) )
     }
+    #| adding in a string means only the last element in the string has the reference
+    #| the earlier ones only have references if given by other calls to index
     multi method add-index( @r, $ref --> Hash ) {
+        return $.add-index( @r[0].Str, $ref ) if @r.elems == 1;
         my @refs;
-        @refs.push: $ref;
         my %h = %( :@refs, sub-index => %( ) );
         $.merge-index( %h<sub-index>, $.add-index( @r[ 1 .. *-1 ] , $ref ) ) if @r[1 .. *-1].elems.so;
         %( @r[0] => %h.clone )
@@ -1660,27 +1668,23 @@ class RakuDoc::Processor {
             $!register.add-payload( :payload($n + 1), :id( 'fn_num_' ~ %data<retTarget> ) );
         }
     }
-    #| completes the index by rendering each key
-    #| triggers the 'index-schema' id, which may be placed by a P<>
-    sub si( %h, $n, $max ) {
+    #| takes the index structure and returns an ordered list of items to be rendered
+    sub serialise-index( %h, $n, $max ) {
         return unless (%h.elems and $n <= $max);
         my @rv;
-        for %h.sort( *.key )>>.kv -> ( $k, %v) {
-            my @inner = [$n];
-            my @refs = %v<refs>.values;
-            @inner.push: $k;
-            @inner.push: @refs;
+        for %h.sort( *.key )>>.kv -> ( $label, %indexed) {
+            my @inner = $n, $label, %indexed<refs>;
             @rv.push: @inner;
-            if si( %v<sub-index>, $n + 1, $max ) -> $_ { @rv.append($_) }
+            if serialise-index( %indexed<sub-index>, $n + 1, $max ) -> $_ { @rv.append($_.list) }
         }
         @rv
     }
     method complete-index( :$spec, :$caption --> PStr ) {
-        my $max;
+        my $max; # the maximum number of index levels. Shouldn't be more than around 5
         if $spec eq '*' { $max = 100 }
         else { $max = $spec.EVAL.list.max }
         my @index-list;
-        if si( $!current.index , 1, $max ) -> $_ {
+        if serialise-index( $!current.index , 1, $max ) -> $_ {
             @index-list = .map({
                 %!templates<index-item>( %( :level( .[0] ), :entry( .[1] ), :refs( .[2] ) ) )
             })

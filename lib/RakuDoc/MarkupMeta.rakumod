@@ -27,7 +27,6 @@ class RMActions {
         my $type = $/.keys[0];
         my $value = $/{$type}.made;
         given $type {
-            when 'plain-string' { $value = [ [$value , ], ] }
             when 'plain-string-array' { $value = [$value , ] }
         }
         make {

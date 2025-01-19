@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 24;
+plan 27;
 
 my $ast;
 my $rv;
@@ -89,10 +89,9 @@ like $rv.body, /
     /, 'X-markup with hierarchical entry';
 is $rv.index.elems, 2, 'two index entry';
 ok $rv.index.keys (>=) <glossed indexed>.Set, 'entries ok';
-is $rv.index<glossed><refs>[0]<place>, 'First', 'in first heading';
 ok $rv.index<glossed><sub-index><over>:exists, 'over is in sub-index';
+is $rv.index<glossed><sub-index><over><refs>[0]<place>, 'First', 'in first heading';
 is $rv.index<indexed><refs>[0]<place>, 'First', 'in 1st heading';
-
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     =head3 Adding index entries to your text
@@ -127,10 +126,92 @@ $ast = Q:to/QAST/.AST;
     =head2 X«Lookaround assertions| Regexes,positive lookaround assertion <?>;Regexes,negative lookaround assertion <!>;Regexes,?[ »
     =head2 X<Direct lookup|Syntax,::($c).m;Syntax,A."$m"()>
 	=head3 X<$LIST_SEPARATOR, $"|Other languages,$" (Perl)>
+    =head1 X<Arrays|Tutorial,array (Basics)>, X<methods|Tutorial,method (Basics)> and X<invocants|Tutorial,invocant (Basics)>
     =end rakudoc
     QAST
-
+my %expected =
+    Regexes => %(
+        refs => [],
+        sub-index => %(
+            'positive lookaround assertion <?>' => %(
+                refs => [
+                    %(:is-inheading, :place<Lookaround assertions>, :target<index-entry-Lookaround-assertions> ),
+                ],
+                :sub-index( %() )
+            ),
+            'negative lookaround assertion <!>' => %(
+                refs => [
+                    %(:is-inheading, :place<Lookaround assertions>, :target<index-entry-Lookaround-assertions> ),
+                ],
+                :sub-index( %() )
+            ),
+            '?[' => %(
+                refs => [
+                    %(:is-inheading, :place<Lookaround assertions>, :target<index-entry-Lookaround-assertions> ),
+                ],
+                :sub-index( %() )
+            ),
+        ),
+    ),
+    Syntax => %(
+        refs => [],
+        sub-index => %(
+            '::($c).m' => %(
+                refs => [
+                    %(:is-inheading, :place<Direct lookup>, :target<index-entry-Direct_lookup> ),
+                ],
+                :sub-index( %() )
+            ),
+            'A."$m"()' => %(
+                refs => [
+                    %(:is-inheading, :place<Direct lookup>, :target<index-entry-Direct_lookup> ),
+                ],
+                :sub-index( %() )
+            ),
+        ),
+    ),
+    'Other languages' => %(
+        refs => [],
+        sub-index => %(
+            '$" (Perl)' => %(
+                refs => [
+                    %(:is-inheading, :place<$LIST_SEPARATOR, $">, :target<index-entry-$LIST_SEPARATOR,_$"> ),
+                ],
+                :sub-index( %() )
+            ),
+        ),
+    ),
+    Tutorial => %(
+        refs => [],
+        sub-index => %(
+            'array (Basics)' => %(
+                refs => [
+                    %(:is-inheading, :place<Arrays>, :target<index-entry-Arrays> ),
+                ],
+                :sub-index( %() )
+            ),
+            'method (Basics)' => %(
+                refs => [
+                    %(:is-inheading, :place<methods>, :target<index-entry-methods> ),
+                ],
+                :sub-index( %() )
+            ),
+            'invocant (Basics)' => %(
+                refs => [
+                    %(:is-inheading, :place<invocants>, :target<index-entry-invocants> ),
+                ],
+                :sub-index( %() )
+            ),
+        ),
+    ),
+;
 $rv = $rdp.render( $ast, :pre-finalised );
 is +$rv.warnings, 0, 'No warnings issued';
+
+is-deeply $rv.index.keys.sort, %expected.keys.sort, 'sorted index keys as expected';
+is-deeply $rv.index.sort.map({ .key, .value<sub-index>.keys.sort.Slip }).Slip,
+%expected.sort.map({ .key, .value<sub-index>.keys.sort.Slip }).Slip,
+    'sorted index and subindex keys as expected';
+is-deeply $rv.index.sort.map({ (.key, .value<refs>.elems).Slip }), %expected.sort.map({ (.key, .value<refs>.elems).Slip }), 'direct ref elems are all zero';
 
 done-testing;

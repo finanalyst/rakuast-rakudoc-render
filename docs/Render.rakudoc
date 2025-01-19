@@ -71,6 +71,29 @@ The final rendering is done by the 'final' template.
 Once a string has been obtained, it can be post-processed using the post-process method.
 For example, text output can be transformed by wrapping lines.
 
+=head Choices left by RakuDoc v2 to renderer
+
+There are a few choices left by the specification to the renderer. This section contains a
+description of those currently known (please raise issues if others are discovered), except for
+rendering options regarding customisability that are covered separately below.
+
+=item not all schemas listed for C<L<>> and C<P<>> are implemented, namely C<man:>, C<rakudoc:>,
+C<isbn:>
+=item the C<toc:> schema is implemented for C<P<>> only in relation to I<level>. Limiting the ToC
+to tables or other named blocks is not yet implemented.
+=begin item
+The C<index:> schema is implemented in relation to I<level>. The index structure is compiled as follows:
+each item of an index contains a label (the key of a hash structure), an array of references,
+and a sub-index of children with the same structure.
+
+The reference array may be empty if the sub-index has elements, and vice versa.
+
+The level of an index is the depth of the label. But if a label only has elements in a sub-index and
+no references of its own, AND the index is constrained to some level, then the label may appear
+without a link to the body of the text. The renderer provides an ordered list of items. It is for the
+template to determine whether to filter 'empty' labels.
+=end item
+
 =head Warnings
 
 In order to offer the maximum flexibility to a RakuDoc author, if there
