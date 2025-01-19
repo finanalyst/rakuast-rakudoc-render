@@ -152,8 +152,9 @@ class RakuDoc::To::HTML {
                     ( $cont ~~ / ^ [ .*? <spantab> ]+ .*? $ / )
                     .chunks
                     .map({
-                        $tmpl.globals.escape.( .value ) if .key eq '~';
-                        .value
+                        .key eq '~' ??
+                            $tmpl.globals.escape.( .value )
+                            !! .value
                     })
                     .join
                 }
