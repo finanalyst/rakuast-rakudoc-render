@@ -418,7 +418,7 @@ class RakuDoc::To::HTML {
 #                    .grep( .<is-in-heading>.not ) # do not render if in heading
                     .map({
                         $rv ~= qq[<a class="index-ref" href="#{ .<target> }">{
-                            $tmpl('escape-code', %( :contents( .<place>.Str ) ))
+                            $tmpl('escape-code', %( :contents( .<place> ) ))
                             }</a>]
                     });
                 $rv ~= "\n</div>\n";

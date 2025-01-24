@@ -163,6 +163,8 @@ class RakuDoc::Processor {
             my $payload = self.complete-toc( :$spec, :caption('')).strip.Str;
             $!register.add-payload(:$payload, :$id)
         }
+        # make sure all 'place' elements in the index are strings, not PCells
+        stringify-index( $!current.index );
         # render indices
         $!current.rendered-index = self.complete-index( :spec('*'), :caption( $!current.source-data<index-caption> ) );
         @pcells = $!current.rendered-index.has-PCells;
@@ -1685,6 +1687,14 @@ class RakuDoc::Processor {
             if serialise-index( %indexed<sub-index>, $n + 1, $max ) -> $_ { @rv.append($_.list) }
         }
         @rv
+    }
+    sub stringify-index( %h ) {
+        for %h.pairs {
+            for .value<refs>.list {
+                .<place> .= Str
+            }
+            stringify-index( .value<sub-index>.hash ) if .value<sub-index>.elems.so
+        }
     }
     method complete-index( :$spec, :$caption --> PStr ) {
         my $max; # the maximum number of index levels. Shouldn't be more than around 5
