@@ -4,7 +4,7 @@ use RakuDoc::Render;
 
 unit class RakuDoc::Plugin::HTML::FontAwesome;
 has %.config = %(
-    :name-space<fontawesom>,
+    :name-space<fontawesome>,
 	:license<Artistic-2.0>,
 	:credit<https://fontawesome.com/>,
 	:author<Richard Hainsworth, aka finanalyst>,

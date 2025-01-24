@@ -16,7 +16,7 @@ class HTML::Processor is RakuDoc::Processor {
 
     multi method escape( Str:D $s ) {
         # will not double escape
-        $s.trans(qw｢ &lt; &gt; & " > < ｣ => qw｢ &lt; &gt; &amp; &quot; &gt; &lt;｣)
+        $s.trans(qw｢ &lt; &gt; &amp; & " > < ｣ => qw｢ &lt; &gt; &amp; &amp; &quot; &gt; &lt;｣)
     }
     #| Stringify if not string
     multi method escape( $s ) { self.escape( $s ?? $s.Str !! '' ) }
@@ -424,7 +424,6 @@ class RakuDoc::To::HTML {
             },
             #| special template to render the index data structure
             index => -> %prm, $tmpl {
-            say "@ $?LINE  html rend", %prm<index-list>;
                 my @inds = %prm<index-list>.grep({ .isa(Str) || .isa(PStr) });
                 if @inds.elems {
                     PStr.new: '<div class="index">' ~ "\n" ~
