@@ -410,6 +410,7 @@ class RakuDoc::To::HTML {
             index-item => -> %prm, $tmpl {
             # expecting a level, and entry name, whether its in a heading, and
             # a list (possibly empty) of hashes with information for link(s)
+            # by the time of rendering an index list, all PStr/PCell should have been expanded
                 my $n = %prm<level>;
                 my $rv =  qq[<div class="index-section" data-index-level="$n" style="--level:$n">\n] ~
                         '<span class="index-entry">' ~ %prm<entry> ~ '</span>';
@@ -417,7 +418,7 @@ class RakuDoc::To::HTML {
 #                    .grep( .<is-in-heading>.not ) # do not render if in heading
                     .map({
                         $rv ~= qq[<a class="index-ref" href="#{ .<target> }">{
-                            $tmpl('escape-code', %( :contents( .<place> ) ))
+                            $tmpl('escape-code', %( :contents( .<place>.Str ) ))
                             }</a>]
                     });
                 $rv ~= "\n</div>\n";

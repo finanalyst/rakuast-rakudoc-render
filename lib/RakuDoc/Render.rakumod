@@ -1722,7 +1722,7 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of the item list in $*prs
     method complete-item-list() {
-        return '' unless $*prs.items.elems; # do nothing of no accumulated items
+        return '' unless $*prs.items.elems; # do nothing if no accumulated items
         my $rv = %!templates<item-list>(
             %( :item-list($*prs.items), )
         );
@@ -1731,7 +1731,7 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of a defn list in $*prs
     method complete-defn-list() {
-        return '' unless $*prs.defns.elems; # do nothing of no accumulated items
+        return '' unless $*prs.defns.elems;
         my $rv = %!templates<defn-list>(
             %( :defn-list($*prs.defns), )
         );
@@ -1740,7 +1740,7 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of the item list in $*prs
     method complete-numitem-list() {
-        return '' unless $*prs.numitems.elems; # do nothing of no accumulated items
+        return '' unless $*prs.numitems.elems;
         my $rv = %!templates<numitem-list>(
             %( :numitem-list($*prs.numitems), )
         );
@@ -1749,7 +1749,7 @@ class RakuDoc::Processor {
     }
     #| finalises rendering of a defn list in $*prs
     method complete-numdefn-list() {
-        return '' unless $*prs.numdefns.elems; # do nothing of no accumulated items
+        return '' unless $*prs.numdefns.elems;
         my $rv = %!templates<numdefn-list>(
             %( :numdefn-list($*prs.numdefns), )
         );
