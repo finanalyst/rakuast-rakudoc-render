@@ -1809,7 +1809,10 @@ class RakuDoc::Processor {
     #| handle generic metadata options such as delta
     method merged-config( $ast, $block-name --> Hash ) {
         my %config;
-        %config = .resolved-config with $ast;
+        if $ast.defined && $ast.config {
+            %config = .resolved-config with $ast;
+            for ($ast.config.keys (-) %config.keys).keys -> $k { %config{$k} = $ast.config{$k}.Str }
+        }
         my %scoped = $!scoped-data.config;
         %scoped{ $block-name }.pairs.map({
             %config{ .key } = .value unless %config{ .key }:exists

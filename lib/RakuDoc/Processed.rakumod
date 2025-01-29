@@ -146,7 +146,6 @@ class RakuDoc::Processed is ProcessedState {
             rakudoc-title => 'Preface', # used to name sections before first title
             paragraph-id-length => 7,
             rakudoc-level => 0,
-            |%source-data,  # let arguments override the above
         ;
         %!source-data{ .key } = .value for %source-data.pairs;
         $!output-format = $_ with $output-format;
