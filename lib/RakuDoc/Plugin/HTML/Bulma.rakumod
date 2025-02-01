@@ -437,10 +437,15 @@ method toc-scss {
         position: relative;
     }
     .toc-item {
+	    margin-left: calc(var(--level) * 1rem);
+	    &::before {
+	        content: attr(data-bullet);
+	    }
         &:hover {
             background: var(--bulma-background);
         }
         a {
+            padding-left: 0.4rem;
             text-decoration:none;
             color: var(--bulma-text);
         }
