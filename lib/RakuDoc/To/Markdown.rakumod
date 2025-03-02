@@ -344,8 +344,8 @@ class RakuDoc::To::Markdown {
                     }
                 }
                 else {
-                    $rv ~= '| **' ~ %prm<headers>[0]>>.trim.join( '** | **') ~ "** |\n";
-                    $rv ~= [~] (( 1 .. %prm<headers>[0].elems ).map({ '| :----: ' })) ~ "|\n";
+                    $rv ~= '| **' ~ %prm<headers>[0]>>.trim.join( '** | **') ~ "** |\n" if %prm<headers>.elems;
+                    $rv ~= [~] (( 1 .. %prm<headers>[0].elems ).map({ '| :----: ' })) ~ "|\n" if %prm<headers>.elems;
                     $rv ~= [~] %prm<rows>.map({ '| ' ~ .join(' | ') ~ " |\n" }) ~ "\n"
                 }
                 $rv

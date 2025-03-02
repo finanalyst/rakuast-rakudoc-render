@@ -427,7 +427,6 @@ There are shortcuts for C<!==> and C<!eq>, namely C<!=> and C<ne>.
 
     my $a = True;
     say so $a != True;    # OUTPUT: «False␤»
-    my $i = 10;
 
     my $release = Date.new(:2015year, :12month, :24day);
     my $today = Date.today;
@@ -2683,6 +2682,10 @@ C«!(>=)».
     say (1,2,3) ⊉ (2,3);   # OUTPUT: «False␤»
     say 4 !(>=) (1,2,3);   # OUTPUT: «True␤»
     =end code
+
+=head2 infix C«≼», infix C«≽»
+
+Deprecated.  These were removed in v6.d, please use ⊆ and ⊇ operators instead.
 
 =head1 Tight AND precedence
 

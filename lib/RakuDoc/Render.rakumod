@@ -525,7 +525,7 @@ class RakuDoc::Processor {
             #| fnTarget is link to rendered footnote
             #| retTarget is link to where footnote is defined to link back form footnote
             when 'N' {
-                my $id = self.name-id($ast.Str);
+                my $id = self.name-id(textify-markup($ast));
                 my $contents = self.markup-contents($ast);
                 my $retTarget = $id;
                 my $fnNumber = PCell.new( :id("fn_num_$id"), :$!register);
@@ -778,7 +778,7 @@ class RakuDoc::Processor {
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta.trim, actions => RMActions.new );
                 # if in a heading, then the scoped is-head attribute is a target for that title
                 my $target = $is-in-heading ?? $!scoped-data.in-head
-                    !! self.index-id(:contents($ast.atoms.Str));
+                    !! self.index-id(:contents(textify-markup($ast)));
                 my %ref = %( :$target, :$is-in-heading, :$place );
                 %ref<place> = PCell.new(:id($target),:$.register )
                     if $is-in-heading; # the title of the header is not known until later
@@ -976,7 +976,7 @@ class RakuDoc::Processor {
     method gen-headish($ast, $parify, :$template = 'head', :$numerate = False ) {
         # stringify ast for internal use
         # set up data for embedded markup in header, eg., X
-        my $title = $ast.Str.trim;
+        my $title = textify-head($ast);
         my $target = $.name-id($title);
         $!scoped-data.start-scope(:starter('head'), :$title ) if $parify;
         # must set in-head in case of other inner scopes.
@@ -2363,3 +2363,49 @@ class RakuDoc::Processor {
 }
 
 RakuDoc::Processor.^set_ver( $?DISTRIBUTION.meta<version> );
+
+# Subs to return a string of an ast that may contain embedded RakuDoc
+# The naive Str method of ast does not recursively stringify embedded RakuDoc
+
+#| returns string value of head ast, expanding all embedded RakuDoc
+#| block level RakuDoc are not recogised inside a head block
+sub textify-head($ast) is export {
+    return 'Not a head block' unless $ast.isa(RakuAST::Doc::Block) && $ast.type eq <head numhead>.any;
+    $ast.paragraphs.map(&rakudoc2text).join
+}
+#| returns string value of Markup with only contents of embedded Rakudoc
+sub textify-markup($ast) {
+    return 'Not valid markup' unless $ast.isa(RakuAST::Doc::Markup);
+    rakudoc2text($ast).join
+}
+# adapted from @lizmat's RakuDoc-to-Text
+# basically make sure Cool stuff that crept in doesn't bomb
+my multi sub rakudoc2text(Str:D $string --> Str:D) { $string   }
+my multi sub rakudoc2text(Cool:D $cool  --> Str:D) { $cool.Str }
+# make sure we only look at interesting ::Doc objects
+my multi sub rakudoc2text(RakuAST::Node:D $ast --> Str:D) {
+    $ast.rakudoc.map(&rakudoc2text).join
+}
+# blocks in headers are not defined
+my multi sub rakudoc2text(RakuAST::Doc::Block:D $ast --> Str:D) { '' }
+# declarator targets ignored
+my multi sub rakudoc2text(RakuAST::Doc::DeclaratorTarget:D $ast --> Str:D) { '' }
+# handle simple paragraphs (that will be word-wrapped)
+my multi sub rakudoc2text(RakuAST::Doc::Paragraph:D $ast --> Str:D) {
+    $ast.atoms.map(&rakudoc2text).join.naive-word-wrapper ~ "\n"
+}
+# handle markup by returning only contents
+my multi sub rakudoc2text(RakuAST::Doc::Markup:D $ast --> Str:D) {
+    my str $letter = $ast.letter;
+    # ignore some markup
+    if $letter eq <Z Δ P D>.any { '' }
+    elsif $letter eq 'A' {
+        rakudoc2text $ast.meta.head
+    }
+    elsif $letter eq <C V>.any {
+        rakudoc2text $ast.atoms.join
+    }
+    else {
+        $ast.atoms.map(&rakudoc2text).join
+    }
+}

@@ -4,7 +4,7 @@
   - [ ] Epub, need to add extra metadata pages 
 
 - [ ] Add tests to Templates for new escape attribute
-- [ ] Chnage documentation for Templates about escape attribute
+- [ ] Change documentation for Templates about escape attribute
 - [ ] ditto to Render
 
 - [ ] Outputs needing change
