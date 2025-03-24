@@ -69,7 +69,7 @@ method templates {
                 @sel-files.push: [
                     ((%data<title> eq '' or %data<title> eq 'NO_TITLE') ?? $fn !! %data<title> ),
                     (%data<subtitle> ?? %data<subtitle> !! 'No description found'),
-                    $fn
+                    %data<route> // $fn
                 ];
             }
             my $rv = qq:to/FIRST/;
@@ -78,11 +78,11 @@ method templates {
             my $cap = qq:to/CAP/;
                     <p class="listf-caption">{ %prm<raw>.trim }</p>
                     CAP
-            for  @sel-files.sort(*.[0]) -> ($nm, $desc, $path) {
+            for  @sel-files.sort(*.[0]) -> ($nm, $desc, $route) {
                 $rv ~= qq:to/NOFL/;
                     <div class="listf-file">
                     $cap
-                    <a class="listf-link" href="$path">$nm\</a>
+                    <a class="listf-link" href="$route">$nm\</a>
                     $desc\</div>
                     NOFL
                 $cap = '';
