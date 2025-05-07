@@ -83,7 +83,7 @@ method templates {
                     <div class="listf-file">
                     $cap
                     <a class="listf-link" href="$route">$nm\</a>
-                    $desc\</div>
+                    <p class="desc">$desc\</p>\</div>
                     NOFL
                 $cap = '';
             }
@@ -91,7 +91,7 @@ method templates {
                 $rv ~= qq:to/NOFL/;
                     <div class="listf-file">
                     $cap
-                    No files meet the criteria: {%criteria.raku}
+                    <p class="desc">No files meet the criteria: {%criteria.raku}\</p>
                     </div>
                     NOFL
             }
@@ -129,7 +129,7 @@ method add-scss {
               text-align: center;
               padding-top: 0.25rem;
           }
-          p {
+          p.desc {
               padding-left: 0.5rem;
               padding-right: 0.5rem;
               margin-bottom: 0.25rem;
