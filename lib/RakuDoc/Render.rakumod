@@ -243,6 +243,7 @@ class RakuDoc::Processor {
     #| typically the enable method will create the plugin's dataspace and add templates
     method add-plugins( @plugin-list ) {
         for @plugin-list -> $plugin {
+            next if $plugin.starts-with('#');
             if $plugin (elem) $!installed-plugins {
                 note "Attempted to re-install ｢$plugin｣, ignoring duplicate installation";
                 next
