@@ -920,6 +920,7 @@ class RakuDoc::Processor {
     #| the earlier ones only have references if given by other calls to index
     multi method add-index( @r, $ref --> Hash ) {
         return $.add-index( @r[0].Str, $ref ) if @r.elems == 1;
+        return %() unless +@r;
         my @refs;
         my %h = %( :@refs, sub-index => %( ) );
         $.merge-index( %h<sub-index>, $.add-index( @r[ 1 .. *-1 ] , $ref ) ) if @r[1 .. *-1].elems.so;
