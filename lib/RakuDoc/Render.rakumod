@@ -1271,6 +1271,9 @@ class RakuDoc::Processor {
     #| will be called. Only allow embedding to three levels to avoid circularity.
     method gen-rakudoc($ast, $parify) {
         my %config = $ast.resolved-config;
+        # make sure these defaults exist
+        %config<toc> = True unless %config<toc>:exists;
+        %config<index> = True unless %config<index>:exists;
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);
         # render any tailing lists

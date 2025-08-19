@@ -396,7 +396,7 @@ class RakuDoc::To::HTML {
             },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
-                if %prm<toc>:exists && %prm<toc>.elems {
+                if %prm<toc-list>:exists && %prm<toc-list>.elems {
                     PStr.new: qq[<div class="toc">\n] ~
                     ( "<h2 class=\"toc-caption\">%prm<caption>\</h2>" if  %prm<caption> ) ~
                     ([~] %prm<toc-list>) ~
@@ -667,13 +667,13 @@ class RakuDoc::To::HTML {
                 }
                 $rv ~= '<h1 class="title">' ~ %prm<title> ~ "</h1>\n\n" ~
                 (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
-                ( %prm<rendered-toc> if %prm<rendered-toc> )
+                ( %prm<rendered-toc> if %prm<rendered-toc> && %prm<source-data><rakudoc-config><toc> )
             },
             #| the main section of body
             main-content => -> %prm, $tmpl {
                 %prm<body>.Str ~
                 %prm<footnotes>.Str ~ "\n" ~
-                ( %prm<rendered-index> if %prm<rendered-index> )
+                ( %prm<rendered-index> if %prm<rendered-index> && %prm<source-data><rakudoc-config><index>)
             },
             #| the last section of body
             footer => -> %prm, $tmpl {

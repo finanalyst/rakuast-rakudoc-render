@@ -376,10 +376,10 @@ class RakuDoc::To::Markdown {
             final => -> %prm, $tmpl {
                 "\n# " ~ %prm<title> ~ "\n\n" ~
                 (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
-                ( %prm<rendered-toc> if %prm<rendered-toc> ) ~
+                ( %prm<rendered-toc> if %prm<rendered-toc> && %prm<source-data><rakudoc-config><toc> ) ~
                 %prm<body>.Str ~ "\n" ~
                 %prm<footnotes>.Str ~ "\n" ~
-                ( %prm<rendered-index> if %prm<rendered-index> ) ~
+                ( %prm<rendered-index> if %prm<rendered-index> && %prm<source-data><rakudoc-config><index>) ~
                 "\n----\n\n----\n" ~
                 "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
                 (sprintf( " at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime) ~
@@ -395,7 +395,7 @@ class RakuDoc::To::Markdown {
             },
             #| special template to render the toc list
             toc => -> %prm, $tmpl {
-                if %prm<toc>:exists && %prm<toc>.elems {
+                if %prm<toc-list>:exists && %prm<toc-list>.elems {
                     my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
                     PStr.new: $cap ~
                     ([~] %prm<toc-list>) ~ "\n\n"
