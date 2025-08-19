@@ -37,7 +37,7 @@ $ast = Q:to/QAST/.AST;
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
-is-deeply-relaxed $rv.source-data<rakudoc-config>, %(:kind<sub>, :subkind<operator>, :category<Language>),
+is-deeply-relaxed $rv.source-data<rakudoc-config>, %(:kind<sub>, :subkind<operator>, :category<Language>, :index, :toc),
         'places rakudoc metadata correctly';
 $ast = Q:to/QAST/.AST;
     =for head :!toc :id<Quick id>
