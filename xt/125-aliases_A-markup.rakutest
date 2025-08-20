@@ -3,7 +3,7 @@ use Test;
 
 use RakuDoc::Render;
 
-plan 8;
+plan 9;
 
 my $ast;
 my $rv;
@@ -81,5 +81,27 @@ like $rv.body, /
     .+ '<head' .+ 'Third header'
     .+ 'text3' .+ 'first definition'
 /, 'aliases scope to sections';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =alias Exec Executive
+
+    Some text
+
+    =head The A<Exec>
+
+    Number of members
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+
+like $rv.body, /
+    'Some text'
+    .+ '<head>'
+    .+? 'contents'
+    .+ 'The <markup-A>' .+? 'contents: ｢Executive｣' .+ 'error: ｢True'
+    .+ 'Number of members'
+/, 'alias in head works';
 
 done-testing;

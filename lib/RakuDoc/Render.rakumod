@@ -2404,10 +2404,10 @@ my multi sub rakudoc2text(RakuAST::Doc::Markup:D $ast --> Str:D) {
     my str $letter = $ast.letter;
     # ignore some markup
     if $letter eq <Z Δ P D>.any { '' }
-    elsif $letter eq 'A' {
-        rakudoc2text $ast.meta.head
-    }
-    elsif $letter eq <C V>.any {
+#    elsif $letter eq 'A' {
+#        rakudoc2text $ast.meta.head
+#    }
+    elsif $letter eq <C V A>.any {
         rakudoc2text $ast.atoms.join
     }
     else {

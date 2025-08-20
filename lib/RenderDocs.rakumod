@@ -92,6 +92,15 @@ multi sub render-files (@to-be-rendered, :$src, :$to, :$quiet, :$nformat where '
         $rdp.debug( $debug ) with $debug;
         $rdp.verbose( $verbose ) with $verbose;
         $rdp.pretty( $pretty ) with $pretty;
+        if %*ENV<MORE_MARKDOWN>:exists {
+            exit note( "｢{%*ENV<MORE_MARKDOWN>}｣ is not a file" ) unless %*ENV<MORE_MARKDOWN>.IO ~~ :e & :f;
+            try {
+                $rdp.add-templates( EVALFILE( %*ENV<MORE_MARKDOWN> ), :source<User-supplied-markdown> );
+                CATCH {
+                    default { exit note "Could not utilise ｢{%*ENV<MORE_MARKDOWN>}｣ " ~ .message }
+                }
+            }
+        }
         "$dest.md".IO.spurt($rdp.render($ast, :%source-data));
         for dir(test => *.ends-with('.svg')) {
             say "moving «$_» to «{$to}/{ .subst(/ '%2f' /, '/',:g ) }»" unless $quiet;
