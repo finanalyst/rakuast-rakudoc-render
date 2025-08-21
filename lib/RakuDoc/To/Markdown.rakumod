@@ -233,7 +233,7 @@ class RakuDoc::To::Markdown {
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
-                "\n\n" ~ [~] %prm<item-list>
+                [~] %prm<item-list>
             },
             #| renders =numitem block
             numitem => -> %prm, $tmpl {
@@ -241,7 +241,7 @@ class RakuDoc::To::Markdown {
             },
             #| special template to render a numbered item list data structure
             numitem-list => -> %prm, $tmpl {
-                "\n\n" ~ [~] %prm<numitem-list>
+                [~] %prm<numitem-list>
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
@@ -257,7 +257,7 @@ class RakuDoc::To::Markdown {
                 else {
                     PStr.new:
                         (%prm<target> ?? '<span class="para" id="' ~ %prm<target> ~ '"></span>' !! '') ~
-                        %prm<contents> ~ ("\n\n" unless %prm<inline>)
+                        %prm<contents> ~ ("  \n" unless %prm<inline>)
                 }
             },
             #| renders =place block
@@ -366,7 +366,7 @@ class RakuDoc::To::Markdown {
                 my $content := %prm<contents>.Str;
                 my $head = $tmpl('head', %(
                     :$level, :id(%prm<id>), :target(%prm<target>),
-                    :caption(%prm<caption> ~ '&nbsp' x 4 ~  $content ),
+                    :caption(%prm<caption> ~ '&nbsp;' x 4 ~  $content ),
                     :delta(%prm<delta>)
                 ));
                 if %prm<hidden> { qq| <div class="rakudoc-version">$content\</div> | }
