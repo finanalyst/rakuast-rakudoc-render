@@ -221,7 +221,6 @@ method templates {
                 qq:to/END/
                 { $tmpl<page-navigation> }
                 <div id="MainText" class="panel section container">
-                    { $tmpl<page-edit> }
                     { $tmpl<title-section> }
                     <div class="content px-4">
                     { %prm<body> }
