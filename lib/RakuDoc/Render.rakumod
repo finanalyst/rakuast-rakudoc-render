@@ -329,9 +329,41 @@ class RakuDoc::Processor {
 
         # Not all Blocks create a new scope. Some change the current scope data
         given $ast.type {
+            # First deal with directives. These are treated like blocks in AST
+
             # =alias
             # Define a RakuDoc macro, scoped to the current block
             when 'alias' { $.manage-alias( $ast ) }
+            # =config
+            # Block scope modifications to a block or markup instruction
+            when 'config' { $.manage-config($ast); }
+            # =cell
+            # Contains data in a procedural table
+            # =column
+            # Start a new column in a procedural table
+            # =row
+            # Start a new row in a procedural table
+            when any(<cell column row>) {
+                $prs.warnings.push: qq:to/WARN/;
+                The text ｢{ $ast.DEPARSE }｣ may not exist outside a 'table' block.
+                WARN
+            }
+
+            # now handle enumerated blocks
+            # =numitem
+            # First-level numbered list item
+            # =numitemN
+            # Nth-level numbered list item
+            when 'numitem' { $.gen-numitem($ast, $parify) }
+            # =numdefn
+            when 'numdefn' { $.gen-defn($ast, :numerate) }
+            # =numhead
+            # First-level numbered heading
+            # =numheadN
+            # Nth-level numbered heading
+            # heading numeration is fixed when TOC is generated and all headers are known
+            when 'numhead' { $.gen-headish( $ast, $parify, :template<numhead>, :numerate) }
+            # =place block, mostly mimics P<>, but allows for TOC and caption
             # =implicit code created by indenting, but by specification is treated as code
             when 'implicit-code' { $.gen-paraish( $ast, 'code', $parify ) }
             # =code
@@ -350,9 +382,6 @@ class RakuDoc::Processor {
             # =comment
             # Content to be ignored by all renderers
             when 'comment' { '' }
-            # =config
-            # Block scope modifications to a block or markup instruction
-            when 'config' { $.manage-config($ast); }
             # =formula
             # Render content as LaTex formula
             when 'formula' { $.gen-formula($ast) }
@@ -361,12 +390,6 @@ class RakuDoc::Processor {
             # =headN
             # Nth-level heading
             when 'head' { $.gen-headish($ast, $parify) }
-            # =numhead
-            # First-level numbered heading
-            # =numheadN
-            # Nth-level numbered heading
-            # heading numeration is fixed when TOC is generated and all headers are known
-            when 'numhead' { $.gen-headish( $ast, $parify, :template<numhead>, :numerate) }
             # =item
             # First-level list item
             # =itemN
@@ -375,14 +398,6 @@ class RakuDoc::Processor {
             # =defn
             # Definition of a term
             when 'defn' { $.gen-defn($ast) }
-            # =numitem
-            # First-level numbered list item
-            # =numitemN
-            # Nth-level numbered list item
-            when 'numitem' { $.gen-numitem($ast, $parify) }
-            # =numdefn
-            when 'numdefn' { $.gen-defn($ast, :numerate) }
-            # =place block, mostly mimics P<>, but allows for TOC and caption
             when 'place' { $.gen-place($ast) }
             # =rakudoc
             # No "ambient" blocks inside
@@ -419,17 +434,6 @@ class RakuDoc::Processor {
                 $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
                 $.gen-table($ast);
                 $!scoped-data.end-scope;
-            }
-            # =cell
-            # Contains data in a procedural table
-            # =column
-            # Start a new column in a procedural table
-            # =row
-            # Start a new row in a procedural table
-            when any(<cell column row>) {
-                $prs.warnings.push: qq:to/WARN/;
-                The text ｢{ $ast.DEPARSE }｣ may not exist outside a 'table' block.
-                WARN
             }
             # RESERVED
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
@@ -1604,7 +1608,7 @@ class RakuDoc::Processor {
         my $prs := $*prs;
         my $caption = %config<caption>:delete // $block-name;
         my $level = %config<headlevel>:delete // 1;
-        $level = 1 unless $level >= 1;
+        $level = 1 if $level < 1;
         my $numeration = '';
         my $id = '';
         with %config<id> {

@@ -2,16 +2,193 @@ use v6.d;
 use Test;
 use RakuDoc::Numeration;
 
-plan 7;
+plan *;
 
 my Numeration $n .= new;
 
-is $n.Str, '0.', 'first level is 0';
-is $n.inc(3).Str, '0.0.1.', 'incremented level 3 leaving others at 0';
-is $n.inc(2).Str, '0.1.', ' incremented level2, which resets level 3';
-is $n.reset.Str, '0.', 'resets to 0';
-is $n.inc(1).Str, '1.', 'first level when incremented is 1';
-is $n.inc(3).Str, '1.0.1.', 'incremented level 3 to stem = 1';
-is $n.inc(2).Str, '1.1.', ' incremented level2, which resets level 3';
+is $n.Str, '1.', 'first level is 1';
+is $n.inc(3).Str, '1.1.2.', 'incremented level 3 leaving others at 0';
+is $n.inc(2).Str, '1.2.', ' incremented level2, which resets level 3';
+is $n.reset.Str, '1.', 'resets to 1';
+is $n.inc(1).Str, '2.', 'first level when incremented is 2';
+is $n.inc(3).Str, '2.1.2.', 'incremented level 3 to stem = 2';
+is $n.inc(2).Str, '2.2.', ' incremented level2, which resets level 3';
+is $n.set(3,4).Str, '2.2.4.', 'set level3 to 4';
+is $n.set(5,3).Str, '2.2.4.1.3.', 'set beyond last extent puts 1 in intermediate postion';
+
+$n .= new: init => (1, 2, 7) ;
+is $n.Str, '1.2.7.', 'create with initial sequence';
+
+my $xmp = 0;
+my @fnsh = $=finish.lines;
+is $n.numform( :form('%%N%:        (%N of %n): %D:lc%:'),                :contents('The data') ),
+	@fnsh[$xmp], "example $xmp";
+is $n.numform( :form('%%N:ord%:    (%N:ord of %n:ord): %D%:'),           :contents('The data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%N:ord:uc%: (%N:ord:uc of %N:ord:lc): %D:lc%:'),  :contents('The data') ),
+	@fnsh[++$xmp], "example $xmp";
+$xmp++;
+is $n.numform( :form('%%R%:     (%R of %r): %D:lc%:'),          :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%R:ord%: (%R:ord of %r:ord): %D:lc%:'),  :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+$xmp++;
+is $n.numform( :form('%%H%:     (%H of %h): %D:lc%:'),          :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%ह%:     (%ह of %ह): %D:lc%:'),          :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%H:ord%: (%H:ord of %h:ord): %D:lc%:'),  :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+$xmp++;
+is $n.numform( :form('%%B%:     (%B of %b): %D:lc%:'),          :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%ব%:     (%ব of %ব): %D:lc%:'),          :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%B:ord%: (%B:ord of %b:ord): %D:lc%:'),  :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+$xmp++;
+is $n.numform( :form('%%Z%:     (%Z of %z): %D:lc%:'),          :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%大%:    (%大 of %小): %D:lc%:'),        :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%Z:ord%: (%Z:ord of %z:ord): %D:lc%:'),  :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+$xmp++;
+is $n.numform( :form('%%J%:     (%J of %j): %D:lc%:'),          :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%業%:    (%業 of %並): %D:lc%:'),        :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%%J:ord%: (%J:ord of %j:ord): %D:lc%:'),  :contents('Example data') ),
+	@fnsh[++$xmp], "example $xmp";
+$xmp++;
+is $n.numform( :form('%T %R: %C'),            :caption('Mass-energy equivalence') :type<numformula> ),
+        @fnsh[++$xmp], "example $xmp";
+is $n.numform( :form('%N:ord %T:lc: %C:lc'),  :caption('Mass-energy equivalence') :type<numformula> ),
+        @fnsh[++$xmp], "example $xmp";
+$xmp++;
+for 1...5, 17, 34 {
+    $n .= new: :init( [$_] );
+    is $n.numform( :form('%%N:ord:lang<cy>:lc%:  %N:ord:lang<cy>. %D'), :contents('Example data') ),
+        @fnsh[++$xmp], "example $xmp"
+}
+$xmp++;
+$n .= new: :init([1]);
+	is $n.numform( :form('%A. %D'),         :contents('Design :form mechanism')  :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([2]);
+	is $n.numform( :form('%A. %d'),         :contents('Implement it (:lc)')            :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([3]);
+	is $n.numform( :form('%a. %D'),         :contents('???')                     :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([4]);
+	is $n.numform( :form('%A. %D:uc'),      :contents('Profit!!! (:uc)')               :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([27]);
+	is $n.numform( :form('%A. %D:tc'),     :contents('hUh? dOUblE ISO lEttErs? (:tc)')    :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([731]);
+	is $n.numform( :form('%A. %D:tclc'),  :contents('whAt??? trIplE the ISO lEttErs? (:tclc)') :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([732]);
+	is $n.numform( :form('%A. %D:sc'),    :contents('What else do i see, o, reader??? triple the ISO letters? (:sc)') :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([732]);
+	is $n.numform( :form('%A. %D:sc:lang<de>'),    :contents('What else do i see, o reader??? triple the ISO letters? (:sc:lang<de>)') :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$n .= new: :init([732]);
+	is $n.numform( :form('%A. %D:pc'),    :contents('whAt do i see now??? trIple the ISO lEttErs? (:pc)') :type<numitem> ),
+	@fnsh[++$xmp], "example $xmp";
+$xmp++;
+#diag "Various warnings...";
+
+#is $n.numform( :form('(%J:lc:uc:tclc of %並:pc:lang<fr>:ord): %Q %D:uc%:'), :nums[1,2,7], :contents('Example data') ),
+#	@fnsh[++$xmp], "example $xmp";
+#$xmp++;
+#$n .= new: :init([1]);
+	#is $n.numform( :form('%N:ord: %d:uc'),    :contents('warn about :uc') ),
+#	@fnsh[++$xmp], "example $xmp";
+#$n .= new: :init([2]);
+	#is $n.numform( :form('%N:ord: %d:tc'),    :contents('warn about :tc') ),
+#	@fnsh[++$xmp], "example $xmp";
+#$n .= new: :init([3]);
+	#is $n.numform( :form('%N:ord: %d:tclc'),  :contents('warn about :tclc') ),
+#	@fnsh[++$xmp], "example $xmp";
+#$n .= new: :init([4]);
+	#is $n.numform( :form('%N:ord: %d:sc:pc'), :contents('warn about :sc and :pc') ),
+#	@fnsh[++$xmp], "example $xmp";
+#$n .= new: :init([5]);
+	#is $n.numform( :form('%N:ord: %d:lc'),    :contents('no warning about :lc') ),
+#	@fnsh[++$xmp], "example $xmp";
+#$xmp++;
+#is $n.numform( :form('%N(%a) %J.%R. %D'), :nums['',2,3,4], :contents('head1, not numhead1') ),
+#	@fnsh[++$xmp], "example $xmp";
+#is $n.numform( :form('%N(%a) %J.%R. %D'), :nums[1,'',3,4], :contents('head2, not numhead2') ),
+#	@fnsh[++$xmp], "example $xmp";
+#is $n.numform( :form('%N(%a) %J.%R. %D'), :nums[1,2,'',4], :contents('head3, not numhead3') ),
+#	@fnsh[++$xmp], "example $xmp";
+#is $n.numform( :form('%N(%a) %J.%R. %D'), :nums[1,2,3,''], :contents('head4, not numhead4') ),
+#	@fnsh[++$xmp], "example $xmp";
 
 done-testing;
+
+=finish
+%N:        (2 of 7): the data:
+%N:ord:    (2nd of 7th): The data:
+%N:ord:uc: (2ND of 7th): the data:
+________________________________________________________________________________
+%R:     (ⅠⅠ of ⅴⅰⅰ): example data:
+%R:ord: (ⅠⅠ of ⅴⅰⅰ): example data:
+________________________________________________________________________________
+%H:     (२ of ७): example data:
+%ह:     (२ of ७): example data:
+%H:ord: (२ of ७): example data:
+________________________________________________________________________________
+%B:     (২ of ৭): example data:
+%ব:     (২ of ৭): example data:
+%B:ord: (২ of ৭): example data:
+________________________________________________________________________________
+%Z:     (貳 of 七): example data:
+%大:    (貳 of 七): example data:
+%Z:ord: (第貳 of 第七): example data:
+________________________________________________________________________________
+%J:     (弐 of 七): example data:
+%業:    (弐 of 七): example data:
+%J:ord: (第弐 of 七番目): example data:
+________________________________________________________________________________
+Formula ⅤⅠⅠ: Mass-energy equivalence
+7th formula: mass-energy equivalence
+________________________________________________________________________________
+%N:ord:lang<cy>:lc:  1af. Example data
+%N:ord:lang<cy>:lc:  2il. Example data
+%N:ord:lang<cy>:lc:  3ydd. Example data
+%N:ord:lang<cy>:lc:  4ydd. Example data
+%N:ord:lang<cy>:lc:  5ed. Example data
+%N:ord:lang<cy>:lc:  17eg. Example data
+%N:ord:lang<cy>:lc:  34ain. Example data
+________________________________________________________________________________
+A. Design :form mechanism
+B. implement it (:lc)
+c. ???
+D. PROFIT!!! (:UC)
+AA. HUh? dOUblE ISO lEttErs? (:tc)
+ABC. What??? triple the iso letters? (:tclc)
+ABD. What else do I see, O, reader??? Triple the ISO letters? (:sc)
+ABD. What else do i see, o reader??? Triple the ISO letters? (:sc:lang<de>)
+ABD. What Do I See Now??? Triple The ISO Letters? (:pc)
+________________________________________________________________________________
+Various warnings...
+(弐 of 七番目): %Q EXAMPLE DATA:
+________________________________________________________________________________
+1st: warn about :uc
+2nd: warn about :tc
+3rd: warn about :tclc
+4th: warn about :sc and :pc
+5th: no warning about :lc
+________________________________________________________________________________
+(b) 参.ⅠⅤ. head1, not numhead1
+1() 参.ⅠⅤ. head2, not numhead2
+1(b) .ⅠⅤ. head3, not numhead3
+1(b) 参.. head4, not numhead4
+
+

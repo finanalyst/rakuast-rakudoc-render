@@ -18,7 +18,7 @@ like $rv.body.Str, /
     'contents: ｢Test text｣' .+
     'id: ｢' .+
     'level: ｢1｣' .+
-    'numeration:' .+ '1.' .+
+    'numeration:' .+ '2.' .+
     'target: ｢Test_text｣' .+
     'toc: ｢True｣' .+
     '</numhead>'
