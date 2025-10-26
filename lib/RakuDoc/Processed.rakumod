@@ -1,5 +1,6 @@
 use v6.d;
 use RakuDoc::PromiseStrings;
+use RakuDoc::Numeration;
 use PrettyDump;
 
 #| Instances of ProcessedState are created to contain the rendered form and collected data
@@ -13,12 +14,6 @@ class ProcessedState {
     #| level - in heading hierarchy, text - to be shown in TOC
     #| target - of item in text, is-heading - used for Index placing
     has Hash @.toc;
-
-    #| heading numbering data
-    #| Ordered array of [ $id, $level ]
-    #| $id is the PCell id of where the numeration structure is to be placed
-    #| level - in heading hierarchy
-    has Array @.head-numbering;
 
     #| Index (from X<> markup)
     #| Hash entry => Hash of :refs, :sub-index
@@ -50,12 +45,6 @@ class ProcessedState {
     #| An array of accumulated rendered definitions, added to body when next non-defn block encountered
     has @.defns;
 
-    #| An array of accumulated rendered numbered items, added to body when next non-item block encountered
-    has @.numitems;
-
-    #| An array of accumulated rendered numbered definitions, added to body when next non-defn block encountered
-    has @.numdefns;
-
     #| Hash of definition => rendered value for definitions
     has %.definitions;
 
@@ -71,8 +60,6 @@ class ProcessedState {
             :indent('  '), :post-separator-spacing("\n  ") )  }
             toc => { pretty-dump(@.toc, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ")) }
-            head-numbering => { pretty-dump(@.head-numbering, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-               :indent('  '), :post-separator-spacing("\n  ")) }
             index => { pretty-dump( %.index, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ") )  }
             footnotes => { pretty-dump( @.footnotes, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
@@ -86,10 +73,6 @@ class ProcessedState {
             defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
-            numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
-            numdefns => { pretty-dump( @.numdefns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
@@ -130,6 +113,9 @@ class RakuDoc::Processed is ProcessedState {
     #| External is a fully qualified URL
     #|
     has Hash %.links;
+    has %.counters =
+        head => Numeration.new,
+        ;
     #| Rendered version of the ToC
     has $.rendered-toc is rw;
     #| Rendered version of the Index
@@ -153,6 +139,31 @@ class RakuDoc::Processed is ProcessedState {
         without $!name { $!name = %!source-data<name> ~ '.' ~ $!output-format }
         $!targets .= new;
     }
+
+    multi method get-counter($type) {
+        if %!counters{ $type }:exists {
+            %!counters{ $type }
+        }
+        else {
+            my @allowed = <code para nested input output formula table>;
+            # add a new type, but type must be an existing built it, or a custom
+            # otherwise generate a warning, but use as.
+            @!warnings.push: "Use of improper block name for counter ｢$type｣. To remove this warning, use one of @allowed or a custom name with mixed case, eg. {$type.tc} ."
+                    if !( $type eq @allowed.any
+                            or ($type ~~ any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll /))
+            %!counters{$type} = Numeration.new
+        }
+    }
+    method sync-counter($type, $base, $level) {
+        my $t := self.get-counter($type);
+        my $b := self.get-counter($base);
+        unless $t.Str($level) eq $b.Str($level) {
+            $t.set-counters( $b.parts($level) )
+        }
+    }
+    multi method numeration-warnings( --> Array ) {
+        %!counters.pairs.sort.map({ ((.key ~ ' counter: ') <<~>> .value.warnings).Slip }).Array
+    }
     
     multi method gist(RakuDoc::Processed:U: ) { 'Undefined RakuDoc::Processed object' }
     
@@ -164,18 +175,18 @@ class RakuDoc::Processed is ProcessedState {
             title => Str=｢{ $!title }｣
             title-target => Str=｢{ $!title-target }｣
             subtitle => Str=｢{ $!subtitle }｣
-            source-data => { pretty-dump( %!source-data ) }｣
+            source-data => { pretty-dump( %!source-data ) }
             semantics => { pretty-dump( %.semantics, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
             :indent('  '), :post-separator-spacing("\n  ") )  }
             toc => { pretty-dump(@.toc, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-               :indent('  '), :post-separator-spacing("\n  ")) }
-            head-numbering => { pretty-dump(@.head-numbering, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ")) }
             index => { pretty-dump( %.index, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ") )  }
             footnotes => { pretty-dump( @.footnotes, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             links => { pretty-dump( %.links, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
+                :indent('  '), :post-separator-spacing("\n  ") )  }
+            counters => { pretty-dump( %.counters, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             targets => <｢{ $!targets.keys.join('｣, ｢') }｣>
             items => { pretty-dump( @.items, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
@@ -185,10 +196,6 @@ class RakuDoc::Processed is ProcessedState {
             defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
-            numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
-            numdefns => { pretty-dump( @.numdefns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
@@ -217,7 +224,6 @@ multi sub merge-index( %p, %q ) {
 multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     sink $p.body ~ $q.body;
     $p.toc.append: $q.toc;
-    $p.head-numbering.append: $q.head-numbering;
     merge-index($p.index, $q.index);
     $p.footnotes.append: $q.footnotes;
     for $q.semantics.kv -> $k, $v { # by definition, same key but multiple values
@@ -230,7 +236,5 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     for $q.definitions.kv -> $k, $v { # no multiple values
         $p.definitions{$k} = $v # redefinition possible
     }
-    $p.numitems.append: $q.numitems;
-    $p.numdefns.append: $q.numdefns;
     $p
 }

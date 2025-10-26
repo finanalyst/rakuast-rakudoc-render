@@ -12,10 +12,13 @@ has @!starters;
 has @!titles;
 has @!save-spacer = 'None' => False , ;
 has Str $.in-head is rw = '';
-#| the last item numeration
-has Numeration @.items-numeration = Numeration.new , ;
-#| the last defn numeration
-has Numeration @.defns-numeration = Numeration.new , ;
+#| item and defn numerations by default are block scoped,
+#| Other para-ish numerations are in a Processed object
+has Hash @.numerations = %(
+    item => Numeration.new,
+    defn => Numeration.new,
+    ),
+;
 has Bool $.debug is rw = False;
 #| debug information
 method diagnostic {
@@ -35,8 +38,7 @@ method start-scope(:$starter!, :$title, :$verbatim ) {
     else {
         @!save-spacer.push: @!save-spacer.tail
     }
-    @!items-numeration.push: @!items-numeration.tail;
-    @!defns-numeration.push: @!defns-numeration.tail;
+    @!numerations.push: @!numerations.tail.pairs.map({ .key => .value.clone }).hash;
     say 'New scope started. ', $.diagnostic if $!debug
 }
 #| ends the current scope, forgets new data
@@ -46,6 +48,13 @@ method end-scope {
     @!config.pop;
     @!aliases.pop;
     @!save-spacer.pop;
+    # before popping the enumations, we need to preserve warnings, if any
+    my %last-numerations = @!numerations.pop;
+    for %last-numerations.keys {
+        my @warns = %last-numerations{ $_ }.warnings;
+        next unless +@warns;
+        @!numerations.tail{ $_ }.warnings.append: @warns
+    }
     say 'Scope ended. ', $.diagnostic if $!debug
 }
 multi method config(%h) {
@@ -77,16 +86,18 @@ multi method verbatim() {
 multi method verbatim( :called-by($)! ) {
     @!save-spacer.tail.key
 }
-multi method item-inc( $level --> Str ) {
-    @!items-numeration.tail.inc($level).Str
+multi method numeration( $type --> Numeration ) {
+    @!numerations.tail{$type}
 }
-multi method item-reset() {
-    @!items-numeration.tail.reset
+multi method numeration-inc( $type, $level --> Numeration ) {
+    @!numerations.tail{$type}.inc($level)
 }
-multi method defn-inc( --> Str ) {
-    @!defns-numeration.tail.inc(1).Str
+multi method numeration-reset( $type --> Numeration ) {
+    @!numerations.tail{$type}.reset
 }
-multi method defn-reset() {
-    @!defns-numeration.tail.reset
+multi method numeration-set( $type, $level, $num --> Numeration ) {
+    @!numerations.tail{$type}.set($level, $num)
 }
-
+method numeration-warnings( --> Array ) {
+    @!numerations.tail.pairs.sort.map( { ((.key ~ ' counter: ') <<~>> .value.warnings).Slip } ).Array
+}

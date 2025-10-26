@@ -140,6 +140,45 @@ class PStr {
     method segments( --> Int ) {
         @!string.elems
     }
+    method clone {
+        nextwith :string(@!string.clone), |%_
+    }
+    #| Case methods
+    method lc( --> PStr ) {
+        for @!string.kv -> $k, $v {
+            next if $v.isa( PCell );
+            @!string[$k] = $v.lc;
+        }
+        self
+    }
+    method uc( --> PStr ) {
+        for @!string.kv -> $k, $v {
+            next if $v.isa( PCell );
+            @!string[$k] = $v.uc;
+        }
+        self
+    }
+    method tc( --> PStr ) {
+        for @!string.kv -> $k, $v {
+            next if $v.isa( PCell );
+            @!string[$k] = $v.tc;
+        }
+        self
+    }
+    method tclc( --> PStr ) {
+        for @!string.kv -> $k, $v {
+            next if $v.isa( PCell );
+            @!string[$k] = $v.tclc;
+        }
+        self
+    }
+    method subst( |c ) {
+        for @!string.kv -> $k, $v {
+            next if $v.isa( PCell );
+            @!string[$k] = $v.subst( |c );
+        }
+        self
+    }
 }
 
 multi sub infix:<~>(Str $s, PStr $p --> PStr) is export {

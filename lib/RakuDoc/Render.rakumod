@@ -22,7 +22,8 @@ class RakuDoc::Processor {
     has SetHash $!debug-modes .= new;
     #| installed plugins to prevent re-installation
     has SetHash $.installed-plugins .= new;
-
+    #| last block type
+    has Str $!last-type = '';
     multi method debug(RDProcDebug $type --> Nil ) {
         given $type {
             when None {
@@ -112,6 +113,9 @@ class RakuDoc::Processor {
         $!register .= new;
         $!scoped-data .= new;
         $!scoped-data.debug = $!debug-modes{ Scoping }.so;
+
+        # the following maps cannot be hyperised because the order of
+        # blocks in the document is important for the numeration counters and Toc
         my ProcessedState $*prs .= new;
         if $ast ~~ RakuAST::StatementList {
             $ast.rakudoc.map( { $.handle( $_ ) } )
@@ -121,21 +125,6 @@ class RakuDoc::Processor {
         }
         else { return 'Unknown type of AST' }
         $!current += $*prs;
-        # neither of the approaches below allow for multi-threading.
-        # both fail on xt/055-debug-vals, and -simple-render.
-## yields error with Numeric(ProcessedState:D) cant be resolved
-#        $ast.rakudoc.map( {
-#            $.handle( $_ );
-#            $!current += $*prs;
-#        }).hyper;
-## following yields a different set of errors to .hyper and is MUCH slower!
-#        # to get multithreading
-#        my @leaves;
-#        for $ast.rakudoc {
-#            @leaves.push: start { $.handle($_) };
-#        }
-#        await.allof( @leaves );
-#        $!current += $*prs;
         # placed semantic blocks now need triggering
         for $!register.list-unexpanded('semantic').kv -> $id, $spec {
             if $!current.semantics{$spec}:exists {
@@ -150,8 +139,6 @@ class RakuDoc::Processor {
         self.complete-footnotes;
         # P<toc:>, P<index:> may put PCells into body
         # so ToC and Index need to be rendered and any other PCells triggered
-        # toc may contain numbered captions, so the heading-numbers need to be calculated
-        self.complete-heading-numerations;
         $!current.rendered-toc = self.complete-toc( :spec( '*' ), :caption( $!current.source-data<toc-caption>));
         my @pcells = $!current.rendered-toc.has-PCells;
         if @pcells.elems {
@@ -183,6 +170,9 @@ class RakuDoc::Processor {
         if @pcells.elems {
             $!current.warnings.push( $_ ) for @pcells
         }
+        # add any possible numeration warnings
+        $!current.warnings.append: $!current.numeration-warnings;
+        $!current.warnings.append: $!scoped-data.numeration-warnings;
         $pre-finalised ?? $.current !! $.finalise
     }
 
@@ -307,28 +297,53 @@ class RakuDoc::Processor {
     }
     multi method handle(RakuAST::Doc::Block:D $ast) {
         my $prs := $*prs;
+        my $type = $ast.type;
         if $!scoped-data.verbatim {
             $prs.body ~= $ast.set-paragraphs( $ast.paragraphs.map({ $.handle($_) }) ).DEPARSE;
+            $!last-type = $type;
             return
         }
         # When a block is extended, then bare Str should be considered paragraphs
         my Bool $parify = ! ($ast.for or $ast.abbreviated);
-        my $type = $ast.type;
-        say "Doc::Block type: $type"
+        my $level = $ast.level:D ?? $ast.level !! 1;
+        say "Doc::Block type: $type (level $level)"
             ~ ( ' [for]' if $ast.for )
             ~ ( ' [abbreviated]' if $ast.abbreviated )
             ~ ( ' [extended]' if $parify )
             if $.debug (cont) BlockType;
+        # create config
+        my %config = $.merged-config( $ast, "$type$level" );
+        # All blocks have contents and may have TOC related metadata
+        # handle enumerated blocks
+        my $numerate = False;
+        if $type ~~ / 'num' (.+) $ / {
+            $type = ~ $0;
+            # by default numitem & numdefn appearing after the same type are continued
+            # unless explicitly continued or not continued
+            if $type ~~ <item defn para nested code input output>.any {
+                unless %config<continued>:exists {
+                    %config<continued> = ($type eq $!last-type)
+                }
+                $numerate = True
+            }
+            # create a warning if num is applied to a directive
+            elsif $type ~~ <alias begin end for place config finish row column>.any {
+                $prs.warnings.push: qq:to/WARN/;
+                'num' may not be prefixed to directive ｢$type｣.
+                WARN
+            }
+            else {
+                $numerate = True
+            }
+        }
         # When any block, other than =item or =defn, is started,
         # there may be a list of preceding items or defns, which need to be
         # completed and rendered
         $prs.body ~= $.complete-item-list unless $type eq 'item';
         $prs.body ~= $.complete-defn-list unless $type eq 'defn';
-        $prs.body ~= $.complete-numitem-list unless $type eq 'numitem';
-        $prs.body ~= $.complete-numdefn-list unless $type eq 'numdefn';
 
         # Not all Blocks create a new scope. Some change the current scope data
-        given $ast.type {
+        given $type {
             # First deal with directives. These are treated like blocks in AST
 
             # =alias
@@ -343,29 +358,15 @@ class RakuDoc::Processor {
             # Start a new column in a procedural table
             # =row
             # Start a new row in a procedural table
+            # In this renderer they are handled inside the Table routine, and are illegal outside it
             when any(<cell column row>) {
                 $prs.warnings.push: qq:to/WARN/;
-                The text ｢{ $ast.DEPARSE }｣ may not exist outside a 'table' block.
+                The directive ｢{ $ast.DEPARSE }｣ may not exist outside a 'table' block.
                 WARN
             }
-
-            # now handle enumerated blocks
-            # =numitem
-            # First-level numbered list item
-            # =numitemN
-            # Nth-level numbered list item
-            when 'numitem' { $.gen-numitem($ast, $parify) }
-            # =numdefn
-            when 'numdefn' { $.gen-defn($ast, :numerate) }
-            # =numhead
-            # First-level numbered heading
-            # =numheadN
-            # Nth-level numbered heading
-            # heading numeration is fixed when TOC is generated and all headers are known
-            when 'numhead' { $.gen-headish( $ast, $parify, :template<numhead>, :numerate) }
             # =place block, mostly mimics P<>, but allows for TOC and caption
             # =implicit code created by indenting, but by specification is treated as code
-            when 'implicit-code' { $.gen-paraish( $ast, 'code', $parify ) }
+            when 'implicit-code' { $.gen-paraish( $ast, %config, 'code', $level, $parify ) }
             # =code
             # =para block, as opposed to unmarked paragraphs in a block
             # not the same as a logical Doc::Paragraph, which has atoms, not paragraphs
@@ -377,28 +378,28 @@ class RakuDoc::Processor {
             # =output
             # Pre-formatted sample output
             when any(<code para nested input output>) {
-                $.gen-paraish( $ast, $ast.type, $parify )
+                $.gen-paraish( $ast, %config, $type, $level, $parify, $numerate )
             }
             # =comment
             # Content to be ignored by all renderers
             when 'comment' { '' }
             # =formula
             # Render content as LaTex formula
-            when 'formula' { $.gen-formula($ast) }
+            when 'formula' { $.gen-formula($ast, %config, $type, $level, $numerate) }
             # =head
             # First-level heading
             # =headN
             # Nth-level heading
-            when 'head' { $.gen-headish($ast, $parify) }
+            when 'head' { $.gen-head($ast, %config, $type, $level, $parify, $numerate) }
             # =item
             # First-level list item
             # =itemN
             # Nth-level list item
-            when 'item' { $.gen-item($ast, $parify) }
+            when 'item' { $.gen-item($ast, %config, $type, $level, $parify, $numerate) }
             # =defn
             # Definition of a term
-            when 'defn' { $.gen-defn($ast) }
-            when 'place' { $.gen-place($ast) }
+            when 'defn' { $.gen-defn($ast, %config, $type, $level, $numerate) }
+            when 'place' { $.gen-place($ast, %config, $type, $level) }
             # =rakudoc
             # No "ambient" blocks inside
             # could be called if P<> embeds a RakuDoc file
@@ -414,7 +415,7 @@ class RakuDoc::Processor {
                         $*prs.warnings.push: 'Attempting to embed more than five levels of rakudoc sources. Contents of deeper rakudoc blocks ignored.';
                     }
                 }
-                $.gen-rakudoc($ast, $parify) unless $rak-level > 5;
+                $.gen-rakudoc($ast, %config, $type, $level, $parify) unless $rak-level > 5;
                 $!scoped-data.end-scope;
                 $rak-level -= 1;
             }
@@ -423,37 +424,40 @@ class RakuDoc::Processor {
 #           when 'pod' { '' } # when rakudoc differs from pod
             # =section
             # Defines a section
+            # sectioin does not have its own output, so numsection has not meaning
             when 'section' {
                 $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
-                $.gen-section($ast, $parify);
+                $.gen-section($ast, %config, $type, $level, $parify);
                 $!scoped-data.end-scope;
             }
             # =table
             # Visual or procedural table
             when 'table' { #toc
                 $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
-                $.gen-table($ast);
+                $.gen-table($ast, %config, $type, $level, $numerate);
                 $!scoped-data.end-scope;
             }
             # RESERVED
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
-            when all($_.uniprops) ~~ / Lu / {  #toc
+            when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
                 $!scoped-data.start-scope( :starter($_) );
-                $.gen-semantics($ast, $parify);
+                $.gen-semantics($ast, %config, $type, $level, $parify, $numerate);
                 $!scoped-data.end-scope;
             }
             # CustomName
             # User-defined block
-            when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / { #toc
-                # in RakuDoc v2 a Semantic block must have mix of uppercase and lowercase letters
+            when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
+                # in RakuDoc v2 a custom block must have mix of uppercase and lowercase letters
                 $!scoped-data.start-scope( :starter($_) );
                 $!scoped-data.last-title( $_ );
-                $.gen-custom($ast, $parify);
+                $.gen-custom($ast, %config, $type, $level, $parify, $numerate);
                 $!scoped-data.end-scope;
             }
-            default { $.gen-unknown-builtin($ast) }
+            default { $.gen-unknown-builtin($ast, %config, $type, $level, $numerate) }
         }
+        # By setting last-type to type, item and numitem can be intermixed in the same list
+        $!last-type = $type;
     }
     # RakuDoc declarator block
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
@@ -858,12 +862,12 @@ class RakuDoc::Processor {
     multi method handle(RakuAST::Doc::Paragraph:D $ast ) {
         if $!scoped-data.verbatim {
             $ast.atoms.map({ $.handle($_) });
+            $!last-type = 'para';
             return
         }
         my $inline = $!scoped-data.last-starter eq 'table';
         my %config = $.merged-config($, 'para' );
-        my $rem = $.complete-item-list ~ $.complete-defn-list
-        ~ $.complete-numitem-list ~ $.complete-numdefn-list;
+        my $rem = $.complete-item-list ~ $.complete-defn-list;
         do {
             my ProcessedState $*prs .= new;
             for $ast.atoms { $.handle($_) }
@@ -892,6 +896,7 @@ class RakuDoc::Processor {
             $prs.body ~= $rv;
             CALLERS::<$*prs> += $prs;
        }
+        $!last-type = 'para';
     }
     multi method handle(RakuAST::Doc::LegacyRow:D $ast) {
         $*prs.warnings.push: qq:to/WARN/;
@@ -936,21 +941,11 @@ class RakuDoc::Processor {
 
     #| generic code for next, para, code, input, output blocks
     #| No ToC content is added unless overridden by toc/caption/headlevel
-    method gen-paraish( $ast, $template, $parify ) {
-        my %config = $.merged-config( $ast, $template);
-        if %config<toc> {
-            my $caption = %config<caption> // $template.tc;
-            my $level = %config<headlevel> // 1;
-            $level = 1 if $level < 1;
-            my $numeration = '';
-            my $target = %config<id> // $.name-id($caption);
-            $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target );
-            %config<target> = $target;
-        }
+    method gen-paraish( $ast, %config, $type, $level, $parify, $numerate ) {
         my PStr $contents .= new;
-        $!scoped-data.start-scope(:starter($template), :verbatim )
-            if $template ~~ any(<code implicit-code input output>);
-        if $template eq 'code' {
+        $!scoped-data.start-scope(:starter($type), :verbatim )
+            if $type ~~ any(<code input output>);
+        if $type eq 'code' {
             if %config<allow>:exists {
                 %config<in_code_context> = True;
                 my %*ALLOW = %config<allow>
@@ -965,42 +960,88 @@ class RakuDoc::Processor {
         else {
             $contents ~= $.contents($ast, $parify);
         }
+        my $numeration = '';
+        if $numerate {
+            %config<continued>
+                    ?? $!scoped-data.numeration-inc('item',$level)
+                    !! $!scoped-data.numeration-reset('item');
+            $numeration = %config<form>:exists
+                    ?? $!scoped-data.numeration('item').numform(:form(%config<form>), :$contents, :$type)
+                    !! $!scoped-data.numeration('item').Str ~ " $contents";
+        }
+        if %config<toc> {
+            my $caption = %config<caption> // $type.tc;
+            my $level = %config<headlevel> // 1;
+            $level = 1 if $level < 1;
+            my $target = %config<id> // $.name-id($caption);
+            $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target );
+            %config<target> = $target;
+        }
         my Bool $is-in-heading = $!scoped-data.in-head.so;
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
-        $contents ~= $.complete-numitem-list;
-        $contents ~= $.complete-numdefn-list;
-        $*prs.body ~= %!templates{ $template }(
-            %( :$contents, :$is-in-heading, %config)
+        $*prs.body ~= %!templates{ $type }(
+            %( :$contents, :$is-in-heading, :$numeration, %config)
         );
-        $!scoped-data.end-scope if $template ~~ any( <code implicit-code input output> )
+        $!scoped-data.end-scope if $type ~~ any( <code input output> )
     }
     #| A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption
-    #| These can be set by a config directive
+    #| toc and caption can be set by a config directive,
+    #| headlevel cannot because it should be set by the head level itself
     #| The id option may be used to create a target
     #| An automatic target is also created from the contents
-    method gen-headish($ast, $parify, :$template = 'head', :$numerate = False ) {
+    #| A numhead is generated when numerate is True
+    method gen-head($ast, %config, $type, $level, $parify, $numerate ) {
         # stringify ast for internal use
         # set up data for embedded markup in header, eg., X
-        my $title = textify-head($ast);
-        my $target = $.name-id($title);
-        $!scoped-data.start-scope(:starter('head'), :$title ) if $parify;
+        my $textified = textify-head($ast);
+        my $target = $.name-id($textified);
+        $!scoped-data.start-scope(:starter('head'), :$textified ) if $parify;
         # must set in-head in case of other inner scopes.
         $!scoped-data.in-head = $target;
+        # P<> markup is not expected in a heading
         my $contents = $.contents($ast, $parify).strip.trim.Str;
         my $prs := $*prs;
-        my $level = $ast.level > 1 ?? $ast.level !! 1;
-        my %config = $.merged-config($ast,($template ~ $level) );
+        my Numeration $counter := $!current.get-counter('head');
+        # The heading counter is incremented whether or not it is a numhead.
+        $counter.inc($level);
         my $caption = %config<caption>:delete;
-        $caption = $contents without $caption;
+        #| When numeration is required, numerate will be True
+        #| Then the specification requires
+        #| :form to have a (default) value
+        #| :numalias may be set, in which case the Tag will refer to the numeration value
+        #| evaluated according to the string following | if it exists
+        #| :form has a default for each block type, but use Str of counter when not in =config
+        #| :number changes the numeration
+        #| :!continued
+        my $numeration = '';
+        if $numerate {
+            my $form = '';
+            if %config<number>:exists {
+                $counter.set($level, %config<number>)
+            }
+            $counter.reset if %config<continued><> === False;
+            # handle numeration, which requires caption and contents to be different
+            if %config<form>:exists {
+                $numeration = $counter.numvalue(:form( %config<form>, :$contents, :$caption, :$type))
+            }
+            else {
+                $numeration =
+                    ($counter.Str but FieldType('N'),
+                    $contents but FieldType('C'))
+            }
+            # handle numalias
+            help-numalias(%config, $counter) if %config<numalias>:exists;
+        }
         # allow internal X<> to have the final rendered title
-        $!register.add-payload(:payload($caption), :id( $target ) );
+        $!register.add-payload(:payload($contents), :id( $target ) );
         # set the last title for paragraphs following the title
-        $!scoped-data.last-title( $caption );
+        $!scoped-data.last-title( $contents );
         my $id = %config<id>:delete ;
         with $id {
             if self.is-target-unique( $_ ) {
                 $id = self.register-target( $_ );
+                $!register.add-payload(:payload($contents), :id( $id ) );
             }
             else {
                 $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣")
@@ -1008,22 +1049,9 @@ class RakuDoc::Processor {
             }
         }
         else { $id = '' }
-        # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
-        $level = %config<headlevel> if %config<headlevel>:exists;
-        $level = 1 if $level < 1;
-        # numeration is attached to contents first
-        my $numeration = '';
-        if $numerate {
-            $numeration ~= PCell.new( :$!register, :id('heading_' ~ $target ) );
-            $prs.head-numbering.push: ['heading_' ~ $target, $level ];
-        }
-        my $toc = %config<toc>:delete // True;
-        # attach numeration to caption and contents separately, allowing template
-        # developer to add numeration to caption if wanted by changing the template
-        $prs.toc.push(
-            { :$caption, :$target, :$level, :$numeration }
-        ) if $toc;
-        $prs.body ~= %!templates{ $template }(
+        $caption = $contents unless $caption;
+        self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, $numeration);
+        $prs.body ~= %!templates{'head'}(
             %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
         );
         $!scoped-data.in-head = '';
@@ -1032,16 +1060,20 @@ class RakuDoc::Processor {
     #| Formula at level 1 is added to ToC unless overriden by toc/headlevel/caption
     #| Content is passed verbatim to template as formula
     #| An alt text is also generated
-    method gen-formula($ast) {
-        my %config = $.merged-config( $ast, 'formula' );
-        my $formula = $.contents( $ast, False ); # do not treat strings paragraphs
-        my $raw = $ast.paragraphs.Str.join; # also create a raw version for other renderers
+    method gen-formula($ast, %config, $type, $level, $numerate) {
+        my $formula = $.contents( $ast, False );
+        # do not treat strings as paragraphs
+        my $raw = $ast.paragraphs.Str.join;
+        # also create a raw version for other renderers
         my $prs := $*prs;
         my $alt = %config<alt>:delete // 'Formula cannot be rendered';
-        my $caption = %config<caption>:delete // 'Formula';
+        my $caption = %config<caption>:delete // $type;
         my $target = $.name-id($alt);
         my $id = %config<id>:delete;
-        my $numeration = ''; # TODO allow for TABLE and FORMULA numeration
+        $level = 1 if $level < 1;
+        my Numeration $counter := $!current.get-counter($type);
+        $counter.inc($level);
+        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
         with $id {
             if self.is-target-unique( $_ ) {
                 $id = self.register-target( $_ );
@@ -1051,39 +1083,29 @@ class RakuDoc::Processor {
                 if %config<error>
             }
         }
-        # level is over-ridden if headlevel is set, eg =for head2 :headlevel(3)
-        my $level = %config<headlevel> // 1;
-        $level = 1 if $level < 1;
-        my $toc = %config<toc>:delete // True;
-        # attach numeration to caption and contents separately, allowing template
-        # developer to add numeration to caption if wanted by changing the template
-        $prs.toc.push(
-            { :$caption, :$target, :$level, :$numeration }
-        ) if $toc;
+        self.help-toc(%config<toc>:delete // False, $prs, $caption, $target, $level, $numeration);
         $prs.body ~= %!templates<formula>(%(:$raw, :$formula, :$alt, :$target, :$caption, :$level, :$numeration, :$id, %config ) )
     }
     #| generates a single item and adds it to the item structure
     #| nothing is added to the .body string
     #| bullet strategy can be left to template, with bullet in %config
-    method gen-item($ast, $parify) {
-        my $level = $ast.level > 1 ?? $ast.level !! 1;
+    method gen-item($ast, %config, $type, $level, $parify, $numerate) {
         my $contents = $.contents($ast, $parify);
-        my %config = $.merged-config($ast, 'item' ~ $level );
+        my $numeration;
+        if $numerate {
+            %config<continued>
+                ?? $!scoped-data.numeration-inc('item',$level)
+                !! $!scoped-data.numeration-reset('item');
+            if %config<form>:exists {
+                $numeration ~= $!scoped-data.numeration('item').numform(:form(%config<form>), :$contents, :$type)
+            }
+            else {
+                $numeration ~= $!scoped-data.numeration('item').Str ~ ' ' ~ $contents.clone;
+            }
+        }
         $*prs.items.push: %!templates<item>(
-            %( :$level, :$contents, %config )
-        )
-    }
-    #| generates a single numitem and adds it to the numitem structure
-    #| nothing is added to the .body string
-    method gen-numitem($ast, $parify) {
-        my $level = $ast.level > 1 ?? $ast.level !! 1;
-        my $contents = $.contents($ast, $parify);
-        my %config = $.merged-config($ast, 'numitem' ~ $level );
-        $!scoped-data.item-reset unless ($*prs.numitems.elems or %config<continued>);
-        my $numeration = $!scoped-data.item-inc($level);
-        $*prs.numitems.push: %!templates<numitem>(
             %( :$level, :$contents, :$numeration, %config )
-        )
+        );
     }
     #| generates a single definition and adds it to the defn structure
     #| unlike item, a defn:
@@ -1092,10 +1114,9 @@ class RakuDoc::Processor {
     #| - needs a target for links, and text for popup
     #| - is PCell-stored allowing for defn to be redefined
     #| like items nothing is added to the .body string until next non-defn
-    method gen-defn($ast, :$numerate = False) {
+    method gen-defn($ast, %config, $type, $level, $numerate) {
         my $term;
         my $defn-expansion;
-        my %config = $.merged-config($ast, $numerate ?? 'numdefn' !! 'defn');
         if $ast.paragraphs.elems == 2 {
             $term = $ast.paragraphs[0].Str.trim; # the term may not contain embedded code
             $defn-expansion = $ast.paragraphs[1];
@@ -1122,20 +1143,19 @@ class RakuDoc::Processor {
             CALLERS::<$*prs> += $prs;
         }
         my $prs := $*prs;
+        my $numeration = '';
         if $numerate {
-            $!scoped-data.defn-reset unless ($prs.numdefns.elems or %config<continued>);
-            my $numeration = $!scoped-data.defn-inc;
-            $defn-expansion = %!templates<numdefn>(
-                %( :$term, :$target, :$contents, :$numeration, %config )
-            );
-            $prs.numdefns.push: $defn-expansion
+            %config<continued>
+                ?? $!scoped-data.numeration-inc('defn',$level)
+                !! $!scoped-data.numeration-reset('defn');
+            $numeration = %config<form>:exists
+                ?? $!scoped-data.numeration('defn').numform(:form(%config<form>), :$contents, :$type)
+                !! $!scoped-data.numeration('defn').Str ~ " $contents";
         }
-        else {
-            $defn-expansion = %!templates<defn>(
-                %( :$term, :$target, :$contents, %config )
-            );
-            $prs.defns.push: $defn-expansion; # for the defn list to be render
-        }
+        $defn-expansion = %!templates<defn>(
+            %( :$term, :$target, :$contents, :$numeration, %config )
+        );
+        $prs.defns.push: $defn-expansion; # for the defn list to be render
         $prs.warnings.push(
             "Definition ｢$term｣ has been redefined"
             ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
@@ -1147,8 +1167,7 @@ class RakuDoc::Processor {
     }
     #| A place block adds Place at level 1 to ToC unless toc/headlevel/caption set
     #| The contents of Place is a URI that is generated and then rendered with place template
-    method gen-place($ast) {
-        my %config = $.merged-config( $ast, 'place');
+    method gen-place($ast, %config, $type, $level) {
         my $uri = %config<uri>:delete;
         unless %config<caption>:exists {
             if $uri ~~ / 'semantic:' (.+) / {
@@ -1157,7 +1176,7 @@ class RakuDoc::Processor {
             else { %config<caption> = 'Placement' }
         }
         my $caption = %config<caption>;
-        my $level = %config<headlevel> // 1;
+        $level = %config<headlevel> if %config<headlevel>:exists;
         $!scoped-data.last-title($caption);
         my $target = %config<target> = $.name-id($caption);
         with %config<id> {
@@ -1169,10 +1188,7 @@ class RakuDoc::Processor {
                 if %config<error>
             }
         }
-        my $toc = %config<toc> // True;
-        $*prs.toc.push(
-            { :$caption, :$target, :$level }
-        ) if $toc;
+        self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, '');
         $.make-placement(:$uri, :%config, :template<place>);
     }
     method make-placement( :$uri, :%config, :$template ) {
@@ -1273,27 +1289,23 @@ class RakuDoc::Processor {
     #| Config data associated with block is provided to overall process state
     #| If a rakudoc file is embedded via place, then another rakudoc block
     #| will be called. Only allow embedding to three levels to avoid circularity.
-    method gen-rakudoc($ast, $parify) {
-        my %config = $ast.resolved-config;
+    method gen-rakudoc($ast, %config, $type, $level, $parify) {
         # make sure these defaults exist
         %config<toc> = True unless %config<toc>:exists;
         %config<index> = True unless %config<index>:exists;
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $parify);
         # render any tailing lists
-        $contents ~= $.complete-item-list ~ $.complete-defn-list
-        ~ $.complete-numitem-list ~ $.complete-numdefn-list;
+        $contents ~= $.complete-item-list ~ $.complete-defn-list;
         $*prs.body ~= %!templates<rakudoc>( %( :$contents, %config ) );
     }
     #| A section is invisible to ToC, but is used by scoping
     #| Some output formats may want to handle section, so
     #| embedded RakuDoc are rendered and contents rendered by section template
-    method gen-section($ast, $parify) {
-        my %config = $.merged-config($ast, 'section');
+    method gen-section($ast, %config, $type, $level, $parify) {
         my $contents = $.contents($ast, $parify);
         # render any tailing lists
-        $contents ~= $.complete-item-list ~ $.complete-defn-list
-        ~ $.complete-numitem-list ~ $.complete-numdefn-list;
+        $contents ~= $.complete-item-list ~ $.complete-defn-list;
         my $id = '';
         with %config<id> {
             if self.is-target-unique( $_ ) {
@@ -1311,9 +1323,8 @@ class RakuDoc::Processor {
     #| Table is a captionless paragraph and not added to ToC
     #| unless overriden by toc/headlevel/caption
     #| contents is processed and rendered using table template
-    multi method gen-table($ast) {
-        my %config = $.merged-config($ast, 'table');
-        my $caption = %config<caption>:delete // '';
+    multi method gen-table($ast, %config, $type, $level, $numerate) {
+        my $caption = %config<caption>:delete // $type;
         my $prs := $*prs;
         my $target = $.name-id($caption) if $caption;
         $!scoped-data.last-title( $target );
@@ -1326,20 +1337,13 @@ class RakuDoc::Processor {
                 $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣") if %config<error>
             }
         }
-        my $level = %config<headlevel> // 1 ;
+        # headlevel is deprecated but may exist rarely for table
+        $level = %config<headlevel> if %config<headlevel>:exists ;
         $level = 1 if $level < 1;
-        # numeration is attached to contents first
-        my $numeration = '';
-        if %config<numerate> {
-            $numeration ~= PCell.new( :$!register, :id('table_' ~ $target ) );
-            $prs.head-numbering.push: ['table_' ~ $target, $level ];
-        }
-        my $toc = %config<toc>:delete // False;
-        # attach numeration to caption and contents separately, allowing template
-        # developer to add numeration to caption if wanted by changing the template
-        $prs.toc.push(
-            { :$caption, :$target, :$level, :$numeration }
-        ) if $toc;
+        my Numeration $counter := $!current.get-counter($type);
+        $counter.inc($level);
+        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
+        self.help-toc(%config<toc>:delete // False, $prs, $caption, $target, $level, $numeration);
         my Bool $procedural = $ast.visual-table.not;
         my @grid;
         my @headers;
@@ -1495,28 +1499,26 @@ class RakuDoc::Processor {
     #| A lower case block generates a warning
     #| DEPARSED Str is rendered with 'unknown' template
     #| Nothing added to ToC
-    method gen-unknown-builtin($ast) {
-        my %config = $.merged-config( $ast, '*' );
+    method gen-unknown-builtin($ast, %config, $type, $level, $numerate) {
         my $contents = $ast.DEPARSE;
         my $prs := $*prs;
-        if $ast.type ~~ any(<
+        if $type ~~ any(<
                 cell code input output comment head numhead defn item numitem nested para
                 rakudoc section pod table formula
             >) { # a known built-in, but to get here the block is unimplemented
             $prs.warnings.push(
-                '｢' ~ $ast.type ~ '｣'
-                ~ 'is a valid, but unimplemented builtin block'
+                "｢$type｣ is a valid, but unimplemented builtin block"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
                 if %config<error>
         }
         else { # not known so create another warning
             $prs.warnings.push(
-                '｢' ~ $ast.type ~ '｣' ~ ' is not a valid builtin block, is it a misspelt Custom block?'
+                "｢$type｣ is not a valid builtin block, is it a misspelt Custom block?"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
                 ) if %config<error>
         }
         my $target = $.name-id($ast.type);
-        $prs.body ~= %!templates<unknown>( %( :$contents, :block-name($ast.type), :$target ) )
+        $prs.body ~= %!templates<unknown>( %( :$contents, :block-name($type), :$target ) )
     }
     #| Semantic blocks defined by spelling
     #| embedded content is rendered and passed to template as contents
@@ -1525,20 +1527,21 @@ class RakuDoc::Processor {
     #| Unless :hidden, Block name is added to ToC at level 1, unless overriden by toc/caption/headlevel
     #| TITLE & SUBTITLE by default :hidden is True and added to $*prs separately
     #| All other SEMANTIC blocks are :!hidden by default
-    method gen-semantics($ast, $parify) {
-        my $block-name = $ast.type;
-        my %config = $.merged-config($ast, $block-name);
-        $!scoped-data.last-title( $block-name );
+    method gen-semantics($ast, %config, $type, $level, $parify, $numerate) {
+        $!scoped-data.last-title( $type );
         # treat all semantic blocks as a heading level 1 unless otherwise specified
-        my $caption = %config<caption> // $block-name;
-        my $level = %config<headlevel> // 1;
+        my $caption = %config<caption> // $type;
+        $level = %config<headlevel> if %config<headlevel>:exists;
         my $hidden;
         my $contents = $.contents($ast, $parify).trim;
-        $contents ~= $.complete-item-list ~ $.complete-defn-list
-            ~ $.complete-numitem-list ~ $.complete-numdefn-list;
+        $contents ~= $.complete-item-list ~ $.complete-defn-list;
         my $prs := $*prs;
+        $level = 1 if $level < 1;
+        my Numeration $counter := $!current.get-counter($type);
+        $counter.inc($level);
+        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
         my $rv;
-        given $ast.type {
+        given $type {
             when 'TITLE' {
                 $hidden = True; # hide by default
                 $hidden = $_ with %config<hidden>;
@@ -1546,10 +1549,10 @@ class RakuDoc::Processor {
                 my $target = $!current.title-target = $.name-id( $contents.Str);
                 # allows for TITLE to have its own template
                 if %!templates<TITLE>:exists {
-                    $rv = %!templates<TITLE>( %( :$level, :$contents, :$caption, :$target, %config ) )
+                    $rv = %!templates<TITLE>( %( :$level, :$contents, :$caption, :$target, :$numeration, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, :$hidden, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, :$hidden, :$numeration, %config ) )
                 }
             }
             when 'SUBTITLE' {
@@ -1558,18 +1561,18 @@ class RakuDoc::Processor {
                 $!current.subtitle = $contents.Str;
                 my $target = $.name-id($contents.Str);
                 if %!templates<SUBTITLE>:exists {
-                    $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, :$target, :$hidden, %config ) )
+                    $rv = %!templates<SUBTITLE>( %( :$level, :$contents, :$caption, :$target, :$hidden, :$numeration, %config ) )
                 }
                 else {
-                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, :$hidden, %config ) )
+                    $rv = %!templates<semantic>( %( :$level, :$contents, :$caption, :$target, :$hidden, :$numeration, %config ) )
                 }
             }
             default {
                 $hidden = %config<hidden>.so // False;
                 # other SEMANTIC by default rendered in place
                 # allows for a plugin to add a SEMANTIC blockname to templates
-                my $template = %!templates{ $block-name }:exists ?? $block-name !! 'semantic';
-                my $target = $.name-id($block-name);
+                my $template = %!templates{ $type }:exists ?? $type !! 'semantic';
+                my $target = $.name-id($type);
                 my $id = '';
                 with %config<id> {
                     if self.is-target-unique( $_ ) {
@@ -1578,22 +1581,23 @@ class RakuDoc::Processor {
                     }
                     else {
                         $prs.warnings.push(
-                            "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣"
+                            "Attempt to register already existing id ｢$_｣ as new target in ｢$type｣"
                             ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
                             ) if %config<error>
                     }
                 }
                 $rv = %!templates{$template}(
-                    %( :$level, :$caption, :$hidden, :$target, :$contents, :$id, %config )
+                    %( :$level, :$caption, :$hidden, :$target, :$contents, :$id, :$numeration, %config )
                 );
-                $prs.toc.push(  %( :$caption, :$target, :$level ) ) unless $hidden;
+                self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, $numeration);
+                unless $hidden;
             }
         }
-        $prs.semantics{ $block-name } = [] unless $prs.semantics{ $block-name }:exists;
-        $prs.semantics{ $block-name }.push: $rv;
+        $prs.semantics{ $type } = [] unless $prs.semantics{ $type }:exists;
+        $prs.semantics{ $type }.push: $rv;
         $prs.body ~= $rv unless $hidden;
     }
-    method gen-custom($ast, $parify) {
+    method gen-custom($ast, %config, $type, $level, $parify, $numerate) {
         # Custom blocks are defined by their spelling
         # - the block name is added to ToC at level 1 unless changed by toc/caption/headlevel
         # If a template exists with the block name
@@ -1603,13 +1607,12 @@ class RakuDoc::Processor {
         # - the block content is rendered as verbatim text
         # - the content is rendered with 'unknown' template
         # - a warning is issued
-        my $block-name = $ast.type;
-        my %config = $.merged-config( $ast, $block-name);
         my $prs := $*prs;
-        my $caption = %config<caption>:delete // $block-name;
-        my $level = %config<headlevel>:delete // 1;
+        my $caption = %config<caption>:delete // $type;
         $level = 1 if $level < 1;
-        my $numeration = '';
+        my Numeration $counter := $!current.get-counter($type);
+        $counter.inc($level);
+        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
         my $id = '';
         with %config<id> {
             if self.is-target-unique( $_ ) {
@@ -1618,22 +1621,17 @@ class RakuDoc::Processor {
             }
             else {
                 $prs.warnings.push(
-                    "Attempt to register already existing id ｢$_｣ as new target in ｢$block-name｣"
+                    "Attempt to register already existing id ｢$_｣ as new target in ｢$type｣"
                     ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
                 ) if %config<error>
             }
         }
         my $target = %config<id>:delete // $.name-id($caption);
-        my $toc = %config<toc>:delete // True;
-        # attach numeration to caption and contents separately, allowing template
-        # developer to add numeration to caption if wanted by changing the template
-        $prs.toc.push(
-            { :$caption, :$target, :$level, :$numeration }
-        ) if $toc;
-        if %!templates{ $block-name }:exists {
+        self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, $numeration);
+        if %!templates{ $type }:exists {
             my $contents = $.contents( $ast, $parify );
             my $raw = $ast.paragraphs.Str.join;
-            $prs.body ~= %!templates{ $block-name }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, :$toc, %config ) )
+            $prs.body ~= %!templates{ $type }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, :$toc, :$numeration, %config ) )
         }
         else {
             # by spec, the name of an unrecognised Custom is treated like =head1
@@ -1641,17 +1639,19 @@ class RakuDoc::Processor {
             my $contents = $ast.DEPARSE;
             $contents = %config<alt> if %config<alt>:exists;
             $prs.warnings.push(
-            "No template exists for custom block ｢$block-name｣. It has been rendered as unknown"
+            "No template exists for custom block ｢$type｣. It has been rendered as unknown"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
             ) if %config<error>;
-            $prs.body ~= %!templates<unknown>( %( :$contents, :$block-name, :$target, :$caption) )
+            $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$target, :$caption, :$numeration ) )
         }
     }
     # directive type methods
     method manage-config($ast) {
         my %options = $ast.resolved-config;
         my $name = $ast.paragraphs[0].Str;
-        $name = $name ~ '1' if $name eq <item head numitem numhead>.any;
+        # all blocks without a level are assumed to be level 1
+        # do not add 1 if just one letter == markup code
+        $name = $name ~ '1' if $name ~~ / .\D $ /;
         $!scoped-data.config( { $name => %options } );
     }
     method manage-alias($ast) {
@@ -1665,14 +1665,105 @@ class RakuDoc::Processor {
             my $expansion = $prs.body.trim-trailing;
             $expansion ~= $.complete-item-list;
             $expansion ~= $.complete-defn-list;
-            $expansion ~= $.complete-numitem-list;
-            $expansion ~= $.complete-numdefn-list;
             $!scoped-data.aliases{ $term } = $expansion;
             $prs.body .= new;
             CALLERS::<$*prs> += $prs;
         }
         else {
             $prs.warnings.push("Invalid alias ｢{ $ast.Str }｣") if %config<error>
+        }
+    }
+    # helper methods
+    method help-numerate($level, $caption, $counter, %config) {
+        my $form = '';
+        if %config<sequence>:exists {
+            $counter .= clone;
+            for %config<sequence>.list -> $cntr {
+                if $cntr.trim ~~ / (\D+) (\d*) $ / {
+                    my $c-type = $/[0];
+                    my $c-level = $/[1] // 1;
+                    my $base = $!current.get-counter($c-type);
+                    $n-counter.set( $lev, $base.part($c-level) )
+                }
+            }
+        }
+        if %config<number>:exists {
+            $counter.set($level, %config<number>)
+        }
+        $counter.reset if %config<continued><> === False;
+        # handle numeration
+        if %config<form>:exists {
+            $numeration = $counter.numvalue(:form( %config<form>, :$contents, :$caption, :$type))
+        }
+        else {
+            $caption = $contents without $caption;
+            $numeration =
+                (
+                $type.tc but FieldType('T'),
+                $counter.Str but FieldType('N')
+                )
+        }
+        # handle numalias
+        self.help-numalias(%config, $counter) if %config<numalias>:exists;
+    }
+    method help-numalias( %config, $counter )  {
+        if %config<numalias> ~~ /
+        ^ $<disp> = (.*) '|' $<tag> = (.+) $
+        | ^ $<tag> = (.+) $
+        / {
+            my $tag = ~$<tag>.trim;
+            my $expansion = '';
+            # if the option value was set in a =config and there is no TAG in this block
+            # then TAG will be set to *, so ignore the option
+            if $<disp>:exists {
+                if  $tag eq '*' {}
+                elsif $<disp>.Str { # disp has a non-blank Str value and tag has a value, so disp over-rides config
+                    $expansion = $counter.numvalue(:form( ~$<disp> ), :$caption, :$contents, :$type)
+                }
+                else { # process as default when a TAG is set but disp is blank str, so over-riding any config
+                    $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'));
+                }
+            }
+            else { #so only TAG is set
+                if $!scoped-data.config{"$type$level"}<numalias> -> $c-disp { #check to see if a config specs a numalias
+                    if $c-disp ~~ / ^ $<disp> = (.*) '|' \s* '*' \s* $ / {
+                        $expansion = $counter.numvalue(:form( ~$<disp>), :$caption, :$contents, :$type)
+                    }
+                    else {
+                        $prs.warnings.push: "Mal-formed config declaration of numalias ｢$c-disp｣"
+                    }
+                }
+                else { # process as default when a TAG is set but disp is blank str, so over-riding any config
+                    $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'))
+                }
+            }
+            if $expansion {
+                $!scoped-data.aliases{ $tag } = $expansion
+            }
+        }
+        else {
+            $prs.warnings.push: "Mal-formed numalias ｢{ %config<numalias> }｣"
+        }
+    }
+    method help-toc($toc,$prs, $caption, $target, $level, $numeration) {
+        if $toc {
+            if $toc.isa(Seq) {
+                $toc.map({
+                    $_ eq '*' ??
+                    $prs.toc.push(
+                            { :toc-type<head>, :$caption, :$target, :$level, :$numeration }
+                            )
+                    !!
+                            $prs.toc.push(
+                                    { :toc-type($_), :$caption, :$target, :$level, :$numeration }
+                                    )
+                })
+            }
+            else {
+                $prs.toc.push(
+                        { :toc-type<head>, :$caption, :$target, :$level, :$numeration }
+                        )
+            }
         }
     }
     ## completion methods
@@ -1718,25 +1809,33 @@ class RakuDoc::Processor {
         PStr.new( @index-list.elems ?? %!templates<index>( %(:@index-list, :$caption ))
                                     !! '')
     }
-    #| renders the complete toc
+    #| renders the toc objects
     method complete-toc( :$spec, :$caption --> PStr ) {
         my Set $levels;
-        if $spec eq '*' { $levels .=new: (^10).list }
-        else { $levels .= new: $spec.EVAL.list }
-        my @toc-list = gather for $!current.toc -> $toc-entry {
-            take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ +$toc-entry<level> }
+        my $toc-type = 'head';
+        if $spec ~~ /
+        ^ $<toc-type>=\w+ ',' $<range>= ['*' | \d '..' \d+ | \d] $
+        | ^ $<range>= ['*' | \d '..' \d+ | \d] $
+        | ^ $<toc-type>=\w+ $
+        / {
+            with $<toc-type> {
+                $toc-type = ~$_
+            }
+            with $<range> {
+                $levels .= new: $spec.EVAL.list
+            }
+            else {
+                $levels .=new: (^10).list
+            }
+            my @toc-list = gather for $!current.toc.grep({ .<toc-type> eq $toc-type }) -> $toc-entry {
+                take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ +$toc-entry<level> }
+            }
+            PStr.new( @toc-list.elems ?? %!templates<toc>( %(:@toc-list, :toc( $!current.toc.grep({ .<toc-type> eq $toc-type })), :$caption ) )
+                                      !! '' )
         }
-        PStr.new( @toc-list.elems ?? %!templates<toc>( %(:@toc-list, :toc( $!current.toc), :$caption ) )
-                                  !! '' )
-    }
-    #| finalises all the heading numerations
-    method complete-heading-numerations() {
-        return unless $*prs.head-numbering.elems;
-        my Numeration $heads .= new;
-        for $*prs.head-numbering -> ( $id, $level  ) {
-            my $payload;
-            $payload = $heads.inc( $level ).Str if $id.starts-with('heading');
-            $!register.add-payload( :$payload, :$id )
+        else {
+            $!current.warnings.push: "The place toc:spec ｢$spec｣ is mal-formed. Placement ignored.";
+            PStr.new: '';
         }
     }
     #| finalises rendering of the item list in $*prs
@@ -1755,24 +1854,6 @@ class RakuDoc::Processor {
             %( :defn-list($*prs.defns), )
         );
         $*prs.defns = ();
-        $rv
-    }
-    #| finalises rendering of the item list in $*prs
-    method complete-numitem-list() {
-        return '' unless $*prs.numitems.elems;
-        my $rv = %!templates<numitem-list>(
-            %( :numitem-list($*prs.numitems), )
-        );
-        $*prs.numitems = ();
-        $rv
-    }
-    #| finalises rendering of a defn list in $*prs
-    method complete-numdefn-list() {
-        return '' unless $*prs.numdefns.elems;
-        my $rv = %!templates<numdefn-list>(
-            %( :numdefn-list($*prs.numdefns), )
-        );
-        $*prs.numdefns = ();
         $rv
     }
     # helper methods
@@ -1991,16 +2072,10 @@ class RakuDoc::Processor {
             },
             #| renders =head block
             head => -> %prm, $tmpl {
-                my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                my $del = %prm<delta> // '';
-                "\n" ~ ' ' x $indent  ~ HEADING-ON ~ BOLD-ON ~ %prm<contents> ~ BOLD-OFF ~ HEADING-OFF ~
-                "\n" ~ $del
-            },
-            #| renders =numhead block
-            numhead => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                my $title = %prm<numeration> ~ ' ' ~ %prm<contents>;
+                my $title = %prm<contents>;
+                $title = %prm<numeration> if %prm<numeration>;
                 "\n" ~ ' ' x $indent ~ HEADING-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  HEADING-OFF ~
                 "\n" ~ $del
             },
@@ -2020,38 +2095,27 @@ class RakuDoc::Processor {
             },
             #| renders =defn block
             defn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
+                DEFN-TERM-ON ~ (%prm<numeration> ?? (%prm<numeration> ~ ' ') !! '') ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
                 DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
             },
-            #| renders =numdefn block
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { [~] %prm<defn-list> },
-            #| special template to render a numbered defn list data structure
-            numdefn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ %prm<numeration> ~ ' ' ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
-            },
-            #| special template to render a numbered item list data structure
-            numdefn-list => -> %prm, $tmpl { [~] %prm<numdefn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
-                my $num = %prm<level> - 1;
-                my $indent = ' ' x %prm<level>;
-                $num = @bullets.elems - 1 if $num >= @bullets.elems;
-                my $bullet = %prm<bullet> // @bullets[ $num ];
-                $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "\n"
+                if %prm<numeration> {
+                    %prm<numeration> ~ ' ' ~ %prm<contents> ~ "\n"
+                }
+                else {
+                    my $num = %prm<level> - 1;
+                    my $indent = ' ' x %prm<level>;
+                    $num = @bullets.elems - 1 if $num >= @bullets.elems;
+                    my $bullet = %prm<bullet> // @bullets[$num];
+                    $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "\n"
+                }
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
                 [~] %prm<item-list>
-            },
-            #| renders =numitem block
-            numitem => -> %prm, $tmpl {
-                %prm<numeration> ~ ' ' ~ %prm<contents> ~ "\n"
-            },
-            #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl {
-                [~] %prm<numitem-list>
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {

@@ -51,6 +51,12 @@ be available by default.
 
 The set of template keys needed to create a renderer is L<tabulated here|default-text-templates>.
 
+All blocks make be prefixed by C<num>. The renderer handles the enumeration before handling the block.
+The I<num> handling sets the config variable C<numeration>, which is the enumeration string as defined
+by the specification.
+
+Consequently, all block templates need to handle the numeration value, which is '' for non-I<num> blocks.
+
 All aspects of the output can be defined using the templates.
 
 =head Process
@@ -93,6 +99,9 @@ no references of its own, AND the index is constrained to some level, then the l
 without a link to the body of the text. The renderer provides an ordered list of items. It is for the
 template to determine whether to filter 'empty' labels.
 =end item
+
+=item I<numitem> and I<numdefn> counters are reset if the next C<=block> is not the same type.
+This behaviour is extended to I<para> and I<nested>.
 
 =head Warnings
 
