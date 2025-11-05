@@ -115,7 +115,7 @@ class RakuDoc::Processed is ProcessedState {
     has Hash %.links;
     has %.counters =
         head => Numeration.new,
-        ;
+    ;
     #| Rendered version of the ToC
     has $.rendered-toc is rw;
     #| Rendered version of the Index
@@ -148,17 +148,10 @@ class RakuDoc::Processed is ProcessedState {
             my @allowed = <code para nested input output formula table>;
             # add a new type, but type must be an existing built it, or a custom
             # otherwise generate a warning, but use as.
-            @!warnings.push: "Use of improper block name for counter ｢$type｣. To remove this warning, use one of @allowed or a custom name with mixed case, eg. {$type.tc} ."
+            @.warnings.push: "Use of improper block name for counter ｢$type｣. To remove this warning, use one of @allowed or a custom name with mixed case, eg. {$type.tc} ."
                     if !( $type eq @allowed.any
-                            or ($type ~~ any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll /))
-            %!counters{$type} = Numeration.new
-        }
-    }
-    method sync-counter($type, $base, $level) {
-        my $t := self.get-counter($type);
-        my $b := self.get-counter($base);
-        unless $t.Str($level) eq $b.Str($level) {
-            $t.set-counters( $b.parts($level) )
+                            or ($type ~~ any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll /));
+            %!counters{ $type } = Numeration.new
         }
     }
     multi method numeration-warnings( --> Array ) {

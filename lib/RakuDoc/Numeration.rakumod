@@ -57,7 +57,7 @@ class Numeration {
         self.parts[^$level]
     }
     method part( Int $level --> Int ) { @!counters[$level - 1] }
-    method set-counters(@counters) {
+    method set-counters(Int @counters) {
         @!counters := @counters;
         self
     }

@@ -8,7 +8,7 @@ use RakuDoc::PromiseStrings;
 my RakuDoc::Processed $rp;
 $rp .= new;
 
-plan *;
+plan 22;
 
 is $rp.counters<head>.inc.Str, '1.', 'check initial counter';
 is $rp.counters<head>.inc.Str, '2.', 'increment works';
@@ -20,9 +20,6 @@ is $c.inc(3).Str, '1.1.1.','Added counter works';
 is $rp.counters<Custom>.inc(3).Str, '1.1.2.','Added counter works';
 my Numeration $d := $rp.get-counter('head');
 is $d.Str, '2.1.2.', 'got counter';
-$rp.sync-counter('Custom','head', 2 );
-is $c.Str, '2.1.', 'syncronised Custom to head';
-is $c.inc(3).inc(3).inc(3).Str, '2.1.3.', 'Custom incremented properly';
 # make some errors
 my $rv = $rp.counters<Custom>.numform( :form('(%J:lc:uc:tclc of %並:pc:lang<fr>:ord): %Q %D:uc%:'), :contents('Example data') );
 is ([~] $rv)>>.Str.join,

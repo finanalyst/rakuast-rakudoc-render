@@ -960,27 +960,21 @@ class RakuDoc::Processor {
         else {
             $contents ~= $.contents($ast, $parify);
         }
-        my $numeration = '';
-        if $numerate {
-            %config<continued>
-                    ?? $!scoped-data.numeration-inc('item',$level)
-                    !! $!scoped-data.numeration-reset('item');
-            $numeration = %config<form>:exists
-                    ?? $!scoped-data.numeration('item').numform(:form(%config<form>), :$contents, :$type)
-                    !! $!scoped-data.numeration('item').Str ~ " $contents";
-        }
+        $level = 1 if $level < 1;
+        my Numeration $counter := $!current.get-counter($type);
+        $counter.inc($level);
+        my $prs := $*prs;
+        my $caption = %config<caption> // $type.tc;
+        my $target = %config<id> // $.name-id($caption);
+        my $numeration = $numerate ?? self.help-numerate($contents, $type, $level, $caption, $counter, %config) !! '';
         if %config<toc> {
-            my $caption = %config<caption> // $type.tc;
-            my $level = %config<headlevel> // 1;
-            $level = 1 if $level < 1;
-            my $target = %config<id> // $.name-id($caption);
-            $*prs.toc.push: %( :$caption, :$level, :$numeration, :$target );
             %config<target> = $target;
+            self.help-toc(%config<toc>:delete // False, $prs, $caption, $target, $level, $numeration);
         }
         my Bool $is-in-heading = $!scoped-data.in-head.so;
         $contents ~= $.complete-item-list;
         $contents ~= $.complete-defn-list;
-        $*prs.body ~= %!templates{ $type }(
+        $prs.body ~= %!templates{ $type }(
             %( :$contents, :$is-in-heading, :$numeration, %config)
         );
         $!scoped-data.end-scope if $type ~~ any( <code input output> )
@@ -995,6 +989,7 @@ class RakuDoc::Processor {
         # stringify ast for internal use
         # set up data for embedded markup in header, eg., X
         my $textified = textify-head($ast);
+        my $caption = %config<caption>:delete;
         my $target = $.name-id($textified);
         $!scoped-data.start-scope(:starter('head'), :$textified ) if $parify;
         # must set in-head in case of other inner scopes.
@@ -1005,7 +1000,6 @@ class RakuDoc::Processor {
         my Numeration $counter := $!current.get-counter('head');
         # The heading counter is incremented whether or not it is a numhead.
         $counter.inc($level);
-        my $caption = %config<caption>:delete;
         #| When numeration is required, numerate will be True
         #| Then the specification requires
         #| :form to have a (default) value
@@ -1014,25 +1008,9 @@ class RakuDoc::Processor {
         #| :form has a default for each block type, but use Str of counter when not in =config
         #| :number changes the numeration
         #| :!continued
-        my $numeration = '';
-        if $numerate {
-            my $form = '';
-            if %config<number>:exists {
-                $counter.set($level, %config<number>)
-            }
-            $counter.reset if %config<continued><> === False;
-            # handle numeration, which requires caption and contents to be different
-            if %config<form>:exists {
-                $numeration = $counter.numvalue(:form( %config<form>, :$contents, :$caption, :$type))
-            }
-            else {
-                $numeration =
-                    ($counter.Str but FieldType('N'),
-                    $contents but FieldType('C'))
-            }
-            # handle numalias
-            help-numalias(%config, $counter) if %config<numalias>:exists;
-        }
+        #| =head differs from other blocks as default order of enum & caption,
+        #| so cant use self.help-numerate
+        my $numeration = self.help-numerate($contents, $type, $level, $caption, $counter, %config, :from-head);
         # allow internal X<> to have the final rendered title
         $!register.add-payload(:payload($contents), :id( $target ) );
         # set the last title for paragraphs following the title
@@ -1052,7 +1030,7 @@ class RakuDoc::Processor {
         $caption = $contents unless $caption;
         self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, $numeration);
         $prs.body ~= %!templates{'head'}(
-            %( :$numeration, :$level, :$target, :$contents, :$toc, :$caption, :$id, %config )
+            %( :$numeration, :$level, :$target, :$contents, :$caption, :$id, %config )
         );
         $!scoped-data.in-head = '';
         $!scoped-data.end-scope if $parify;
@@ -1073,7 +1051,7 @@ class RakuDoc::Processor {
         $level = 1 if $level < 1;
         my Numeration $counter := $!current.get-counter($type);
         $counter.inc($level);
-        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
+        my $numeration = $numerate ?? self.help-numerate('', $type, $type, $level, $caption, $counter, %config) !! '';
         with $id {
             if self.is-target-unique( $_ ) {
                 $id = self.register-target( $_ );
@@ -1169,6 +1147,7 @@ class RakuDoc::Processor {
     #| The contents of Place is a URI that is generated and then rendered with place template
     method gen-place($ast, %config, $type, $level) {
         my $uri = %config<uri>:delete;
+        my $prs := $*prs;
         unless %config<caption>:exists {
             if $uri ~~ / 'semantic:' (.+) / {
                 %config<caption> = ~$0
@@ -1184,7 +1163,7 @@ class RakuDoc::Processor {
                 %config<id> = self.register-target( $_ )
             }
             else {
-                $*prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣")
+                $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣")
                 if %config<error>
             }
         }
@@ -1342,7 +1321,7 @@ class RakuDoc::Processor {
         $level = 1 if $level < 1;
         my Numeration $counter := $!current.get-counter($type);
         $counter.inc($level);
-        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
+        my $numeration = $numerate ?? self.help-numerate('', $type, $level, $caption, $counter, %config) !! '';
         self.help-toc(%config<toc>:delete // False, $prs, $caption, $target, $level, $numeration);
         my Bool $procedural = $ast.visual-table.not;
         my @grid;
@@ -1539,7 +1518,7 @@ class RakuDoc::Processor {
         $level = 1 if $level < 1;
         my Numeration $counter := $!current.get-counter($type);
         $counter.inc($level);
-        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
+        my $numeration = $numerate ?? self.help-numerate($contents, $type, $level, $caption, $counter, %config) !! '';
         my $rv;
         given $type {
             when 'TITLE' {
@@ -1589,8 +1568,8 @@ class RakuDoc::Processor {
                 $rv = %!templates{$template}(
                     %( :$level, :$caption, :$hidden, :$target, :$contents, :$id, :$numeration, %config )
                 );
-                self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, $numeration);
-                unless $hidden;
+                self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, $numeration)
+                    unless $hidden;
             }
         }
         $prs.semantics{ $type } = [] unless $prs.semantics{ $type }:exists;
@@ -1609,10 +1588,11 @@ class RakuDoc::Processor {
         # - a warning is issued
         my $prs := $*prs;
         my $caption = %config<caption>:delete // $type;
+        my $contents = $.contents( $ast, $parify );
         $level = 1 if $level < 1;
         my Numeration $counter := $!current.get-counter($type);
         $counter.inc($level);
-        my $numeration = $numerate ?? self.help-numerate($level, $caption, $counter, %config) !! '';
+        my $numeration = $numerate ?? self.help-numerate($contents, $type, $level, $caption, $counter, %config) !! '';
         my $id = '';
         with %config<id> {
             if self.is-target-unique( $_ ) {
@@ -1627,11 +1607,10 @@ class RakuDoc::Processor {
             }
         }
         my $target = %config<id>:delete // $.name-id($caption);
-        self.help-toc(%config<toc>:delete // True, $prs, $caption, $target, $level, $numeration);
+        self.help-toc(%config<toc>:delete // False, $prs, $caption, $target, $level, $numeration);
         if %!templates{ $type }:exists {
-            my $contents = $.contents( $ast, $parify );
             my $raw = $ast.paragraphs.Str.join;
-            $prs.body ~= %!templates{ $type }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, :$toc, :$numeration, %config ) )
+            $prs.body ~= %!templates{ $type }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, :$numeration, %config ) )
         }
         else {
             # by spec, the name of an unrecognised Custom is treated like =head1
@@ -1674,16 +1653,17 @@ class RakuDoc::Processor {
         }
     }
     # helper methods
-    method help-numerate($level, $caption, $counter, %config) {
+    method help-numerate($contents, $type, $level, $caption, $counter, %config, :$from-head = False) {
         my $form = '';
+        my $numeration = '';
         if %config<sequence>:exists {
-            $counter .= clone;
-            for %config<sequence>.list -> $cntr {
+            $counter .= new;
+            for %config<sequence>.kv -> $lev, $cntr {
                 if $cntr.trim ~~ / (\D+) (\d*) $ / {
                     my $c-type = $/[0];
                     my $c-level = $/[1] // 1;
                     my $base = $!current.get-counter($c-type);
-                    $n-counter.set( $lev, $base.part($c-level) )
+                    $counter.set( $lev, $base.part($c-level) )
                 }
             }
         }
@@ -1691,9 +1671,15 @@ class RakuDoc::Processor {
             $counter.set($level, %config<number>)
         }
         $counter.reset if %config<continued><> === False;
-        # handle numeration
         if %config<form>:exists {
             $numeration = $counter.numvalue(:form( %config<form>, :$contents, :$caption, :$type))
+        }
+        elsif $from-head {
+            $numeration =
+                (
+                $counter.Str but FieldType('N'),
+                $contents but FieldType('C')
+                )
         }
         else {
             $caption = $contents without $caption;
@@ -1704,46 +1690,46 @@ class RakuDoc::Processor {
                 )
         }
         # handle numalias
-        self.help-numalias(%config, $counter) if %config<numalias>:exists;
-    }
-    method help-numalias( %config, $counter )  {
-        if %config<numalias> ~~ /
-        ^ $<disp> = (.*) '|' $<tag> = (.+) $
-        | ^ $<tag> = (.+) $
-        / {
-            my $tag = ~$<tag>.trim;
-            my $expansion = '';
-            # if the option value was set in a =config and there is no TAG in this block
-            # then TAG will be set to *, so ignore the option
-            if $<disp>:exists {
-                if  $tag eq '*' {}
-                elsif $<disp>.Str { # disp has a non-blank Str value and tag has a value, so disp over-rides config
-                    $expansion = $counter.numvalue(:form( ~$<disp> ), :$caption, :$contents, :$type)
-                }
-                else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                    $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'));
-                }
-            }
-            else { #so only TAG is set
-                if $!scoped-data.config{"$type$level"}<numalias> -> $c-disp { #check to see if a config specs a numalias
-                    if $c-disp ~~ / ^ $<disp> = (.*) '|' \s* '*' \s* $ / {
-                        $expansion = $counter.numvalue(:form( ~$<disp>), :$caption, :$contents, :$type)
+        if %config<numalias>:exists {
+            if %config<numalias> ~~ /
+            ^ $<disp> = (.*) '|' $<tag> = (.+) $
+            | ^ $<tag> = (.+) $
+            / {
+                my $tag = ~$<tag>.trim;
+                my $expansion = '';
+                # if the option value was set in a =config and there is no TAG in this block
+                # then TAG will be set to *, so ignore the option
+                if $<disp>:exists {
+                    if  $tag eq '*' {}
+                    elsif $<disp>.Str { # disp has a non-blank Str value and tag has a value, so disp over-rides config
+                        $expansion = $counter.numvalue(:form( ~$<disp> ), :$caption, :$contents, :$type)
                     }
-                    else {
-                        $prs.warnings.push: "Mal-formed config declaration of numalias ｢$c-disp｣"
+                    else { # process as default when a TAG is set but disp is blank str, so over-riding any config
+                        $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'));
                     }
                 }
-                else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                    $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'))
+                else { #so only TAG is set
+                    if $!scoped-data.config{"$type$level"}<numalias> -> $c-disp { #check to see if a config specs a numalias
+                        if $c-disp ~~ / ^ $<disp> = (.*) '|' \s* '*' \s* $ / {
+                            $expansion = $counter.numvalue(:form( ~$<disp>), :$caption, :$contents, :$type)
+                        }
+                        else {
+                            $*prs.warnings.push: "Mal-formed config declaration of numalias ｢$c-disp｣"
+                        }
+                    }
+                    else { # process as default when a TAG is set but disp is blank str, so over-riding any config
+                        $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'))
+                    }
+                }
+                if $expansion {
+                    $!scoped-data.aliases{ $tag } = $expansion
                 }
             }
-            if $expansion {
-                $!scoped-data.aliases{ $tag } = $expansion
+            else {
+                $*prs.warnings.push: "Mal-formed numalias ｢{ %config<numalias> }｣"
             }
         }
-        else {
-            $prs.warnings.push: "Mal-formed numalias ｢{ %config<numalias> }｣"
-        }
+        $numeration
     }
     method help-toc($toc,$prs, $caption, $target, $level, $numeration) {
         if $toc {
