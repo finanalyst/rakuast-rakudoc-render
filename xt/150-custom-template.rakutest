@@ -11,7 +11,7 @@ my RakuDoc::Processor $rdp .= new(:test);
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =begin MyCustomBlock :an<option> :another<one>
+    =begin MyCustomBlock :an<option> :another<one> :toc
     Some thingB<to be said>inside letters.
     =end MyCustomBlock
     =end rakudoc

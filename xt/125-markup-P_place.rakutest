@@ -60,7 +60,7 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast );
 like $rv, /
     'rendered-index: ｢｣' .+
-    'rendered-toc' .+ '<toc>' .+? '</toc>'
+    'rendered-toc:' .+ '<toc>' .+? '</toc>'
 /, 'got rendered toc, and no index because no X<>';
 like $rv, /
     '<rakudoc>' .+

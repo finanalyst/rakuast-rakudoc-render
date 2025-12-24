@@ -4,7 +4,7 @@ use Test::Deeply::Relaxed;
 
 use RakuDoc::Render;
 
-plan 7;
+plan 6;
 
 my $ast;
 my $rv;
@@ -26,7 +26,6 @@ like $rv.body.Str, /
     'level: ｢1｣' .+
     'numeration: ｢｣' .+
     'target: ｢Test_text｣' .+
-    'toc: ｢True｣' .+
     '</head>'
     /, 'head template works';
 $ast = Q:to/QAST/.AST;
@@ -40,12 +39,11 @@ $rv = $rdp.render( $ast, :pre-finalised );
 cmp-ok $rv.source-data<rakudoc-config>.keys,'(>=)', <kind subkind category>,
         'places rakudoc metadata correctly';
 $ast = Q:to/QAST/.AST;
-    =for head :!toc :id<Quick id>
+    =for head :id<Quick id>
     Second test text
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, / '<head>' .+ 'level' .+ 1 .+ '</head>' /, 'plain head has level 1';
-like $rv.body.Str, / '<head>' .+ 'toc' .+ 'False' .+ '</head>' /, 'head got toc data';
 like $rv.body.Str, / '<head>' .+ 'id' .+ 'Quick id' .+ '</head>' /, 'head got id data';
 
 done-testing;

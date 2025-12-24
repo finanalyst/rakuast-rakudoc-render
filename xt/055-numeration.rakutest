@@ -3,7 +3,7 @@ use Test;
 use RakuDoc::Numeration;
 use RakuDoc::PromiseStrings;
 
-plan 59;
+plan 60;
 
 my Numeration $n .= new;
 
@@ -28,11 +28,14 @@ is $m.Str, '2.2.4.1.3.', 'same as n';
 is $m.inc(3).Str(5), '2.2.5.1.1.', 'increments properly';
 is $n.Str(5), '2.2.4.1.3.', 'increment m leaves n unchanged';
 
+$n .=new.inc;
+my $rv;
+$rv = $n.numform(:form<TOPIC %A - %D>, :contents('PHYSICS'), :caption(''), :type<head>);
+is $rv.join, 'TOPIC A - PHYSICS', 'test from RakuDoc spev 1';
 $n .= new: init => (1, 2, 7) ;
 is $n.Str, '1.2.7.', 'create with initial sequence';
 my $xmp = 0;
 my PStr $contents .= new: 'The data';
-my $rv;
 $rv = ([~] $n.numform( :form('%%N%:        (%N of %n): %D:lc%:'),                :$contents))>>.Str.join;
 is $rv,
 		'%N:        (2 of 7): the data:'

@@ -149,8 +149,8 @@ class RakuDoc::Processed is ProcessedState {
             # add a new type, but type must be an existing built it, or a custom
             # otherwise generate a warning, but use as.
             @.warnings.push: "Use of improper block name for counter ｢$type｣. To remove this warning, use one of @allowed or a custom name with mixed case, eg. {$type.tc} ."
-                    if !( $type eq @allowed.any
-                            or ($type ~~ any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll /));
+                    unless ( $type eq @allowed.any
+                            or ?( any($type.uniprops) ~~ / Lu / and any($type.uniprops) ~~ / Ll /));
             %!counters{ $type } = Numeration.new
         }
     }

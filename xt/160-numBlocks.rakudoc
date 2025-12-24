@@ -1,0 +1,269 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan 10;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new(:test);
+$ast = Q:to/QAST/.AST;
+    =numhead1 Test text
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'caption: ｢Test text｣' .+
+    'contents: ｢Test text｣' .+
+    'id: ｢' .+
+    'level: ｢1｣' .+
+    'numeration:' .+ '1. Test text' .+
+    'target: ｢Test_text｣' .+
+    '</head>'
+    /, 'numhead template works';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numhead3 This is a level 3 numheader
+
+    Some text in a paragraph
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+     '<head>' .+?
+    'caption: ｢This is a level 3 numheader｣' .+
+    'contents: ｢This is a level 3 numheader｣' .+
+    'level: ｢3｣' .+
+    'numeration:' .+ '1.1.1' .+
+    '</head>'
+    /, 'increment of 3 level only works';
+
+$ast = Q:to/AST/.AST;
+    =begin rakudoc
+    =numitem1 Visito
+    =numitem2 Veni
+    =numitem2 Vidi
+    =numitem2 Vici
+    =end rakudoc
+    AST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<item-list>' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '1. Visito' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '1.1. Veni' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '1.2. Vidi' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '1.3. Vici' .+
+    '</item-list>'
+    /, 'simple ordered list';
+
+$ast = Q:to/AST/.AST;
+    =begin rakudoc
+    The options are:
+    =numitem1 Liberty
+    =numitem1 Death
+    =numitem1 Beer
+
+    The tools are:
+
+    =numitem1 Revolution
+    =numitem1 Deep-fried peanut butter sandwich
+    =numitem1 Keg
+    =end rakudoc
+    AST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    'para' .+? 'contents' .+ 'The options are:' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '1. Liberty' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '2. Death' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '3. Beer' .+
+    'para' .+? 'contents' .+ 'The tools are:' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '1. Revolution' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '2. Deep-fried peanut butter sandwich' .+
+    '<item>' .+? 'contents' .+? 'numeration' .+ '3. Keg'
+    /, 'two ordered lists';
+
+$ast = Q:to/AST/.AST;
+    =begin rakudoc
+    =numitem1 Retreat to remote Himalayan monastery
+    =numitem1 Learn the hidden mysteries of space and time
+
+    I<????>
+    =for numitem1 :continued
+    Prophet!
+    =end rakudoc
+    AST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<item>' .+? 'contents' .+? 'Retreat to remote Himalayan monastery' .+ 'numeration' .+ '1.' .+
+    '<item>' .+? 'contents' .+? 'Learn the hidden mysteries of space and time' .+ 'numeration' .+ '2.' .+
+    'para' .+? 'contents' .+ 'markup-I' .+ 'contents' .+ '????' .+ '/markup-I' .+
+    '<item>' .+? 'contents' .+? 'Prophet!' .+ 'numeration' .+ '3.'
+    /, 'continued ordered list';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numdefn Happy
+    When you're I<not> blue.
+
+    =numdefn Blue
+    When you're not happy.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<defn-list>' .+
+    '<defn>' .+
+    'contents:' .+ "When you're <markup-I>" .+ 'not' .+ '/markup-I' .+ ' blue' .+
+    'numeration:' .+ '｢1.' .+
+    'target:' .+ 'defn_Happy' .+
+    'term:' .+ 'Happy' .+
+    '</defn>' .+
+    '<defn>' .+
+    'contents:' .+ "When you're not happy" .+
+    'numeration:' .+ '｢2.' .+
+    'target:' .+ 'defn_Blue' .+
+    'term:' .+ 'Blue' .+
+    '</defn>' .+
+    '</defn-list>'
+    /, 'Basic definitions';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numhead1 PHYSICS
+    =numhead2 Newtonian
+    =numhead2 Relativistic
+    =begin numformula :caption<Mass-Energy Equivalence>
+    E = MC²
+    =end numformula
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'numeration' .+? '1. PHYSICS' .+?
+    '</head>' .+?
+    '<head>' .+? 'numeration' .+? '1.1. Newtonian' .+?
+    '</head>' .+?
+    '<head>' .+? 'numeration' .+? '1.2. Relativistic' .+?
+    '</head>' .+?
+    '<formula>' .+? 'numeration' .+? 'Formula 1. Mass-Energy Equivalence' .+?
+    '</formula>'
+/, 'default renderering';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =config numhead1   :form<TOPIC %A - %D>
+    =config numhead2   :form<%D [subtopic %A%N]>
+    =config numformula :form<Equation %N: %C>
+    =numhead1 PHYSICS
+    =numhead2 Newtonian
+    =numhead2 Relativistic
+    =begin numformula :caption<Mass-Energy Equivalence>
+    E = MC²
+    =end numformula
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'numeration' .+? 'TOPIC A - PHYSICS' .+?
+    '</head>' .+?
+    '<head>' .+? 'numeration' .+? 'Newtonian [subtopic A1]' .+?
+    '</head>' .+?
+    '<head>' .+? 'numeration' .+? 'Relativistic [subtopic A2]' .+?
+    '</head>' .+?
+    '<formula>' .+? 'numeration' .+? 'Equation 1: Mass-Energy Equivalence' .+?
+    '</formula>'
+    /, 'pre-configured renderering';
+
+my @blocks = <para input output code nested SEMANTIC>;
+# add table when numtable fixed in parser
+#subtest 'numerate blocks' => {
+#    plan *;
+#    for @blocks -> $b {
+#        $ast = qq:to/QAST/.AST;
+#        =begin rakudoc :!toc
+#        Stuff
+#        =begin num{$b}2
+#        | one  | two  |
+#        | thre | four |
+#        =end num{$b}2
+#
+#        =end rakudoc
+#        QAST
+#        $rv = $rdp.render( $ast, :pre-finalised );
+#        like $rv.body.Str, /
+#        'Stuff' .+?
+#        '<' <{ $b.lc }> '>' .+? 'numeration:'
+#        .+? <{ $b.tc }> .+ '1.1.' .+? '</' <{ $b.lc }> '>'
+#        /, "$b enumerates";
+#    }
+#}
+#subtest 'Sequences' => {
+#    $ast = Q:to/QAST/.AST;
+#        =begin rakudoc
+#        =comment 2nd-level formulas are prefixed by the current head1 enumeration...
+#        =config numformula2   :sequence< head1 formula2 >
+#        =head One
+#        =head Two
+#        =formula2
+#        =formula2
+#        =numformula2 Some Latex definition
+#        =end rakudoc
+#    QAST
+#    $rdp.debug('AstBlock BlockType');
+#    $rv = $rdp.render( $ast, :pre-finalised );
+#    like $rv.body.Str, /
+#        '<head>' .+?
+#        '<head>' .+?
+#        '<formula>' .+? '<formula>' .+?
+#        '<formula>' .+?
+#        'numeration' .+? '｢Formula 2.3.｣' .+?
+#        'raw' .+? 'Latex' .+?
+#        '</formula>'
+#        /, '2nd-level formulas';
+#    $ast = Q:to/QAST/.AST;
+#        =begin rakudoc
+#        =comment 3rd-level formulas are prefixed by the current head1 and head2 enumerations...
+#        =config formula3 :sequence< head1 head2 formula3 >
+#        =head One
+#        =head Two
+#        =head2 Two_One
+#        =head2 Two_Two
+#        =formula3 Latex defn
+#        =end rakudoc
+#    QAST
+#    $rv = $rdp.render( $ast, :pre-finalised );
+#        like $rv.body.Str, /
+#        '<formula>'
+#    #    .+? 'numeration' .+? '2.2.1'
+#        .+? 'raw' .+? 'Latex defn' .+?
+#        '</formula>'
+#        /, '3rd-level formulas are prefixed by the current head1 & head2';
+#    $ast = Q:to/QAST/.AST;
+#        =begin rakudoc
+#        =comment 3rd-level formulas are prefixed by the current head1 and head2 enumerations...
+#        =config formula3 :sequence< head1 head2 formula3 >
+#        =head One
+#        =head Two
+#        =head2 Two_One
+#        =for head2 :number(5)
+#        Two_Five
+#        =for formula3 :number(3)
+#        Latex defn
+#        =end rakudoc
+#    QAST
+#    $rv = $rdp.render( $ast, :pre-finalised );
+#    like $rv.body.Str, /
+#    '<formula>' .+?
+##    'numeration' .+? '2.5.3' .+?
+#    'raw' .+? 'Latex defn' .+?
+#    '</formula>'
+#    /, 'change counter with number: 3rd-level formulas are prefixed by the current head1 & head2';
+#}
+
+#subtest 'Aliases' => {
+#
+#}
+done-testing;

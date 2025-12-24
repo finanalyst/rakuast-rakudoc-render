@@ -1,6 +1,7 @@
 use v6.d;
 use PrettyDump;
 use RakuDoc::PromiseStrings;
+use RakuDoc::Numeration;
 
 class Template {
     has &.block;
@@ -87,10 +88,10 @@ sub express-params( %params, $name ) is export {
     for %params.sort(*.key)>>.kv -> ($k, $v) {
         my $vi = $v // 'UNINITIALISED';
         $vi = "Binary object with {$vi.bytes} bytes" if $vi ~~ Buf;
+        $vi = $v.cache.join() if $v.isa( Seq );
         $rv ~= $k ~ ': ｢' ~ $vi ~ "｣\n";
     }
     $rv ~= "</$name>\n";
-    $rv
 }
 
 #| A hash that remembers previous values

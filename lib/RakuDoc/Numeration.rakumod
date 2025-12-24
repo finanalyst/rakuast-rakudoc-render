@@ -1,13 +1,154 @@
 use v6.d;
 use RakuDoc::PromiseStrings;
 
-# based on code by Damian Conway
+# based on code by Damian Conway (numform and restart)
 # some revision by Elizabeth Mattijsen
 
 # Enumeration values must be positive integers...
 subset PosInt   of Int   where     * > 0;
-subset PosArray of Array where { .all ~~ (1..*)|'' };
+class Numeration { ... }
 
+class CounterTracker {
+    has @!warnings;
+    #| tracks each counter, affected by block instance
+    has Numeration %.type-counters;
+    #| Global table of prefixes for block types
+    #| key = block base, value = array of levels,
+    #| level-value = Pair of base => level of where to get prefix
+    has %.prefixes;
+    #| Global table of blocktypes that, when rendered, trigger an explicit restart on a particular blocktype
+    #| The key is the block base, the value is a junction of regexen
+    has %!triggers-for;
+    #| If a block needs to reset
+    has Bool %!restart-block;
+
+    multi method clone( CounterTracker:D: ) {
+        ...
+    }
+    #| When an expression may contain a bare block name or a blocktype,
+    #| split into a hash with base => level and level = 1
+    sub normalise( $expression --> Hash ) {
+        $expression
+                .words
+                .map({ /(<[_ a..z A..Z -]>+)(<[0..9]>*)/;|(~$0 => +$1||1)})
+                .hash
+    }
+    #| called by the restart directive
+    method manage-restart( $blocktype, %options ) {
+        my $expression;
+        my $after = False;
+        if %options<after>:exists and %options<except-after>:exists {
+            @!warnings.push: "restart directive has both after and except-after options, only except-after is used";
+            $expression = %options<except-after>
+        }
+        elsif %options<after>:!exists and %options<except-after>:!exists {
+            @!warnings.push: "restart directive must have either after or except-after option";
+            return
+        }
+        else {
+            $after = %options<after>:exists;
+            $expression = $after ?? %options<after> !! %options<except-after>
+        }
+        if $blocktype ~~ / ^ (\S+) (\d*) $ / {
+            my $base = ~$0;
+            my $level = +$1 // 1;
+            my %triggers =  normalise( $expression );
+            if $after {
+                %!triggers-for{ $base ~ $level } =
+                    any %triggers.kv.map: -> $t-base, $t-level {
+                        # Create a regex that matches that basename plus any equal-or-superordinate level
+                        / ^ $t-base $<level>=(\d+) $ <?{ $<level> <= $t-level }> /
+                    }
+            }
+            else {
+                %!triggers-for{ $base ~ $level } =
+                    any %triggers.kv.map: -> $t-base, $t-level is copy {
+                        $t-level--;
+                        # Create a regex that matches that basename plus any equal-or-subordinate level
+                        / ^ $t-base $<level>=(\d+) $ <?{ $<level> => $t-level }> /
+                    }
+            }
+        }
+        else {
+            @!warnings.push: "Cannot parse the blocktype ｢$blocktype｣ in restart directive"
+        }
+    }
+    #| called by each block instance thats rendered
+    method set-restart-after( $base, $level ) {
+        my $blockname = $base ~ $level;
+        for %!triggers-for.kv -> $restartable-block, $trigger {
+            %!restart-block{ $restartable-block } = $blockname ~~ $trigger
+        }
+        # Make sure all previously encountered blocks subsequently have
+        # a (default) entry in the trigger table [note that they might already
+        # have an entry from an earlier explicit user =restart or from a previous
+        # default set-up, in which case no further action is needed here]...
+        if %!triggers-for{ $blockname } :!exists {
+            if $base ~~ 'item' | 'defn' {
+                self.manage-restart( $blockname, { :except-after($blockname) } );
+            }
+            else {
+                self.manage-restart( $blockname, { :after( $base ~ ($level - 1)) } );
+            }
+        }
+    }
+    method triggered( $blockname --> Bool ) {
+        my $is-triggered = %!restart-block{ $blockname };
+        %!restart-block{ $blockname } = False if $is-triggered;
+        $is-triggered
+    }
+    method process-enumeration( $base is copy, $level, %options --> Numeration ) {
+        # check for number-as first
+        $base = $_ with %options<number-as>;
+        # determine if a reset is needed
+        # continued overides all restarts
+        if %options<continued><> =:= True { # continued exists and is True
+            self.inc($base, $level)
+        }
+        elsif %options<continued><> =:= False { # continued and is False
+            self.set($base, $level, 1)
+        }
+        elsif %options<number> -> $number { # number also overides a restart
+            self.set( $base, $level, $number )
+        }
+        elsif self.triggered( $base ~ $level ) {
+            self.set($base, $level, 1)
+        }
+        else { self.inc($base, $level) }
+        # now get the enumeration
+        # first store a number-prefix if it doesnt exist
+        if %options<number-prefix> and %!prefixes{ $base }[$level]:!exists {
+            %!prefixes{ $base }[ $level ] =
+                normalise( %options<number-prefix> ).sort.[0];
+            # set superordinate values too, if non-existent
+            for 2 ..^ $level {
+                %!prefixes{ $base }[ $_ ] = [ $base , $_ - 1 ]
+                    unless %!prefixes{ $base }[ $_ ]
+            }
+            %!prefixes{ $base }[ 1 ] = ()
+                    unless %!prefixes{ $base }[ 1 ]
+        }
+        if %!prefixes{ $base } {
+            Numeration.new: self.prefix-number( $base, $level ) # return the constructed stack as a Numeration
+        }
+        else { self.get-counter( $base ) } # the default enumeration
+    }
+    method prefix-number( $base, $level ) {
+        my @next = %!prefixes{$base}[$level];
+        return () unless @next.defined and @next;
+        self.prefix-number(|@next).append: %!type-counters{ $base }[$level-1]
+    }
+    method inc($base, $level ) {
+        %!type-counters{ $base }.inc( $level )
+    }
+    method set( $base, $level, $number ) {
+        %!type-counters{ $base }.set( $level, $number )
+    }
+    method get-counter( $base ) { %!type-counters{ $base } }
+    method warnings {
+        @!warnings.append: %!type-counters.pairs.map( *.value.warnings.Slip )
+    }
+}
 
 # Mark each :form component by type...
 role FieldType { has $.field-type }
@@ -65,6 +206,18 @@ class Numeration {
         callsame.set-counters(self.parts)
     }
 
+    multi method numform (
+            List :$form,
+            # The format string (contents of the :form<...>)
+            Str:D :$contents,
+            # The contents contained in the block
+            Str :$type = q{},
+            # The type of the block
+            Str :$caption = q{}
+            # The caption to be shown
+                          ) {
+        self.numform(:form($form.Str), :contents( PStr.new( $contents )), :$type, :$caption)
+    }
     multi method numform (
             Str :$form,
             # The format string (contents of the :form<...>)

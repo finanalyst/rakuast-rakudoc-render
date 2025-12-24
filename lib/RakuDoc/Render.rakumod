@@ -320,7 +320,7 @@ class RakuDoc::Processor {
             $type = ~ $0;
             # by default numitem & numdefn appearing after the same type are continued
             # unless explicitly continued or not continued
-            if $type ~~ <item defn para nested code input output>.any {
+            if $type ~~ <item defn>.any {
                 unless %config<continued>:exists {
                     %config<continued> = ($type eq $!last-type)
                 }
@@ -964,9 +964,9 @@ class RakuDoc::Processor {
         my Numeration $counter := $!current.get-counter($type);
         $counter.inc($level);
         my $prs := $*prs;
-        my $caption = %config<caption> // $type.tc;
+        my $caption = (%config<caption> // $type.tc).Str;
         my $target = %config<id> // $.name-id($caption);
-        my $numeration = $numerate ?? self.help-numerate($contents, $type, $level, $caption, $counter, %config) !! '';
+        my $numeration = $numerate ?? self.help-numerate($contents, $type, $level, %config<caption>, $counter, %config) !! '';
         if %config<toc> {
             %config<target> = $target;
             self.help-toc(%config<toc>:delete // False, $prs, $caption, $target, $level, $numeration);
@@ -989,7 +989,7 @@ class RakuDoc::Processor {
         # stringify ast for internal use
         # set up data for embedded markup in header, eg., X
         my $textified = textify-head($ast);
-        my $caption = %config<caption>:delete;
+        my $caption = (%config<caption>:delete // '').Str;
         my $target = $.name-id($textified);
         $!scoped-data.start-scope(:starter('head'), :$textified ) if $parify;
         # must set in-head in case of other inner scopes.
@@ -1010,7 +1010,8 @@ class RakuDoc::Processor {
         #| :!continued
         #| =head differs from other blocks as default order of enum & caption,
         #| so cant use self.help-numerate
-        my $numeration = self.help-numerate($contents, $type, $level, $caption, $counter, %config, :from-head);
+        my $numeration = $numerate ?? self.help-numerate($contents, $type, $level, $caption, $counter, %config, :from-head)
+                !! '';
         # allow internal X<> to have the final rendered title
         $!register.add-payload(:payload($contents), :id( $target ) );
         # set the last title for paragraphs following the title
@@ -1045,13 +1046,13 @@ class RakuDoc::Processor {
         # also create a raw version for other renderers
         my $prs := $*prs;
         my $alt = %config<alt>:delete // 'Formula cannot be rendered';
-        my $caption = %config<caption>:delete // $type;
+        my $caption = (%config<caption>:delete // $type).Str;
         my $target = $.name-id($alt);
         my $id = %config<id>:delete;
         $level = 1 if $level < 1;
         my Numeration $counter := $!current.get-counter($type);
         $counter.inc($level);
-        my $numeration = $numerate ?? self.help-numerate('', $type, $type, $level, $caption, $counter, %config) !! '';
+        my $numeration = $numerate ?? self.help-numerate('', $type, $level, $caption, $counter, %config) !! '';
         with $id {
             if self.is-target-unique( $_ ) {
                 $id = self.register-target( $_ );
@@ -1303,7 +1304,7 @@ class RakuDoc::Processor {
     #| unless overriden by toc/headlevel/caption
     #| contents is processed and rendered using table template
     multi method gen-table($ast, %config, $type, $level, $numerate) {
-        my $caption = %config<caption>:delete // $type;
+        my $caption = (%config<caption>:delete // $type).Str;
         my $prs := $*prs;
         my $target = $.name-id($caption) if $caption;
         $!scoped-data.last-title( $target );
@@ -1471,7 +1472,7 @@ class RakuDoc::Processor {
             }
         }
         $prs.body ~= %!templates<table>.( %(
-            :$procedural, :$caption, :$id, :$target, :$level,
+            :$numeration, :$procedural, :$caption, :$id, :$target, :$level,
             :$header-rows, :@headers, :@rows, :@grid,
             %config ) );
     }
@@ -1509,7 +1510,7 @@ class RakuDoc::Processor {
     method gen-semantics($ast, %config, $type, $level, $parify, $numerate) {
         $!scoped-data.last-title( $type );
         # treat all semantic blocks as a heading level 1 unless otherwise specified
-        my $caption = %config<caption> // $type;
+        my $caption = (%config<caption> // $type).Str;
         $level = %config<headlevel> if %config<headlevel>:exists;
         my $hidden;
         my $contents = $.contents($ast, $parify).trim;
@@ -1672,21 +1673,21 @@ class RakuDoc::Processor {
         }
         $counter.reset if %config<continued><> === False;
         if %config<form>:exists {
-            $numeration = $counter.numvalue(:form( %config<form>, :$contents, :$caption, :$type))
+            $numeration = $counter.numform(:form( %config<form>.Str ), :$contents, :$caption, :$type)
         }
         elsif $from-head {
             $numeration =
                 (
                 $counter.Str but FieldType('N'),
-                $contents but FieldType('C')
+                $contents but FieldType('D')
                 )
         }
         else {
-            $caption = $contents without $caption;
             $numeration =
                 (
                 $type.tc but FieldType('T'),
-                $counter.Str but FieldType('N')
+                $counter.Str but FieldType('N'),
+                $caption ?? $caption but FieldType('C') !! '',
                 )
         }
         # handle numalias
@@ -1702,7 +1703,7 @@ class RakuDoc::Processor {
                 if $<disp>:exists {
                     if  $tag eq '*' {}
                     elsif $<disp>.Str { # disp has a non-blank Str value and tag has a value, so disp over-rides config
-                        $expansion = $counter.numvalue(:form( ~$<disp> ), :$caption, :$contents, :$type)
+                        $expansion = $counter.numform(:form( ~$<disp> ), :$caption, :$contents, :$type)
                     }
                     else { # process as default when a TAG is set but disp is blank str, so over-riding any config
                         $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'));
@@ -1711,7 +1712,7 @@ class RakuDoc::Processor {
                 else { #so only TAG is set
                     if $!scoped-data.config{"$type$level"}<numalias> -> $c-disp { #check to see if a config specs a numalias
                         if $c-disp ~~ / ^ $<disp> = (.*) '|' \s* '*' \s* $ / {
-                            $expansion = $counter.numvalue(:form( ~$<disp>), :$caption, :$contents, :$type)
+                            $expansion = $counter.numform(:form( ~$<disp>), :$caption, :$contents, :$type)
                         }
                         else {
                             $*prs.warnings.push: "Mal-formed config declaration of numalias ｢$c-disp｣"
@@ -1808,12 +1809,17 @@ class RakuDoc::Processor {
                 $toc-type = ~$_
             }
             with $<range> {
-                $levels .= new: $spec.EVAL.list
+                if m/'*'/ {
+                    $levels .=new: (^10).list
+                }
+                else {
+                    $levels .= new: .EVAL.list
+                }
             }
             else {
                 $levels .=new: (^10).list
             }
-            my @toc-list = gather for $!current.toc.grep({ .<toc-type> eq $toc-type }) -> $toc-entry {
+            my @toc-list = gather for $!current.toc.grep({ .<toc-type>.defined and (.<toc-type> eq $toc-type) }) -> $toc-entry {
                 take %!templates<toc-item>( %( :$toc-entry , ) ) if $levels{ +$toc-entry<level> }
             }
             PStr.new( @toc-list.elems ?? %!templates<toc>( %(:@toc-list, :toc( $!current.toc.grep({ .<toc-type> eq $toc-type })), :$caption ) )
@@ -1908,6 +1914,7 @@ class RakuDoc::Processor {
             }
         }
         else { %config<delta> = '' }
+        say "@ $?LINE config keys are: {%config.keys}";
         %config
     }
 

@@ -48,7 +48,7 @@ method end-scope {
     @!config.pop;
     @!aliases.pop;
     @!save-spacer.pop;
-    # before popping the enumations, we need to preserve warnings, if any
+    # before popping the enumerations, we need to preserve warnings, if any
     my %last-numerations = @!numerations.pop;
     for %last-numerations.keys {
         my @warns = %last-numerations{ $_ }.warnings;
