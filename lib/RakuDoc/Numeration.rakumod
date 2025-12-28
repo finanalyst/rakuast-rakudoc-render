@@ -1,5 +1,6 @@
 use v6.d;
 use RakuDoc::PromiseStrings;
+no precompilation; note 'no precomp';
 
 # based on code by Damian Conway (numform and restart)
 # some revision by Elizabeth Mattijsen
@@ -14,13 +15,17 @@ class CounterTracker {
     has Numeration %.type-counters;
     #| Global table of prefixes for block types
     #| key = block base, value = array of levels,
-    #| level-value = Pair of base => level of where to get prefix
+    #| level-value = last calculated prefix sequence, if not default
     has %.prefixes;
     #| Global table of blocktypes that, when rendered, trigger an explicit restart on a particular blocktype
     #| The key is the block base, the value is a junction of regexen
     has %!triggers-for;
     #| If a block needs to reset
     has Bool %!restart-block;
+    has @!built-in = <
+                cell code input output comment head defn item nested para
+                rakudoc section pod table formula
+            >;
 
     multi method clone( CounterTracker:D: ) {
         ...
@@ -30,7 +35,7 @@ class CounterTracker {
     sub normalise( $expression --> Hash ) {
         $expression
                 .words
-                .map({ /(<[_ a..z A..Z -]>+)(<[0..9]>*)/;|(~$0 => +$1||1)})
+                .map({ /(<[_ a..z A..Z -]>+)(<[0..9]>*)/;|(~$0 => ~$1||1)})
                 .hash
     }
     #| called by the restart directive
@@ -49,23 +54,22 @@ class CounterTracker {
             $after = %options<after>:exists;
             $expression = $after ?? %options<after> !! %options<except-after>
         }
-        if $blocktype ~~ / ^ (\S+) (\d*) $ / {
+        if $blocktype ~~ / ^ (\D+) (\d*) $ / {
             my $base = ~$0;
-            my $level = +$1 // 1;
-            my %triggers =  normalise( $expression );
+            my $level = ~$1 ?? ~$1 !! 1;
+            my %triggers = normalise( $expression );
             if $after {
                 %!triggers-for{ $base ~ $level } =
                     any %triggers.kv.map: -> $t-base, $t-level {
-                        # Create a regex that matches that basename plus any equal-or-superordinate level
+                        # Create a regex that matches that basename plus any superordinate level
                         / ^ $t-base $<level>=(\d+) $ <?{ $<level> <= $t-level }> /
                     }
             }
             else {
                 %!triggers-for{ $base ~ $level } =
-                    any %triggers.kv.map: -> $t-base, $t-level is copy {
-                        $t-level--;
-                        # Create a regex that matches that basename plus any equal-or-subordinate level
-                        / ^ $t-base $<level>=(\d+) $ <?{ $<level> => $t-level }> /
+                    none %triggers.kv.map: -> $t-base, $t-level {
+                        # Create a regex that matches that basename plus any subordinate level
+                        / ^ $t-base $<level>=(\d+) $ <?{ $<level> >= $t-level }> /
                     }
             }
         }
@@ -77,7 +81,7 @@ class CounterTracker {
     method set-restart-after( $base, $level ) {
         my $blockname = $base ~ $level;
         for %!triggers-for.kv -> $restartable-block, $trigger {
-            %!restart-block{ $restartable-block } = $blockname ~~ $trigger
+            %!restart-block{ $restartable-block } ||= $blockname ~~ $trigger
         }
         # Make sure all previously encountered blocks subsequently have
         # a (default) entry in the trigger table [note that they might already
@@ -85,68 +89,103 @@ class CounterTracker {
         # default set-up, in which case no further action is needed here]...
         if %!triggers-for{ $blockname } :!exists {
             if $base ~~ 'item' | 'defn' {
-                self.manage-restart( $blockname, { :except-after($blockname) } );
+                self.manage-restart( $blockname, %( :except-after($blockname) ) );
             }
             else {
-                self.manage-restart( $blockname, { :after( $base ~ ($level - 1)) } );
+                self.manage-restart( $blockname, %( :after($base ~ ($level - 1)) ) );
             }
         }
     }
     method triggered( $blockname --> Bool ) {
         my $is-triggered = %!restart-block{ $blockname };
-        %!restart-block{ $blockname } = False if $is-triggered;
+        %!restart-block{ $blockname } = False;
         $is-triggered
     }
     method process-enumeration( $base is copy, $level, %options --> Numeration ) {
         # check for number-as first
         $base = $_ with %options<number-as>;
-        # determine if a reset is needed
-        # continued overides all restarts
-        if %options<continued><> =:= True { # continued exists and is True
-            self.inc($base, $level)
+        # number overrides resets, increments and triggering
+        if %options<number> -> $number { # number also overides a restart
+            self.set( $base, $level, $number );
+            # unset the overridden trigger
+            %!restart-block{ $base ~ $level } = False;
         }
-        elsif %options<continued><> =:= False { # continued and is False
-            self.set($base, $level, 1)
-        }
-        elsif %options<number> -> $number { # number also overides a restart
-            self.set( $base, $level, $number )
-        }
-        elsif self.triggered( $base ~ $level ) {
-            self.set($base, $level, 1)
-        }
-        else { self.inc($base, $level) }
-        # now get the enumeration
-        # first store a number-prefix if it doesnt exist
-        if %options<number-prefix> and %!prefixes{ $base }[$level]:!exists {
-            %!prefixes{ $base }[ $level ] =
-                normalise( %options<number-prefix> ).sort.[0];
-            # set superordinate values too, if non-existent
-            for 2 ..^ $level {
-                %!prefixes{ $base }[ $_ ] = [ $base , $_ - 1 ]
-                    unless %!prefixes{ $base }[ $_ ]
+        else {
+            # determine if a reset is needed
+            # continued overides all restarts
+            if %options<continued><> =:= True { # continued exists and is True
+                self.inc($base, $level);
+                # unset the overridden trigger
+                %!restart-block{ $base ~ $level } = False;
             }
-            %!prefixes{ $base }[ 1 ] = ()
-                    unless %!prefixes{ $base }[ 1 ]
+            elsif %options<continued><> =:= False { # continued and is False
+                self.set($base, $level, 1);
+                # unset the overridden trigger
+                %!restart-block{ $base ~ $level } = False;
+            }
+            elsif self.triggered( $base ~ $level ) {
+                self.set($base, $level, 1)
+            }
+            else { self.inc($base, $level) }
         }
-        if %!prefixes{ $base } {
-            Numeration.new: self.prefix-number( $base, $level ) # return the constructed stack as a Numeration
+        # now get the enumeration
+        # first check if non-default enumeration needed
+        # either there is a number-prefix for the current blocktype,
+        # or prior to the level in the default chain of the current blocktype
+        if %options<number-prefix> or any( %!prefixes{ $base }[ ^$level ]) {
+            my @sequence;
+            with %options<number-prefix> {
+                @sequence = self.get-prefix( | normalise( %options<number-prefix> ).sort.[0].kv );
+                # store prefix sequence til next base/level call
+                %!prefixes{$base}[$level] = @sequence;
+            }
+            else {
+                # make sure any previous number-prefix record is removed
+                %!prefixes{$base}[$level] = Nil;
+                # now find the prior chain prefix
+                @sequence = self.get-prefix( $base, $level -1 );
+            }
+            Numeration.new(:init( | @sequence, self.get-counter( $base ).part( $level ) ) )
         }
-        else { self.get-counter( $base ) } # the default enumeration
+        else {
+            # make sure any previous number-prefix record is removed
+            %!prefixes{$base}[$level] = Nil;
+            self.get-counter( $base ) # the default enumeration
+        }
     }
-    method prefix-number( $base, $level ) {
-        my @next = %!prefixes{$base}[$level];
-        return () unless @next.defined and @next;
-        self.prefix-number(|@next).append: %!type-counters{ $base }[$level-1]
+    method get-prefix( $base, $level --> List ) {
+        return () if $level < 1;
+        return %!prefixes{ $base }[$level]
+            if %!prefixes{ $base }[$level];
+        # is there a prefix in the chain before $level
+        if any (%!prefixes{ $base }[ ^$level ] ) {
+            | self.get-prefix($base, ( $level - 1 ) ), self.get-counter( $base ).part( +$level )
+        }
+        else {
+            self.get-counter( $base ).parts( +$level )
+        }
     }
     method inc($base, $level ) {
-        %!type-counters{ $base }.inc( $level )
+        self.get-counter( $base ).inc( $level )
     }
     method set( $base, $level, $number ) {
-        %!type-counters{ $base }.set( $level, $number )
+        self.get-counter( $base ).set( $level, $number )
     }
-    method get-counter( $base ) { %!type-counters{ $base } }
+    method get-counter( $base ) {
+        unless %!type-counters{ $base }.defined {
+            %!type-counters{ $base } .= new;
+            unless $base ~~ @!built-in.any
+                    or ( any($base.uniprops) ~~ / Lu / and any($base.uniprops) ~~ / Ll / )
+                {
+                @!warnings
+                    .push: "Counter base ｢$base｣ should follow custom block spelling rule; use a capital-case letter";
+            }
+        }
+        %!type-counters{ $base }
+    }
     method warnings {
-        @!warnings.append: %!type-counters.pairs.map( *.value.warnings.Slip )
+        @!warnings.append: %!type-counters.pairs.map( *.value.warnings.Slip );
+        @!warnings
     }
 }
 
@@ -189,6 +228,7 @@ class Numeration {
     }
     multi method set (Int() $level, $value ) {
         @!counters[$level - 1] = $value;
+        @!counters.splice($level);
         self
     }
     multi method parts( --> Array) {

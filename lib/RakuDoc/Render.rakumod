@@ -24,6 +24,10 @@ class RakuDoc::Processor {
     has SetHash $.installed-plugins .= new;
     #| last block type
     has Str $!last-type = '';
+    has @!built-in = <
+                cell code input output comment head defn item nested para
+                rakudoc section pod table formula
+            >;
     multi method debug(RDProcDebug $type --> Nil ) {
         given $type {
             when None {
@@ -1482,10 +1486,7 @@ class RakuDoc::Processor {
     method gen-unknown-builtin($ast, %config, $type, $level, $numerate) {
         my $contents = $ast.DEPARSE;
         my $prs := $*prs;
-        if $type ~~ any(<
-                cell code input output comment head numhead defn item numitem nested para
-                rakudoc section pod table formula
-            >) { # a known built-in, but to get here the block is unimplemented
+        if $type ~~ @!built-in.any { # a known built-in, but to get here the block is unimplemented
             $prs.warnings.push(
                 "｢$type｣ is a valid, but unimplemented builtin block"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")

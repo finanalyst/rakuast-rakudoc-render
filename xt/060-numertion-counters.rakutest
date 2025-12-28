@@ -1,7 +1,0 @@
-use v6.d;
-use Test;
-use RakuDoc::Numeration;
-
-plan *;
-
-done-testing
