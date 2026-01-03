@@ -1,6 +1,5 @@
 use v6.d;
 use RakuDoc::PromiseStrings;
-no precompilation; note 'no precomp';
 
 # based on code by Damian Conway (numform and restart)
 # some revision by Elizabeth Mattijsen
@@ -10,6 +9,10 @@ subset PosInt   of Int   where     * > 0;
 class Numeration { ... }
 
 class CounterTracker {
+    constant @built-in = <
+        cell code input output comment head defn item nested para
+        rakudoc section pod table formula
+    >;
     has @!warnings;
     #| tracks each counter, affected by block instance
     has Numeration %.type-counters;
@@ -22,13 +25,13 @@ class CounterTracker {
     has %!triggers-for;
     #| If a block needs to reset
     has Bool %!restart-block;
-    has @!built-in = <
-                cell code input output comment head defn item nested para
-                rakudoc section pod table formula
-            >;
 
     multi method clone( CounterTracker:D: ) {
-        ...
+        CounterTracker.new:
+            :type-counters( %!type-counters ),
+            :prefixes( %!prefixes.pairs.map( { .key => .value.clone } ).hash ),
+            :triggers-for( %!prefixes.pairs.map( { .key => .value.clone } ).hash ),
+            :restart-block(%!restart-block.clone)
     }
     #| When an expression may contain a bare block name or a blocktype,
     #| split into a hash with base => level and level = 1
@@ -39,20 +42,20 @@ class CounterTracker {
                 .hash
     }
     #| called by the restart directive
-    method manage-restart( $blocktype, %options ) {
+    method manage-restart( $blocktype, %config ) {
         my $expression;
         my $after = False;
-        if %options<after>:exists and %options<except-after>:exists {
+        if %config<after>:exists and %config<except-after>:exists {
             @!warnings.push: "restart directive has both after and except-after options, only except-after is used";
-            $expression = %options<except-after>
+            $expression = %config<except-after>
         }
-        elsif %options<after>:!exists and %options<except-after>:!exists {
+        elsif %config<after>:!exists and %config<except-after>:!exists {
             @!warnings.push: "restart directive must have either after or except-after option";
             return
         }
         else {
-            $after = %options<after>:exists;
-            $expression = $after ?? %options<after> !! %options<except-after>
+            $after = %config<after>:exists;
+            $expression = $after ?? %config<after> !! %config<except-after>
         }
         if $blocktype ~~ / ^ (\D+) (\d*) $ / {
             my $base = ~$0;
@@ -77,8 +80,10 @@ class CounterTracker {
             @!warnings.push: "Cannot parse the blocktype ｢$blocktype｣ in restart directive"
         }
     }
-    #| called by each block instance thats rendered
-    method set-restart-after( $base, $level ) {
+    #| called by each block instance that's rendered
+    method process-counter( $base is copy, $level is copy, :%config ) {
+        # check for number-as first
+        ($base, $level) = normalise(%config<number-as>).sort[0].kv if %config<number-as>:exists;
         my $blockname = $base ~ $level;
         for %!triggers-for.kv -> $restartable-block, $trigger {
             %!restart-block{ $restartable-block } ||= $blockname ~~ $trigger
@@ -95,17 +100,8 @@ class CounterTracker {
                 self.manage-restart( $blockname, %( :after($base ~ ($level - 1)) ) );
             }
         }
-    }
-    method triggered( $blockname --> Bool ) {
-        my $is-triggered = %!restart-block{ $blockname };
-        %!restart-block{ $blockname } = False;
-        $is-triggered
-    }
-    method process-enumeration( $base is copy, $level, %options --> Numeration ) {
-        # check for number-as first
-        $base = $_ with %options<number-as>;
         # number overrides resets, increments and triggering
-        if %options<number> -> $number { # number also overides a restart
+        if %config<number> -> $number { # number also overides a restart
             self.set( $base, $level, $number );
             # unset the overridden trigger
             %!restart-block{ $base ~ $level } = False;
@@ -113,12 +109,12 @@ class CounterTracker {
         else {
             # determine if a reset is needed
             # continued overides all restarts
-            if %options<continued><> =:= True { # continued exists and is True
+            if %config<continued><> =:= True { # continued exists and is True
                 self.inc($base, $level);
                 # unset the overridden trigger
                 %!restart-block{ $base ~ $level } = False;
             }
-            elsif %options<continued><> =:= False { # continued and is False
+            elsif %config<continued><> =:= False { # continued and is False
                 self.set($base, $level, 1);
                 # unset the overridden trigger
                 %!restart-block{ $base ~ $level } = False;
@@ -128,14 +124,22 @@ class CounterTracker {
             }
             else { self.inc($base, $level) }
         }
-        # now get the enumeration
+    }
+    method triggered( $blockname --> Bool ) {
+        my $is-triggered = %!restart-block{ $blockname };
+        %!restart-block{ $blockname } = False;
+        $is-triggered
+    }
+    method get-enumeration( $base is copy, $level is copy, :%config --> Numeration ) {
+        # check for number-as first
+        ($base, $level) = normalise(%config<number-as>).sort[0].kv if %config<number-as>:exists;
         # first check if non-default enumeration needed
         # either there is a number-prefix for the current blocktype,
         # or prior to the level in the default chain of the current blocktype
-        if %options<number-prefix> or any( %!prefixes{ $base }[ ^$level ]) {
+        if %config<number-prefix> or any( %!prefixes{ $base }[ ^$level ]) {
             my @sequence;
-            with %options<number-prefix> {
-                @sequence = self.get-prefix( | normalise( %options<number-prefix> ).sort.[0].kv );
+            with %config<number-prefix> {
+                @sequence = self.get-prefix( | normalise( %config<number-prefix> ).sort.[0].kv );
                 # store prefix sequence til next base/level call
                 %!prefixes{$base}[$level] = @sequence;
             }
@@ -145,7 +149,7 @@ class CounterTracker {
                 # now find the prior chain prefix
                 @sequence = self.get-prefix( $base, $level -1 );
             }
-            Numeration.new(:init( | @sequence, self.get-counter( $base ).part( $level ) ) )
+            Numeration.new(:init( | @sequence, self.get-counter( $base ).part( +$level ) ) )
         }
         else {
             # make sure any previous number-prefix record is removed
@@ -174,7 +178,7 @@ class CounterTracker {
     method get-counter( $base ) {
         unless %!type-counters{ $base }.defined {
             %!type-counters{ $base } .= new;
-            unless $base ~~ @!built-in.any
+            unless $base ~~ @built-in.any
                     or ( any($base.uniprops) ~~ / Lu / and any($base.uniprops) ~~ / Ll / )
                 {
                 @!warnings
@@ -279,7 +283,7 @@ class Numeration {
             # The type of the block
             Str :$caption = q{}
             # The caption to be shown
-                          ){
+          ){
         # What a :form<> format consists of...
         grammar Format {
             token TOP {

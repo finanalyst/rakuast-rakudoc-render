@@ -12,12 +12,10 @@ has @!starters;
 has @!titles;
 has @!save-spacer = 'None' => False , ;
 has Str $.in-head is rw = '';
+has Bool $.in-defn is rw = False;
 #| item and defn numerations by default are block scoped,
 #| Other para-ish numerations are in a Processed object
-has Hash @.numerations = %(
-    item => Numeration.new,
-    defn => Numeration.new,
-    ),
+has CounterTracker @!counter-tracker .= new
 ;
 has Bool $.debug is rw = False;
 #| debug information
@@ -38,7 +36,7 @@ method start-scope(:$starter!, :$title, :$verbatim ) {
     else {
         @!save-spacer.push: @!save-spacer.tail
     }
-    @!numerations.push: @!numerations.tail.pairs.map({ .key => .value.clone }).hash;
+    @!counter-tracker.push: @!counter-tracker.tail.clone;
     say 'New scope started. ', $.diagnostic if $!debug
 }
 #| ends the current scope, forgets new data
@@ -49,12 +47,8 @@ method end-scope {
     @!aliases.pop;
     @!save-spacer.pop;
     # before popping the enumerations, we need to preserve warnings, if any
-    my %last-numerations = @!numerations.pop;
-    for %last-numerations.keys {
-        my @warns = %last-numerations{ $_ }.warnings;
-        next unless +@warns;
-        @!numerations.tail{ $_ }.warnings.append: @warns
-    }
+    my $last-ct = @!counter-tracker.pop;
+    @!counter-tracker.tail.warnings.append: $last-ct.warnings;
     say 'Scope ended. ', $.diagnostic if $!debug
 }
 multi method config(%h) {
@@ -86,18 +80,9 @@ multi method verbatim() {
 multi method verbatim( :called-by($)! ) {
     @!save-spacer.tail.key
 }
-multi method numeration( $type --> Numeration ) {
-    @!numerations.tail{$type}
+multi method counter-tracker( --> CounterTracker ) {
+    @!counter-tracker.tail
 }
-multi method numeration-inc( $type, $level --> Numeration ) {
-    @!numerations.tail{$type}.inc($level)
-}
-multi method numeration-reset( $type --> Numeration ) {
-    @!numerations.tail{$type}.reset
-}
-multi method numeration-set( $type, $level, $num --> Numeration ) {
-    @!numerations.tail{$type}.set($level, $num)
-}
-method numeration-warnings( --> Array ) {
-    @!numerations.tail.pairs.sort.map( { ((.key ~ ' counter: ') <<~>> .value.warnings).Slip } ).Array
+method numeration-warnings ( --> Positional ) {
+    @!counter-tracker.tail.warnings
 }

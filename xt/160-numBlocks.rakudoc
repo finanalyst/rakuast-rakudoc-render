@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 10;
+plan 11;
 
 my $ast;
 my $rv;
@@ -177,91 +177,62 @@ like $rv.body.Str, /
     '</formula>'
     /, 'pre-configured renderering';
 
-my @blocks = <para input output code nested SEMANTIC>;
-# add table when numtable fixed in parser
-#subtest 'numerate blocks' => {
-#    plan *;
-#    for @blocks -> $b {
-#        $ast = qq:to/QAST/.AST;
-#        =begin rakudoc :!toc
-#        Stuff
-#        =begin num{$b}2
-#        | one  | two  |
-#        | thre | four |
-#        =end num{$b}2
-#
-#        =end rakudoc
-#        QAST
-#        $rv = $rdp.render( $ast, :pre-finalised );
-#        like $rv.body.Str, /
-#        'Stuff' .+?
-#        '<' <{ $b.lc }> '>' .+? 'numeration:'
-#        .+? <{ $b.tc }> .+ '1.1.' .+? '</' <{ $b.lc }> '>'
-#        /, "$b enumerates";
-#    }
-#}
-#subtest 'Sequences' => {
-#    $ast = Q:to/QAST/.AST;
-#        =begin rakudoc
-#        =comment 2nd-level formulas are prefixed by the current head1 enumeration...
-#        =config numformula2   :sequence< head1 formula2 >
-#        =head One
-#        =head Two
-#        =formula2
-#        =formula2
-#        =numformula2 Some Latex definition
-#        =end rakudoc
-#    QAST
-#    $rdp.debug('AstBlock BlockType');
-#    $rv = $rdp.render( $ast, :pre-finalised );
-#    like $rv.body.Str, /
-#        '<head>' .+?
-#        '<head>' .+?
-#        '<formula>' .+? '<formula>' .+?
-#        '<formula>' .+?
-#        'numeration' .+? '｢Formula 2.3.｣' .+?
-#        'raw' .+? 'Latex' .+?
-#        '</formula>'
-#        /, '2nd-level formulas';
-#    $ast = Q:to/QAST/.AST;
-#        =begin rakudoc
-#        =comment 3rd-level formulas are prefixed by the current head1 and head2 enumerations...
-#        =config formula3 :sequence< head1 head2 formula3 >
-#        =head One
-#        =head Two
-#        =head2 Two_One
-#        =head2 Two_Two
-#        =formula3 Latex defn
-#        =end rakudoc
-#    QAST
-#    $rv = $rdp.render( $ast, :pre-finalised );
-#        like $rv.body.Str, /
-#        '<formula>'
-#    #    .+? 'numeration' .+? '2.2.1'
-#        .+? 'raw' .+? 'Latex defn' .+?
-#        '</formula>'
-#        /, '3rd-level formulas are prefixed by the current head1 & head2';
-#    $ast = Q:to/QAST/.AST;
-#        =begin rakudoc
-#        =comment 3rd-level formulas are prefixed by the current head1 and head2 enumerations...
-#        =config formula3 :sequence< head1 head2 formula3 >
-#        =head One
-#        =head Two
-#        =head2 Two_One
-#        =for head2 :number(5)
-#        Two_Five
-#        =for formula3 :number(3)
-#        Latex defn
-#        =end rakudoc
-#    QAST
-#    $rv = $rdp.render( $ast, :pre-finalised );
-#    like $rv.body.Str, /
-#    '<formula>' .+?
-##    'numeration' .+? '2.5.3' .+?
-#    'raw' .+? 'Latex defn' .+?
-#    '</formula>'
-#    /, 'change counter with number: 3rd-level formulas are prefixed by the current head1 & head2';
-#}
+# Enumerate blocks
+# handle procedural para and table first because they are special
+$ast = qq:to/QAST/.AST;
+        =begin rakudoc :!toc
+        =begin numpara2
+        Some extra internal stuff
+        =end numpara2
+        =end rakudoc
+        QAST
+        $rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+'<rakudoc>' .+? 'contents' .+?
+'<para>' .+? 'contents' .+? 'Some extra' .+?
+'numeration:' .+? 'Para' .+ '1.1.' .+? '</para>'
+/, "para enumerates";
+$ast = qq:to/QAST/.AST;
+        =begin rakudoc :!toc
+        Stuff
+        =begin numtable2
+        =row
+        =cell One
+        =cell Two
+        =end numtable2
+        =end rakudoc
+        QAST
+        $rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+'Stuff' .+?
+'<table>' .+? 'numeration:'
+.+? 'Table' .+ '1.1.' .+? '</table>'
+/, "procedural table enumerates";
+
+my @blocks = <input output code nested SEMANTIC table>;
+# include table in blocks when visual tables do not create a problem
+subtest 'numerate blocks' => {
+    plan *;
+    for @blocks -> $b {
+        $ast = qq:to/QAST/.AST;
+        =begin rakudoc :!toc
+        Stuff
+        =begin num{$b}2
+        | one  | two  |
+        | thre | four |
+        =end num{$b}2
+
+        =end rakudoc
+        QAST
+        $rv = $rdp.render( $ast, :pre-finalised );
+        like $rv.body.Str, /
+        'Stuff' .+?
+        '<' <{ $b.lc }> '>' .+? 'numeration:'
+        .+? <{ $b.tc }> .+ '1.1.' .+? '</' <{ $b.lc }> '>'
+        /, "$b enumerates";
+    }
+}
+
 
 #subtest 'Aliases' => {
 #

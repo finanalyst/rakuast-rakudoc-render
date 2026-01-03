@@ -13,12 +13,16 @@ $ast = Q:to/QAST/.AST;
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
     =end rakudoc
     QAST
@@ -86,12 +90,16 @@ $ast = Q:to/QAST/.AST;
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >    :!continued
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >  :!continued
     =end rakudoc
     QAST
@@ -163,12 +171,16 @@ $ast = Q:to/QAST/.AST;
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
     =end rakudoc
     QAST
@@ -234,17 +246,20 @@ like $rv.body.Str, /
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     =config formula1  :number-as< table1 >
-
     =numhead1 Heading
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
     =end rakudoc
     QAST
@@ -316,12 +331,16 @@ $ast = Q:to/QAST/.AST;
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
     =end rakudoc
     QAST
@@ -386,21 +405,24 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =restart formula1   :after< head3 >
+    =restart TablesAndFormulae   :after< head3 >
     =config formula1 :number-as< TablesAndFormulae >
-    =restart table1     :after< head3 >
     =config table1 :number-as< TablesAndFormulae >
 
     =numhead1 Heading
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
     =end rakudoc
     QAST
@@ -474,12 +496,16 @@ $ast = Q:to/QAST/.AST;
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
     =end rakudoc
     QAST
@@ -551,13 +577,20 @@ $ast = Q:to/QAST/.AST;
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
+    =numhead1 Second heading
+        =for numtable1   :caption< Caption for next table >
+        | one   | two  |
     =end rakudoc
     QAST
 
@@ -638,19 +671,24 @@ $ast = Q:to/QAST/.AST;
     =numhead2 Subheading
     =numhead3 Subsubheading
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
     =begin section
-        =config table  :number-prefix<>  :number-as< SpecialTable >
+        =config table  :number-prefix('')  :number-as< SpecialTable >
 
         =for numtable1   :caption< Caption for first table >   :number(1000)
+        | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
     =end section
     =numhead1 Second heading
         =for numtable1   :caption< Caption for next table >
+        | one   | two  |
         =for numformula1 :caption< Caption for next formula >
     =end rakudoc
     QAST
@@ -729,25 +767,30 @@ like $rv.body.Str, /
     /, 'A9-A16. Localized independent numbering';
 
 $ast = Q:to/QAST/.AST;
-    =restart item  :except-after< item1 head1 !table !formula >
+    =begin rakudoc
+    =restart item  :except-after< item1 head1 table formula >
 
     =numhead1 Heading
         =numitem Item the first
         =numitem Item the second
         =for numtable1   :caption< Caption for first table >
+        | one   | two  |
         =numitem Item the third
     =numhead2 Subheading
         =numitem Item the fourth
         =for numformula1 :caption< Caption for first formula >
         =numitem Item the fifth
         =for numtable1   :caption< Caption for second table >
+        | one   | two  |
         =for numformula1 :caption< Caption for second formula >
         =numitem Item the sixth
     =numhead1 Second heading
         =numitem Item the seventh
         =for numtable1   :caption< Caption for next table >
+        | one   | two  |
         =for numformula1 :caption< Caption for next formula >
         =numitem Item the eighth
+    =end rakudoc
     QAST
 
 $rv = $rdp.render( $ast, :pre-finalised );

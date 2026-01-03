@@ -112,7 +112,7 @@ $ast = Q:scalar:to/QAST/.AST;
 
     Some text
 
-    =place https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE  :caption<Raku's license>  :alt<A multicoloured butterfly>
+    =place https://raw.githubusercontent.com/rakudo/rakudo/master/XXLICENSE  :toc<head> :caption<Raku's license>  :alt<A multicoloured butterfly>
 
     More text
 

@@ -113,9 +113,6 @@ class RakuDoc::Processed is ProcessedState {
     #| External is a fully qualified URL
     #|
     has Hash %.links;
-    has %.counters =
-        head => Numeration.new,
-    ;
     #| Rendered version of the ToC
     has $.rendered-toc is rw;
     #| Rendered version of the Index
@@ -139,24 +136,6 @@ class RakuDoc::Processed is ProcessedState {
         without $!name { $!name = %!source-data<name> ~ '.' ~ $!output-format }
         $!targets .= new;
     }
-
-    multi method get-counter($type) {
-        if %!counters{ $type }:exists {
-            %!counters{ $type }
-        }
-        else {
-            my @allowed = <code para nested input output formula table>;
-            # add a new type, but type must be an existing built it, or a custom
-            # otherwise generate a warning, but use as.
-            @.warnings.push: "Use of improper block name for counter ｢$type｣. To remove this warning, use one of @allowed or a custom name with mixed case, eg. {$type.tc} ."
-                    unless ( $type eq @allowed.any
-                            or ?( any($type.uniprops) ~~ / Lu / and any($type.uniprops) ~~ / Ll /));
-            %!counters{ $type } = Numeration.new
-        }
-    }
-    multi method numeration-warnings( --> Array ) {
-        %!counters.pairs.sort.map({ ((.key ~ ' counter: ') <<~>> .value.warnings).Slip }).Array
-    }
     
     multi method gist(RakuDoc::Processed:U: ) { 'Undefined RakuDoc::Processed object' }
     
@@ -178,8 +157,6 @@ class RakuDoc::Processed is ProcessedState {
             footnotes => { pretty-dump( @.footnotes, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             links => { pretty-dump( %.links, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") )  }
-            counters => { pretty-dump( %.counters, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") )  }
             targets => <｢{ $!targets.keys.join('｣, ｢') }｣>
             items => { pretty-dump( @.items, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),

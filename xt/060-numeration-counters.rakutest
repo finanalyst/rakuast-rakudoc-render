@@ -2,11 +2,11 @@ use v6.d;
 use Test;
 use RakuDoc::Numeration;
 
-plan *;
+plan 31;
 
-sub blk( $ct, $bk, $lv, :%options --> Numeration ) {
-    $ct.set-restart-after($bk, $lv);
-    $ct.process-enumeration( $bk, $lv, %options)
+sub blk( $ct, $bk, $lv, :%config --> Numeration ) {
+    $ct.process-counter($bk, $lv, :%config);
+    $ct.get-enumeration( $bk, $lv, :%config)
 }
 
 my CounterTracker $ct;
@@ -22,7 +22,7 @@ is $rv.Str, '3.', 'simple numeration';
 blk $ct, 'head', 3;
 $rv = blk $ct, 'head', 3;
 is $rv, '3.1.2.', 'head level 3';
-$rv = blk $ct, 'head', 3, :options(%(:4number));
+$rv = blk $ct, 'head', 3, :config(%(:4number));
 is $rv, '3.1.4.', 'number option works';
 is blk($ct,'head',2).Str, '3.2.', 'inc head2';
 blk $ct, 'item', 1;
@@ -31,7 +31,7 @@ blk $ct, 'para', 1;
 is blk($ct, 'item', 1).Str, '1.', 'item resets after para';
 blk $ct, 'item', 1;
 blk $ct, 'item', 1;
-is blk( $ct, 'item', 2, :options(%(:4number)) ).Str, '3.4.', 'item2 En';
+is blk( $ct, 'item', 2, :config(%(:4number)) ).Str, '3.4.', 'item2 En';
 is blk( $ct, 'item', 1 ).Str(2), '4.1.', 'item2 reset';
 $rv = blk $ct, 'head', 3;
 is $rv, '3.2.1.', 'head level 3 inc-d';
@@ -47,7 +47,7 @@ is blk($ct, 'item', 1).Str, '3.', 'item does not now reset after para';
 blk $ct, 'head', 1;
 is blk($ct, 'item', 1).Str, '1.', 'item resets after head';
 
-blk $ct, 'table', 1, :options(%(:4number));
+blk $ct, 'table', 1, :config(%(:4number));
 blk $ct, 'head', 1;
 is blk($ct, 'table', 1).Str, '5.', 'table by default not restarted by head';
 $ct.manage-restart('table', %( :after< head > ) );
@@ -57,29 +57,36 @@ blk $ct, 'formula', 1;
 is blk($ct, 'table', 1).Str, '2.', 'table not restarted by fomula';
 
 # test number-as
-is blk($ct, 'formula', 1, :options(%(:number-as<table>))).Str, '3.', 'formula uses current table counter';
+# set table to 1
+blk $ct, 'table', '1', :config( %( :1number ) );
+is blk($ct, 'formula', 1, :config(%(:number-as<table1>))).Str, '2.', 'formula uses current table counter';
 is $ct.get-counter('formula').Str, '1.', 'formula counter is not incremented';
+is blk($ct, 'table', 1).Str, '3.', 'table now 3';
+is blk($ct, 'formula', 1, :config(%(:number-as<table1>))).Str, '4.', 'formula uses current table counter';
+
 is $ct.warnings, (), 'no errors so far';
-is blk($ct, 'formula', 1, :options(%(:number-as<tableorformula>))).Str, '1.', 'formula now uses custom counter';
+is blk($ct, 'formula', 1, :config(%(:number-as<tableorformula>))).Str, '1.', 'formula now uses custom counter';
 like $ct.warnings.join, / 'should follow custom' /, 'Custom block error';
+
 
 # test prefix
 # at this point item counter should be restart triggered
-# head counter should be at 6
-is blk($ct, 'item', 1, :options(%(:number-prefix<head1>))).Str, '6.1.', 'item prefixed by head1';
+# set head counter to 6
+blk $ct, 'head', 1, :config(%( :6number ));
+is blk($ct, 'item', 1, :config(%(:number-prefix<head1>))).Str, '6.1.', 'item prefixed by head1';
 blk $ct, 'head', 3;
 blk $ct, 'head', 3;
 blk $ct, 'item', 1;
-is blk($ct, 'item', 1, :options(%(:number-prefix<head3>))).Str, '6.1.2.2.', 'item prefixed by head3';
+is blk($ct, 'item', 1, :config(%(:number-prefix<head3>))).Str, '6.1.2.2.', 'item prefixed by head3';
 is blk($ct, 'item', 1).Str, '3.', 'item not prefixed at all';
-is blk($ct,'item',3,:options(%(:4number))).Str, '3.1.4.', 'inc 4 counter only';
-is blk($ct, 'head', 1, :options(%(:number-prefix<head3>))).Str, '7.1.1.7.', 'head1 prefixed by head3, so some recycling';
+is blk($ct,'item',3,:config(%(:4number))).Str, '3.1.4.', 'inc 4 counter only';
+is blk($ct, 'head', 1, :config(%(:number-prefix<head3>))).Str, '7.1.1.7.', 'head1 prefixed by head3, so some recycling';
 blk $ct, 'head', 1; # remove prefix
 blk $ct, 'head', 3;
 blk $ct, 'head', 3;
 blk($ct, 'item', 1); # is reset to 1 by head
-is blk($ct, 'item', 4, :options(%(:4number))).Str, '1.1.1.4.', 'normal item1 prefix';
-blk($ct, 'item', 1, :options(%(:number-prefix<head3>))); # is reset to 1 by head
-is blk($ct, 'item', 4, :options(%(:4number))).Str, '8.1.2.1.1.4.', 'prefixed by item1 prefix';
+is blk($ct, 'item', 4, :config(%(:4number))).Str, '1.1.1.4.', 'normal item1 prefix';
+blk($ct, 'item', 1, :config(%(:number-prefix<head3>))); # is reset to 1 by head
+is blk($ct, 'item', 4, :config(%(:4number))).Str, '8.1.2.1.1.4.', 'prefixed by item1 prefix';
 
 done-testing
