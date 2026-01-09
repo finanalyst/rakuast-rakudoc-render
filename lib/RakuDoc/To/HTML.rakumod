@@ -220,12 +220,6 @@ class RakuDoc::To::HTML {
                     qq[[</$h>\n]]
                     ) !! '')
             },
-            #| renders =numhead block
-            numhead => -> %prm, $tmpl { $tmpl<head> },
-            #| renders the numeration part for a toc
-            toc-numeration => -> %prm, $tmpl { %prm<contents> },
-            #| rendering the content from the :delta option
-            #| see inline variant markup-Δ
             delta => -> %prm, $tmpl {
                 DEVEL-VERSION-ON ~ %prm<versions> ~
                 ( %prm<note> ??
@@ -242,13 +236,6 @@ class RakuDoc::To::HTML {
             #| renders =numdefn block
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
-            #| special template to render a numbered defn list data structure
-            numdefn => -> %prm, $tmpl {
-                PStr.new: DEFN-TERM-ON ~ %prm<numeration> ~ '&nbsp;' ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
-            },
-            #| special template to render a numbered item list data structure
-            numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
                 my $n = %prm<level> - 1;
@@ -259,15 +246,6 @@ class RakuDoc::To::HTML {
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
                 "\n<ul class=\"item-list\">" ~ ([~] %prm<item-list>) ~ "</ul>\n"
-            },
-            #| renders =numitem block
-            numitem => -> %prm, $tmpl {
-                my $n = %prm<level> - 1;
-                qq[<li class="item" data-bullet="{%prm<numeration>}" style="--level:$n;"> {%prm<contents>}</li>\n]
-            },
-            #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl {
-                "\n<ol class=\"item-list\">" ~ ([~] %prm<numitem-list>) ~ "</ol>\n"
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {

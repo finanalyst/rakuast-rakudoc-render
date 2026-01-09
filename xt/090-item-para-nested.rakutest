@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 4;
+plan 6;
 
 my $ast;
 my $rv;
@@ -68,4 +68,52 @@ like $rv.body.Str, /
     'End the item list with a paragraph'
     /, 'list ends with paragraph';
 
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+
+    Some text on a line
+    more text on a line
+
+    Next paragraph
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<para>' .+?
+    'contents' .+? 'Some text on a line more text on a line' .+?
+    '</para' .+?
+    '<para>' .+?
+    'contents' .+? 'Next paragraph' .+?
+    '</para'
+/, 'implied first paragraph';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    paragraph before
+    =begin nested
+    Some text on a line
+    more text on a line
+
+    Next paragraph
+    =end nested
+    paragraph after
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+'<para>' .+?
+'contents' .+? 'paragraph before' .+?
+'</para' .+?
+
+'<nested>' .+?
+'contents' .+? 'Some text on a line more text on a line' .+?
+'</nested' .+?
+'<nested>' .+?
+'contents' .+? 'Next paragraph' .+?
+'</nested' .+?
+
+'<para>' .+?
+'contents' .+? 'paragraph after' .+?
+'</para' .+?
+/, 'implied first paragraph';
 done-testing;

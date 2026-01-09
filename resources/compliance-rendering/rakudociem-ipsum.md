@@ -9,8 +9,6 @@
 
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Purpose">Purpose</a>   
-<a href="#Short_table_of_contents">Short table of contents</a>   
-<a href="#A_short_index">A short index</a>   
 <a href="#This_is_a_first_heading">This is a first heading</a>   
 &nbsp;&nbsp;- <a href="#This_is_a_second_level_heading">This is a second level heading</a>   
 &nbsp;&nbsp;&nbsp;&nbsp;- <a href="#This_is_third_level_heading">This is third level heading</a>   
@@ -25,72 +23,113 @@
 &nbsp;&nbsp;- <a href="#Taking_a_bullet">Taking a bullet</a>   
 <a href="#Blocks_that_are_processed_differently">Blocks that are processed differently</a>   
 &nbsp;&nbsp;- <a href="#Unrelenting_hype">Unrelenting hype</a>   
-<a href="#Formula_cannot_be_rendered">Fabulous identity</a>   
-&nbsp;&nbsp;- <a href="#A_customised_block">A customised block</a>   
 <a href="#This_is_an_extraordinary_paragraph">This is an extraordinary paragraph</a>   
 <a href="#Some_tables">Some tables</a>   
-&nbsp;&nbsp;- <a href="#A_visual_table">A visual table</a>   
-&nbsp;&nbsp;- <a href="#A_visual_table_with_a_stupendously_long_caption">A visual table with a stupendously long caption</a>   
-&nbsp;&nbsp;- <a href="#A_procedural_table">A procedural table</a>   
 <a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a>   
 <a href="#Scoping_examples">Scoping examples</a>   
 <a href="#Placements">Placements</a>   
-&nbsp;&nbsp;- <a href="#Text_placement">Text placement</a>   
-&nbsp;&nbsp;- <a href="#RakuDoc_placement">RakuDoc placement</a>   
-<a href="#A_ware">A ware</a>   
-<a href="#B_ware">B ware</a>   
-&nbsp;&nbsp;- <a href="#HTML_placement">HTML placement</a>   
-&nbsp;&nbsp;- <a href="#JPEG_image_placement">JPEG image placement</a>   
-&nbsp;&nbsp;- <a href="#Png_image_placement">Png image placement</a>   
+<a href="#Enumerated_blocks">Enumerated blocks</a>   
+<a href="#PHYSICS">PHYSICS</a>   
+&nbsp;&nbsp;- <a href="#Newtonian">Newtonian</a>   
+&nbsp;&nbsp;- <a href="#Relativistic">Relativistic</a>   
+<a href="#PHYSICS_0">PHYSICS</a>   
+&nbsp;&nbsp;- <a href="#Newtonian_0">Newtonian</a>   
+&nbsp;&nbsp;- <a href="#Relativistic_0">Relativistic</a>   
+<a href="#Heading">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Second_heading">Second heading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+&nbsp;&nbsp;&nbsp;&nbsp;- <a href="#Subsubheading_0">Subsubheading</a>   
+<a href="#Second_heading_0">Second heading</a>   
+<a href="#Heading_0">Heading</a>   
+&nbsp;&nbsp;- <a href="#Subheading_0">Subheading</a>   
+<a href="#Second_heading_0">Second heading</a>   
 <a href="#Credits">Credits</a>   
 <a href="#LICENSE_0">LICENSE</a>   
+<a href="#VERSION_0">VERSION</a>   
 
 
 <div id="SYNOPSIS"></div>
 
 ## SYNOPSIS
-<span class="para" id="a615aad"></span>Assuming a new renderer has been developed and installed (eg using *zef*) at **Rakudoc::To::MyRender**, the render this file using a `raku --rakudoc=MyRenderer` terminal command. The renderer will be consistent with the RakuDoc v2 specification if all the blocks are rendered appropriately, and warnings are generated by the statements marked as incorrect below. 
-
-
+<span class="para" id="a615aad"></span>Assuming a new renderer has been developed and installed (eg using *zef*) at **Rakudoc::To::MyRender**, the render this file using a `raku --rakudoc=MyRenderer` terminal command. The renderer will be consistent with the RakuDoc v2 specification if all the blocks are rendered appropriately, and warnings are generated by the statements marked as incorrect below.
 
 <div id="Purpose"></div>
 
 ## Purpose
-<span class="para" id="289b7b1"></span>This file is intended to prove a RakuDoc v2 renderer. It can be used in several ways: 
-
-
-
+This file is intended to prove a RakuDoc v2 renderer. It can be used in several ways:  
 &nbsp;&nbsp;• to generate the AST representation of all the RakuDoc components in the specification  
 &nbsp;&nbsp;• to prove a renderer that a new renderer should be able to process this file  
 &nbsp;&nbsp;• to visualise how the final output of a RakuDoc source will look after processing  
-<span class="para" id="a1f56c2"></span>An attempt has been made to utilise all RakuDoc components, it is not an exhaustive test of all components in all possible combinations. Please suggest additional combinations if they turn out to have unusual effects. 
-
-<span class="para" id="357bb2a"></span>Several *mistakes* have been included where the RakuDoc v2 specification indicates how inconsistent behaviours or unknown components should be handled. 
-
-<span class="para" id="d6a1df2"></span>The the end of the rendering of this source file, a number of warning messages should be included. 
-
+An attempt has been made to utilise all RakuDoc components, it is not an exhaustive test of all components in all possible combinations. Please suggest additional combinations if they turn out to have unusual effects.  
+<span class="para" id="357bb2a"></span>Several *mistakes* have been included where the RakuDoc v2 specification indicates how inconsistent behaviours or unknown components should be handled.   
+The the end of the rendering of this source file, a number of warning messages should be included.  
 
 <div id="Short table of contents"></div><div id="Short_table_of_contents"></div>
 
 ## Short table of contents
 <a href="#SYNOPSIS">SYNOPSIS</a>   
 <a href="#Purpose">Purpose</a>   
-<a href="#Short_table_of_contents">Short table of contents</a>   
-<a href="#A_short_index">A short index</a>   
 <a href="#This_is_a_first_heading">This is a first heading</a>   
 <a href="#This_is_a_numbered_heading,_level_1">This is a numbered heading, level 1</a>   
 <a href="#Lists">Lists</a>   
 <a href="#Blocks_that_are_processed_differently">Blocks that are processed differently</a>   
-<a href="#Formula_cannot_be_rendered">Fabulous identity</a>   
 <a href="#This_is_an_extraordinary_paragraph">This is an extraordinary paragraph</a>   
 <a href="#Some_tables">Some tables</a>   
 <a href="#Adding_index_entries_to_your_text">Adding index entries to your text</a>   
 <a href="#Scoping_examples">Scoping examples</a>   
 <a href="#Placements">Placements</a>   
-<a href="#A_ware">A ware</a>   
-<a href="#B_ware">B ware</a>   
+<a href="#Enumerated_blocks">Enumerated blocks</a>   
+<a href="#PHYSICS">PHYSICS</a>   
+<a href="#PHYSICS_0">PHYSICS</a>   
+<a href="#Heading">Heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Second_heading">Second heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Second_heading_0">Second heading</a>   
+<a href="#Heading_0">Heading</a>   
+<a href="#Second_heading_0">Second heading</a>   
 <a href="#Credits">Credits</a>   
 <a href="#LICENSE_0">LICENSE</a>   
+<a href="#VERSION_0">VERSION</a>   
 
 
 
@@ -103,7 +142,7 @@
 
 <span style="background-color: antiquewhite; font-weight: 600;">formatting code</span>: <a href="#index-entry-formatting_code">Adding index entries to your text</a>
 
-<span style="background-color: antiquewhite; font-weight: 600;">index</span>: <a href="#index-entry-index_entry">Adding index entries to your text</a>, <a href="#index-entry-index">Adding index entries to your text</a>, <a href="#index-entry-Index_entries">Adding index entries to your text</a>, <a href="#index-entry-subentries">Adding index entries to your text</a>, <a href="#index-entry-multilevel_subentries">Adding index entries to your text</a>, <a href="#index-entry-first_level">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
+<span style="background-color: antiquewhite; font-weight: 600;">index</span>: <a href="#index-entry-index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
 
 <span style="background-color: antiquewhite; font-weight: 600;">inline formatting</span>: <a href="#index-entry-formatting_code">Adding index entries to your text</a>
 
@@ -115,69 +154,43 @@
 <div id="This is a first heading"></div><div id="This_is_a_first_heading"></div>
 
 ## This is a first heading
-<span class="para" id="170d167"></span>text 
-
+text  
 
 <div id="This is a second level heading"></div><div id="This_is_a_second_level_heading"></div>
 
 ### This is a second level heading
-<span class="para" id="170d167"></span>text 
-
+text  
 
 <div id="This is third level heading"></div><div id="This_is_third_level_heading"></div><span style="color: white; background-color: #ff7b25;">developers can attach notes to blocks associated with versions</span><span style="color: white; background-color: #d64161;"> for v2</span>
 
 
 
 #### This is third level heading
-<span class="para" id="6d48c47"></span>A paragraph to illustrate **Basis type** formatting. 
-
-<span class="para" id="9e4b2c8"></span>A paragraph to illustrate *Important type* formatting. 
-
-<span class="para" id="eb35b7c"></span>A paragraph to illustrate __Unusual type__ formatting. 
-
-<span class="para" id="7f14702"></span>A paragraph to illustrate ~~Strikethrough type~~ formatting. 
-
-<span class="para" id="9897186"></span>A paragraph to illustrate <sup>Superscript type</sup> formatting. (For text output, many terminals do not support superscript/subscript font positions, so consider using a colouration as well.) 
-
-<span class="para" id="3f77594"></span>A paragraph to illustrate <sub>Subscript type</sub> formatting. 
-
-<span class="para" id="325e6b7"></span>A paragraph to illustrate `Code type` formatting. It can contain other markup, eg. `A<> markup`. 
-
-<span class="para" id="94d5440"></span>A paragraph to illustrate Verbatim type formatting. It can contain other RakuDoc, eg. P<defn:Happy> without executing it. 
-
-<span class="para" id="80d1b0c"></span>A paragraph to illustrate some >< formatting (in the source has Z<Zero width> between >< ). 
-
-<span class="para" id="a77e8a7"></span>A paragraph to illustrate ***Keyboard*** formatting. 
-
-<span class="para" id="3e0ea31"></span>A paragraph to illustrate **__Replacement__** formatting. 
-
-<span class="para" id="7a58ef8"></span>A paragraph to illustrate ***__Terminal__*** formatting. 
-
-<span class="para" id="3c4cf2d"></span>A paragraph to illustrate several `G<G undefined type>`, `Q<Q undefined type>`, `W<W undefined type>`, `Y<Y undefined type>` formatting; warnings are expected. 
-
-<span class="para" id="55df88f"></span>Various entities are possible such as « or the same thing using unicode «. Entities can be double unicodes, such as 🇺🇦, which is the Ukrainian flag. 
-
-<span class="para" id="1c04399"></span>In case you have forgotten, here is something aliased at the start: Do not consider this a disquisition of possible combinations. 
-
-<span class="para" id="e83fbc8"></span>This is an example of an Alias where A<DECLARATION> was replaced by the contents of the =alias directive. Aliases are scoped, see below, but cannot be specified before being used in the document. Here is an undeclared forward reference, which was written as A<an undeclared|XXX>. The use of an undeclared alias causes a warning. 
-
-<span class="para" id="e362c54"></span>We can also make an inline <span style="font-weight: 600; font-style: italic">definition</span>. This whole paragraph will be referenced later. 
-
-<span class="para" id="e8fea2b"></span>A developer note <span style="background-color: #feb236;">can be attached</span><span style="color: white; background-color: #ff7b25;"> highly deprecated</span><span style="color: white; background-color: #d64161;">[for v1.2.3 ^.. v2.0.0]</span> to text. A renderer may show the text or only show it for contexts compliant with the version. 
-
-<span class="para" id="3f70975"></span>But a note without meta no versioning here is ignored and a warning generated. 
-
-<span class="para" id="9569ffb"></span>When we want a formula `\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}` use F<> markup. 
-
-<span class="para" id="f65ea69"></span>Links can be made internally [say to the first heading](This is a first heading) or externally [say to the raku documentation site](https://docs.raku.org). 
-
-<span class="para" id="bf769a1"></span>A renderer should provide the opportunity to customise text using M<...|..,..;...> markup. The renderer `should not recognise this functionality` and issue a warning. 
-
-<span class="para" id="9de2db6"></span>A note <a id="N<such_as_this_one>" href="#fn_target_N<such_as_this_one>"><sup>[ 1 ]</sup></a> will not itself be rendered inline, but the text will be rendered in a footnote or popup. A marker or number will be rendered to point to the text. 
-
-<span class="para" id="7d18724"></span>Suppose we want to place the definition <span style="font-weight: 600; font-style: italic">Im-a-doppelganger</span>
-⦗<span class="para" id="e362c54"></span>We can also make an inline <span style="font-weight: 600; font-style: italic">definition</span>. This whole paragraph will be referenced later. 
-
+<span class="para" id="6d48c47"></span>A paragraph to illustrate **Basis type** formatting.   
+<span class="para" id="9e4b2c8"></span>A paragraph to illustrate *Important type* formatting.   
+<span class="para" id="eb35b7c"></span>A paragraph to illustrate __Unusual type__ formatting.   
+<span class="para" id="7f14702"></span>A paragraph to illustrate ~~Strikethrough type~~ formatting.   
+<span class="para" id="9897186"></span>A paragraph to illustrate <sup>Superscript type</sup> formatting. (For text output, many terminals do not support superscript/subscript font positions, so consider using a colouration as well.)   
+<span class="para" id="3f77594"></span>A paragraph to illustrate <sub>Subscript type</sub> formatting.   
+<span class="para" id="d577840"></span>A paragraph to illustrate `Code type` formatting. It can contain other markup, eg. `A&lt;> markup`.   
+<span class="para" id="2a91fed"></span>A paragraph to illustrate Verbatim type formatting. It can contain other RakuDoc, eg. P&lt;defn:Happy> without executing it.   
+<span class="para" id="dce918e"></span>A paragraph to illustrate some >&lt; formatting (in the source has Z&lt;Zero width> between >&lt; ).   
+<span class="para" id="a77e8a7"></span>A paragraph to illustrate ***Keyboard*** formatting.   
+<span class="para" id="3e0ea31"></span>A paragraph to illustrate **__Replacement__** formatting.   
+<span class="para" id="7a58ef8"></span>A paragraph to illustrate ***__Terminal__*** formatting.   
+<span class="para" id="8da7fbc"></span>A paragraph to illustrate several `G&lt;G undefined type>`, `Q&lt;Q undefined type>`, `W&lt;W undefined type>`, `Y&lt;Y undefined type>` formatting; warnings are expected.   
+<span class="para" id="55df88f"></span>Various entities are possible such as « or the same thing using unicode «. Entities can be double unicodes, such as 🇺🇦, which is the Ukrainian flag.   
+<span class="para" id="1c04399"></span>In case you have forgotten, here is something aliased at the start: Do not consider this a disquisition of possible combinations.   
+<span class="para" id="8ef2f7f"></span>This is an example of an Alias where A&lt;DECLARATION> was replaced by the contents of the =alias directive. Aliases are scoped, see below, but cannot be specified before being used in the document. Here is an undeclared forward reference, which was written as A&lt;an undeclared|XXX>. The use of an undeclared alias causes a warning.   
+<span class="para" id="e362c54"></span>We can also make an inline <span style="font-weight: 600; font-style: italic">definition</span>. This whole paragraph will be referenced later.   
+<span class="para" id="e8fea2b"></span>A developer note <span style="background-color: #feb236;">can be attached</span><span style="color: white; background-color: #ff7b25;"> highly deprecated</span><span style="color: white; background-color: #d64161;">[for v1.2.3 ^.. v2.0.0]</span> to text. A renderer may show the text or only show it for contexts compliant with the version.   
+<span class="para" id="3f70975"></span>But a note without meta no versioning here is ignored and a warning generated.   
+<span class="para" id="05c9279"></span>When we want a formula `\sum \frac{1}{n^{2}} = \frac{\pi^{2}}{6}` use F&lt;> markup.   
+<span class="para" id="f65ea69"></span>Links can be made internally [say to the first heading](This is a first heading) or externally [say to the raku documentation site](https://docs.raku.org).   
+<span class="para" id="c0b8ded"></span>A renderer should provide the opportunity to customise text using M&lt;...|..,..;...> markup. The renderer `should not recognise this functionality` and issue a warning.   
+<span class="para" id="82ddaed"></span>A note <a id="such_as_this_one" href="#fn_target_such_as_this_one"><sup>[ 1 ]</sup></a> will not itself be rendered inline, but the text will be rendered in a footnote or popup. A marker or number will be rendered to point to the text.   
+<span class="para" id="46cefb1"></span>Suppose we want to place the definition <span style="font-weight: 600; font-style: italic">Im-a-doppelganger</span>
+⦗<span class="para" id="e362c54"></span>We can also make an inline <span style="font-weight: 600; font-style: italic">definition</span>. This whole paragraph will be referenced later.   
 
 ⦘ here. And to confound pedants, here is a definition <span style="font-weight: 600; font-style: italic">Happy</span>
 ⦗<span style="font-weight: 600; font-style: italic">Happy</span>
@@ -185,61 +198,48 @@
 &nbsp;&nbsp;<span style="background-color: lightgrey;">when not blue </span>
 
 
-⦘ defined using a `=defn` block. 
+⦘ defined using a `=defn` block.   
+<span class="para" id="839cb63"></span>Normally extra spaces are removed with paragraphs, but sometimes we truly dot dot dot&nbsp;&nbsp; dash dash dash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; want them.   
+<span class="para" id="b0f6e39"></span>Good text will contain <span id="index-entry-elements_to_be_placed"><span style="color:green; background-color: antiquewhite;">elements to be placed</span></span> in an index. The index has already been placed at the start of the document, although content is generated here.   
 
-<span class="para" id="839cb63"></span>Normally extra spaces are removed with paragraphs, but sometimes we truly dot dot dot&nbsp;&nbsp; dash dash dash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; want them. 
+<div id="3.This is a numbered heading, level 1"></div><div id="This_is_a_numbered_heading,_level_1"></div>
 
-<span class="para" id="b0f6e39"></span>Good text will contain <span id="index-entry-elements_to_be_placed"><span style="color:green; background-color: antiquewhite;">elements to be placed</span></span> in an index. The index has already been placed at the start of the document, although content is generated here. 
+## 3.This is a numbered heading, level 1
+text  
 
+<div id="3.1.This is a second level heading"></div><div id="This_is_a_second_level_heading_0"></div>
 
-<div id="｢heading_This_is_a_numbered_heading,_level_1 UNAVAILABLE｣ This is a numbered heading, level 1"></div><div id="This_is_a_numbered_heading,_level_1"></div>
+### 3.1.This is a second level heading
+text  
 
-## 1. This is a numbered heading, level 1
-<span class="para" id="170d167"></span>text 
+<div id="3.1.1.A third level"></div><div id="A_third_level"></div>
 
+#### 3.1.1.A third level
+text  
 
-<div id="｢heading_This_is_a_second_level_heading_0 UNAVAILABLE｣ This is a second level heading"></div><div id="This_is_a_second_level_heading_0"></div>
+<div id="3.1.2.Another third level"></div><div id="Another_third_level"></div>
 
-### 1.1. This is a second level heading
-<span class="para" id="170d167"></span>text 
+#### 3.1.2.Another third level
+text  
 
+<div id="3.2.Back to second"></div><div id="Back_to_second"></div>
 
-<div id="｢heading_A_third_level UNAVAILABLE｣ A third level"></div><div id="A_third_level"></div>
+### 3.2.Back to second
+text  
 
-#### 1.1.1. A third level
-<span class="para" id="170d167"></span>text 
+<div id="3.2.1.A third level"></div><div id="A_third_level_0"></div>
 
+#### 3.2.1.A third level
+Although this heading has the same text in the heading, the Table of Contents should provide a unique target for it (this may not be possible in some formats such as MarkDown)  
 
-<div id="｢heading_Another_third_level UNAVAILABLE｣ Another third level"></div><div id="Another_third_level"></div>
+<div id="3.2.2.Another third level"></div><div id="Another_third_level_0"></div>
 
-#### 1.1.2. Another third level
-<span class="para" id="170d167"></span>text 
-
-
-<div id="｢heading_Back_to_second UNAVAILABLE｣ Back to second"></div><div id="Back_to_second"></div>
-
-### 1.2. Back to second
-<span class="para" id="170d167"></span>text 
-
-
-<div id="｢heading_A_third_level_0 UNAVAILABLE｣ A third level"></div><div id="A_third_level_0"></div>
-
-#### 1.2.1. A third level
-<span class="para" id="d834d1b"></span>Although this heading has the same text in the heading, the Table of Contents should provide a unique target for it (this may not be possible in some formats such as MarkDown) 
-
-
-<div id="｢heading_Another_third_level_0 UNAVAILABLE｣ Another third level"></div><div id="Another_third_level_0"></div>
-
-#### 1.2.2. Another third level
-<span class="para" id="170d167"></span>text 
-
+#### 3.2.2.Another third level
+text  
 <div id="Lists"></div>
 
 ## Lists
-<span class="para" id="55bb607"></span>Unnumbered up to four levels of bulleting are required, a renderer can offer more. 
-
-
-
+Unnumbered up to four levels of bulleting are required, a renderer can offer more.  
 &nbsp;&nbsp;• The start of a unnumbered item list  
 &nbsp;&nbsp;• Next item  
 &nbsp;&nbsp;&nbsp;&nbsp;▹ now next level  
@@ -252,37 +252,18 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∙ level seven  
 &nbsp;&nbsp;• reset to level one  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;‣ jump levels  
-
-
-<span class="para" id="ad539eb"></span>to put space between lists, probably a `=para` without text is needed. 
-
-
-
-
-
-1. The start of a numbered item list  
-
-2. Next item  
-
-2.1. now next level  
-
-2.2. another at two  
-
-2.2.1. a third level  
-
-3. reset to level one  
-
-3.0.1. jump levels  
-
-
-
+  
+<span class="para" id="ad539eb"></span>to put space between lists, probably a `=para` without text is needed.  
+1.The start of a numbered item list
+2.Next item
+2.1.now next level
+2.2.another at two
+2.2.1.a third level
+3.reset to level one
+3.1.1.jump levels
 &nbsp;&nbsp;• an unnumbered item  
-
-
-3.1. but we can resume after a break  
-
-
-
+4.1.but we can resume after a break
+  
 
 <span style="font-weight: 600; font-style: italic">Definitions</span>
 
@@ -298,31 +279,27 @@
 
 <span style="font-weight: 600; font-style: italic">Being assertive</span>
 
-&nbsp;&nbsp;<span style="background-color: lightgrey;"><span class="para" id="2e02a7a"></span>Just **shout** why don't you? 
-
+&nbsp;&nbsp;<span style="background-color: lightgrey;"><span class="para" id="2e02a7a"></span>Just **shout** why don't you?   
 </span>
 
+  
+This is an ordinary paragraph  
 
-
-<span class="para" id="9cbaca5"></span>This is an ordinary paragraph 
-
-
-<span style="font-weight: 600; font-style: italic">1.&nbsp;Lemma 1</span>
+<span style="font-weight: 600; font-style: italic">1.Lemma 1</span>
 
 &nbsp;&nbsp;<span style="background-color: lightgrey;">do not make trouble </span>
 
-<span style="font-weight: 600; font-style: italic">2.&nbsp;Lemma 2</span>
+<span style="font-weight: 600; font-style: italic">2.Lemma 2</span>
 
 &nbsp;&nbsp;<span style="background-color: lightgrey;">do not shout at people </span>
 
-<span style="font-weight: 600; font-style: italic">3.&nbsp;Lemma 3</span>
+<span style="font-weight: 600; font-style: italic">3.Lemma 3</span>
 
 &nbsp;&nbsp;<span style="background-color: lightgrey;">just phone the SWAT team </span>
 
-<span class="para" id="84e6def"></span>An ordinary paragraph creates the definition list. 
+An ordinary paragraph creates the definition list.  
 
-
-<span style="font-weight: 600; font-style: italic">4.&nbsp;Lemma 4</span>
+<span style="font-weight: 600; font-style: italic">4.Lemma 4</span>
 
 &nbsp;&nbsp;<span style="background-color: lightgrey;">Claim you are the victim here </span>
 
@@ -330,20 +307,13 @@
 <div id="Taking a bullet"></div><div id="Taking_a_bullet"></div>
 
 ### Taking a bullet
-<span class="para" id="93c18bc"></span>The project originally consisted of five phases, of which two are already complete and two have been abandoned: 
-
-
-
+The project originally consisted of five phases, of which two are already complete and two have been abandoned:  
 &nbsp;&nbsp;☑ Investigate existing solutions  
 &nbsp;&nbsp;☑ Define a minimal initial feature set  
 &nbsp;&nbsp;☐ Implement this minimal set of features  
 &nbsp;&nbsp;☒ Secure 100 million in venture capital  
 &nbsp;&nbsp;☒ Abscond to the Bahamas with the cash  
-<span class="para" id="ff4b3ca"></span>The major sources of sustainable energy are: 
-
-
-
-&nbsp;&nbsp;🌍 wind  
+The major sources of sustainable energy are:&nbsp;&nbsp;🌍 wind  
 &nbsp;&nbsp;🌍 hydroelectric  
 &nbsp;&nbsp;🌍 solar  
 &nbsp;&nbsp;🌍 geothermal  
@@ -363,7 +333,7 @@ my $x = 2;
 ```
 my $x = 3;
 # a renderer should observe the basis markup
-# and the markup but render R<markup> verbatim
+# and the markup but render R&lt;markup> verbatim
 ```
 
 ```
@@ -384,12 +354,9 @@ better           to             use tables
 This is almost the same as input
 but may have a different styling
 ```
-> <span class="para" id="72145a8"></span>Occasionally some text that is inset from the margin is required. So enclose it in a nested block. 
+> > Occasionally some text that is inset from the margin is required. So enclose it in a nested block.
 
-
-
-<span class="para" id="ccd64b2"></span>The following semantic block was included at the beginning in source, but it is now included here. 
-
+The following semantic block was included at the beginning in source, but it is now included here.  
 
 <div id="Unrelenting hype"></div><div id="Unrelenting_hype"></div>
 
@@ -405,11 +372,11 @@ Richard Hainsworth, aka finanalyst
 e^{i\pi}+1=0
 
 
-<div id="Unknown MyBlock"></div><div id="A_customised_block"></div>
+<div id="A customised block"></div><div id="A_customised_block"></div>
 
-## Unknown MyBlock
+## A customised block
 ```
-=begin MyBlock :caption<A customised block> :headlevel(2)
+=begin MyBlock :caption&lt;A customised block> :headlevel(2)
 
 Actually it fails because no customisation has been made.
 It
@@ -419,38 +386,31 @@ rendered without spaces      being chewed up.
 =end MyBlock
 ```
 
-<span class="para" id="This_is_an_extraordinary_paragraph"></span><span class="para" id="399bd99"></span>Some silly text which will have its own **extraordinary** ToC entry 
-
-
-
-<span class="para" id="b660fd8"></span>You are reminded that: Do not consider this a disquisition of possible combinations. 
-
+<span class="para" id="399bd99"></span>Some silly text which will have its own **extraordinary** ToC entry  
+<span class="para" id="b660fd8"></span>You are reminded that: Do not consider this a disquisition of possible combinations.   
 
 <div id="Some tables"></div><div id="Some_tables"></div>
 
 ## Some tables
 
-
-### A visual table<div id="A_visual_table"> </div>
-| **Animal** | **Legs** | **Eats** |
+<div id="A_visual_table"></div>
+<div>A visual table</div>| **Animal** | **Legs** | **Eats** |
 | :----:  | :----:  | :----: |
 | Zebra  |   4  | Cookies |
  | Human  |   2  |   Pizza |
  | Shark  |   0  |    Fish |
 
 
-
-### A visual table with a stupendously long caption<div id="A_visual_table_with_a_stupendously_long_caption"> </div>
-| **Animal** | **Legs** | **Eats** |
+<div id="A_visual_table_with_a_stupendously_long_caption"></div>
+<div>A visual table with a stupendously long caption</div>| **Animal** | **Legs** | **Eats** |
 | :----:  | :----:  | :----: |
 | Zebra  |   4  | Cookies |
  | Human  |   2  |   Pizza |
  | Shark  |   0  |    Fish |
 
 
-
-### A procedural table<div id="A_procedural_table"> </div>
- | **Date** | &nbsp; | **Samples** | &nbsp; | **Mean** |
+<div id="A_procedural_table"></div>
+<div>A procedural table</div> | **Date** | &nbsp; | **Samples** | &nbsp; | **Mean** |
 | :---: | :---: | :---: | :---: | :---: |
  | &nbsp; | **<span class="para" id="f8c6c9e"></span>*Sample 1*** | **<span class="para" id="75140bc"></span>*Sample 2*** | **<span class="para" id="9037e3c"></span>*Sample 3*** | &nbsp; |
  | 2023-03-08 | 0.4 | 0.1 | 0.3 | 0.26667 |
@@ -461,104 +421,612 @@ rendered without spaces      being chewed up.
 <div id="Adding index entries to your text"></div><div id="Adding_index_entries_to_your_text"></div>
 
 ## Adding index entries to your text
-<span class="para" id="3d8b013"></span>An <span id="index-entry-index_entry"><span style="color:green; background-color: antiquewhite;">index entry</span></span> is an inline <span id="index-entry-formatting_code"><span style="color:green; background-color: antiquewhite;">formatting code</span></span> that is rendered normally (i.e. with no special identifying styling) within the text, but which is also added to the <span id="index-entry-index"><span style="color:green; background-color: antiquewhite;">index</span></span>. <span id="index-entry-Index_entries"><span style="color:green; background-color: antiquewhite;">Index entries</span></span> may be specified with <span id="index-entry-subentries"><span style="color:green; background-color: antiquewhite;">subentries</span></span>, including <span id="index-entry-multilevel_subentries"><span style="color:green; background-color: antiquewhite;">multilevel subentries</span></span>, though a renderer is not required to represent anything more than the <span id="index-entry-first_level"><span style="color:green; background-color: antiquewhite;">first level</span></span>. A single index entry can specify <span id="index-entry-two_or_more_separate_entries_in_the_index"><span style="color:green; background-color: antiquewhite;">two or more separate entries in the index</span></span>, all of which will refer back to the same point in the text. 
-
+<span class="para" id="3d8b013"></span>An <span id="index-entry-index_entry"><span style="color:green; background-color: antiquewhite;">index entry</span></span> is an inline <span id="index-entry-formatting_code"><span style="color:green; background-color: antiquewhite;">formatting code</span></span> that is rendered normally (i.e. with no special identifying styling) within the text, but which is also added to the <span id="index-entry-index"><span style="color:green; background-color: antiquewhite;">index</span></span>. <span id="index-entry-Index_entries"><span style="color:green; background-color: antiquewhite;">Index entries</span></span> may be specified with <span id="index-entry-subentries"><span style="color:green; background-color: antiquewhite;">subentries</span></span>, including <span id="index-entry-multilevel_subentries"><span style="color:green; background-color: antiquewhite;">multilevel subentries</span></span>, though a renderer is not required to represent anything more than the <span id="index-entry-first_level"><span style="color:green; background-color: antiquewhite;">first level</span></span>. A single index entry can specify <span id="index-entry-two_or_more_separate_entries_in_the_index"><span style="color:green; background-color: antiquewhite;">two or more separate entries in the index</span></span>, all of which will refer back to the same point in the text.   
 
 <div id="Scoping examples"></div><div id="Scoping_examples"></div>
 
 ## Scoping examples
-<span class="para" id="6019325"></span>Configuration and aliases are scoped. 
-
-<span class="para" id="d5f5128"></span>Without configuration `embedded B<markup> is rendered` verbatim. 
-
-<span class="para" id="60c295b"></span>With configuration `embedded basis markup` is rendered. 
-
-<span class="para" id="77125d7"></span>How short the season when roses are red. 
-
-
-<span class="para" id="25ba73a"></span>But configuration directives `only B<apply> inside` a block scope. 
-
-<span class="para" id="fda2c59"></span>Did I mention before that: Do not consider this a disquisition of possible combinations. 
-
+Configuration and aliases are scoped.  
+<span class="para" id="1de5a98"></span>Without configuration `embedded B&lt;markup> is rendered` verbatim.   
+<span class="para" id="60c295b"></span>With configuration `embedded basis markup` is rendered.   
+<span class="para" id="77125d7"></span>How short the season when roses are red.
+<span class="para" id="c91b5db"></span>But configuration directives `only B&lt;apply> inside` a block scope.   
+<span class="para" id="fda2c59"></span>Did I mention before that: Do not consider this a disquisition of possible combinations.   
 <div id="Placements"></div>
 
 ## Placements
-<span class="para" id="bef1786"></span>Renderers are required to place text and RakuDoc sources, but may fallback to text messages for other formats. 
-
+Renderers are required to place text and RakuDoc sources, but may fallback to text messages for other formats.  
 
 <div id="Text placement"></div><div id="Text_placement"></div>
 
 ### Text placement
-ABSOLUTELY NO WARRANTY IS IMPLIED. NOT EVEN OF ANY KIND. WE HAVE SOLD
-YOU THIS SOFTWARE WITH NO HINT OF A SUGGESTION THAT IT IS EITHER USEFUL
-OR USABLE. AS FOR GUARANTEES OF CORRECTNESS...DON'T MAKE US LAUGH! AT
-SOME TIME IN THE FUTURE WE MIGHT DEIGN TO SELL YOU UPGRADES THAT PURPORT
-TO ADDRESS SOME OF THE APPLICATION'S MANY DEFICIENCIES, BUT NO PROMISES
-THERE EITHER. WE HAVE MORE LAWYERS ON STAFF THAN YOU HAVE TOTAL
-EMPLOYEES, SO DON'T EVEN *THINK* ABOUT SUING US. HAVE A NICE DAY.
-
+Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/fanciful-disclaimer.txt｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
 
 
 <div id="RakuDoc placement"></div><div id="RakuDoc_placement"></div>
 
 ### RakuDoc placement
-
-<div id="A ware"></div><div id="A_ware"></div>
-
-## A ware
-<span class="para" id="c36d969"></span>Absolutely no warranty is implied. **Not even of any kind**. We have sold you this `software` with no hint of a suggestion that it is either useful or usable. As for guarantees of correctness...don't make us laugh! 
-
-
-<div id="B ware"></div><div id="B_ware"></div>
-
-## B ware
-<span class="para" id="3c2fb22"></span>At __some__ time in the future we might deign to sell you upgrades that purport to address some of the application's many deficiencies, but no promises there either. We have more lawyers on staff than you have total employees, so don't even ***think*** about suing us. 
-
-<span class="para" id="573ec25"></span>Have a nice day. ☺ 
-
-
+Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/bootiful-disclaimer.rakudoc｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
 
 
 <div id="HTML placement"></div><div id="HTML_placement"></div>
 
 ### HTML placement
-<html>
-<head>
-    <meta content-type="text/html; charset=utf-8" />
-    <title>Complete disclaimer</title>
-</head>
-<body>
-<h1>A ware</h1>
-
-Absolutely no warranty is implied. <B>Not even of any kind</B>. We have sold
-you this <code>software</code> with no hint of a suggestion that it is either useful
-or usable. As for guarantees of correctness...don't make us laugh!
-
-<h1>B ware</h1>
-
-At <U>some</U> time in the future we might deign to sell you upgrades that purport
-to address some of the application's many deficiencies, but no promises
-there either. We have more lawyers on staff than you have total
-employees, so don't even <B>think</B> about suing us.
-
-Have a nice day. &#x263A;
-</body>
-</html>
+Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/paneful-disclaimer.html｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
 
 
 <div id="JPEG image placement"></div><div id="JPEG_image_placement"></div>
 
 ### JPEG image placement
-![JPEG image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg)
+Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
 
 
 <div id="Png image placement"></div><div id="Png_image_placement"></div>
 
 ### Png image placement
-![Png image placement](https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png)
+Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
 
-<span class="para" id="8ec3517"></span>Text finishes after version number 
 
+<div id="Enumerated blocks"></div><div id="Enumerated_blocks"></div>
+
+## Enumerated blocks
+
+<div id="11.PHYSICS"></div><div id="PHYSICS"></div>
+
+## 11.PHYSICS
+
+<div id="11.1.Newtonian"></div><div id="Newtonian"></div>
+
+### 11.1.Newtonian
+
+<div id="11.2.Relativistic"></div><div id="Relativistic"></div>
+
+### 11.2.Relativistic
+
+<div id="Formula2.Mass-Energy Equivalence"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Formula2.Mass-Energy Equivalence
+E = MC²
+
+
+<div id="TOPIC L - PHYSICS"></div><div id="PHYSICS_0"></div>
+
+## TOPIC L - PHYSICS
+
+<div id="Newtonian [subtopic L1]"></div><div id="Newtonian_0"></div>
+
+### Newtonian [subtopic L1]
+
+<div id="Relativistic [subtopic L2]"></div><div id="Relativistic_0"></div>
+
+### Relativistic [subtopic L2]
+
+<div id="Equation 3: Mass-Energy Equivalence"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 3: Mass-Energy Equivalence
+E = MC²
+
+
+<div id="Equation 4: Mass-Energy Equivalence"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 4: Mass-Energy Equivalence
+E = MC²
+
+
+<div id="TOPIC M - Heading"></div><div id="Heading"></div>
+
+## TOPIC M - Heading
+
+<div id="Subheading [subtopic M1]"></div><div id="Subheading"></div>
+
+### Subheading [subtopic M1]
+
+<div id="13.1.1.Subsubheading"></div><div id="Subsubheading"></div>
+
+#### 13.1.1.Subsubheading
+
+<div id="Caption_for_first_table"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 5: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 5: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 6: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 6: Caption for second formula
+E = MC²
+
+
+<div id="13.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 13.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 7: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 7: Caption for first formula
+E = MC²
+Here we can use the formula enumerations, viz.  
+&nbsp;&nbsp;• <span class="para" id="611f1df"></span>Default is  
+&nbsp;&nbsp;• <span class="para" id="f9f895f"></span>Instance configured is  
+
+<div id="TOPIC N - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC N - Heading
+
+<div id="Subheading [subtopic N1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic N1]
+
+<div id="14.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 14.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 8: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 8: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 9: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 9: Caption for second formula
+E = MC²
+
+
+<div id="14.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 14.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 1: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 1: Caption for first formula
+E = MC²
+
+<div id="TOPIC O - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC O - Heading
+
+<div id="Subheading [subtopic O1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic O1]
+
+<div id="15.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 15.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 1: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 1: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 2: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 2: Caption for second formula
+E = MC²
+
+
+<div id="15.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 15.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 1: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 1: Caption for first formula
+E = MC²
+
+<div id="TOPIC P - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC P - Heading
+
+<div id="Subheading [subtopic P1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic P1]
+
+<div id="16.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 16.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 4: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 4: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 6: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 6: Caption for second formula
+E = MC²
+
+
+<div id="16.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 16.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 9: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 9: Caption for first formula
+E = MC²
+
+<div id="TOPIC Q - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC Q - Heading
+
+<div id="Subheading [subtopic Q1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic Q1]
+
+<div id="17.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 17.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 2: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 2: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 4: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 4: Caption for second formula
+E = MC²
+
+
+<div id="17.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 17.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 7: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 7: Caption for first formula
+E = MC²
+
+<div id="TOPIC R - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC R - Heading
+
+<div id="Subheading [subtopic R1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic R1]
+
+<div id="18.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 18.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 2: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 2: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 4: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 4: Caption for second formula
+E = MC²
+
+
+<div id="18.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 18.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 3: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 3: Caption for first formula
+E = MC²
+
+<div id="TOPIC S - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC S - Heading
+
+<div id="Subheading [subtopic S1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic S1]
+
+<div id="19.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 19.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 1: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 1: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 2: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 2: Caption for second formula
+E = MC²
+
+
+<div id="19.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 19.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 1: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 1: Caption for first formula
+E = MC²
+
+<div id="TOPIC T - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC T - Heading
+
+<div id="Subheading [subtopic T1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic T1]
+
+<div id="20.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 20.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 2: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 2: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 4: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 4: Caption for second formula
+E = MC²
+
+
+<div id="20.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 20.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 7: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 7: Caption for first formula
+E = MC²
+
+
+<div id="TOPIC U - Second heading"></div><div id="Second_heading"></div>
+
+## TOPIC U - Second heading
+
+<div id="Caption_for_next_table"></div>
+<div>Caption for next table</div>| one  | two  |
+
+<div id="TOPIC V - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC V - Heading
+
+<div id="Subheading [subtopic V1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic V1]
+
+<div id="22.1.1.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 22.1.1.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 2: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 2: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 4: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 4: Caption for second formula
+E = MC²
+
+
+<div id="22.1.2.Subsubheading"></div><div id="Subsubheading_0"></div>
+
+#### 22.1.2.Subsubheading
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+
+<div id="Equation 5: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 5: Caption for first formula
+E = MC²
+
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+<div id="TOPIC W - Second heading"></div><div id="Second_heading_0"></div>
+
+## TOPIC W - Second heading
+
+<div id="Caption_for_next_table_0"></div>
+<div>Caption for next table</div>| one  | two  |
+
+
+<div id="Equation 7: Caption for next formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 7: Caption for next formula
+E = MC²
+
+<div id="TOPIC X - Heading"></div><div id="Heading_0"></div>
+
+## TOPIC X - Heading
+2.Item the first
+3.Item the second
+
+<div id="Caption_for_first_table_0"></div>
+<div>Caption for first table</div>| one  | two  |
+
+4.Item the third
+
+<div id="Subheading [subtopic X1]"></div><div id="Subheading_0"></div>
+
+### Subheading [subtopic X1]
+5.Item the fourth
+
+<div id="Equation 2: Caption for first formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 2: Caption for first formula
+E = MC²
+
+6.Item the fifth
+
+<div id="Caption_for_second_table_0"></div>
+<div>Caption for second table</div>| one  | two  |
+
+
+<div id="Equation 3: Caption for second formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 3: Caption for second formula
+E = MC²
+
+7.Item the sixth
+
+<div id="TOPIC Y - Second heading"></div><div id="Second_heading_0"></div>
+
+## TOPIC Y - Second heading
+8.Item the seventh
+
+<div id="Caption_for_next_table_0"></div>
+<div>Caption for next table</div>| one  | two  |
+
+
+<div id="Equation 4: Caption for next formula"></div><div id="Formula_cannot_be_rendered_0"></div>
+
+## Equation 4: Caption for next formula
+E = MC²9.Item the eighth
+
+Text finishes after version number  
 <div id="Credits"></div>
 
 ## Credits
@@ -578,12 +1046,12 @@ Artistic-2.0
 <div id="VERSION"></div><div id="VERSION_0"></div>
 
 ## VERSION
- <div class="rakudoc-version">v0.2.1</div> 
+ <div class="rakudoc-version">VERSION&nbsp;&nbsp;&nbsp;&nbsp;v0.2.1</div> 
 
 ----
 
 ## Footnotes
-1<a id=".<fnTarget>" href="#N<such_as_this_one>"> |^| </a>such as this one
+1<a id=".<fnTarget>" href="#such_as_this_one"> |^| </a>such as this one
 
 
 ----
@@ -594,7 +1062,19 @@ Artistic-2.0
 
 <span style="background-color: antiquewhite; font-weight: 600;">formatting code</span>: <a href="#index-entry-formatting_code">Adding index entries to your text</a>
 
-<span style="background-color: antiquewhite; font-weight: 600;">index</span>: <a href="#index-entry-index_entry">Adding index entries to your text</a>, <a href="#index-entry-index">Adding index entries to your text</a>, <a href="#index-entry-Index_entries">Adding index entries to your text</a>, <a href="#index-entry-subentries">Adding index entries to your text</a>, <a href="#index-entry-multilevel_subentries">Adding index entries to your text</a>, <a href="#index-entry-first_level">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
+<span style="background-color: antiquewhite; font-weight: 600;">index</span>: <a href="#index-entry-index">Adding index entries to your text</a>, <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
+
+&nbsp;&nbsp;&nbsp;<span style="background-color: antiquewhite; font-weight: 600;">entry</span>: <a href="#index-entry-index_entry">Adding index entries to your text</a>, <a href="#index-entry-Index_entries">Adding index entries to your text</a>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="background-color: antiquewhite; font-weight: 600;">nested</span>: <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
+
+&nbsp;&nbsp;&nbsp;<span style="background-color: antiquewhite; font-weight: 600;">multiple entries</span>: <a href="#index-entry-two_or_more_separate_entries_in_the_index">Adding index entries to your text</a>
+
+&nbsp;&nbsp;&nbsp;<span style="background-color: antiquewhite; font-weight: 600;">subentry</span>: <a href="#index-entry-subentries">Adding index entries to your text</a>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="background-color: antiquewhite; font-weight: 600;">multilevel</span>: <a href="#index-entry-multilevel_subentries">Adding index entries to your text</a>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="background-color: antiquewhite; font-weight: 600;">rendering</span>: <a href="#index-entry-first_level">Adding index entries to your text</a>
 
 <span style="background-color: antiquewhite; font-weight: 600;">inline formatting</span>: <a href="#index-entry-formatting_code">Adding index entries to your text</a>
 
@@ -605,9 +1085,9 @@ Artistic-2.0
 
 ----
 
-Rendered from docs/samples/rakudociem-ipsum.rakudoc/rakudociem-ipsum at 13:46 UTC on 2024-12-19
+Rendered from resources/compliance-rendering/rakudociem-ipsum.rakudoc/rakudociem-ipsum at 11:45 UTC on 2026-01-09
 
-Source last modified at 21:59 UTC on 2024-11-25
+Source last modified at 10:54 UTC on 2026-01-09
 
 
 
@@ -627,9 +1107,19 @@ Source last modified at 21:59 UTC on 2024-11-25
 
 5: Unknown or as yet undeclared alias ｢XXX｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣ over-riden by ｢an undeclared｣
 
-6: Δ<> markup ignored because it has no version/note content ｢Δ<no versioning here>｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.
+6: Δ&lt;> markup ignored because it has no version/note content ｢Δ&lt;no versioning here>｣ in block ｢rakudoc｣ with heading ｢This is third level heading｣.
 
-7: Markup-M failed: template ｢PayMeMoreApp｣ does not exist. Got ｢M<should not recognise this functionality|PayMeMoreApp; user-id>｣
+7: Markup-M failed: template ｢PayMeMoreApp｣ does not exist. Got ｢M&lt;should not recognise this functionality|PayMeMoreApp; user-id>｣
 
 8: No template exists for custom block ｢MyBlock｣. It has been rendered as unknown in block ｢MyBlock｣ with heading ｢MyBlock｣.
+
+9: Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/fanciful-disclaimer.txt｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
+
+10: Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/bootiful-disclaimer.rakudoc｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
+
+11: Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/paneful-disclaimer.html｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
+
+12: Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
+
+13: Link ｢https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png｣ caused LibCurl Exception, response code ｢0｣ with error ｢Could not resolve host: github.com｣
 

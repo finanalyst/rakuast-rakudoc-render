@@ -180,6 +180,7 @@ class CounterTracker {
             %!type-counters{ $base } .= new;
             unless $base ~~ @built-in.any
                     or ( any($base.uniprops) ~~ / Lu / and any($base.uniprops) ~~ / Ll / )
+                    or ( all($base.uniprops) ~~ / Lu / )
                 {
                 @!warnings
                     .push: "Counter base ｢$base｣ should follow custom block spelling rule; use a capital-case letter";

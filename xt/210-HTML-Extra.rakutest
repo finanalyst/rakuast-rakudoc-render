@@ -19,10 +19,9 @@ cmp-ok (@html-extra (-) @generic), '(==)', <VERSION footer top-of-page head-bloc
 
 my RakuDoc::Processor $rdp := $html-extra-instance.rdp;
 my $internet = run <ping -c 2 8.8.8.8>, :merge;
-$internet .= exitcode.not;
 subtest 'live internet tests' => sub {
     plan :skip-all<no internet connection>
-        unless $internet;
+        if $internet.exitcode;
     plan 4;
     my $ast;
     my $rv;

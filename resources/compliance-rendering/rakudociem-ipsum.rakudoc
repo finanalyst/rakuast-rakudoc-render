@@ -399,9 +399,284 @@ text messages for other formats.
 =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg :caption<JPEG image placement> :headlevel(2)
 =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png :caption<Png image placement> :headlevel(2)
 
+=head Enumerated blocks
+
+=numhead1 PHYSICS
+=numhead2 Newtonian
+=numhead2 Relativistic
+=begin numformula :caption<Mass-Energy Equivalence>
+E = MC²
+=end numformula
+
+=config numhead1   :form<TOPIC %A - %D>
+=config numhead2   :form<%D [subtopic %A%N]>
+=config numformula :form<Equation %N: %C>
+=numhead1 PHYSICS
+=numhead2 Newtonian
+=numhead2 Relativistic
+=begin numformula :caption<Mass-Energy Equivalence> :numalias<RELFORM>
+E = MC²
+=end numformula
+=begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N. | EQNFORM>
+E = MC²
+=end numformula
+
+=begin section
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=end section
+
+Here we can use the formula enumerations, viz.
+=item Default is A<RELFORM>
+=item Instance configured is A<EQNFORM>
+
+=begin section
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >    :!continued
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >  :!continued
+E = MC²
+=end section
+
+=begin section
+=restart table1    :after< head3 >
+=restart formula   :after< head3 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=end section
+=begin section
+=config formula1  :number-as< table1 >
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=end section
+
+=begin section
+=config formula1  :number-as< TablesAndFormulae >
+=config table1    :number-as< TablesAndFormulae >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=end section
+
+=begin section
+=restart TablesAndFormulae   :after< head3 >
+=config formula1 :number-as< TablesAndFormulae >
+=config table1 :number-as< TablesAndFormulae >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=end section
+
+=begin section
+=restart formula1   :after< head3 >
+=config formula1 :number-prefix< head3 >
+=restart table1     :after< head3 >
+=config table1   :number-prefix< head3 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=end section
+
+=begin section
+=config formula1  :number-as< TablesAndFormulae >  :number-prefix< head1 >
+=config table1    :number-as< TablesAndFormulae >  :number-prefix< head1 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=numhead1 Second heading
+=for numtable1   :caption< Caption for next table >
+| one   | two  |
+=end section
+
+=begin section
+=config formula1  :number-as< TablesAndFormulae >  :number-prefix< head1 >
+=config table1    :number-as< TablesAndFormulae >  :number-prefix< head1 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numhead3 Subsubheading
+=begin section
+=config table  :number-prefix('')  :number-as< SpecialTable >
+
+=for numtable1   :caption< Caption for first table >   :number(1000)
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=end section
+=numhead1 Second heading
+=for numtable1   :caption< Caption for next table >
+| one   | two  |
+=for numformula1 :caption< Caption for next formula >
+E = MC²
+=end section
+
+=begin section
+=restart item  :except-after< item1 head1 table formula >
+
+=numhead1 Heading
+=numitem Item the first
+=numitem Item the second
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=numitem Item the third
+=numhead2 Subheading
+=numitem Item the fourth
+=for numformula1 :caption< Caption for first formula >
+E = MC²
+=numitem Item the fifth
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+E = MC²
+=numitem Item the sixth
+=numhead1 Second heading
+=numitem Item the seventh
+=for numtable1   :caption< Caption for next table >
+| one   | two  |
+=for numformula1 :caption< Caption for next formula >
+E = MC²
+=numitem Item the eighth
+=end section
+
 Text finishes after version number
 =place semantic:AUTHORS :caption<Credits>
 =place semantic:LICENSE
 =place semantic:VERSION :!toc
 =end rakudoc
-

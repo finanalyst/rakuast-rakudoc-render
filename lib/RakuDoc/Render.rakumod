@@ -303,7 +303,7 @@ class RakuDoc::Processor {
             $prs.body ~= $ast.set-paragraphs( $ast.paragraphs.map({ $.handle($_) }) ).DEPARSE;
             return
         }
-        my $level = $ast.level:D ?? $ast.level !! 1;
+        my $level = $ast.level || 1;
         say "Doc::Block type: $type (level $level)"
             ~ ( ' [for]' if $ast.for )
             ~ ( ' [abbreviated]' if $ast.abbreviated )
@@ -359,13 +359,17 @@ class RakuDoc::Processor {
                 The directive ｢{ $ast.DEPARSE }｣ may not exist outside a 'table' block.
                 WARN
             }
+            # =implicit code created by indenting, and is not generated as a block with begin / end
+            # but by specification is treated as code
+            when 'implicit-code' {
+                $!scoped-data.counter-tracker.process-counter( 'code', 1, :%config );
+                $.gen-paraish( $ast, %config, 'code', 1, False )
+            }
             # All non-directive blocks need to manage counters
             when <alias begin end for place config finish row column restart>.none {
                 $!scoped-data.counter-tracker.process-counter( $type, $level, :%config );
                 proceed; #continue with other handlers
             }
-            # =implicit code created by indenting, but by specification is treated as code
-            when 'implicit-code' { $.gen-paraish( $ast, %config, 'code', $level ) }
             # =code
             # =para block, as opposed to unmarked paragraphs in a block
             # not the same as a logical Doc::Paragraph, which has atoms, not paragraphs
@@ -946,6 +950,13 @@ class RakuDoc::Processor {
     #| No ToC content is added unless overridden by toc/caption/headlevel
     method gen-paraish( $ast, %config, $type, $level, $numerate, :$implied = False ) {
         my PStr $contents .= new;
+        # item & para counters need to be triggered when implied by Str within Extended Blocks
+        state Int $trig;
+        if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated {
+            $trig  = 0
+        }
+        elsif $implied { $trig++ }
+        else { $trig = 0 }
         $!scoped-data.start-scope(:starter($type), :verbatim )
             if $type ~~ any(<code input output>);
         if $type eq 'code' {
@@ -961,8 +972,8 @@ class RakuDoc::Processor {
             }
         }
         elsif $implied {
-            $contents ~= $ast;
-            $!scoped-data.counter-tracker.process-counter($type, $level, :%config );
+            $contents ~= $.compactify($ast);
+            $!scoped-data.counter-tracker.process-counter($type, $level, :%config ) if $trig > 1;
         }
         else {
             $contents ~= $.contents($ast, $type );
@@ -1100,7 +1111,7 @@ class RakuDoc::Processor {
             CALLERS::<$*prs> += $prs;
         }
         my $prs := $*prs;
-        my $numeration = $numerate ?? self.help-numerate($type, $level, '', %config) !! ();
+        my $numeration = $numerate ?? self.help-numerate($type, $level, $term, %config) !! ();
         $defn-expansion = %!templates<defn>(
             %( :$term, :$target, :$contents, :$numeration, %config )
         );
@@ -1139,9 +1150,9 @@ class RakuDoc::Processor {
             }
         }
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), () );
-        $.make-placement(:$uri, :%config, :template<place>);
+        $.make-placement(:$uri, :%config, :template<place>, :level(%config<headlevel> // $level));
     }
-    method make-placement( :$uri, :%config, :$template ) {
+    method make-placement( :$uri, :%config, :$template, :$level ) {
         my Bool $keep-format = False;
         # defaults when no schema is explicit
         my $schema = 'file';
@@ -1232,7 +1243,7 @@ class RakuDoc::Processor {
              }
         }
         $prs.body ~= %!templates{ $template }(
-            %( :$contents, :$keep-format, :$schema, :$uri-body, :$uri, %config )
+            %( :$contents, :$keep-format, :$schema, :$uri-body, :$uri, :$level, %config )
         )
     }
     #| The rakudoc block should encompass the output
@@ -1459,7 +1470,7 @@ class RakuDoc::Processor {
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
                 ) if %config<error>
         }
-        $prs.body ~= %!templates<unknown>( %( :$contents, :block-name($type) ) )
+        $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$level ) )
     }
     #| Semantic blocks defined by spelling
     #| embedded content is rendered and passed to template as contents
@@ -1511,7 +1522,7 @@ class RakuDoc::Processor {
                 }
             }
             default {
-                $hidden = %config<hidden>.so // False;
+                $hidden = %config<hidden><> // False;
                 # other SEMANTIC by default rendered in place
                 # allows for a plugin to add a SEMANTIC blockname to templates
                 my $template = %!templates{ $type }:exists ?? $type !! 'semantic';
@@ -1581,7 +1592,7 @@ class RakuDoc::Processor {
             "No template exists for custom block ｢$type｣. It has been rendered as unknown"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
             ) if %config<error>;
-            $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$target, :$caption, :$numeration ) )
+            $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$target, :$caption, :$numeration, :$level ) )
         }
     }
     # directive type methods
@@ -1640,21 +1651,23 @@ class RakuDoc::Processor {
         }
         # handle numalias
         if %config<numalias>:exists {
-            if %config<numalias> ~~ /
-            ^ $<disp> = (.*) '|' $<tag> = (.+) $
-            | ^ $<tag> = (.+) $
+            if %config<numalias>.Str ~~ /
+            ^ $<disp> = (.+?) '|' $<tag> = (.+?) $
+            |
+            ^ $<tag> = (.+?) $
              / {
                 my $tag = ~$<tag>.trim;
                 my $expansion = '';
                 # if the option value was set in a =config and there is no TAG in this block
                 # then TAG will be set to *, so ignore the option
                 if $<disp>:exists {
+                    my $form = $<disp>.Str.trim;
                     if  $tag eq '*' {}
-                    elsif $<disp>.Str { # disp has a non-blank Str value and tag has a value, so disp over-rides config
-                        $expansion = $counter.numform(:form( ~$<disp> ), :$caption, :$contents, :$type)
+                    elsif $form { # disp has a non-blank Str value and tag has a value, so disp over-rides config
+                        $expansion = $counter.numform(:$form, :$caption, :$contents, :$type)
                     }
                     else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                        $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'));
+                        $expansion = ($type.lc but FieldType('T'), $counter.Str but FieldType('N'));
                     }
                 }
                 else { #so only TAG is set
@@ -1667,7 +1680,7 @@ class RakuDoc::Processor {
                         }
                     }
                     else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                        $expansion = ($type.uc but FieldType('T'), ' ', $counter.Str but FieldType('N'))
+                        $expansion = ($type.tc but FieldType('T'), $counter.Str but FieldType('N'))
                     }
                 }
                 if $expansion {
@@ -1815,6 +1828,9 @@ class RakuDoc::Processor {
         for $ast.paragraphs {
             if $_ ~~ Str and $from ~~ < rakudoc pod section semantic>.any {
                 $.gen-paraish( $_.trim, %(), 'para', 1, False, :implied )
+            }
+            elsif $_ ~~ Str and $from ~~ <nested para>.any {
+                $.gen-paraish( $_.trim, %(), $from, 1, False, :implied )
             }
             else {
                 $.handle( $_ )
@@ -1993,21 +2009,21 @@ class RakuDoc::Processor {
             #| renders =code blocks
             code => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>.Str !! 'code' } --- \n"
+                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>».Str.join !! 'code' } --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>.Str !! 'input' } --- \n"
+                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>».Str.join !! 'input' } --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>.Str !! 'output' } --- \n"
+                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>».Str.join !! 'output' } --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
              },
@@ -2015,17 +2031,18 @@ class RakuDoc::Processor {
             comment => -> %prm, $tmpl { '' },
             #| renders =formula block
             formula => -> %prm, $tmpl {
-                my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                my $del = %prm<delta> // '';
-                "\n" ~ ' ' x $indent  ~ HEADING-ON ~ ( %prm<numeration> ?? %prm<numeration>.Str !! '' ) ~ %prm<caption> ~  HEADING-OFF ~ "\n\n" ~
-                $del ~ %prm<formula> ~ "\n\n"
+                my $head = $tmpl('head', %(
+                    :contents(%prm<caption>),
+                    |(%prm<level id target numeration delta>:p),
+                ));
+                PStr.new: $head ~ %prm<formula> ~ "\n\n"
             },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
                 my $title = %prm<contents>;
-                $title = %prm<numeration>.Str if %prm<numeration>;
+                $title = %prm<numeration>».Str.join if %prm<numeration>;
                 "\n" ~ ' ' x $indent ~ HEADING-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  HEADING-OFF ~
                 "\n" ~ $del
             },
@@ -2043,7 +2060,7 @@ class RakuDoc::Processor {
             },
             #| renders =defn block
             defn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ (%prm<numeration> ?? (%prm<numeration> ~ ' ') !! '') ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n" ~
+                DEFN-TERM-ON ~ (%prm<numeration> ?? %prm<numeration>».Str.join !! %prm<term>) ~ DEFN-TERM-OFF ~ "\n" ~
                 DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
             },
             #| special template to render a defn list data structure
@@ -2051,7 +2068,7 @@ class RakuDoc::Processor {
             #| renders =item block
             item => -> %prm, $tmpl {
                 if %prm<numeration> {
-                    %prm<numeration>.Str ~ "\n"
+                    %prm<numeration>».Str.join ~ "\n"
                 }
                 else {
                     my $num = %prm<level> - 1;
@@ -2063,23 +2080,21 @@ class RakuDoc::Processor {
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
-                [~] %prm<item-list>
+                "\n" ~ [~] %prm<item-list>
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
-                PStr.new: (%prm<delta> // '') ~ "\t" ~ ( %prm<numeration> ?? %prm<numeration>.Str !! %prm<contents> ) ~  "\n\n"
+                PStr.new: (%prm<delta> // '') ~ "\t" ~ ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~  "\n\n"
             },
             #| renders =para block
             para => -> %prm, $tmpl {
-                PStr.new: (%prm<delta> // '') ~ ( %prm<numeration> ?? %prm<numeration>.Str !! %prm<contents> ) ~ "\n\n"
+                PStr.new: (%prm<delta> // '') ~ ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~ "\n\n"
             },
             #| renders =place block, place cannot be enumerated
             place => -> %prm, $tmpl {
                 my $rv = $tmpl('head', %(
-                    :level(%prm<level>),
                     :contents(%prm<caption>),
-                    :delta(%prm<delta>),
-                    :numeration(%prm<numeration>)
+                    |(%prm<level id target delta numeration >:p )
                 ));
                 if %prm<content-type>.contains('text') {
                     $rv ~= %prm<contents>
@@ -2094,15 +2109,16 @@ class RakuDoc::Processor {
             #| renders =section block
             section => -> %prm, $tmpl {
                 (%prm<delta> // '') ~
-                ( %prm<numeration> ?? %prm<numeration>.Str !! %prm<contents> ) ~ "\n"
+                ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~ "\n"
             },
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
-                my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
-                my $del = %prm<delta> // '';
-                my $head = "\n" ~ (' ' x $indent ) ~ HEADING-ON ~ BOLD-ON ~ %prm<caption> ~ BOLD-OFF ~ HEADING-OFF ~ "\n";
+                my $head = $tmpl('head', %(
+                    :contents(%prm<caption>),
+                    |(%prm<level id target numeration delta>:p),
+                ));
+                PStr.new:
                 ( $head unless %prm<hidden> ) ~
-                $del ~
                 %prm<contents> ~ "\n"
             },
             #| renders =pod block
@@ -2112,6 +2128,7 @@ class RakuDoc::Processor {
                 use Text::MiscUtils::Layout;
                 my $del = %prm<delta> // '';
                 my $caption = HEADING-ON ~ %prm<caption> ~ HEADING-OFF;
+                $caption = %prm<numeration>».Str.join if %prm<numeration>;
                 my $cap-width = duospace-width($caption);
                 if %prm<procedural> {
                     # calculate column widths naively, will include possible markup, and
@@ -2193,7 +2210,7 @@ class RakuDoc::Processor {
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                PStr.new: HEADING-ON ~ %prm<block-name> ~
+                PStr.new: HEADING-ON ~ %prm<type> ~
                 ' UNKNOWN' ~ HEADING-OFF ~ "\n" ~
                 %prm<contents> ~ "\n\n"
             },
@@ -2310,8 +2327,8 @@ class RakuDoc::Processor {
             ##| Markup codes, optional display and meta data
 
             #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
-            #| Alias to be replaced by contents of specified V<=alias> directive
-			markup-A => -> %prm, $tmpl { %prm<contents> },
+            #| Alias to be replaced by contents of specified V<=alias> directive, or numalias option
+			markup-A => -> %prm, $tmpl { %prm<contents>».Str.join },
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
 			markup-E => -> %prm, $tmpl { %prm<contents> },
