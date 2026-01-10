@@ -221,7 +221,7 @@ class RakuDoc::To::Markdown {
             #| renders =item block
             item => -> %prm, $tmpl {
                 if %prm<numeration> {
-                    %prm<numeration>».Str.join ~ "\n"
+                   %prm<numeration>».Str.join ~ "\n"
                 }
                 else {
                     my $num = %prm<level> - 1;

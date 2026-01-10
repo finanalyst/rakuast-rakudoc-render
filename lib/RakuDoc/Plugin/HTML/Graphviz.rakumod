@@ -18,8 +18,10 @@ method enable( RakuDoc::Processor:D $rdp ) {
 method templates {
     %(
         Graphviz => sub (%prm, $tmpl) {
-            my $level = %prm<headlevel> // 1;
-            my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
+            my $rv = $tmpl('head', %(
+                :contents(%prm<caption>),
+                |(%prm<level id target delta numeration >:p )
+            ));
             # check that dot executes
             my $proc = shell 'command -v dot', :out;
             unless $proc.out.slurp(:close) { # if dot does not exist, then no output

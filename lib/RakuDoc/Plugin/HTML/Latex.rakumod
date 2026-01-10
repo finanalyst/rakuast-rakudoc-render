@@ -36,8 +36,10 @@ method templates {
             }
         },
         LatexFormula => -> %prm, $tmpl {
-            my $level = %prm<headlevel> // 1;
-            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
+            my $head = $tmpl('head', %(
+                :contents(%prm<caption>),
+                |(%prm<level id target delta numeration >:p )
+            ));
             PStr.new: $head ~ '<div class="latex-equation">' ~ $tmpl<getLatexImage> ~ '</div>'
         },
         formula => -> %prm, $tmpl {

@@ -336,11 +336,11 @@ method templates {
             my $del = %prm<delta> // '';
             my $h = 'h' ~ (%prm<level> // '1');
             my $classes = ( %prm<classes> // "heading raku-webs-$h" ) ~ ( 'delta' if $del ) ;
-            my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
-            $caption = "%prm<numeration> $caption" if %prm<numeration>;
+            my $contents = %prm<contents>.split(/ \< ~ \> <-[>]>+? /).join.trim;
+            $contents = "%prm<numeration> $contents" if %prm<numeration>;
             my $targ := %prm<target>;
-            my $esc-cap = $tmpl.globals.escape.( $caption );
-            $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
+            my $esc-cap = $tmpl.globals.escape.( $contents );
+            $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
             my $id-target = %prm<id>:exists && %prm<id>
                     ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                     !! '';
@@ -349,9 +349,9 @@ method templates {
                             ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
                             qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
                             ($del if $del) ~
-                    ($caption ?? (
+                    ($contents ?? (
                     qq|<a href="#">| ~
-                            $caption ~
+                            $contents ~
                             qq|</a><a class="raku-webs-anchor" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>| ~
                             qq|</$h>\n|
                     ) !! '')

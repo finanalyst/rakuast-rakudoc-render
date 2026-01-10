@@ -103,6 +103,7 @@ div.defn-text {
 div.defn-term {
 	font-weight: bold;
 	font-style: italic;
+	.N { margin-right: 5px }
 }
 div.id-target {
 	display: none;
@@ -227,10 +228,24 @@ h2.warnings-caption {
 h.title {
 	font-size: larger;
 }
-
-table, th, td {
-  border: 1px solid;
-  border-collapse: collapse;
+.rakudoc-table {
+    table, th, td {
+      border: 1px solid lightgray;
+      border-collapse: collapse;
+    }
+    .table {
+        padding: 15px;
+        margin-bottom: 10px;
+        margin-top: 10px;
+        margin-inline: auto;
+        border: 1px solid black;
+        td, td {
+          padding: 5px;
+        }
+        caption {
+           margin-bottom: 5px;
+        }
+    }
 }
 tbody.procedural tr.procedural .procedural-cell-left {
 	text-align: left;
@@ -263,6 +278,12 @@ li.item {
         content: attr(data-bullet);
     }
 }
+li.numitem {
+    padding-left: 0.4rem;
+    &::marker {
+        content: attr(data-bullet);
+    }
+}
 div.rakudoc-image-placement {
     display: flex;
     flex-direction: column;
@@ -284,4 +305,7 @@ div.rakudoc-image-placement {
 .heading:hover .raku-anchor {
   visibility: visible;
   padding-left: 5px;
+}
+.enumeration-N {
+    margin: 0 5px 0 5px;
 }
