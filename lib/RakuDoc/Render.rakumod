@@ -989,7 +989,8 @@ class RakuDoc::Processor {
         $prs.body ~= %!templates{ $type }(
             %( :$contents, :$is-in-heading, :$numeration, %config)
         );
-        $!scoped-data.end-scope if $type ~~ any( <code input output> )
+        $!scoped-data.end-scope if $type ~~ any( <code input output> );
+        self.manage-numalias($type, $level, $contents, %config);
     }
     #| A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption
     #| toc and caption can be set by a config directive,
@@ -1036,6 +1037,7 @@ class RakuDoc::Processor {
         $prs.body ~= %!templates{'head'}(
             %( :$numeration, :$level, :$target, :$contents, :$caption, :$id, %config )
         );
+        self.manage-numalias($type, $level, $contents, %config);
         $!scoped-data.in-head = '';
     }
     #| Content is passed verbatim to template as formula
@@ -1072,6 +1074,7 @@ class RakuDoc::Processor {
         $*prs.items.push: %!templates<item>(
             %( :$level, :$contents, :$numeration, %config )
         );
+        self.manage-numalias($type, $level, $contents, %config);
     }
     #| generates a single definition and adds it to the defn structure
     #| unlike item, a defn:
@@ -1123,7 +1126,8 @@ class RakuDoc::Processor {
         $prs.definitions{ $term } = $defn-expansion, $target;
         # define for previously referenced
         $!register.add-payload(:payload($defn-expansion), :id($term));
-        $!register.add-payload(:payload($target), :id($term ~ '_target'))
+        $!register.add-payload(:payload($target), :id($term ~ '_target'));
+        self.manage-numalias($type, $level, $contents, %config);
     }
     #| A place block adds Place at level 1 to ToC unless toc/headlevel/caption set
     #| The contents of Place is a URI that is generated and then rendered with place template
@@ -1280,7 +1284,8 @@ class RakuDoc::Processor {
             }
         }
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config) !! ();
-        $*prs.body ~= %!templates<section>( %( :$contents, :$id, :$numeration, %config ) )
+        $*prs.body ~= %!templates<section>( %( :$contents, :$id, :$numeration, %config ) );
+        self.manage-numalias($type, $level, $contents, %config);
     }
     #| Table has two forms of content: procedural / visual
     #| can take all standard options
@@ -1549,6 +1554,7 @@ class RakuDoc::Processor {
         }
         $prs.semantics{ $type } = [] unless $prs.semantics{ $type }:exists;
         $prs.semantics{ $type }.push: $rv;
+        self.manage-numalias($type, $level, $contents, %config);
         $prs.body ~= $rv unless $hidden;
     }
     method gen-custom($ast, %config, $type, $level, $numerate) {
@@ -1594,6 +1600,7 @@ class RakuDoc::Processor {
             ) if %config<error>;
             $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$target, :$caption, :$numeration, :$level ) )
         }
+        self.manage-numalias($type, $level, $contents, %config);
     }
     # directive type methods
     method manage-config($ast) {
@@ -1636,7 +1643,7 @@ class RakuDoc::Processor {
         }
         elsif $from-head || $type ~~ <item defn>.any {
             $numeration =
-                (
+                                    (
                 $counter.Str but FieldType('N'),
                 $contents but FieldType('D')
                 );
@@ -1649,49 +1656,52 @@ class RakuDoc::Processor {
                 $caption ?? $caption but FieldType('C') !! '',
                 )
         }
-        # handle numalias
-        if %config<numalias>:exists {
-            if %config<numalias>.Str ~~ /
-            ^ $<disp> = (.+?) '|' $<tag> = (.+?) $
-            |
-            ^ $<tag> = (.+?) $
-             / {
-                my $tag = ~$<tag>.trim;
-                my $expansion = '';
-                # if the option value was set in a =config and there is no TAG in this block
-                # then TAG will be set to *, so ignore the option
-                if $<disp>:exists {
-                    my $form = $<disp>.Str.trim;
-                    if  $tag eq '*' {}
-                    elsif $form { # disp has a non-blank Str value and tag has a value, so disp over-rides config
-                        $expansion = $counter.numform(:$form, :$caption, :$contents, :$type)
-                    }
-                    else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                        $expansion = ($type.lc but FieldType('T'), $counter.Str but FieldType('N'));
-                    }
+        $numeration
+    }
+     # handle numalias
+    method manage-numalias($type, $level, $contents, %config) {
+        return unless %config<numalias>:exists;
+        if %config<numalias>.Str ~~ /
+        ^ $<disp> = (.+?) '|' $<tag> = (.+?) $
+        |
+        ^ $<tag> = (.+?) $
+         / {
+            my $tag = ~$<tag>.trim;
+            my $expansion = '';
+            my $caption = (%config<caption> // '').Str;
+            my $counter = $!scoped-data.counter-tracker.get-enumeration($type, $level, :%config);
+            # if the option value was set in a =config and there is no TAG in this block
+            # then TAG will be set to *, so ignore the option
+            if $<disp>:exists {
+                my $form = $<disp>.Str.trim;
+                if  $tag eq '*' {}
+                elsif $form { # disp has a non-blank Str value and tag has a value, so disp over-rides config
+                    $expansion = $counter.numform(:$form, :$caption, :$contents, :$type)
                 }
-                else { #so only TAG is set
-                    if $!scoped-data.config{"$type$level"}<numalias> -> $c-disp { #check to see if a config specs a numalias
-                        if $c-disp ~~ / ^ $<disp> = (.*) '|' \s* '*' \s* $ / {
-                            $expansion = $counter.numform(:form( ~$<disp>), :$caption, :$contents, :$type)
-                        }
-                        else {
-                            $*prs.warnings.push: "Mal-formed config declaration of numalias ｢$c-disp｣"
-                        }
-                    }
-                    else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                        $expansion = ($type.tc but FieldType('T'), $counter.Str but FieldType('N'))
-                    }
-                }
-                if $expansion {
-                    $!scoped-data.aliases{ $tag } = $expansion
+                else { # process as default when a TAG is set but disp is blank str, so over-riding any config
+                    $expansion = ($type.lc but FieldType('T'), $counter.Str but FieldType('N'));
                 }
             }
-            else {
-                $*prs.warnings.push: "Mal-formed numalias ｢{ %config<numalias> }｣"
+            else { #so only TAG is set
+                if $!scoped-data.config{"$type$level"}<numalias> -> $c-disp { #check to see if a config specs a numalias
+                    if $c-disp ~~ / ^ $<disp> = (.*) '|' \s* '*' \s* $ / {
+                        $expansion = $counter.numform(:form( ~$<disp>), :$caption, :$contents, :$type)
+                    }
+                    else {
+                        $*prs.warnings.push: "Mal-formed config declaration of numalias ｢$c-disp｣"
+                    }
+                }
+                else { # process as default when a TAG is set but disp is blank str, so over-riding any config
+                    $expansion = ($type.tc but FieldType('T'), $counter.Str but FieldType('N'))
+                }
+            }
+            if $expansion {
+                $!scoped-data.aliases{ $tag } = $expansion
             }
         }
-        $numeration
+        else {
+            $*prs.warnings.push: "Mal-formed numalias ｢{ %config<numalias> }｣"
+        }
     }
     method help-toc($toc,$prs, $caption, $target, $level, $numeration) {
         if $toc {

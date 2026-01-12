@@ -83,6 +83,14 @@ pre.code-block {
   margin: 1rem;
   padding: 0 1rem 1rem 1rem;
 }
+pre.code-block::before {
+  content: attr(data-numeration);
+  display: block;
+  border: solid 1px gray;
+  width: fit-content;
+  border-radius: 5px;
+  margin-bottom: 5px;
+}
 
 pre.input-block {
   background-color: #eee;
@@ -90,7 +98,7 @@ pre.input-block {
   padding: 0 1rem 1rem 1rem;
 }
 pre.input-block::before {
-  content: "--- input ---";
+  content: attr(data-numeration);
   display: block;
   text-shadow: -2px -2px 4px black;
   color: white;
@@ -103,7 +111,7 @@ pre.output-block {
   padding: 0 1rem 1rem 1rem;
 }
 pre.output-block::before {
-  content: "--- output ---";
+  content: attr(data-numeration);
   display: block;
   text-shadow: 2px 2px 4px black;
   color: white;
