@@ -1642,8 +1642,7 @@ class RakuDoc::Processor {
             $numeration = $counter.numform(:form( %config<form>.Str ), :$contents, :$caption, :$type)
         }
         elsif $from-head || $type ~~ <item defn>.any {
-            $numeration =
-                                    (
+            $numeration = (
                 $counter.Str but FieldType('N'),
                 $contents but FieldType('D')
                 );

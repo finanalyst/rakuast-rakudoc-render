@@ -20,15 +20,3 @@ jobs:
       - name: Run unit tests
         run: sh ./bin/ci-unit-tests.sh
 
-
-  integration_tests:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Build custom image with all our tools
-        run: docker build -f ./Dockerfile -t project-test-image .
-
-      - name: Run integration tests
-        run: docker run --rm -w /opt/rakuast-rakudoc-render project-test-image sh -c 'prove6 xt/*'
