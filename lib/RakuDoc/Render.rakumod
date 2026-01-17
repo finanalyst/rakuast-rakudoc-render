@@ -1638,8 +1638,8 @@ class RakuDoc::Processor {
         my $numeration;
         my $caption = (%config<caption> // '').Str;
         my $counter = $!scoped-data.counter-tracker.get-enumeration($type, $level, :%config);
-        if %config<form>:exists {
-            $numeration = $counter.numform(:form( %config<form>.Str ), :$contents, :$caption, :$type)
+        if %config<numform>:exists {
+            $numeration = $counter.numform(:form( %config<numform>.Str ), :$contents, :$caption, :$type)
         }
         elsif $from-head || $type ~~ <item defn>.any {
             $numeration = (

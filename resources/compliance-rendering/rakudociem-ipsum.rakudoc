@@ -401,6 +401,11 @@ text messages for other formats.
 
 =head Enumerated blocks
 
+The heading from now on will not be included in the Table of Contents
+=config head :!toc
+=config head2 :!toc
+=config head3 :!toc
+
 =numhead1 PHYSICS
 =numhead2 Newtonian
 =numhead2 Relativistic
