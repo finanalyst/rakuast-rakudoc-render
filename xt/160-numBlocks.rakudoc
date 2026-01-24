@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 12;
+plan 13;
 
 my $ast;
 my $rv;
@@ -89,7 +89,8 @@ $ast = Q:to/AST/.AST;
     =numitem1 Learn the hidden mysteries of space and time
 
     I<????>
-    =for numitem1 :continued
+    =counter numitem1 :!restart
+    =for numitem1
     Prophet!
     =end rakudoc
     AST
@@ -178,38 +179,60 @@ like $rv.body.Str, /
     /, 'pre-configured renderering';
 
 # Enumerate blocks
-# handle procedural para and table first because they are special
+# handle para, procedural table, and nested first because they are special
 $ast = qq:to/QAST/.AST;
-        =begin rakudoc :!toc
-        =begin numpara2
-        Some extra internal stuff
-        =end numpara2
-        =end rakudoc
-        QAST
-        $rv = $rdp.render( $ast, :pre-finalised );
+    =begin rakudoc :!toc
+    =begin numpara2
+    Some extra internal stuff
+    =end numpara2
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
 '<rakudoc>' .+? 'contents' .+?
 '<para>' .+? 'contents' .+? 'Some extra' .+?
-'numeration:' .+? 'Para' .+ '1.1.' .+? '</para>'
+'numeration:' .+? '1.1. Some extra' .+? '</para>'
 /, "para enumerates";
 $ast = qq:to/QAST/.AST;
-        =begin rakudoc :!toc
-        Stuff
-        =begin numtable2
-        =row
-        =cell One
-        =cell Two
-        =end numtable2
-        =end rakudoc
-        QAST
-        $rv = $rdp.render( $ast, :pre-finalised );
+    =begin rakudoc :!toc
+    Stuff
+    =begin numtable2
+    =row
+    =cell One
+    =cell Two
+    =end numtable2
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
 'Stuff' .+?
 '<table>' .+? 'numeration:'
 .+? 'Table' .+ '1.1.' .+? '</table>'
 /, "procedural table enumerates";
 
-my @blocks = <input output code nested SEMANTIC table>;
+
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc :!toc
+    =begin numnested
+    Some extra internal stuff
+
+    In two lines
+    =end numnested
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+'<rakudoc>' .+? 'contents' .+?
+'<nested>' .+?
+'numeration: ｢｣' .+?
+'<para>' .+? 'contents' .+? 'Some extra' .+?
+'</para>' .+?
+'<para>' .+? 'contents' .+? 'In two lines' .+?
+'</par' .+?
+'</nested>'
+/, "a numnested does not enumerate but generates paras";
+
+my @blocks = <input output code SEMANTIC table>;
 # include table in blocks when visual tables do not create a problem
 subtest 'numerate blocks' => {
     plan *;

@@ -5,7 +5,7 @@ my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new( :test );
 
-plan 11;
+plan 17;
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
@@ -96,10 +96,12 @@ $ast = Q:to/QAST/.AST;
         | one   | two  |
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
+    =counter table1 :restart
         =for numtable1   :caption< Caption for first table >    :!continued
         | one   | two  |
         =for numtable1   :caption< Caption for second table >
         | one   | two  |
+    =counter formula1 :restart
         =for numformula1 :caption< Caption for first formula >  :!continued
     =end rakudoc
     QAST
@@ -164,8 +166,8 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =restart table1    :after< head3 >
-    =restart formula   :after< head3 >
+    =counter table1    :restart-after< head3 >
+    =counter formula   :restart-after< head3 >
 
     =numhead1 Heading
     =numhead2 Subheading
@@ -245,7 +247,7 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =config formula1  :number-as< table1 >
+    =config formula1  :counter< table1 >
     =numhead1 Heading
     =numhead2 Subheading
     =numhead3 Subsubheading
@@ -324,8 +326,8 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =config formula1  :number-as< TablesAndFormulae >
-    =config table1    :number-as< TablesAndFormulae >
+    =config formula1  :counter< TablesAndFormulae >
+    =config table1    :counter< TablesAndFormulae >
 
     =numhead1 Heading
     =numhead2 Subheading
@@ -405,9 +407,9 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =restart TablesAndFormulae   :after< head3 >
-    =config formula1 :number-as< TablesAndFormulae >
-    =config table1 :number-as< TablesAndFormulae >
+    =counter TablesAndFormulae   :restart-after< head3 >
+    =config formula1 :counter< TablesAndFormulae >
+    =config table1 :counter< TablesAndFormulae >
 
     =numhead1 Heading
     =numhead2 Subheading
@@ -487,10 +489,8 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =restart formula1   :after< head3 >
-    =config formula1 :number-prefix< head3 >
-    =restart table1     :after< head3 >
-    =config table1   :number-prefix< head3 >
+    =counter formula1   :restart-after< head3 > :prefix< head3 >
+    =counter table1     :restart-after< head3 > :prefix< head3 >
 
     =numhead1 Heading
     =numhead2 Subheading
@@ -570,9 +570,10 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =config formula1  :number-as< TablesAndFormulae >  :number-prefix< head1 >
-    =config table1    :number-as< TablesAndFormulae >  :number-prefix< head1 >
+    =config formula1 :counter<TableAndFormula>
+    =config table1   :counter<TableAndFormula>
 
+    =counter TableAndFormula :prefix<head1>
     =numhead1 Heading
     =numhead2 Subheading
     =numhead3 Subsubheading
@@ -664,8 +665,9 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =config formula1  :number-as< TablesAndFormulae >  :number-prefix< head1 >
-    =config table1    :number-as< TablesAndFormulae >  :number-prefix< head1 >
+    =config formula1  :counter< TableAndFormula >
+    =config table1    :counter< TableAndFormula >
+    =counter TableAndFormula :prefix<head1>
 
     =numhead1 Heading
     =numhead2 Subheading
@@ -678,9 +680,10 @@ $ast = Q:to/QAST/.AST;
         =for numformula1 :caption< Caption for second formula >
     =numhead3 Subsubheading
     =begin section
-        =config table  :number-prefix('')  :number-as< SpecialTable >
+        =config table1   :counter<SpecialTable>
+        =counter SpecialTable :restart(1000)
 
-        =for numtable1   :caption< Caption for first table >   :number(1000)
+        =for numtable1   :caption< Caption for first table >
         | one   | two  |
         =for numformula1 :caption< Caption for first formula >
         =for numtable1   :caption< Caption for second table >
@@ -768,7 +771,7 @@ like $rv.body.Str, /
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
-    =restart item  :except-after< item1 head1 table formula >
+    =counter item  :restart-except-after< item1 head1 table formula >
 
     =numhead1 Heading
         =numitem Item the first
@@ -876,24 +879,93 @@ like $rv.body.Str, /
     /, 'Except-after test';
 # combining counters with :form & :number-prefix
 $ast = qq:to/QAST/.AST;
-        =begin rakudoc :!toc
-        =config formula :form<Equation %N: %C> :number-prefix<head2>
-        =numhead1 PHYSICS
-        =numhead2 Newtonian
-        =begin numformula :caption<Mass-Energy Equivalence> :numalias<RELFORM>
-        E = MC²
-        =end numformula
-        =numhead2 Relativistic
-        =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N.%N.%N. | EQNRELFORM>
-        E = MC²
-        =end numformula
-        Some text with enumeration from aliases A<RELFORM>. And here is one differently formated A<EQNRELFORM>.
-        =end rakudoc
-        QAST
-        $rv = $rdp.render( $ast, :pre-finalised );
+    =begin rakudoc :!toc
+    =config formula :form<Equation %N: %C>
+    =counter formula :prefix<head2>
+    =numhead1 PHYSICS
+    =numhead2 Newtonian
+    =begin numformula :caption<Mass-Energy Equivalence> :numalias<RELFORM>
+    E = MC²
+    =end numformula
+    =numhead2 Relativistic
+    =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N.%N.%N. | EQNRELFORM>
+    E = MC²
+    =end numformula
+    Some text with enumeration from aliases A<RELFORM>. And here is one differently formated A<EQNRELFORM>.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
 'from aliases' .+?
 '<markup-A>' .+? 'Formula 1.1.1.' .+?
 '<markup-A>' .+? 'Equation 1.2.2.'
 /, 'Aliases have enumerations with prefixes';
+
+# skipped superordinates
+
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc
+    =counter head3 :restart(6)
+    =numhead5  First fifth
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents' .+? 'First fifth' .+?
+    'level' .+? '5' .+?
+    'numer' .+? '1.1.6.1.1. First fifth' .+?
+    '</head>' .+?
+/, 'Skipped superordinates';
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc :!toc
+    =counter head3 :restart(6)
+    =counter item :prefix< head4 >
+    =counter item :restart(4)
+
+    =numitem False fourth item
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<item>' .+?
+    'contents' .+? 'False fourth item' .+?
+    'level' .+? '1' .+?
+    'numer' .+? '1.1.6.1.4. False fourth item' .+?
+    '</item>' .+?
+/, 'Skipped superordinates second example';
+
+# Check that warnings are issued for bad counter and config options
+
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc :!toc
+    =config head3 :restart(6)
+    =counter item :prefix< head4 > :left-align
+    =counter item :toc<head>
+    =counter table :restart-after<item> :restart-except-after<para>
+
+    =numitem False fourth item
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+my @warns = $rv.warnings;
+like @warns.join, /
+    'counter directive should not contain' .+? '"left-align"'
+/, 'got bad option in counter directive';
+
+like @warns.join, /
+'counter directive must contain' .+? 'only has' .+? '"toc"'
+/, 'got bad option in counter directive';
+
+like @warns.join, /
+'counter directive has both'
+/, 'got both restart-x options';
+
+like @warns.join, /
+'config directive should not contain' .+? '"restart"' .+? 'Should'
+/, 'got bad option in config directive';
+
 done-testing;

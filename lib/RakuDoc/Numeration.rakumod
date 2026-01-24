@@ -1,5 +1,7 @@
 use v6.d;
 use RakuDoc::PromiseStrings;
+#no precompilation; note 'Numeration no precompilation';
+#use REPL; note 'Numeration using REPL module';
 
 # based on code by Damian Conway (numform and restart)
 # some revision by Elizabeth Mattijsen
@@ -20,73 +22,144 @@ class CounterTracker {
     #| key = block base, value = array of levels,
     #| level-value = last calculated prefix sequence, if not default
     has %.prefixes;
+    #| Global table of last value of sequence
+    #| key = block base, value = array of levels
+    #| A block instance's sequence needs to be stored for an alias
+    #| and if needed for another block's prefix
+    has %.last-seq;
     #| Global table of blocktypes that, when rendered, trigger an explicit restart on a particular blocktype
     #| The key is the block base, the value is a junction of regexen
     has %!triggers-for;
-    #| If a block needs to reset
-    has Bool %!restart-block;
+    #| If a block needs to reset. Contains the restart-status of
+    #| each counter, which might be True, start again, False, do not
+    #| start again, start at a number, or Nil no status
+    #| key = block base, value = array of levels
+    has %!restart-status;
 
     multi method clone( CounterTracker:D: ) {
         CounterTracker.new:
-            :type-counters( %!type-counters ),
+            :type-counters( %!type-counters ), # count values are not reset upon a scope change
             :prefixes( %!prefixes.pairs.map( { .key => .value.clone } ).hash ),
+            :last-seq( %!last-seq.pairs.map( { .key => .value.clone } ).hash ),
             :triggers-for( %!prefixes.pairs.map( { .key => .value.clone } ).hash ),
-            :restart-block(%!restart-block.clone)
+            :restart-status(%!restart-status.clone)
     }
-    #| When an expression may contain a bare block name or a blocktype,
-    #| split into a hash with base => level and level = 1
+    #| When an expression is a list that may contain a bare block name or a blocktype,
+    #| split into a hash with base => level or base => 1 if level missing
     sub normalise( $expression --> Hash ) {
         $expression
-                .words
-                .map({ /(<[_ a..z A..Z -]>+)(<[0..9]>*)/;|(~$0 => ~$1||1)})
-                .hash
+            .words
+            .map({ / ^ [num]? (<[_ a..z A..Z -]>+)(<[0..9]>*)/;|(~$0 => ~$1||1)})
+            .hash
     }
+    # Normalize names by removing any leading "num" and ensuring a trailing level number...
+    sub normalise-name ($name) {
+        $name ~~ / ^ [num]? $<basename>=(.*?) $<level>=(\d*) $ /;
+        return $<basename> ~ ($<level>.chars ?? $<level> !! 1);
+    }
+    sub block-split( $blocktype ) {
+        normalise($blocktype).sort[0].kv
+    }
+    my @counter-opts = <restart-after restart-except-after prefix restart>;
     #| called by the restart directive
-    method manage-restart( $blocktype, %config ) {
+    method manage-counter( $blocktype is copy, %config ) {
+        $blocktype = normalise-name($blocktype);
         my $expression;
         my $after = False;
-        if %config<after>:exists and %config<except-after>:exists {
-            @!warnings.push: "restart directive has both after and except-after options, only except-after is used";
-            $expression = %config<except-after>
-        }
-        elsif %config<after>:!exists and %config<except-after>:!exists {
-            @!warnings.push: "restart directive must have either after or except-after option";
+        my $restart-trigger = False;
+        unless %config.keys.any ~~ @counter-opts.any {
+            @!warnings.push: "The counter directive must contain minimum of one of: { '"' «~«  @counter-opts »~» '"' } options but only has: { '"' «~« %config.keys »~» '"' }. Should this be in a =config statement?";
             return
         }
-        else {
-            $after = %config<after>:exists;
-            $expression = $after ?? %config<after> !! %config<except-after>
+        if (%config.keys (-) @counter-opts) -> $extra {
+            @!warnings.push: "The counter directive should not contain (any of): { '"' «~« $extra.keys »~» '"' }. Should these be in a =config statement?"
         }
-        if $blocktype ~~ / ^ (\D+) (\d*) $ / {
-            my $base = ~$0;
-            my $level = ~$1 ?? ~$1 !! 1;
+        if %config<restart-after>:exists and %config<restart-except-after>:exists {
+            @!warnings.push: "The counter directive has both ｢:restart-after｣ and ｢:restart-except-after｣ options, only ｢:restart-except-after｣ is used";
+            $expression = %config<restart-except-after>;
+            $restart-trigger = True
+        }
+        elsif %config<restart-after>:exists or %config<restart-except-after>:exists {
+            $after = %config<restart-after>:exists;
+            $restart-trigger = True;
+            $expression = $after ?? %config<restart-after> !! %config<restart-except-after>
+        }
+        my ( $base, $level ) = block-split( $blocktype );
+        if $restart-trigger {
             my %triggers = normalise( $expression );
             if $after {
-                %!triggers-for{ $base ~ $level } =
+                %!triggers-for{$blocktype} =
                     any %triggers.kv.map: -> $t-base, $t-level {
                         # Create a regex that matches that basename plus any superordinate level
                         / ^ $t-base $<level>=(\d+) $ <?{ $<level> <= $t-level }> /
                     }
             }
             else {
-                %!triggers-for{ $base ~ $level } =
+                %!triggers-for{$blocktype} =
                     none %triggers.kv.map: -> $t-base, $t-level {
                         # Create a regex that matches that basename plus any subordinate level
                         / ^ $t-base $<level>=(\d+) $ <?{ $<level> >= $t-level }> /
                     }
             }
         }
-        else {
-            @!warnings.push: "Cannot parse the blocktype ｢$blocktype｣ in restart directive"
+        with %config<restart> {
+            %!restart-status{ $blocktype } = $_;
+        }
+        with %config<prefix> {
+            unless $_ {
+                %!prefixes{ $base }[ $level ] = Nil;
+                return
+            }
+            my ($p-base, $p-level) = block-split($_);
+            if $.prefix-is-cyclic($base, $level, $p-base, $p-level) -> $cycle {
+                @!warnings.push: "Ignoring cyclic :prefix<$p-base ~ $p-level> ($cycle)";
+            }
+            else {
+                %!prefixes{ $base }[ $level ] = ($p-base, $p-level);
+            }
         }
     }
-    #| called by each block instance that's rendered
+    # Detect a potentially cyclic prefix...
+    method prefix-is-cyclic ($b-from, $l-from, $b-to, $l-to, @cycle = [$b-from ~ $l-from]) {
+        return @cycle.join(' → ') ~ " → $b-to$l-to" if @cycle.grep($b-to ~ $l-to);
+        with %!prefixes{$b-to}[$l-to] -> ($b-next, $l-next) {
+            return $.prefix-is-cyclic($b-to, $l-to, $b-next, $l-next, [|@cycle, $b-to ~ $l-to]);
+        }
+        elsif $l-to >= 1 {
+            return $.prefix-is-cyclic($b-to, $l-to, $b-to, $l-to - 1 , [|@cycle, $b-to ~ $l-to]);
+        }
+        return;
+    }
+    method get-prefix( $base, $level --> Positional ) {
+        return () if $level < 1;
+        # has the sequence been calculated
+        if %!prefixes{ $base }[$level] -> ($p-base, $p-level) {
+            return %!last-seq{ $p-base }[$p-level].parts(+$p-level)
+                if %!last-seq{ $p-base }[$p-level]:exists;
+            # last-seq is empty if the blocktype in the prefix has not been instantiated
+            self.get-enumeration($p-base, $p-level ).parts(+$p-level)
+        }
+        elsif  %!prefixes{ $base }[^$level].grep(*.defined) {
+            # there is a prefix defined in the chain before $level
+            # trigger any skipped superordinate counters
+            $.restarted( $base, $_ ) for 1 ..^ $level;
+            ( | $.get-prefix( $base, $level - 1),  self.get-counter( $base ).part( +$level - 1)  )
+        }
+        else {
+            # trigger any skipped superordinate counters
+            $.restarted( $base, $_ ) for 1 ..^ $level;
+            self.get-counter( $base ).parts( +$level - 1)
+        }
+    }
+    #| called by each block instance that's rendered whether or not it has num prefix
     method process-counter( $base is copy, $level is copy, :%config ) {
         # check for number-as first
-        ($base, $level) = normalise(%config<number-as>).sort[0].kv if %config<number-as>:exists;
+        ($base, $level) = block-split(%config<counter>) if %config<counter>:exists;
         my $blockname = $base ~ $level;
         for %!triggers-for.kv -> $restartable-block, $trigger {
-            %!restart-block{ $restartable-block } ||= $blockname ~~ $trigger
+            next with %!restart-status{ $restartable-block }; # dont change if already triggered
+            # only record a True result
+            %!restart-status{ $restartable-block } = True if $blockname ~~ $trigger;
         }
         # Make sure all previously encountered blocks subsequently have
         # a (default) entry in the trigger table [note that they might already
@@ -94,80 +167,46 @@ class CounterTracker {
         # default set-up, in which case no further action is needed here]...
         if %!triggers-for{ $blockname } :!exists {
             if $base ~~ 'item' | 'defn' {
-                self.manage-restart( $blockname, %( :except-after($blockname) ) );
+                self.manage-counter( $blockname, %( :restart-except-after($blockname) ) );
             }
             else {
-                self.manage-restart( $blockname, %( :after($base ~ ($level - 1)) ) );
+                self.manage-counter( $blockname, %( :restart-after($base ~ ($level - 1)) ) );
             }
         }
-        # number overrides resets, increments and triggering
-        if %config<number> -> $number { # number also overides a restart
-            self.set( $base, $level, $number );
-            # unset the overridden trigger
-            %!restart-block{ $base ~ $level } = False;
-        }
-        else {
-            # determine if a reset is needed
-            # continued overides all restarts
-            if %config<continued><> =:= True { # continued exists and is True
-                self.inc($base, $level);
-                # unset the overridden trigger
-                %!restart-block{ $base ~ $level } = False;
-            }
-            elsif %config<continued><> =:= False { # continued and is False
-                self.set($base, $level, 1);
-                # unset the overridden trigger
-                %!restart-block{ $base ~ $level } = False;
-            }
-            elsif self.triggered( $base ~ $level ) {
-                self.set($base, $level, 1)
-            }
-            else { self.inc($base, $level) }
-        }
+        # check for restart status of its own counter
+        self.inc($base, $level) unless $.restarted( $base, $level );
+        # trigger any skipped superordinate counters
+        $.restarted( $base, $_ ) for 1 ..^ $level
     }
-    method triggered( $blockname --> Bool ) {
-        my $is-triggered = %!restart-block{ $blockname };
-        %!restart-block{ $blockname } = False;
-        $is-triggered
+    method restarted( $base, $level --> Bool ) {
+        my $rs = %!restart-status{ $base ~ $level };
+        return False unless $rs.defined;
+        %!restart-status{ $base ~ $level } = Nil;
+        given $rs {
+            when Bool {
+                $rs ?? self.set($base, $level, 1)
+                !! self.inc($base, $level)  # this would be triggered by a :!restart
+            }
+            when Int { self.set($base, $level, $rs) }
+            default { @!warnings.append: "An invalid restart status was given: ", $rs.gist() }
+        }
+        True
     }
     method get-enumeration( $base is copy, $level is copy, :%config --> Numeration ) {
         # check for number-as first
-        ($base, $level) = normalise(%config<number-as>).sort[0].kv if %config<number-as>:exists;
-        # first check if non-default enumeration needed
-        # either there is a number-prefix for the current blocktype,
-        # or prior to the level in the default chain of the current blocktype
-        if %config<number-prefix> or any( %!prefixes{ $base }[ ^$level ]) {
-            my @sequence;
-            with %config<number-prefix> {
-                @sequence = self.get-prefix( | normalise( %config<number-prefix> ).sort.[0].kv );
-                # store prefix sequence til next base/level call
-                %!prefixes{$base}[$level] = @sequence;
-            }
-            else {
-                # make sure any previous number-prefix record is removed
-                %!prefixes{$base}[$level] = Nil;
-                # now find the prior chain prefix
-                @sequence = self.get-prefix( $base, $level -1 );
-            }
-            Numeration.new(:init( | @sequence, self.get-counter( $base ).part( +$level ) ) )
+        ($base, $level) = block-split(%config<counter>) if %config<counter>:exists;
+        #| bind numeration to where it globally stored
+        my $numeration := %!last-seq{ $base }[ $level ];
+        if %!prefixes{ $base }.elems {
+            $numeration = Numeration.new(:init( | self.get-prefix( $base, $level), self.get-counter( $base ).part( +$level ) ) );
         }
         else {
-            # make sure any previous number-prefix record is removed
-            %!prefixes{$base}[$level] = Nil;
-            self.get-counter( $base ) # the default enumeration
+            $numeration = self.get-counter( $base ).clone; # the default enumeration
         }
+        $numeration;
     }
-    method get-prefix( $base, $level --> List ) {
-        return () if $level < 1;
-        return %!prefixes{ $base }[$level]
-            if %!prefixes{ $base }[$level];
-        # is there a prefix in the chain before $level
-        if any (%!prefixes{ $base }[ ^$level ] ) {
-            | self.get-prefix($base, ( $level - 1 ) ), self.get-counter( $base ).part( +$level )
-        }
-        else {
-            self.get-counter( $base ).parts( +$level )
-        }
+    method last-enumeration( $base, $level --> Numeration ) {
+        %!last-seq{ $base }[ $level ]
     }
     method inc($base, $level ) {
         self.get-counter( $base ).inc( $level )

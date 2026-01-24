@@ -9,6 +9,8 @@ use LibCurl::Easy;
 use Digest::SHA1::Native;
 use PrettyDump;
 use URI;
+#no precompilation; note 'Render no precompilation';
+#use REPL; note 'Render using REPL module';
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
 
@@ -311,6 +313,7 @@ class RakuDoc::Processor {
             if $.debug (cont) BlockType;
         # create config
         my %config = $.merged-config( $ast, "$type$level" );
+
         # All blocks have contents and may have TOC related metadata
         # handle enumerated blocks
         my $numerate = False;
@@ -318,7 +321,7 @@ class RakuDoc::Processor {
             $type = ~ $0;
             # by default numitem & numdefn appearing after the same type are continued
             # unless explicitly continued or not continued
-            if $type ~~ <alias begin end for place config finish row column restart>.any {
+            if $type ~~ <alias begin end for place config finish row column counter>.any {
                 $prs.warnings.push: qq:to/WARN/;
                 'num' may not be prefixed to directive ｢$type｣.
                 WARN
@@ -343,9 +346,9 @@ class RakuDoc::Processor {
             # =config
             # Block scope modifications to a block or markup instruction
             when 'config' { $.manage-config($ast); }
-            when 'restart' {
+            when 'counter' {
                 $!scoped-data.counter-tracker
-                        .manage-restart( self.contents($ast, 'restart' ), %config )
+                        .manage-counter( self.contents($ast, 'counter' ), %config )
             }
             # =cell
             # Contains data in a procedural table
@@ -363,10 +366,12 @@ class RakuDoc::Processor {
             # but by specification is treated as code
             when 'implicit-code' {
                 $!scoped-data.counter-tracker.process-counter( 'code', 1, :%config );
-                $.gen-paraish( $ast, %config, 'code', 1, False )
+                $.gen-codeish( $ast, %config, 'code', 1, False )
             }
-            # All non-directive blocks need to manage counters
-            when <alias begin end for place config finish row column restart>.none {
+            # All blocks that are not directive or rakudoc pod nested or section need to manage counters
+            when <alias begin end for place config finish
+                row column counter
+                rakudoc pod nested section >.none {
                 $!scoped-data.counter-tracker.process-counter( $type, $level, :%config );
                 proceed; #continue with other handlers
             }
@@ -380,7 +385,10 @@ class RakuDoc::Processor {
             # Pre-formatted sample input
             # =output
             # Pre-formatted sample output
-            when any(<code para nested input output>) {
+            when any(<code input output>) {
+                $.gen-codeish( $ast, %config, $type, $level, $numerate )
+            }
+            when any(<para nested>) {
                 $.gen-paraish( $ast, %config, $type, $level, $numerate )
             }
             # =comment
@@ -857,52 +865,49 @@ class RakuDoc::Processor {
             }
         }
     }
-    #| This block is created by the parser when a text has embedded markup
-    #| Also ordinary strings in an extended block are coerced into one
-    #| Sometimes, eg for a table cell, the paragraph should not be
-    #| ended with a newline.
-    #| A RakuDoc::Paragraph cannot be a numpara, which is treated as a block
+    #| A Doc::Paragraph is created by the parser when a text has embedded markup
+    #| It is not necessarily a para block
+    #| Implied para blocks are detected in the contents method
     multi method handle(RakuAST::Doc::Paragraph:D $ast ) {
         if $!scoped-data.verbatim {
-            # the contents of verbatim blocks do not trigger restarts
-            # the blocks that generate paragraphs may trigger restarts
             $ast.atoms.map({ $.handle($_) });
             return
         }
+        my $rem = $.complete-item-list ~ $.complete-defn-list;
         my %config = $.merged-config($, 'para' );
-        my $inline = $!scoped-data.last-starter eq 'table';
-        my $remaining-item-defn-list = $.complete-item-list ~ $.complete-defn-list;
         do {
             my ProcessedState $*prs .= new;
             for $ast.atoms { $.handle($_) }
             my $prs := $*prs;
-            my PStr $contents = $prs.body;
+            my PStr $contents = $prs.body.clone;
             # each para should have a target, generate a SHA if no id given
             my $target = %config<id> // $.para-target($contents);
             my $is-in-head = $!scoped-data.in-head.so;
-            $prs.body .= new( $remaining-item-defn-list );
-            # when a para is in a head or inline a table, then do not trigger a paragraph
-            $!scoped-data.counter-tracker.process-counter( 'para', 1, :%config )
-                unless $is-in-head or $inline or $!scoped-data.in-defn;
-            my $rv = %!templates<para>(
-                %( :$contents, :$target, :$inline, :$is-in-head, %config)
-            );
+            $prs.body .= new( $rem );
             # deal with possible inline definitions
             if $prs.inline-defns.elems {
                 for $prs.inline-defns.list -> $term {
                     $prs.warnings.push(
                         "Definition ｢$term｣ has been redefined as an inline"
-                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
-                        if $prs.definitions{ $term }:exists && %config<error>;
-                    $prs.definitions{ $term } = $rv, $target;
-                    $!register.add-payload(:payload($rv), :id($term));
+                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
+                        ) if $prs.definitions{ $term }:exists && %config<error>;
+                    $prs.definitions{ $term } = $contents, $target;
+                    $!register.add-payload(:payload($contents), :id($term));
                     $!register.add-payload(:payload($target), :id($term ~ '_target'))
                 }
                 $prs.inline-defns = ()
             }
-            $prs.body ~= $rv;
+            $prs.body ~=
+                $!scoped-data.last-starter ~~ < rakudoc pod section semantic nested >.any
+                ??
+                %!templates<para>(
+                    %( :$contents, :$target, %config)
+                )
+                !!
+                $contents
+            ;
             CALLERS::<$*prs> += $prs;
-       }
+        }
     }
     multi method handle(RakuAST::Doc::LegacyRow:D $ast) {
         $*prs.warnings.push: qq:to/WARN/;
@@ -946,19 +951,12 @@ class RakuDoc::Processor {
     # and add the string to a structure, typically, not always, to $*prs.body
     # They must all respect numerate, which means pulling in the block's enumeration
 
-    #| generic code for next, para, code, input, output blocks
+    #| generic code for code, input, output blocks
     #| No ToC content is added unless overridden by toc/caption/headlevel
-    method gen-paraish( $ast, %config, $type, $level, $numerate, :$implied = False ) {
+    method gen-codeish( $ast, %config, $type, $level, $numerate, :$implied = False ) {
         my PStr $contents .= new;
         # item & para counters need to be triggered when implied by Str within Extended Blocks
-        state Int $trig;
-        if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated {
-            $trig  = 0
-        }
-        elsif $implied { $trig++ }
-        else { $trig = 0 }
-        $!scoped-data.start-scope(:starter($type), :verbatim )
-            if $type ~~ any(<code input output>);
+        $!scoped-data.start-scope(:starter($type), :verbatim );
         if $type eq 'code' {
             if %config<allow>:exists {
                 %config<in_code_context> = True;
@@ -971,7 +969,36 @@ class RakuDoc::Processor {
                 $contents ~= $ast.paragraphs.map( *.Str ).join
             }
         }
-        elsif $implied {
+        else {
+            $contents ~= $.contents($ast, $type );
+        }
+        my $prs := $*prs;
+        my $caption = (%config<caption> // $type.tc).Str;
+        my $target = %config<id> // $.name-id($caption);
+        my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config ) !! ();
+        self.help-toc(%config<toc>, $prs, $caption, $target, ( %config<headlevel> // $level), $numeration);
+        $prs.body ~= $.complete-item-list;
+        $prs.body ~= $.complete-defn-list;
+        $prs.body ~= %!templates{ $type }(
+            %( :$contents, :$numeration, %config)
+        );
+        $!scoped-data.end-scope;
+        self.manage-numalias($type, $level, $contents, %config);
+    }
+    #| code for nested and para
+    #| No ToC content is added unless overridden by toc/caption/headlevel
+    method gen-paraish( $ast, %config, $type, $level, $numerate, :$implied = False ) {
+        my PStr $contents .= new;
+        # the para counter needs to be triggered when implied by Str within Extended Blocks
+        # but if inside an explicit para or numpara block the trigger has already occurred
+        state Int $trig;
+        # test whether immediate block is extended
+        if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated {
+            $trig  = 0
+        }
+        elsif $implied { $trig++ }
+        else { $trig = 0 }
+        if $implied {
             $contents ~= $.compactify($ast);
             $!scoped-data.counter-tracker.process-counter($type, $level, :%config ) if $trig > 1;
         }
@@ -983,13 +1010,11 @@ class RakuDoc::Processor {
         my $target = %config<id> // $.name-id($caption);
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config ) !! ();
         self.help-toc(%config<toc>, $prs, $caption, $target, ( %config<headlevel> // $level), $numeration);
-        my Bool $is-in-heading = $!scoped-data.in-head.so;
         $prs.body ~= $.complete-item-list;
         $prs.body ~= $.complete-defn-list;
         $prs.body ~= %!templates{ $type }(
-            %( :$contents, :$is-in-heading, :$numeration, %config)
+        %( :$contents, :$numeration, %config)
         );
-        $!scoped-data.end-scope if $type ~~ any( <code input output> );
         self.manage-numalias($type, $level, $contents, %config);
     }
     #| A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption
@@ -1062,6 +1087,7 @@ class RakuDoc::Processor {
                 if %config<error>
             }
         }
+        self.manage-numalias($type, $level, '', %config);
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), $numeration);
         $prs.body ~= %!templates<formula>(%(:$raw, :$formula, :$alt, :$target, :$caption, :$level, :$numeration, :$id, %config ) )
     }
@@ -1118,7 +1144,7 @@ class RakuDoc::Processor {
         $defn-expansion = %!templates<defn>(
             %( :$term, :$target, :$contents, :$numeration, %config )
         );
-        $prs.defns.push: $defn-expansion; # for the defn list to be render
+        $prs.defns.push: $defn-expansion; # for the defn list to be rendered
         $prs.warnings.push(
             "Definition ｢$term｣ has been redefined"
             ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
@@ -1283,9 +1309,7 @@ class RakuDoc::Processor {
                     ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.") if %config<error>
             }
         }
-        my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config) !! ();
-        $*prs.body ~= %!templates<section>( %( :$contents, :$id, :$numeration, %config ) );
-        self.manage-numalias($type, $level, $contents, %config);
+        $*prs.body ~= %!templates<section>( %( :$contents, :$id, %config ) );
     }
     #| Table has two forms of content: procedural / visual
     #| can take all standard options
@@ -1304,6 +1328,7 @@ class RakuDoc::Processor {
             }
         }
         my $numeration = $numerate ?? self.help-numerate($type, $level, '', %config) !! ();
+        self.manage-numalias($type, $level, '', %config);
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), $numeration);
         my Bool $procedural = $ast.visual-table.not;
         my @grid;
@@ -1638,14 +1663,14 @@ class RakuDoc::Processor {
         my $numeration;
         my $caption = (%config<caption> // '').Str;
         my $counter = $!scoped-data.counter-tracker.get-enumeration($type, $level, :%config);
-        if %config<numform>:exists {
-            $numeration = $counter.numform(:form( %config<numform>.Str ), :$contents, :$caption, :$type)
+        if %config<form>:exists {
+            $numeration = $counter.numform(:form( %config<form>.Str ), :$contents, :$caption, :$type)
         }
-        elsif $from-head || $type ~~ <item defn>.any {
+        elsif $from-head || $type ~~ <item defn para nested>.any {
             $numeration = (
                 $counter.Str but FieldType('N'),
                 $contents but FieldType('D')
-                );
+            );
         }
         else {
             $numeration =
@@ -1668,7 +1693,7 @@ class RakuDoc::Processor {
             my $tag = ~$<tag>.trim;
             my $expansion = '';
             my $caption = (%config<caption> // '').Str;
-            my $counter = $!scoped-data.counter-tracker.get-enumeration($type, $level, :%config);
+            my $counter = $!scoped-data.counter-tracker.last-enumeration($type, $level);
             # if the option value was set in a =config and there is no TAG in this block
             # then TAG will be set to *, so ignore the option
             if $<disp>:exists {
@@ -1830,19 +1855,18 @@ class RakuDoc::Processor {
     #| The $*prs for a set of paragraphs is new to collect all the
     #| associated data. The body of the contents must then be
     #| incorporated using the template of the block calling content
-    #| when scope is rakudoc,pod, section or Semantic, strings are considered paragraphs
-    #| The from-para flag is to prevent a para block generating an implied para
+    #| when scope is rakudoc, pod, section or Semantic, strings are considered paragraphs
     method contents( $ast, $from ) {
         my ProcessedState $*prs .= new;
         for $ast.paragraphs {
-            if $_ ~~ Str and $from ~~ < rakudoc pod section semantic>.any {
-                $.gen-paraish( $_.trim, %(), 'para', 1, False, :implied )
+            if $_ ~~ Str and $from ~~ < rakudoc pod section semantic nested >.any {
+                $.gen-paraish( $_.trim, %(), 'para', 1, False, :implied );
             }
-            elsif $_ ~~ Str and $from ~~ <nested para>.any {
-                $.gen-paraish( $_.trim, %(), $from, 1, False, :implied )
+            elsif $_ ~~ Str and $from ~~ <item defn para > {
+                $.gen-paraish( $_.trim, %(), $from, 1, False, :implied );
             }
             else {
-                $.handle( $_ )
+                $.handle( $_ );
             }
         }
         my $prs := $*prs;
@@ -1862,6 +1886,9 @@ class RakuDoc::Processor {
         CALLERS::<$*prs> += $prs;
         $text
     }
+    #| options reserved for counter directive
+    my @counter-opts = <restart-after restart-except-after prefix restart>;
+
     #| get config merged from the ast and scoped data
     #| handle generic metadata options such as delta
     method merged-config( $ast, $block-name --> Hash ) {
@@ -1871,6 +1898,7 @@ class RakuDoc::Processor {
             %config = .resolved-config with $ast;
             for ($ast.config.keys (-) %config.keys).keys -> $k { %config{$k} = $ast.config{$k}.Str }
         }
+        return %config if $block-name eq 'counter1'; # only get ast-defined options
         # now get options declared with =config in scope
         my %scoped = $!scoped-data.config;
         %scoped{ $block-name }.pairs.map({
@@ -1886,6 +1914,10 @@ class RakuDoc::Processor {
             %config{ .key } = .value unless %config{ .key }:exists
         });
         %config<error> = True unless %config<error>:exists;
+        if   %config.keys.grep({ $_ (elem) @counter-opts })  -> $extra {
+            $*prs.warnings.push("The config directive should not contain (any of) : { '"' «~« $extra.list »~» '"' }. Should these be in a counter statement?")
+            if %config<error>;
+        }
         if %config<delta>:exists {
             my $contents = %config<delta>:delete;
             if $contents.join(' ') ~~ / (<-[;]>+) ';'? ( .* ) $ / {

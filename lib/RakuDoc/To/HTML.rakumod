@@ -285,14 +285,23 @@ class RakuDoc::To::HTML {
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
-                PStr.new: '<div class="nested">' ~ %prm<contents> ~ "</div>\n"
+                PStr.new:
+                    '<div class="nested"' ~
+                    (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
+                    '>' ~
+                        ( %prm<numeration>
+                        ?? [~] %prm<numeration>.grep( *.so ).map( {
+                            .field-type eq 'verbatim' ?? $_ !! '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                        } )
+                        !! %prm<contents> ) ~
+                    "</div>\n"
             },
             #| renders =para block
             para => -> %prm, $tmpl {
-                if %prm<is-in-head> {
-                    PStr.new: %prm<contents>
-                }
-                else {
+#                if %prm<is-in-head> {
+#                    PStr.new: %prm<contents>
+#                }
+#                else {
                     PStr.new: '<p' ~
                         (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
                     '>' ~
@@ -302,7 +311,7 @@ class RakuDoc::To::HTML {
                         } )
                         !! %prm<contents> ) ~
                     "</p>\n"
-                }
+#                }
             },
             #| renders =place block
             place => -> %prm, $tmpl {

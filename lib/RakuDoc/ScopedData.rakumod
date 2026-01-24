@@ -11,12 +11,14 @@ has @!aliases = {}, ;
 has @!starters;
 has @!titles;
 has @!save-spacer = 'None' => False , ;
+#| headers may have embedded RakuDoc markup, which cause AST paragraphs, but are not paraish blocks
+#| In addition X<> markup in a header needs a target, which should be the same as the header target
+#| so in-head is used to store the target of a head for its embedded X<>. Hence it is a string.
+#| A blank string boolifies to False
 has Str $.in-head is rw = '';
+#| definitions have a second line that may be a paragraph but are not paraish blocks
 has Bool $.in-defn is rw = False;
-#| item and defn numerations by default are block scoped,
-#| Other para-ish numerations are in a Processed object
-has CounterTracker @!counter-tracker .= new
-;
+has CounterTracker @!counter-tracker .= new;
 has Bool $.debug is rw = False;
 #| debug information
 method diagnostic {

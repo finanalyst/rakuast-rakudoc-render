@@ -134,7 +134,7 @@ like $rv.body.Str, /
 /, 'inline definition rendered';
 like $rv.body.Str, /
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢coyotus interruptus｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>'
@@ -159,12 +159,12 @@ like $rv.body.Str, /
 /, 'inline definition rendered';
 like $rv.body.Str, /
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢crazy coyote｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>' .+?
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢speed runner revenge｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>'
@@ -194,12 +194,12 @@ like $rv.body.Str, /
 /, 'inline definition rendered';
 like $rv.body.Str, /
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢coyotus interruptus｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>' .+?
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢hubris｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>'
