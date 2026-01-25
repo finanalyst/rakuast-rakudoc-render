@@ -1666,7 +1666,7 @@ class RakuDoc::Processor {
         if %config<form>:exists {
             $numeration = $counter.numform(:form( %config<form>.Str ), :$contents, :$caption, :$type)
         }
-        elsif $from-head || $type ~~ <item defn para nested>.any {
+        elsif $from-head || $type ~~ <item defn para>.any {
             $numeration = (
                 $counter.Str but FieldType('N'),
                 $contents but FieldType('D')
@@ -1700,10 +1700,10 @@ class RakuDoc::Processor {
                 my $form = $<disp>.Str.trim;
                 if  $tag eq '*' {}
                 elsif $form { # disp has a non-blank Str value and tag has a value, so disp over-rides config
-                    $expansion = $counter.numform(:$form, :$caption, :$contents, :$type)
+                    $expansion = $counter.numform(:$form, :$caption, :$contents, :$type).list;
                 }
                 else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                    $expansion = ($type.lc but FieldType('T'), $counter.Str but FieldType('N'));
+                    $expansion = $type.tc but FieldType('T'), $counter.Str.chop but FieldType('N');
                 }
             }
             else { #so only TAG is set
@@ -1716,11 +1716,11 @@ class RakuDoc::Processor {
                     }
                 }
                 else { # process as default when a TAG is set but disp is blank str, so over-riding any config
-                    $expansion = ($type.tc but FieldType('T'), $counter.Str but FieldType('N'))
+                    $expansion = ($type.tc but FieldType('T'), $counter.Str.chop but FieldType('N'))
                 }
             }
             if $expansion {
-                $!scoped-data.aliases{ $tag } = $expansion
+                $!scoped-data.aliases{ $tag } = $expansion;
             }
         }
         else {

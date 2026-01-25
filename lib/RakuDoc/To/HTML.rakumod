@@ -203,12 +203,22 @@ class RakuDoc::To::HTML {
             comment => -> %prm, $tmpl { '' },
             #| renders =formula block
             formula => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(
-                    :contents(%prm<caption>),
-                    |(%prm<level id target delta numeration >:p )
-                ));
-                PStr.new: $head ~ qq[[<div class="formula">{%prm<formula>}</div>]]
+                my $del = %prm<delta> // '';
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                my $targ := %prm<target>;
+                my $id-target = %prm<id>:exists &&
+                        %prm<id>
+                        ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
+                        !! '';
+                PStr.new: $id-target ~ $del ~ qq:to/FORM/;
+                    <div class="formula" id="{ $tmpl.globals.escape.($targ) }">
+                    { %prm<formula> }
+                    <div class="formula-caption">$caption\</div>
+                    </div>
+                    FORM
             },
             #| renders =head block
             head => -> %prm, $tmpl {
@@ -217,7 +227,7 @@ class RakuDoc::To::HTML {
                 my $h = 'h' ~ (%prm<level> // '1');
                 my $contents = %prm<contents>.Str.split(/ \< ~ \> <-[>]>+? /).join.trim;
                 $contents = [~] %prm<numeration>.grep( *.so ).map( {
-                    .field-type eq 'verbatim' ?? $_ !! '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                 } ) if %prm<numeration>;
                 my $targ := %prm<target>;
                 my $esc-cap = $tmpl.globals.escape.( $contents );
@@ -250,7 +260,7 @@ class RakuDoc::To::HTML {
                 PStr.new: DEFN-TERM-ON ~
                 ( %prm<numeration> ??
                     [~] %prm<numeration>.grep( *.so ).map( {
-                    .field-type eq 'verbatim' ?? $_ !! '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                         } )
                 !! %prm<term> ) ~
                 DEFN-TERM-OFF ~ "\n\n" ~
@@ -291,7 +301,7 @@ class RakuDoc::To::HTML {
                     '>' ~
                         ( %prm<numeration>
                         ?? [~] %prm<numeration>.grep( *.so ).map( {
-                            .field-type eq 'verbatim' ?? $_ !! '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                            '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                         } )
                         !! %prm<contents> ) ~
                     "</div>\n"
@@ -307,7 +317,7 @@ class RakuDoc::To::HTML {
                     '>' ~
                         ( %prm<numeration>
                         ?? [~] %prm<numeration>.grep( *.so ).map( {
-                            .field-type eq 'verbatim' ?? $_ !! '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                            '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                         } )
                         !! %prm<contents> ) ~
                     "</p>\n"
@@ -342,7 +352,7 @@ class RakuDoc::To::HTML {
                 %prm<delta> ~
                 ( %prm<numeration>
                     ?? [~] %prm<numeration>.grep( *.so ).map( {
-                        .field-type eq 'verbatim' ?? $_ !! '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                         } )
                     !! %prm<contents>
                 ) ~
@@ -365,13 +375,13 @@ class RakuDoc::To::HTML {
                 my $caption =
                     %prm<numeration>
                     ?? [~] %prm<numeration>.grep( *.so ).map( {
-                        .field-type eq 'verbatim' ?? $_ !! '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                     } )
                     !! %prm<caption> ;
                 my $rv = PStr.new: $del;
                 $rv ~= qq[<div id="{%prm<target> // 'default-table'}" class="rakudoc-table">\n];
-                $rv ~= '<table class="' ~ $classes ~ '">';
                 $rv ~= qq[<caption>$caption\</caption>] if %prm<caption>;
+                $rv ~= '<table class="' ~ $classes ~ '">';
                 if %prm<procedural> {
                     $rv ~= '<tbody class="procedural">';
                     for %prm<grid>.list -> @row {
@@ -569,7 +579,12 @@ class RakuDoc::To::HTML {
             #| Alias to be replaced by contents of specified V<=alias> directive
             markup-A => -> %prm, $tmpl {
                 my $c = %prm<contents>;
-                $c ~~ Positional ?? $c.grep(*.so)».Str.join(' ') !! $c
+                $c ~~ Positional
+                    ??
+                    [~] $c.grep( *.so ).map( {
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                    } )
+                    !! $c
             },
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
