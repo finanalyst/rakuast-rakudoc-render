@@ -888,17 +888,18 @@ $ast = qq:to/QAST/.AST;
     E = MC²
     =end numformula
     =numhead2 Relativistic
-    =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N.%N.%N. | EQNRELFORM>
+    =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N.%N.%N | EQNRELFORM>
     E = MC²
     =end numformula
     Some text with enumeration from aliases A<RELFORM>. And here is one differently formated A<EQNRELFORM>.
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
+# formating of evaluated enumeration too simple
 like $rv.body.Str, /
 'from aliases' .+?
-'<markup-A>' .+? 'Formula 1.1.1.' .+?
-'<markup-A>' .+? 'Equation 1.2.2.'
+'<markup-A>' .+? 'Formula 1.1.1' .+?
+'<markup-A>' .+? 'Equation  1 . 2 . 2'
 /, 'Aliases have enumerations with prefixes';
 
 # skipped superordinates

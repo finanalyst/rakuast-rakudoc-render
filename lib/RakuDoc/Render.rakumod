@@ -388,7 +388,10 @@ class RakuDoc::Processor {
             when any(<code input output>) {
                 $.gen-codeish( $ast, %config, $type, $level, $numerate )
             }
-            when any(<para nested>) {
+            when 'nested' {
+                $.gen-nested( $ast, %config, $type, $level, $numerate )
+            }
+            when 'para' {
                 $.gen-paraish( $ast, %config, $type, $level, $numerate )
             }
             # =comment
@@ -976,6 +979,9 @@ class RakuDoc::Processor {
         my $caption = (%config<caption> // $type.tc).Str;
         my $target = %config<id> // $.name-id($caption);
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config ) !! ();
+        my $last-numeration = $numerate
+                ?? $!scoped-data.counter-tracker.last-enumeration($type, $level)
+                !! Nil;
         self.help-toc(%config<toc>, $prs, $caption, $target, ( %config<headlevel> // $level), $numeration);
         $prs.body ~= $.complete-item-list;
         $prs.body ~= $.complete-defn-list;
@@ -983,14 +989,31 @@ class RakuDoc::Processor {
             %( :$contents, :$numeration, %config)
         );
         $!scoped-data.end-scope;
+        # This feels a bit hacky
+        # Basically a whole block scope seems too much to handle the inside of a codeish block
+        $!scoped-data.counter-tracker.save-enumeration( $type, $level, $last-numeration ) if $numerate;
         self.manage-numalias($type, $level, $contents, %config);
     }
-    #| code for nested and para
+    #| nested is a container block; $level, num prefix and counters are ignored
+    #| toc and caption are also ignored
+    method gen-nested( $ast, %config, $type, $level, $numerate, :$implied = False ) {
+        my PStr $contents .= new;
+        if $ast.paragraphs.head ~~ (Str, RakuAST::Doc::Paragraph).any {
+            $!scoped-data.counter-tracker.process-counter( 'para' , 1 )
+        }
+        $contents ~= $.contents($ast, $type );
+        my $prs := $*prs;
+        $prs.body ~= $.complete-item-list;
+        $prs.body ~= $.complete-defn-list;
+        $prs.body ~= %!templates{ $type }(
+        %( :$contents, %config)
+        );
+    }
+    #| code forpara
     #| No ToC content is added unless overridden by toc/caption/headlevel
     method gen-paraish( $ast, %config, $type, $level, $numerate, :$implied = False ) {
         my PStr $contents .= new;
         # the para counter needs to be triggered when implied by Str within Extended Blocks
-        # but if inside an explicit para or numpara block the trigger has already occurred
         state Int $trig;
         # test whether immediate block is extended
         if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated {
@@ -1075,7 +1098,7 @@ class RakuDoc::Processor {
         my $prs := $*prs;
         my $alt = %config<alt> // 'Formula cannot be rendered';
         my $caption = ( %config<caption> // $type).Str;
-        my $target = $.name-id($alt);
+        my $target = $.name-id($caption);
         my $id = %config<id>;
         my $numeration = $numerate ?? self.help-numerate($type, $level, '', %config) !! ();
         with $id {
@@ -2050,21 +2073,21 @@ class RakuDoc::Processor {
             #| renders =code blocks
             code => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>».Str.join !! 'code' } --- \n"
+                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! 'code' } --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ----- ---\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>».Str.join !! 'input' } --- \n"
+                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! 'input' } --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>».Str.join !! 'output' } --- \n"
+                PStr.new: $del ~ "\n  --- { %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! 'output' } --- \n"
                 ~ %prm<contents>
                 ~ "\n  --- ------ ---\n"
              },
@@ -2083,7 +2106,7 @@ class RakuDoc::Processor {
                 my $del = %prm<delta> // '';
                 my $indent = %prm<level> > 5 ?? 4 !! (%prm<level> - 1) * 2;
                 my $title = %prm<contents>;
-                $title = %prm<numeration>».Str.join if %prm<numeration>;
+                $title = %prm<numeration>.grep( *.so )».Str.join if %prm<numeration>;
                 "\n" ~ ' ' x $indent ~ HEADING-ON ~ BOLD-ON ~ $title ~ BOLD-OFF ~  HEADING-OFF ~
                 "\n" ~ $del
             },
@@ -2101,7 +2124,7 @@ class RakuDoc::Processor {
             },
             #| renders =defn block
             defn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ (%prm<numeration> ?? %prm<numeration>».Str.join !! %prm<term>) ~ DEFN-TERM-OFF ~ "\n" ~
+                DEFN-TERM-ON ~ (%prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! %prm<term>) ~ DEFN-TERM-OFF ~ "\n" ~
                 DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
             },
             #| special template to render a defn list data structure
@@ -2109,7 +2132,7 @@ class RakuDoc::Processor {
             #| renders =item block
             item => -> %prm, $tmpl {
                 if %prm<numeration> {
-                    %prm<numeration>».Str.join ~ "\n"
+                    %prm<numeration>.grep( *.so )».Str.join ~ "\n"
                 }
                 else {
                     my $num = %prm<level> - 1;
@@ -2125,11 +2148,11 @@ class RakuDoc::Processor {
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
-                PStr.new: (%prm<delta> // '') ~ "\t" ~ ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~  "\n\n"
+                PStr.new: (%prm<delta> // '') ~ "\t" ~ ( %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! %prm<contents> ) ~  "\n\n"
             },
             #| renders =para block
             para => -> %prm, $tmpl {
-                PStr.new: (%prm<delta> // '') ~ ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~ "\n\n"
+                PStr.new: (%prm<delta> // '') ~ ( %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! %prm<contents> ) ~ "\n\n"
             },
             #| renders =place block, place cannot be enumerated
             place => -> %prm, $tmpl {
@@ -2150,7 +2173,7 @@ class RakuDoc::Processor {
             #| renders =section block
             section => -> %prm, $tmpl {
                 (%prm<delta> // '') ~
-                ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~ "\n"
+                ( %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! %prm<contents> ) ~ "\n"
             },
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
@@ -2169,7 +2192,7 @@ class RakuDoc::Processor {
                 use Text::MiscUtils::Layout;
                 my $del = %prm<delta> // '';
                 my $caption = HEADING-ON ~ %prm<caption> ~ HEADING-OFF;
-                $caption = %prm<numeration>».Str.join if %prm<numeration>;
+                $caption = %prm<numeration>.grep( *.so )».Str.join if %prm<numeration>;
                 my $cap-width = duospace-width($caption);
                 if %prm<procedural> {
                     # calculate column widths naively, will include possible markup, and
@@ -2369,7 +2392,14 @@ class RakuDoc::Processor {
 
             #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             #| Alias to be replaced by contents of specified V<=alias> directive, or numalias option
-			markup-A => -> %prm, $tmpl { %prm<contents>».Str.join },
+			markup-A => -> %prm, $tmpl {
+                my $c = %prm<contents>;
+                my $rv = $c ~~ Positional
+                    ?? $c.grep( *.so )».Str.join
+                    !! $c
+                    ;
+                $c
+            },
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
 			markup-E => -> %prm, $tmpl { %prm<contents> },

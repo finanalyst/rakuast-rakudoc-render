@@ -208,6 +208,11 @@ class CounterTracker {
     method last-enumeration( $base, $level --> Numeration ) {
         %!last-seq{ $base }[ $level ]
     }
+    #| Some blocks need to create a new scope locally, which
+    #| but need to retain their last numeration.
+    method save-enumeration( $base, $level, $numeration) {
+        %!last-seq{ $base }[ $level ] = $numeration
+    }
     method inc($base, $level ) {
         self.get-counter( $base ).inc( $level )
     }

@@ -35,15 +35,9 @@ method templates {
                 RSP
             }
         },
-        LatexFormula => -> %prm, $tmpl {
-            my $head = $tmpl('head', %(
-                :contents(%prm<caption>),
-                |(%prm<level id target delta numeration >:p )
-            ));
-            PStr.new: $head ~ '<div class="latex-equation">' ~ $tmpl<getLatexImage> ~ '</div>'
-        },
         formula => -> %prm, $tmpl {
-            $tmpl<LatexFormula>
+            %prm<formula> = '<div class="latex-equation">' ~ $tmpl<getLatexImage> ~ '</div>';
+            $tmpl.prev(%prm)
         },
         markup-F => -> %prm, $tmpl {
             my $formula = $tmpl('getLatexImage', %(:raw(%prm<formula>),));
@@ -56,10 +50,11 @@ method scss-str {
     /* Latex formula stying */
     div.latex-equation {
         display: flex;
-        justify-content: space-around;
-        align-items: center;
-        a.logo {
-            align-self: flex-last;
+        justify-content: space-between;
+        a.logo img {
+            width: 60%;
+            border: gray solid 1px;
+            border-radius: 5px;
         }
     }
     span.latex-formula {

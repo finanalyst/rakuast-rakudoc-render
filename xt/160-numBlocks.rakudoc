@@ -210,26 +210,28 @@ like $rv.body.Str, /
 .+? 'Table' .+ '1.1.' .+? '</table>'
 /, "procedural table enumerates";
 
-
 $ast = qq:to/QAST/.AST;
     =begin rakudoc :!toc
+    =numpara expect enum one
     =begin numnested
     Some extra internal stuff
 
-    In two lines
+    In two paras
     =end numnested
+    =numpara expect enum four
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
 '<rakudoc>' .+? 'contents' .+?
-'<nested>' .+?
-'numeration: ｢｣' .+?
+'<para>' .+? 'numeration' .+? '1. expect enum one' .+? '</par' .+?
+'<nested>' .+? 'contents' .+?
 '<para>' .+? 'contents' .+? 'Some extra' .+?
 '</para>' .+?
-'<para>' .+? 'contents' .+? 'In two lines' .+?
+'<para>' .+? 'contents' .+? 'In two paras' .+?
 '</par' .+?
-'</nested>'
+'</nested>' .+?
+'<para>' .+? 'numeration' .+? '4. expect enum four' .+? '</par' .+?
 /, "a numnested does not enumerate but generates paras";
 
 my @blocks = <input output code SEMANTIC table>;
@@ -266,7 +268,7 @@ subtest 'Aliases' => {
         E = MC²
         =end numformula
         =numhead2 Second
-        =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N. | EQNRELFORM>
+        =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation%N | EQNRELFORM>
         E = MC²
         =end numformula
         =for numformula2 :numalias<SNDEQU>
@@ -279,9 +281,9 @@ subtest 'Aliases' => {
         $rv = $rdp.render( $ast, :pre-finalised );
     like $rv.body.Str, /
         'from aliases' .+?
-        '<markup-A>' .+? 'Formula 1.' .+?
-        '<markup-A>' .+? 'Equation 2.' .+?
-        '<markup-A>' .+? 'Formula 2.1.' .+?
+        '<markup-A>' .+? 'Formula 1' .+?
+        '<markup-A>' .+? 'Equation 2' .+?
+        '<markup-A>' .+? 'Formula 2.1' .+?
     /, 'Aliases work';
 }
 done-testing;

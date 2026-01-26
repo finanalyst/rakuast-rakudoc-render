@@ -213,8 +213,12 @@ method templates {
                         </pre>
                         NOHIGHS
             }
+            my $del = %prm<delta> // '';
+            my $numeration = %prm<numeration>
+                ?? %prm<numeration>.grep(*.so)».Str.join(' ')
+                !! '';
             qq[
-                <div class="raku-code">
+                <div class="raku-code code-block" data-numeration="$numeration">
                     <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
                     <label>$syntax-label\</label>
                     <div>$code\</div>

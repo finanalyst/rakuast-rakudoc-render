@@ -568,6 +568,9 @@ method html-vanilla {
     span.footnote {
         vertical-align: super;
     }
+    span.developer-text {
+
+    }
     span.developer-version {
         display: none;
         color: red;
@@ -584,17 +587,25 @@ method html-vanilla {
         text-shadow: 1px 1px red;
     }
 
-    pre.code-block {
+    .code-block {
         background-color: #eee;
         margin: 1rem;
         padding: 0 1rem 1rem 1rem;
+        &::before {
+          content: attr(data-numeration);
+          display: block;
+          border: solid 1px gray;
+          width: fit-content;
+          border-radius: 5px;
+          margin-bottom: 5px;
+      }
     }
     pre.input-block {
         background-color: #eee;
         margin: 1rem;
         padding: 0 1rem 1rem 1rem;
         &::before {
-            content: '--- input ---';
+            content: attr(data-numeration);
             display: block;
             text-shadow: -2px -2px 4px black;
             color: white;
@@ -606,7 +617,7 @@ method html-vanilla {
         margin: 1rem;
         padding: 0 1rem 1rem 1rem;
         &::before {
-            content: '--- output ---';
+            content: attr(data-numeration);
             display: block;
             text-shadow: 2px 2px 4px black;
             color: white;
@@ -620,12 +631,19 @@ method html-vanilla {
     div.defn-term {
         font-weight: bold;
         font-style: italic;
+        .N { margin-right: 5px }
     }
     div.id-target {
         display: none;
     }
     div.nested {
         margin-left: 5rem;
+    }
+    div.footer {
+
+    }
+    div.footer-field {
+
     }
     div.toc {
         .toc-item {
@@ -638,6 +656,8 @@ method html-vanilla {
             }
         }
     }
+    h1.toc-caption {
+    }
     div.index-section {
         margin-left: calc(( var(--level) - 1 ) * 1rem);
         &[data-index-level="1"] {
@@ -649,6 +669,26 @@ method html-vanilla {
             width:auto;
             white-space:normal;
         }
+    /*
+        > a.index-ref {
+            white-space: nowrap;
+            display:inline-block;
+            width: 1em;
+            + span {
+                display: none;
+                width: 0;
+            }
+            &:hover+span {
+                display: inline-block;
+                position: absolute;
+                width: auto;
+                z-index: 5;
+                background-color: seashell;
+            }
+        }
+        */
+    }
+    h2.index-caption {
     }
     span.developer-note {
         display: none;
@@ -685,6 +725,16 @@ method html-vanilla {
     span.developer-text:hover {
         text-decoration: overline;
     }
+
+    div.footnotes {
+
+    }
+    div.footnote {
+
+    }
+    div.warnings {
+
+    }
     div.footer {
         border-top: 2px dashed;
         margin: 1rem 0;
@@ -696,6 +746,9 @@ method html-vanilla {
             display: block;
         }
     }
+    h2.warnings-caption {
+    }
+
     .heading > a {
         color: maroon;
         text-decoration: none;
@@ -703,9 +756,24 @@ method html-vanilla {
     h.title {
         font-size: larger;
     }
-    table, th, td {
-      border: 1px solid;
-      border-collapse: collapse;
+    .rakudoc-table {
+        table, th, td {
+          border: 1px solid lightgray;
+          border-collapse: collapse;
+        }
+        .table {
+            padding: 15px;
+            margin-bottom: 10px;
+            margin-top: 10px;
+            margin-inline: auto;
+            border: 1px solid black;
+            td, td {
+              padding: 5px;
+            }
+            caption {
+               margin-bottom: 5px;
+            }
+        }
     }
     tbody.procedural tr.procedural .procedural-cell-left {
         text-align: left;
@@ -738,6 +806,12 @@ method html-vanilla {
             content: attr(data-bullet);
         }
     }
+    li.numitem {
+        padding-left: 0.4rem;
+        &::marker {
+            content: attr(data-bullet);
+        }
+    }
     div.rakudoc-image-placement {
         display: flex;
         flex-direction: column;
@@ -750,6 +824,7 @@ method html-vanilla {
         color: red;
         font-weight: bold;
     }
+
     .raku-anchor {
       font-size: 0.9em;
       text-decoration: none;
@@ -758,6 +833,16 @@ method html-vanilla {
     .heading:hover .raku-anchor {
       visibility: visible;
       padding-left: 5px;
+    }
+    .enumeration-N {
+        margin: 0 5px 0 5px;
+    }
+    .formula {
+        margin-left: 5rem;
+        .formula-caption {
+            color: maroon;
+            padding: 2px 0 10px 0;
+        }
     }
     VANIL
 }
@@ -928,6 +1013,20 @@ method raku-webs-scss {
             width:auto;
             white-space:normal;
         }
+    }
+    .rakudoc-table {
+        display: flex;
+        align-content: center;
+        flex-direction: column;
+        .table-caption {
+            margin-inline: auto;
+            color: $heading;
+            font-size: 1.375rem;
+        }
+    }
+    p span.numpara {
+        position: absolute;
+        text-indent: -3rem;
     }
     /* Hopepage title */
     .raku-webs {

@@ -308,20 +308,21 @@ class RakuDoc::To::HTML {
             },
             #| renders =para block
             para => -> %prm, $tmpl {
-#                if %prm<is-in-head> {
-#                    PStr.new: %prm<contents>
-#                }
-#                else {
-                    PStr.new: '<p' ~
-                        (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
+                my $del = %prm<delta> // '';
+                my $number = '';
+                my $text = %prm<contents>;
+                %prm<numeration>.grep( *.so ).map( {
+                    if .field-type eq 'D' { $text = $_ }
+                    else { $number ~= $_ }
+                } );
+                PStr.new: ('<div class="delta">' ~ $del if $del) ~
+                    '<p' ~
+                    (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
                     '>' ~
-                        ( %prm<numeration>
-                        ?? [~] %prm<numeration>.grep( *.so ).map( {
-                            '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
-                        } )
-                        !! %prm<contents> ) ~
-                    "</p>\n"
-#                }
+                    (qq[<span class="numpara">$number\</span>] if $number) ~
+                    $text  ~
+                    "</p>\n"~
+                    (</div> if $del)
             },
             #| renders =place block
             place => -> %prm, $tmpl {
@@ -380,7 +381,7 @@ class RakuDoc::To::HTML {
                     !! %prm<caption> ;
                 my $rv = PStr.new: $del;
                 $rv ~= qq[<div id="{%prm<target> // 'default-table'}" class="rakudoc-table">\n];
-                $rv ~= qq[<caption>$caption\</caption>] if %prm<caption>;
+                $rv ~= qq[<div class="table-caption">$caption\</div>] if %prm<caption>;
                 $rv ~= '<table class="' ~ $classes ~ '">';
                 if %prm<procedural> {
                     $rv ~= '<tbody class="procedural">';
