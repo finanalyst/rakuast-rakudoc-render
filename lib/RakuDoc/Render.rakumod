@@ -1682,12 +1682,12 @@ class RakuDoc::Processor {
     }
     # helper methods
     method help-numerate($type, $level, $contents, %config, :$from-head = False ) {
-        my $form = '';
+        my $form = (%config<form> // '').Str;
         my $numeration;
         my $caption = (%config<caption> // '').Str;
         my $counter = $!scoped-data.counter-tracker.get-enumeration($type, $level, :%config);
-        if %config<form>:exists {
-            $numeration = $counter.numform(:form( %config<form>.Str ), :$contents, :$caption, :$type)
+        if $form {
+            $numeration = $counter.numform(:$form, :$contents, :$caption, :$type)
         }
         elsif $from-head || $type ~~ <item defn para>.any {
             $numeration = (

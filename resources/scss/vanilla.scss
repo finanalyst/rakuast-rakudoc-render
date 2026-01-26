@@ -324,3 +324,20 @@ div.rakudoc-image-placement {
         padding: 2px 0 10px 0;
     }
 }
+.rakudoc-table {
+    display: flex;
+    align-content: center;
+    flex-direction: column;
+    .table-caption {
+        margin-inline: auto;
+        color: #A30031;
+        font-size: 1.375rem;
+    }
+}
+p span.numpara {
+    position: absolute;
+    text-indent: -3rem;
+}
+.rakudoc-singlepage {
+    margin-left: 4rem;
+}

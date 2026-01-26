@@ -337,7 +337,7 @@ method templates {
             my $h = 'h' ~ (%prm<level> // '1');
             my $classes = ( %prm<classes> // "heading raku-webs-$h" ) ~ ( 'delta' if $del ) ;
             my $contents = %prm<contents>.split(/ \< ~ \> <-[>]>+? /).join.trim;
-            $contents = "%prm<numeration> $contents" if %prm<numeration>;
+            $contents = %prm<numeration> if %prm<numeration>;
             my $targ := %prm<target>;
             my $esc-cap = $tmpl.globals.escape.( $contents );
             $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
@@ -424,7 +424,7 @@ method js-text {
     window.addEventListener('load', function () {
         // initialise if localStorage is set
         let theme = persisted_theme();
-        if ( theme ) {
+        if ( theme == null ) {
             theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             change_theme(theme);
             persist_theme(theme);
@@ -587,43 +587,6 @@ method html-vanilla {
         text-shadow: 1px 1px red;
     }
 
-    .code-block {
-        background-color: #eee;
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-          content: attr(data-numeration);
-          display: block;
-          border: solid 1px gray;
-          width: fit-content;
-          border-radius: 5px;
-          margin-bottom: 5px;
-      }
-    }
-    pre.input-block {
-        background-color: #eee;
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-            content: attr(data-numeration);
-            display: block;
-            text-shadow: -2px -2px 4px black;
-            color: white;
-            padding-bottom: 1rem;
-        }
-    }
-    pre.output-block {
-        background-color: #eee;
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-            content: attr(data-numeration);
-            display: block;
-            text-shadow: 2px 2px 4px black;
-            color: white;
-            padding-bottom: 1rem;
-        }
-    }
 
     div.defn-text {
         margin-left: 1rem;
@@ -840,7 +803,7 @@ method html-vanilla {
     .formula {
         margin-left: 5rem;
         .formula-caption {
-            color: maroon;
+            color: #A30031;
             padding: 2px 0 10px 0;
         }
     }
@@ -1182,6 +1145,45 @@ method toc-scss {
             color: var(--bulma-text);
         }
     }
+    /* moved from vanilla */
+    .code-block {
+        background-color: var(--bulma-pre-background);
+        margin: 1rem;
+        padding: 0 1rem 1rem 1rem;
+        &::before {
+          content: attr(data-numeration);
+          display: block;
+          border: solid 1px gray;
+          width: fit-content;
+          border-radius: 5px;
+          margin-bottom: 5px;
+      }
+    }
+    pre.input-block {
+        background-color: var(--bulma-pre-background);
+        margin: 1rem;
+        padding: 0 1rem 1rem 1rem;
+        &::before {
+            content: attr(data-numeration);
+            display: block;
+            text-shadow: -2px -2px 4px black;
+            color: white;
+            padding-bottom: 1rem;
+        }
+    }
+    pre.output-block {
+        background-color: var(--bulma-pre-background);
+        margin: 1rem;
+        padding: 0 1rem 1rem 1rem;
+        &::before {
+            content: attr(data-numeration);
+            display: block;
+            text-shadow: 2px 2px 4px black;
+            color: white;
+            padding-bottom: 1rem;
+        }
+    }
+
     TOC
 }
 # additions assuming bulma classes

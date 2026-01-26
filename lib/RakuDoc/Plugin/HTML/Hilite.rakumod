@@ -263,7 +263,7 @@ method scss-str {
     /* Raku code highlighting */
     .raku-code {
         position: relative;
-        margin: 1rem 0;
+        margin: 0 1rem 0 1rem;
         button.copy-code {
             cursor: pointer;
             opacity: 0;

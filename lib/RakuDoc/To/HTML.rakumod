@@ -684,7 +684,7 @@ class RakuDoc::To::HTML {
             final => -> %prm, $tmpl {
                 qq:to/PAGE/
                 <!DOCTYPE html>
-                <html { $tmpl<html-root> } >
+                <html { $tmpl<html-root> } class="rakudoc-singlepage">
                     <head>
                     <meta charset="UTF-8" />
                     { $tmpl<head-block> }
