@@ -116,10 +116,7 @@ method templates {
                     when any( %!hilight-langs.keys ) {
                         $syntax-label = $lang ~  ' highlighting by highlight-js';
                         $code = qq:to/HILIGHT/;
-                            <pre class="browser-hl">
-                            <code class="language-{ %!hilight-langs{ $_ } }">
-                            { $tmpl.globals.escape.($source) }
-                            </code></pre>
+                            <pre class="browser-hl">\<code class="language-{ %!hilight-langs{ $_ } }">{ $tmpl.globals.escape.($source) }\</code>\</pre>
                             HILIGHT
                     }
                     when 'RAKUDOC' {
@@ -128,9 +125,7 @@ method templates {
                     when ! /^ 'RAKU' » / {
                         $syntax-label = $lang;
                         $code = qq:to/NOHIGHS/;
-                            <pre class="nohighlights">
-                            $tmpl.globals.escape.($source)
-                            </pre>
+                            <pre class="nohighlights">$tmpl.globals.escape.($source)\</pre>
                             NOHIGHS
                     }
                     default {
@@ -141,9 +136,7 @@ method templates {
             else { # no :allow and :!syntax-highlighting
                 $syntax-label = %prm<lang> // 'Text';
                 $code = qq:to/NOHIGHS/;
-                    <pre class="nohighlights">
-                    { $tmpl.globals.escape.($source) }
-                    </pre>
+                    <pre class="nohighlights">{ $tmpl.globals.escape.($source) }\</pre>
                     NOHIGHS
             }
             without $code { # so need Raku highlighting
@@ -208,22 +201,24 @@ method templates {
                     $code .= subst( / "\t" /, '&nbsp' x 4, :g );
                 }
                 $code = qq:to/NOHIGHS/;
-                        <pre class="nohighlights">
-                        $code
-                        </pre>
+                        <pre class="nohighlights">$code\</pre>
                         NOHIGHS
             }
             my $del = %prm<delta> // '';
-            my $numeration = %prm<numeration>
-                ?? %prm<numeration>.grep(*.so)».Str.join(' ')
-                !! '';
-            qq[
-                <div class="raku-code code-block" data-numeration="$numeration">
-                    <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
-                    <label>$syntax-label\</label>
-                    <div>$code\</div>
+            my $caption = %prm<caption>;
+            $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+            } ) if %prm<numeration>;
+            qq:to/CODE/
+                { '<div class="delta">' ~ $del if $del }
+                <div class="raku-code">
+                <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
+                <label>$syntax-label\</label>
+                <div>$code\</div>
+                <div class="code-caption">$caption\</div>
                 </div>
-            ]
+                { '</div>' if $del }
+            CODE
         },
     )
 }
@@ -269,6 +264,9 @@ method scss-str {
             opacity: 0;
             padding: 0 0.25rem 0.25rem 0.25rem;
             position: absolute;
+        }
+        .code-caption {
+            margin: 0;
         }
         &:hover button.copy-code {
             opacity: 0.5;

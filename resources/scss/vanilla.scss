@@ -67,44 +67,48 @@ span.bad-markdown {
 	text-shadow: 1px 1px red;
 }
 
-pre.code-block {
-	background-color: #eee;
-	margin: 1rem;
-	padding: 0 1rem 1rem 1rem;
-	&::before {
-	  content: attr(data-numeration);
-      display: block;
-      border: solid 1px gray;
-      width: fit-content;
-      border-radius: 5px;
-      margin-bottom: 5px;
-  }
-}
-pre.input-block {
-	background-color: #eee;
-	margin: 1rem;
-	padding: 0 1rem 1rem 1rem;
-	&::before {
-	    content: attr(data-numeration);
-        display: block;
-        text-shadow: -2px -2px 4px black;
-        color: white;
-        padding-bottom: 1rem;
+.raku-code {
+    pre.rakudoc:first-child {
+        background-color: #eee;
+        margin: 0 1rem;
+        padding: 0.5rem 1rem 0.5rem 1rem;
 	}
+	.code-caption {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+        margin: 0 0 1rem 1rem;
+    }
 }
-pre.output-block {
-	background-color: #eee;
-	margin: 1rem;
-	padding: 0 1rem 1rem 1rem;
-	&::before {
-        content: attr(data-numeration);
-        display: block;
-        text-shadow: 2px 2px 4px black;
-        color: white;
-        padding-bottom: 1rem;
+.raku-input {
+    pre.rakudoc:first-child {
+        background-color: #eee;
+        margin: 0 1rem;
+        padding: 0.5rem 1rem 0.5rem 1rem;
 	}
+	.input-caption {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+        margin: 0 0 1rem 1rem;
+    }
 }
-
+.raku-output {
+	pre.rakudoc:first-child {
+        background-color: #eee;
+        margin: 0 1rem;
+        padding: 0.5rem 1rem 0.5rem 1rem;
+    }
+	.output-caption {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+        margin: 0 0 1rem 1rem;
+    }
+}
 div.defn-text {
     margin-left: 1rem;
 }
@@ -237,15 +241,25 @@ h.title {
 	font-size: larger;
 }
 .rakudoc-table {
+    display: flex;
+    align-content: flex-start;
+    flex-direction: column;
+    margin: 1rem;
+    width: fit-content;
     table, th, td {
       border: 1px solid lightgray;
       border-collapse: collapse;
+    }
+    .table-caption.rakudoc {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
     }
     .table {
         padding: 15px;
         margin-bottom: 10px;
         margin-top: 10px;
-        margin-inline: auto;
         border: 1px solid black;
         td, td {
           padding: 5px;
@@ -304,7 +318,6 @@ div.rakudoc-image-placement {
     color: red;
     font-weight: bold;
 }
-
 .raku-anchor {
   font-size: 0.9em;
   text-decoration: none;
@@ -318,20 +331,13 @@ div.rakudoc-image-placement {
     margin: 0 5px 0 5px;
 }
 .formula {
-    margin-left: 5rem;
+    margin: 1rem;
     .formula-caption {
         color: maroon;
-        padding: 2px 0 10px 0;
-    }
-}
-.rakudoc-table {
-    display: flex;
-    align-content: center;
-    flex-direction: column;
-    .table-caption {
-        margin-inline: auto;
-        color: #A30031;
-        font-size: 1.375rem;
+        padding: 0.2rem 0 1rem 0;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
     }
 }
 p span.numpara {

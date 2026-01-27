@@ -17,7 +17,7 @@ has %.config =
           [ self.toc-scss, 1],
           [ self.bulma-additions-scss, 1],
           [ self.raku-webs-scss, 1],
-          [ self.html-vanilla, 1 ]
+#          [ self.html-vanilla, 1 ]
     ),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
@@ -516,299 +516,6 @@ method js-text {
     }
     SCRIPT
 }
-method html-vanilla {
-    q:to/VANIL/;
-    /*! Vanilla CSS */
-    span.basis {
-        font-weight: 800;
-    }
-    span.important {
-        font-style: italic;
-    }
-    span.unusual {
-        text-decoration: underline;
-    }
-    span.code {
-        font-weight: 500;
-        background-color: linen;
-        display:inline-block;
-        margin: 2px;
-        padding: 2px;
-    }
-    span.overstrike {
-        text-decoration: line-through;
-    }
-    span.high {
-        vertical-align: super;
-    }
-    span.junior {
-        vertical-align: sub;
-    }
-    span.replace {
-        font-style: small-caps;
-        text-shadow: -1px 1px;
-    }
-    span.indexed {
-        text-shadow: 1px 1px orange;
-        &:hover::before {
-            content: attr(data-index-text);
-            translate: 0 -1.5em;
-            position: absolute;
-            opacity: 75%;
-            background-color: turquoise;
-            color: indigo;
-        }
-    }
-    span.keyboard {
-        text-shadow: 1px 1px;
-    }
-    span.terminal {
-        text-decoration: overline underline;
-    }
-    span.footnote {
-        vertical-align: super;
-    }
-    span.developer-text {
-
-    }
-    span.developer-version {
-        display: none;
-        color: red;
-        span.developer-note {
-            font-family: 'Brush Script MT', cursive;
-        }
-        &:hover {
-            display: inline-block;
-            transform: translate(50px, 100px);
-            z-index: 5;
-        }
-    }
-    span.bad-markdown {
-        text-shadow: 1px 1px red;
-    }
-
-
-    div.defn-text {
-        margin-left: 1rem;
-    }
-    div.defn-term {
-        font-weight: bold;
-        font-style: italic;
-        .N { margin-right: 5px }
-    }
-    div.id-target {
-        display: none;
-    }
-    div.nested {
-        margin-left: 5rem;
-    }
-    div.footer {
-
-    }
-    div.footer-field {
-
-    }
-    div.toc {
-        .toc-item {
-            margin-left: calc(var(--level) * 1rem);
-            &::before {
-                content: attr(data-bullet);
-            }
-            a {
-                padding-left: 0.4rem;
-            }
-        }
-    }
-    h1.toc-caption {
-    }
-    div.index-section {
-        margin-left: calc(( var(--level) - 1 ) * 1rem);
-        &[data-index-level="1"] {
-            text-shadow: 1px 1px orange;
-        }
-        > a.index-ref {
-            margin-left: calc(var(--level) * 1rem);
-            display:block;
-            width:auto;
-            white-space:normal;
-        }
-    /*
-        > a.index-ref {
-            white-space: nowrap;
-            display:inline-block;
-            width: 1em;
-            + span {
-                display: none;
-                width: 0;
-            }
-            &:hover+span {
-                display: inline-block;
-                position: absolute;
-                width: auto;
-                z-index: 5;
-                background-color: seashell;
-            }
-        }
-        */
-    }
-    h2.index-caption {
-    }
-    span.developer-note {
-        display: none;
-        width: 0;
-        color: blue;
-        text-shadow: 2px 2px 5px green;
-    }
-    span.developer-version {
-        display: none;
-        width: 0;
-        color: red;
-        text-shadow: 2px 2px 5px green;
-    }
-    .delta, span.developer-text {
-        &::before {
-            content: "\2139";
-            vertical-align: super;
-        }
-        &:hover .developer-version {
-            display: inline-block;
-            position: absolute;
-            width: 100%;
-            z-index: 5;
-            transform: translate(0.5rem,-1rem);
-        }
-        &:hover .developer-note {
-            display: inline-block;
-            position: absolute;
-            width: auto;
-            z-index: 5;
-            margin-left: 1rem;
-        }
-    }
-    span.developer-text:hover {
-        text-decoration: overline;
-    }
-
-    div.footnotes {
-
-    }
-    div.footnote {
-
-    }
-    div.warnings {
-
-    }
-    div.footer {
-        border-top: 2px dashed;
-        margin: 1rem 0;
-        padding: 2rem;
-        .footer-field {
-            display:inline-block;
-        }
-        .footer-line {
-            display: block;
-        }
-    }
-    h2.warnings-caption {
-    }
-
-    .heading > a {
-        color: maroon;
-        text-decoration: none;
-    }
-    h.title {
-        font-size: larger;
-    }
-    .rakudoc-table {
-        table, th, td {
-          border: 1px solid lightgray;
-          border-collapse: collapse;
-        }
-        .table {
-            padding: 15px;
-            margin-bottom: 10px;
-            margin-top: 10px;
-            margin-inline: auto;
-            border: 1px solid black;
-            td, td {
-              padding: 5px;
-            }
-            caption {
-               margin-bottom: 5px;
-            }
-        }
-    }
-    tbody.procedural tr.procedural .procedural-cell-left {
-        text-align: left;
-    }
-    tbody.procedural tr.procedural .procedural-cell-centre {
-        text-align: center;
-    }
-    tbody.procedural tr.procedural .procedural-cell-center {
-        text-align: center;
-    }
-    tbody.procedural tr.procedural .procedural-cell-right {
-        text-align: right;
-    }
-    tbody.procedural tr.procedural .procedural-cell-top {
-        vertical-align: text-top;
-    }
-    tbody.procedural tr.procedural .procedural-cell-middle {
-        vertical-align: baseline;
-    }
-    tbody.procedural tr.procedural .procedural-cell-bottom {
-        vertical-align: text-bottom;
-    }
-    tbody.procedural tr.procedural .procedural-cell-label {
-        font-weight: bold;
-    }
-    li.item {
-        padding-left: 0.4rem;
-        margin-left: calc(var(--level) * 1rem);
-        &::marker {
-            content: attr(data-bullet);
-        }
-    }
-    li.numitem {
-        padding-left: 0.4rem;
-        &::marker {
-            content: attr(data-bullet);
-        }
-    }
-    div.rakudoc-image-placement {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .rakudoc-placement-error {
-        display: flex;
-        justify-content: sapace-around;
-        align-items: center;
-        color: red;
-        font-weight: bold;
-    }
-
-    .raku-anchor {
-      font-size: 0.9em;
-      text-decoration: none;
-      visibility: hidden;
-    }
-    .heading:hover .raku-anchor {
-      visibility: visible;
-      padding-left: 5px;
-    }
-    .enumeration-N {
-        margin: 0 5px 0 5px;
-    }
-    .formula {
-        margin-left: 5rem;
-        .formula-caption {
-            color: #A30031;
-            padding: 2px 0 10px 0;
-        }
-    }
-    VANIL
-}
 method raku-webs-scss {
     q:to/SCSS/;
     /*! Styling for Raku doc-website */
@@ -987,10 +694,19 @@ method raku-webs-scss {
             font-size: 1.375rem;
         }
     }
-    p span.numpara {
-        position: absolute;
-        text-indent: -3rem;
+    @media screen and (min-width: 1024px) {
+            p span.numpara {
+            position: absolute;
+            text-indent: -3rem;
+        }
     }
+    @media screen and (max-width: 1023px){
+            p span.numpara {
+            position: absolute;
+            text-indent: -1rem;
+        }
+    }
+
     /* Hopepage title */
     .raku-webs {
         .hero-body {
@@ -1145,45 +861,6 @@ method toc-scss {
             color: var(--bulma-text);
         }
     }
-    /* moved from vanilla */
-    .code-block {
-        background-color: var(--bulma-pre-background);
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-          content: attr(data-numeration);
-          display: block;
-          border: solid 1px gray;
-          width: fit-content;
-          border-radius: 5px;
-          margin-bottom: 5px;
-      }
-    }
-    pre.input-block {
-        background-color: var(--bulma-pre-background);
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-            content: attr(data-numeration);
-            display: block;
-            text-shadow: -2px -2px 4px black;
-            color: white;
-            padding-bottom: 1rem;
-        }
-    }
-    pre.output-block {
-        background-color: var(--bulma-pre-background);
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-            content: attr(data-numeration);
-            display: block;
-            text-shadow: 2px 2px 4px black;
-            color: white;
-            padding-bottom: 1rem;
-        }
-    }
-
     TOC
 }
 # additions assuming bulma classes

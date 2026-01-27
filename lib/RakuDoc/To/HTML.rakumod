@@ -163,41 +163,52 @@ class RakuDoc::To::HTML {
             #| renders =code blocks
             code => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                my $numeration = %prm<numeration>
-                    ?? %prm<numeration>.grep(*.so)».Str.join(' ')
-                    !! '';
-                PStr.new: ('<div class="delta">' ~ $del if $del) ~
-                '<div class="numcode">' ~
-                qq[<pre class="code-block" data-numeration="$numeration">] ~
-                $tmpl<escape-code> ~
-                "</pre>\n</div>\n" ~
-                (</div> if $del)
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                PStr.new: qq:to/CODE/
+                    { '<div class="delta">' ~ $del if $del }
+                    <div class="raku-code">
+                    <pre class="rakudoc">{ $tmpl<escape-code> }</pre>
+                    <div class="code-caption">$caption\</div>
+                    </div>
+                    { '</div>' if $del }
+                CODE
             },
             #| renders =input block
             input => -> %prm, $tmpl {
                 %prm<html-tags> = True;
                 my $del = %prm<delta> // '';
-                my $numeration = %prm<numeration>
-                        ?? '--- ' ~ %prm<numeration>.grep(*.so)».Str.join(' ') ~ ' ---'
-                        !! '--- input ---';
-                PStr.new: ('<div class="delta">' ~ $del if $del) ~
-                    qq[<pre class="input-block" data-numeration="$numeration">] ~
-                $tmpl<escape-code> ~
-                "\n</pre>\n" ~
-                (</div> if $del)
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                PStr.new: qq:to/CODE/
+                    { '<div class="delta">' ~ $del if $del }
+                    <div class="raku-input">
+                    <pre class="rakudoc">{ $tmpl<escape-code> }</pre>
+                    <div class="input-caption">$caption\</div>
+                    </div>
+                    { '</div>' if $del }
+                CODE
             },
             #| renders =output block
             output => -> %prm, $tmpl {
                 %prm<html-tags> = True;
                 my $del = %prm<delta> // '';
-                my $numeration = %prm<numeration>
-                        ?? '--- ' ~ %prm<numeration>.grep(*.so)».Str.join(' ') ~ ' ---'
-                        !! '--- output ---';
-                PStr.new: ('<div class="delta">' ~ $del if $del) ~
-                    qq[<pre class="output-block" data-numeration="$numeration">] ~
-                $tmpl<escape-code> ~
-                "\n</pre>\n" ~
-                (</div> if $del)
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                PStr.new: qq:to/CODE/
+                    { '<div class="delta">' ~ $del if $del }
+                    <div class="raku-output">
+                    <pre class="rakudoc">{ $tmpl<escape-code> }</pre>
+                    <div class="output-caption">$caption\</div>
+                    </div>
+                    { '</div>' if $del }
+                CODE
             },
             #| renders =comment block
             comment => -> %prm, $tmpl { '' },
@@ -213,11 +224,14 @@ class RakuDoc::To::HTML {
                         %prm<id>
                         ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                         !! '';
-                PStr.new: $id-target ~ $del ~ qq:to/FORM/;
+                PStr.new: ('<div class="delta">' ~ $del if $del) ~
+                    $id-target ~
+                    qq:to/FORM/;
                     <div class="formula" id="{ $tmpl.globals.escape.($targ) }">
                     { %prm<formula> }
                     <div class="formula-caption">$caption\</div>
                     </div>
+                    { '</div>' if $del }
                     FORM
             },
             #| renders =head block
@@ -373,15 +387,15 @@ class RakuDoc::To::HTML {
             table => -> %prm, $tmpl {
                 my $classes = ( %prm<classes> // "table" );
                 my $del = %prm<delta> // '';
+                my $align-table = %prm<alignment>:exists && %prm<alignment> ?? ' align-' ~ %prm<alignment> !! '';
                 my $caption =
                     %prm<numeration>
                     ?? [~] %prm<numeration>.grep( *.so ).map( {
                         '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                     } )
                     !! %prm<caption> ;
-                my $rv = PStr.new: $del;
-                $rv ~= qq[<div id="{%prm<target> // 'default-table'}" class="rakudoc-table">\n];
-                $rv ~= qq[<div class="table-caption">$caption\</div>] if %prm<caption>;
+                my $rv = PStr.new: ('<div class="delta">' ~ $del if $del);
+                $rv ~= qq[<div id="{%prm<target> // 'default-table'}" class="rakudoc-table$align-table">\n];
                 $rv ~= '<table class="' ~ $classes ~ '">';
                 if %prm<procedural> {
                     $rv ~= '<tbody class="procedural">';
@@ -417,7 +431,11 @@ class RakuDoc::To::HTML {
                     $rv ~= [~] %prm<rows>.map({ '<tr><td>' ~ .map(*.trim).join('</td><td>') ~ "</td></tr>\n\t\t" });
                     $rv ~= "\t</tbody>\n";
                 }
-                $rv ~= "</table></div>\n"
+                $rv ~= "</table>\n";
+                $rv ~= qq[<div class="table-caption rakudoc">$caption\</div>] if $caption;
+                $rv ~= '</div>';
+                $rv ~= '</div>' if $del;
+                $rv
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
