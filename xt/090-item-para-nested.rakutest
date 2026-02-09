@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 6;
+plan 9;
 
 my $ast;
 my $rv;
@@ -118,4 +118,96 @@ like $rv.body.Str, /
     'contents' .+? 'paragraph after' .+?
     '</para' .+?
     /, 'nested paragraphs';
+# now enumerated
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numpara First line
+    =numnested A note 1
+    =numnested A second note
+    =numpara Fourth para
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<para>' .+?
+    'contents' .+? 'First line' .+?
+    'numera' .+? '1.' .+?
+    '</para' .+?
+    '<nested>' .+?
+    'contents' .+?
+    '<para>' .+? 'A note 1' .+?
+    '</para' .+?
+    '</nested' .+?
+    '<nested>' .+?
+    '<para>' .+?
+    'contents' .+? 'A second note' .+?
+    '</para>' .+?
+    '</nested' .+?
+    '<para>' .+?
+    'contents' .+? 'Fourth para' .+?
+    'numeration' .+? '4.' .+?
+    '</para'
+    /, 'numnested paragraphs';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numpara First line
+    =begin nested
+    =numpara A second note
+    =numpara A subordinate note
+    =end nested
+    =numpara Fourth para
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<para>' .+?
+    'contents' .+? 'First line' .+?
+    'numera' .+? '1.' .+?
+    '</para' .+?
+    '<nested>' .+?
+    'contents' .+?
+    '<para>' .+? 'A second note' .+?
+    'numeration' .+? '2.' .+?
+    '</para' .+?
+    '<para>' .+?
+    'contents' .+? 'A subordinate note' .+?
+    'numeration' .+? '3.' .+?
+    '</para>' .+?
+    '</nested' .+?
+    '<para>' .+?
+    'contents' .+? 'Fourth para' .+?
+    'numeration' .+? '4.' .+?
+    '</para'
+    /, 'nested num paragraphs';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numpara Before first
+    =begin para
+    First line of second
+
+    Second note
+
+    Third note
+    =end para
+    =numpara Three para
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<para>' .+?
+    'contents' .+? 'Before first' .+?
+    'numera' .+? '1.' .+?
+    '</para' .+?
+    '<para>' .+?
+    'contents' .+?'First line of second' .+?
+    'extension' .+? 'Second note' .+? 'Third note' .+?
+    '</para' .+?
+    '<para>' .+?
+    'contents' .+? 'Three para' .+?
+    'numeration' .+? '3.' .+?
+    '</para'
+    /, 'extended paragraph';
+
 done-testing;

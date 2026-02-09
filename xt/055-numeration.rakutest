@@ -3,7 +3,7 @@ use Test;
 use RakuDoc::Numeration;
 use RakuDoc::PromiseStrings;
 
-plan 60;
+plan 62;
 
 my Numeration $n .= new;
 
@@ -31,11 +31,11 @@ is $n.Str(5), '2.2.4.1.3.', 'increment m leaves n unchanged';
 $n .=new.inc;
 my $rv;
 $rv = $n.numform(:form<TOPIC %A - %D>, :contents('PHYSICS'), :caption(''), :type<head>);
-is $rv.join, 'TOPIC A - PHYSICS', 'test from RakuDoc spev 1';
+is $rv.join, 'TOPIC A - PHYSICS', 'test from RakuDoc v2 spec #1';
 $n .= new: init => (1, 2, 7) ;
 is $n.Str, '1.2.7.', 'create with initial sequence';
 my $xmp = 0;
-my PStr $contents .= new: 'The data';
+my $contents = 'The data';
 $rv = ([~] $n.numform( :form('%%N%:        (%N of %n): %D:lc%:'),                :$contents))>>.Str.join;
 is $rv,
 		'%N:        (2 of 7): the data:'
@@ -53,7 +53,7 @@ is $rv,
 		,
 		'%N:ord:uc: (2ND of 7th): the data:'
 		;
-$contents .= new: 'Example data';
+$contents = 'Example data';
 $rv =( [~] $n.numform( :form('%%R%:     (%R of %r): %D:lc%:'),          :$contents))>>.Str.join;
 is $rv,
 	'%R:     (ⅠⅠ of ⅴⅰⅰ): example data:'
@@ -161,7 +161,7 @@ for 1...5, 17, 34 {
 	is $rv, @examples[$xmp], "example { $xmp++ }"
 }
 $n .= new: :init([1]);
-$contents .=new: 'Design :form mechanism';
+$contents = 'Design :form mechanism';
 $rv =( [~] $n.numform( :form('%A. %D'),         :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'A. Design :form mechanism'
@@ -169,7 +169,7 @@ is $rv,
 	'A. Design :form mechanism'
 	;
 $n .= new: :init([2]);
-$contents .=new: 'Implement it (:lc)';
+$contents = 'Implement it (:lc)';
 $rv =( [~] $n.numform( :form('%A. %d'),         :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'B. implement it (:lc)'
@@ -177,7 +177,7 @@ is $rv,
 	'B. implement it (:lc)'
 	;
 $n .= new: :init([3]);
-$contents .=new: '???';
+$contents = '???';
 $rv =( [~] $n.numform( :form('%a. %D'),         :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'c. ???'
@@ -185,7 +185,7 @@ is $rv,
 	'c. ???'
 	;
 $n .= new: :init([4]);
-$contents .=new: 'Profit!!! (:uc)';
+$contents = 'Profit!!! (:uc)';
 $rv =( [~] $n.numform( :form('%A. %D:uc'),      :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'D. PROFIT!!! (:UC)'
@@ -193,7 +193,7 @@ is $rv,
 	'D. PROFIT!!! (:UC)'
 	;
 $n .= new: :init([27]);
-$contents .=new: 'hUh? dOUblE ISO lEttErs? (:tc)';
+$contents = 'hUh? dOUblE ISO lEttErs? (:tc)';
 $rv =( [~] $n.numform( :form('%A. %D:tc'),     :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'AA. HUh? dOUblE ISO lEttErs? (:tc)'
@@ -201,7 +201,7 @@ is $rv,
 	'AA. HUh? dOUblE ISO lEttErs? (:tc)'
 	;
 $n .= new: :init([731]);
-$contents .=new: 'whAt??? trIplE the ISO lEttErs? (:tclc)';
+$contents = 'whAt??? trIplE the ISO lEttErs? (:tclc)';
 $rv =( [~] $n.numform( :form('%A. %D:tclc'),  :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'ABC. What??? triple the iso letters? (:tclc)'
@@ -209,13 +209,13 @@ is $rv,
 	'ABC. What??? triple the iso letters? (:tclc)'
 	;
 $n .= new: :init([732]);
-$contents .=new: 'What else do i see, o, reader??? triple the ISO letters? (:sc)';
+$contents = 'What else do i see, o, reader??? triple the ISO letters? (:sc)';
 $rv =( [~] $n.numform( :form('%A. %D:sc'),    :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'ABD. What else do I see, O, reader??? Triple the ISO letters? (:sc)'
 	, "example $xmp";
 $n .= new: :init([732]);
-$contents .=new: 'What else do i see, o reader??? triple the ISO letters? (:sc:lang<de>)';
+$contents = 'What else do i see, o reader??? triple the ISO letters? (:sc:lang<de>)';
 $rv =( [~] $n.numform( :form('%A. %D:sc:lang<de>'),    :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'ABD. What else do i see, o reader??? Triple the ISO letters? (:sc:lang<de>)'
@@ -223,7 +223,7 @@ is $rv,
 	'ABD. What else do i see, o reader??? Triple the ISO letters? (:sc:lang<de>)'
 	;
 $n .= new: :init([732]);
-$contents .=new: 'whAt do i see now??? trIple the ISO lEttErs? (:pc)';
+$contents = 'whAt do i see now??? trIple the ISO lEttErs? (:pc)';
 $rv =( [~] $n.numform( :form('%A. %D:pc'),    :type<item>, :$contents ))>>.Str.join;
 is $rv,
 	'ABD. What Do I See Now??? Triple The ISO Letters? (:pc)'
@@ -275,6 +275,22 @@ is $rv,
 	'5th: no warning about :lc'
 	;
 
+# test that PStr over-ride case handling
+$n .= new: :init([4]);
+$contents = PStr.new: 'Profit!!! (:uc) but has Rakudoc content';
+$rv =( [~] $n.numform( :form('%A. %D:uc'),      :type<item>, :$contents ))>>.Str.join;
+is $rv,
+        'D. Profit!!! (:uc) but has Rakudoc content'
+        ,
+        'upper case not implemented'
+        ;
+my $caption = PStr.new: 'Mass-energy equivalence';
+$rv =( $n.numform( :form('%N:ord %T:lc: %C:lc'),  :$caption :type<formula> ))>>.Str.join;
+is $rv,
+        '4th formula: Mass-energy equivalence'
+        ,
+        'Caption is PStr, :lc over-ride'
+        ;
 done-testing;
 
 

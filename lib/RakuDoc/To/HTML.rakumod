@@ -214,6 +214,7 @@ class RakuDoc::To::HTML {
             comment => -> %prm, $tmpl { '' },
             #| renders =formula block
             formula => -> %prm, $tmpl {
+                # beware premature stringification!
                 my $del = %prm<delta> // '';
                 my $caption = %prm<caption>;
                 $caption = [~] %prm<numeration>.grep( *.so ).map( {
@@ -226,13 +227,13 @@ class RakuDoc::To::HTML {
                         !! '';
                 PStr.new: ('<div class="delta">' ~ $del if $del) ~
                     $id-target ~
-                    qq:to/FORM/;
-                    <div class="formula" id="{ $tmpl.globals.escape.($targ) }">
-                    { %prm<formula> }
-                    <div class="formula-caption">$caption\</div>
-                    </div>
-                    { '</div>' if $del }
-                    FORM
+                    qq[<div class="formula" id="{ $tmpl.globals.escape.($targ) }">] ~
+                    ( %prm<alt> ?? %prm<alt> !! %prm<formula> ) ~
+                    q[<div class="formula-caption">] ~
+                    $caption ~
+                    q[</div>
+                    </div>] ~
+                    ( '</div>' if $del )
             },
             #| renders =head block
             head => -> %prm, $tmpl {
@@ -332,6 +333,7 @@ class RakuDoc::To::HTML {
                 PStr.new: ('<div class="delta">' ~ $del if $del) ~
                     '<p' ~
                     (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
+                    (%prm<in-type> ?? ' class="' ~ %prm<in-type> ~ '"' !! '') ~
                     '>' ~
                     (qq[<span class="numpara">$number\</span>] if $number) ~
                     $text  ~
@@ -610,7 +612,7 @@ class RakuDoc::To::HTML {
             markup-E => -> %prm, $tmpl { %prm<contents> },
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
-            markup-F => -> %prm, $tmpl { CODE-ON ~ %prm<formula> ~ CODE-OFF },
+            markup-F => -> %prm, $tmpl { CODE-ON ~ %prm<alt> ~ CODE-OFF },
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
             markup-L => -> %prm, $tmpl {

@@ -6,7 +6,7 @@ plan 32;
 
 sub blk( $ct, $bk, $lv, :%config --> Numeration ) {
     $ct.process-counter($bk, $lv, :%config);
-    $ct.get-enumeration( $bk, $lv, :%config)
+    $ct.get-enumeration( $bk, $lv, :counter( %config<counter> // '') )
 }
 
 my CounterTracker $ct;

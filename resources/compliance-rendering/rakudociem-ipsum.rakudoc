@@ -177,7 +177,8 @@ offer more.
 =numitem1 reset to level one
 =numitem3 jump levels
 =item an unnumbered item
-=for numitem2 :continued
+=counter item :restart
+=for numitem2
 but we can resume after a break
 =para
 =defn Definitions
@@ -206,7 +207,8 @@ just phone the SWAT team
 
 An ordinary paragraph creates the definition list.
 
-=for numdefn :continued
+=counter numdefn :restart
+=for numdefn
 Lemma 4
 Claim you are the victim here
 
@@ -410,7 +412,7 @@ The heading from now on will not be included in the Table of Contents
 =numhead2 Newtonian
 =numhead2 Relativistic
 =begin numformula :caption<Mass-Energy Equivalence>
-E = MC²
+e^{ipi}+1=0
 =end numformula
 
 =config numhead1   :form<TOPIC %A - %D>
@@ -420,10 +422,10 @@ E = MC²
 =numhead2 Newtonian
 =numhead2 Relativistic
 =begin numformula :caption<Mass-Energy Equivalence> :numalias<RELFORM>
-E = MC²
+e^{ipi}+1=0
 =end numformula
 =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N. | EQNFORM>
-E = MC²
+e^{ipi}+1=0
 =end numformula
 
 =begin section
@@ -433,18 +435,18 @@ E = MC²
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =end section
 
 Here we can use the formula enumerations, viz.
@@ -458,23 +460,23 @@ Here we can use the formula enumerations, viz.
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >    :!continued
 | one   | two  |
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >  :!continued
-E = MC²
+e^{ipi}+1=0
 =end section
 
 =begin section
-=restart table1    :after< head3 >
-=restart formula   :after< head3 >
+=counter table1    :restart-after< head3 >
+=counter formula   :restart-after< head3 >
 
 =numhead1 Heading
 =numhead2 Subheading
@@ -482,69 +484,44 @@ E = MC²
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =end section
 =begin section
-=config formula1  :number-as< table1 >
+=config formula1  :counter< table1 >
 =numhead1 Heading
 =numhead2 Subheading
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =end section
 
 =begin section
-=config formula1  :number-as< TablesAndFormulae >
-=config table1    :number-as< TablesAndFormulae >
-
-=numhead1 Heading
-=numhead2 Subheading
-=numhead3 Subsubheading
-=for numtable1   :caption< Caption for first table >
-| one   | two  |
-=for numformula1 :caption< Caption for first formula >
-E = MC²
-=for numtable1   :caption< Caption for second table >
-| one   | two  |
-=for numformula1 :caption< Caption for second formula >
-E = MC²
-=numhead3 Subsubheading
-=for numtable1   :caption< Caption for first table >
-| one   | two  |
-=for numtable1   :caption< Caption for second table >
-| one   | two  |
-=for numformula1 :caption< Caption for first formula >
-E = MC²
-=end section
-
-=begin section
-=restart TablesAndFormulae   :after< head3 >
-=config formula1 :number-as< TablesAndFormulae >
-=config table1 :number-as< TablesAndFormulae >
+=config formula1  :counter< TablesAndFormulae >
+=config table1    :counter< TablesAndFormulae >
 
 =numhead1 Heading
 =numhead2 Subheading
@@ -552,25 +529,24 @@ E = MC²
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =end section
 
 =begin section
-=restart formula1   :after< head3 >
-=config formula1 :number-prefix< head3 >
-=restart table1     :after< head3 >
-=config table1   :number-prefix< head3 >
+=counter TablesAndFormulae   :restart-after< head3 >
+=config formula1 :counter< TablesAndFormulae >
+=config table1 :counter< TablesAndFormulae >
 
 =numhead1 Heading
 =numhead2 Subheading
@@ -578,23 +554,23 @@ E = MC²
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =end section
 
 =begin section
-=config formula1  :number-as< TablesAndFormulae >  :number-prefix< head1 >
-=config table1    :number-as< TablesAndFormulae >  :number-prefix< head1 >
+=counter formula1   :restart-after< head3 > :prefix< head3 >
+=counter table1     :restart-after< head3 > :prefix< head3 >
 
 =numhead1 Heading
 =numhead2 Subheading
@@ -602,26 +578,52 @@ E = MC²
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
+=end section
+
+=begin section
+=config formula1  :counter< TablesAndFormulae >
+=config table1    :counter< TablesAndFormulae >
+=counter TablesAndFormulae :prefix< head1 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
 =numhead1 Second heading
 =for numtable1   :caption< Caption for next table >
 | one   | two  |
 =end section
 
 =begin section
-=config formula1  :number-as< TablesAndFormulae >  :number-prefix< head1 >
-=config table1    :number-as< TablesAndFormulae >  :number-prefix< head1 >
+=config formula1  :counter< TablesAndFormulae >
+=config table1    :counter< TablesAndFormulae >
+=counter TablesAndFormulae :prefix< head1 >
 
 =numhead1 Heading
 =numhead2 Subheading
@@ -629,19 +631,20 @@ E = MC²
 =for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numhead3 Subsubheading
 =begin section
-=config table  :number-prefix('')  :number-as< SpecialTable >
+=config table :counter< SpecialTable >
 
-=for numtable1   :caption< Caption for first table >   :number(1000)
+=counter SpecialTable :restart(1000)
+=for numtable1   :caption< Caption for first table >
 | one   | two  |
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =end section
@@ -649,11 +652,11 @@ E = MC²
 =for numtable1   :caption< Caption for next table >
 | one   | two  |
 =for numformula1 :caption< Caption for next formula >
-E = MC²
+e^{ipi}+1=0
 =end section
 
 =begin section
-=restart item  :except-after< item1 head1 table formula >
+=counter item  :restart-except-after< item1 head1 table formula >
 
 =numhead1 Heading
 =numitem Item the first
@@ -664,21 +667,36 @@ E = MC²
 =numhead2 Subheading
 =numitem Item the fourth
 =for numformula1 :caption< Caption for first formula >
-E = MC²
+e^{ipi}+1=0
 =numitem Item the fifth
 =for numtable1   :caption< Caption for second table >
 | one   | two  |
 =for numformula1 :caption< Caption for second formula >
-E = MC²
+e^{ipi}+1=0
 =numitem Item the sixth
 =numhead1 Second heading
 =numitem Item the seventh
 =for numtable1   :caption< Caption for next table >
 | one   | two  |
 =for numformula1 :caption< Caption for next formula >
-E = MC²
+e^{ipi}+1=0
 =numitem Item the eighth
 =end section
+
+=for head :toc
+Non-arabic numerals
+
+=config head :form< %Z %D >
+=config head2 :form< ｢%Z｣%R %D >
+=config head3 :form< ｢%Z｣%R｢%B｣ %D >
+=numhead First title
+=numhead Second title
+=numhead3 Sub-sub-head one (implies the sub-head)
+=numhead3 Sub-sub-head two
+=numhead2 Sub-head first explicit
+=numhead2 Sub-head second explicit
+=for numformula2 :form<%T %Z.%R. >
+e^{i\pi}+1=0
 
 Text finishes after version number
 =place semantic:AUTHORS :caption<Credits>

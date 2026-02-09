@@ -36,7 +36,7 @@ subtest 'live internet tests' => sub {
     $rv = $rdp.render( $ast );
     like $rv, /
         '<title>Test document</title>'
-    /, 'got simple render';
+    /, 'got simple render using online Bulma';
     $ast = Q:to/QAST/.AST;
         =begin rakudoc
         =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/fanciful-disclaimer.txt :caption<Text placement> :headlevel(2)

@@ -68,10 +68,10 @@ CODE
 my $rv = $html-instance.rdp.render( $ast, :pre-finalized ).body.Str;
 
 like $rv, /
-    '<pre' .+? 'code-block' .+? '=head2 X&lt;C&lt;hyper&gt;' .+? 'prefix)&gt;'  .+?
-    '<pre' .+? 'code-block' .+? '=head2 X&lt;&lt;&lt;Hyper operators|Operators,&lt;&lt;;Operators,&gt;&gt;;'
+    '<pre' .+? 'rakudoc' .+? '=head2 X&lt;C&lt;hyper&gt;' .+? 'prefix)&gt;'  .+?
+    '<pre' .+? 'rakudoc' .+? '=head2 X&lt;&lt;&lt;Hyper operators|Operators,&lt;&lt;;Operators,&gt;&gt;;'
     'Operators,«;Operators,»;Operators,»=«;Operators,«=»&gt;&gt;&gt;' .+?
-    '<pre' .+? 'code-block' .+? '=head2 X&lt;&lt;&lt;Word quoting with interpolation and quote protection: qqww|Syntax,qqww&gt;&gt;&gt;'
+    '<pre' .+? 'rakudoc' .+? '=head2 X&lt;&lt;&lt;Word quoting with interpolation and quote protection: qqww|Syntax,qqww&gt;&gt;&gt;'
     /, 'escaping without allow';
 
 $ast = q:to/CODE/.AST;
@@ -91,11 +91,11 @@ CODE
 $rv = $html-instance.rdp.render( $ast, :pre-finalized ).body.Str;
 
 like $rv, /
-    '<pre' .+? 'code-block' .+? '=head2 X&lt;<span class="basis">hyper</span>' .+? 'prefix)&gt;' .+?
+    '<pre' .+? 'rakudoc' .+? '=head2 X&lt;<span class="basis">hyper</span>' .+? 'prefix)&gt;' .+?
     'X&lt;<span class="basis">race</span>|Syntax,race (statement prefix)&gt;' .+?
-    '<pre' .+? 'code-block' .+? '=head2 X&lt;&lt;&lt;Hyper operators|Operators,&lt;&lt;;Operators,&gt;&gt;;'
+    '<pre' .+? 'rakudoc' .+? '=head2 X&lt;&lt;&lt;Hyper operators|Operators,&lt;&lt;;Operators,&gt;&gt;;'
     'Operators,«;Operators,»;Operators,»=«;Operators,«=»&gt;&gt;&gt;' .+?
-    '<pre' .+? 'code-block' .+? '=head2 X&lt;&lt;&lt;Word quoting with <span class="basis">interpolation</span> and quote protection: qqww|Syntax,qqww&gt;&gt;&gt;'
+    '<pre' .+? 'rakudoc' .+? '=head2 X&lt;&lt;&lt;Word quoting with <span class="basis">interpolation</span> and quote protection: qqww|Syntax,qqww&gt;&gt;&gt;'
     /, 'escaping with allow';
 
 

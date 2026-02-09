@@ -336,8 +336,10 @@ method templates {
             my $del = %prm<delta> // '';
             my $h = 'h' ~ (%prm<level> // '1');
             my $classes = ( %prm<classes> // "heading raku-webs-$h" ) ~ ( 'delta' if $del ) ;
-            my $contents = %prm<contents>.split(/ \< ~ \> <-[>]>+? /).join.trim;
-            $contents = %prm<numeration> if %prm<numeration>;
+            my $contents = %prm<contents>.Str.split(/ \< ~ \> <-[>]>+? /).join.trim;
+            $contents = [~] %prm<numeration>.grep( *.so ).map( {
+                '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+            } ) if %prm<numeration>;
             my $targ := %prm<target>;
             my $esc-cap = $tmpl.globals.escape.( $contents );
             $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
@@ -346,14 +348,14 @@ method templates {
                     !! '';
             PStr.new:
                     $id-target ~
-                            ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
-                            qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
-                            ($del if $del) ~
+                    ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
+                    qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
+                    ($del if $del) ~
                     ($contents ?? (
                     qq|<a href="#">| ~
-                            $contents ~
-                            qq|</a><a class="raku-webs-anchor" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>| ~
-                            qq|</$h>\n|
+                    $contents ~
+                    qq|</a><a class="raku-webs-anchor" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>| ~
+                    qq|</$h>\n|
                     ) !! '')
         },
         table => -> %prm, $tmpl {
@@ -704,6 +706,11 @@ method raku-webs-scss {
             p span.numpara {
             position: absolute;
             text-indent: -1rem;
+        }
+    }
+    @media (prefers-color-scheme: dark) {
+        .latex-equation > img {
+          filter: invert(1) brightness(2);
         }
     }
 

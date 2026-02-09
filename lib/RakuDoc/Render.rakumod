@@ -976,69 +976,65 @@ class RakuDoc::Processor {
             $contents ~= $.contents($ast, $type );
         }
         my $prs := $*prs;
-        my $caption = (%config<caption> // $type.tc).Str;
-        my $target = %config<id> // $.name-id($caption);
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs original $caption
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config ) !! ();
+        # hack to save out of verbatim scope
         my $last-numeration = $numerate
-                ?? $!scoped-data.counter-tracker.last-enumeration($type, $level)
+                ?? $!scoped-data.counter-tracker.last-enumeration($type, $level, :counter( %config<counter> // '') )
                 !! Nil;
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
+        my $target = %config<id> // $.name-id($caption);
         self.help-toc(%config<toc>, $prs, $caption, $target, ( %config<headlevel> // $level), $numeration);
         $prs.body ~= $.complete-item-list;
         $prs.body ~= $.complete-defn-list;
         $prs.body ~= %!templates{ $type }(
-            %( :$contents, :$numeration, %config)
+            %( :$contents, :$numeration, :$caption, %config)
         );
         $!scoped-data.end-scope;
         # This feels a bit hacky
         # Basically a whole block scope seems too much to handle the inside of a codeish block
         $!scoped-data.counter-tracker.save-enumeration( $type, $level, $last-numeration ) if $numerate;
-        self.manage-numalias($type, $level, $contents, %config);
+        self.manage-numalias($type, $level, $contents, $caption, %config);
     }
     #| nested is a container block; $level, num prefix and counters are ignored
     #| toc and caption are also ignored
     method gen-nested( $ast, %config, $type, $level, $numerate, :$implied = False ) {
         my PStr $contents .= new;
-        if $ast.paragraphs.head ~~ (Str, RakuAST::Doc::Paragraph).any {
-            $!scoped-data.counter-tracker.process-counter( 'para' , 1 )
-        }
         $contents ~= $.contents($ast, $type );
         my $prs := $*prs;
         $prs.body ~= $.complete-item-list;
         $prs.body ~= $.complete-defn-list;
         $prs.body ~= %!templates{ $type }(
-        %( :$contents, %config)
+            %( :$contents, %config)
         );
     }
-    #| code forpara
+    #| code for para and implied para from container blocks
     #| No ToC content is added unless overridden by toc/caption/headlevel
-    method gen-paraish( $ast, %config, $type, $level, $numerate, :$implied = False ) {
+    #| The para counter is triggered by the caller of this method
+    method gen-paraish( $ast, %config, $type, $level, $numerate, :$in-type = ''  ) {
         my PStr $contents .= new;
-        # the para counter needs to be triggered when implied by Str within Extended Blocks
-        state Int $trig;
-        # test whether immediate block is extended
-        if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated {
-            $trig  = 0
-        }
-        elsif $implied { $trig++ }
-        else { $trig = 0 }
-        if $implied {
-            $contents ~= $.compactify($ast);
-            $!scoped-data.counter-tracker.process-counter($type, $level, :%config ) if $trig > 1;
+        my @extension = ();
+        if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated && $ast.paragraphs.elems > 1 {
+            $contents ~= $.contents( $ast.paragraphs.head, $type );
+            @extension = $ast.paragraphs.tail( * -1  ).map({ $.contents( $_, $type ).clone })
         }
         else {
-            $contents ~= $.contents($ast, $type );
+            $contents ~= $.contents( $ast, $type )
         }
         my $prs := $*prs;
-        my $caption = (%config<caption> // $type.tc).Str;
-        my $target = %config<id> // $.name-id($caption);
-        my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config ) !! ();
-        self.help-toc(%config<toc>, $prs, $caption, $target, ( %config<headlevel> // $level), $numeration);
         $prs.body ~= $.complete-item-list;
         $prs.body ~= $.complete-defn-list;
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs caption in config
+        my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config ) !! ();
+        my $caption = (%config<caption> // $type.tc).Str;
+        my $target = %config<id> // $.name-id($caption);
+        self.help-toc(%config<toc>, $prs, $caption, $target, ( %config<headlevel> // $level), $numeration);
         $prs.body ~= %!templates{ $type }(
-        %( :$contents, :$numeration, %config)
+            %( :@extension, :$contents, :$numeration, :$caption, %config)
         );
-        self.manage-numalias($type, $level, $contents, %config);
+        self.manage-numalias($type, $level, $contents, $caption, %config);
     }
     #| A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption
     #| toc and caption can be set by a config directive,
@@ -1049,12 +1045,13 @@ class RakuDoc::Processor {
         # stringify ast for internal use
         # set up data for embedded markup in header, eg., X
         my $textified = textify-head($ast);
-        my $caption = (%config<caption> // '').Str;
         my $target = $.name-id($textified);
         # must set in-head in case of other inner scopes.
         $!scoped-data.in-head = $target;
         # P<> markup is not expected in a heading
         my $contents = $.contents($ast, $type).strip.trim.Str;
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs caption in config
         my $prs := $*prs;
         #| When numeration is required, numerate will be True
         #| Then the specification requires
@@ -1064,6 +1061,7 @@ class RakuDoc::Processor {
         #| so cant use self.help-numerate
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config, :from-head)
                 !! ();
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $contents;
         # allow internal X<> to have the final rendered title
         $!register.add-payload(:payload($contents), :id( $target ) );
         # set the last title for paragraphs following the title
@@ -1080,27 +1078,27 @@ class RakuDoc::Processor {
             }
         }
         else { $id = '' }
-        $caption = $contents unless $caption;
         self.help-toc((%config<toc> // 'head'), $prs, $caption, $target, (%config<headlevel> // $level), $numeration);
         $prs.body ~= %!templates{'head'}(
             %( :$numeration, :$level, :$target, :$contents, :$caption, :$id, %config )
         );
-        self.manage-numalias($type, $level, $contents, %config);
+        self.manage-numalias($type, $level, $contents, $caption, %config);
         $!scoped-data.in-head = '';
     }
     #| Content is passed verbatim to template as formula
     #| An alt text is also generated
     method gen-formula($ast, %config, $type, $level, $numerate) {
-        my $formula = $.contents( $ast, $type );
-        # do not treat strings as paragraphs
-        my $raw = $ast.paragraphs.Str.join;
-        # also create a raw version for other renderers
+        my $raw = $ast.paragraphs.Str.join.trim;
+        # create a raw version for other formula renderers
         my $prs := $*prs;
-        my $alt = %config<alt> // 'Formula cannot be rendered';
-        my $caption = ( %config<caption> // $type).Str;
-        my $target = $.name-id($caption);
-        my $id = %config<id>;
+        my $alt = %config<alt> ?? $.option-contents( %config<alt>:delete ) !! '';
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs caption in config
         my $numeration = $numerate ?? self.help-numerate($type, $level, '', %config) !! ();
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
+        my $formula = $raw; # it should be replaced in the template
+        my $target = $.name-id($caption.Str);
+        my $id = %config<id>;
         with $id {
             if self.is-target-unique( $_ ) {
                 $id = self.register-target( $_ );
@@ -1110,7 +1108,7 @@ class RakuDoc::Processor {
                 if %config<error>
             }
         }
-        self.manage-numalias($type, $level, '', %config);
+        self.manage-numalias($type, $level, '', $caption, %config);
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), $numeration);
         $prs.body ~= %!templates<formula>(%(:$raw, :$formula, :$alt, :$target, :$caption, :$level, :$numeration, :$id, %config ) )
     }
@@ -1118,12 +1116,23 @@ class RakuDoc::Processor {
     #| nothing is added to the .body string
     #| bullet strategy can be left to template, with bullet in %config
     method gen-item($ast, %config, $type, $level, $numerate) {
-        my $contents = $.contents($ast, $type);
+        my PStr $contents .= new;
+        my @extension = ();
+        if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated && $ast.paragraphs.elems > 1 {
+            $contents ~= $.contents( $ast.paragraphs.head, $type );
+            @extension = $ast.paragraphs.tail( * -1  ).map({ $.contents( $_, $type ) })
+        }
+        else {
+            $contents ~= $.contents( $ast, $type )
+        }
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs caption in config
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config) !! ();
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! ''; # no caption by default
         $*prs.items.push: %!templates<item>(
-            %( :$level, :$contents, :$numeration, %config )
+            %( :@extension, :$level, :$contents, :$numeration, :$caption, %config )
         );
-        self.manage-numalias($type, $level, $contents, %config);
+        self.manage-numalias($type, $level, $contents, $caption, %config);
     }
     #| generates a single definition and adds it to the defn structure
     #| unlike item, a defn:
@@ -1134,10 +1143,13 @@ class RakuDoc::Processor {
     #| like items nothing is added to the .body string until next non-defn
     method gen-defn($ast, %config, $type, $level, $numerate) {
         my $term;
-        my $defn-expansion;
-        if $ast.paragraphs.elems == 2 {
+        my PStr $contents .= new;
+        my @extension = ();
+        if $ast.paragraphs.elems >= 2 {
             $term = $ast.paragraphs[0].Str.trim; # the term may not contain embedded code
-            $defn-expansion = $ast.paragraphs[1];
+            $contents ~= $.contents( $ast.paragraphs[1], 'defn' );
+            @extension = $ast.paragraphs.tail( *-2 ).map({ $.contents( $_, $type ) })
+                if $ast.paragraphs.elems > 2
         }
         else {
             my $string = $ast.Str;
@@ -1149,23 +1161,10 @@ class RakuDoc::Processor {
             return
         }
         my $target = $.name-id("defn_$term");
-        my $contents;
-        # generate contents from second str/paragraph
-        do {
-            my ProcessedState $*prs .= new;
-            $!scoped-data.in-defn = True;
-            $.handle( $defn-expansion );
-            $!scoped-data.in-defn = False;
-            my $prs := $*prs;
-            $contents = $prs.body;
-            # keep most of state, initialise body
-            $prs.body .= new;
-            CALLERS::<$*prs> += $prs;
-        }
         my $prs := $*prs;
         my $numeration = $numerate ?? self.help-numerate($type, $level, $term, %config) !! ();
-        $defn-expansion = %!templates<defn>(
-            %( :$term, :$target, :$contents, :$numeration, %config )
+        my $defn-expansion = %!templates<defn>(
+            %( :@extension, :$term, :$target, :$contents, :$numeration, %config )
         );
         $prs.defns.push: $defn-expansion; # for the defn list to be rendered
         $prs.warnings.push(
@@ -1176,12 +1175,13 @@ class RakuDoc::Processor {
         # define for previously referenced
         $!register.add-payload(:payload($defn-expansion), :id($term));
         $!register.add-payload(:payload($target), :id($term ~ '_target'));
-        self.manage-numalias($type, $level, $contents, %config);
+        self.manage-numalias($type, $level, $contents, '', %config); #no caption
     }
     #| A place block adds Place at level 1 to ToC unless toc/headlevel/caption set
     #| The contents of Place is a URI that is generated and then rendered with place template
     method gen-place($ast, %config, $type, $level) {
         my $uri = %config<uri>;
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
         my $prs := $*prs;
         if $uri ~~ / 'semantic:' (.+) / {
                 %config<caption> = ~$0 unless %config<caption>;
@@ -1190,7 +1190,7 @@ class RakuDoc::Processor {
         else {
             %config<caption> = 'Placement' unless %config<caption>
         }
-        my $caption = %config<caption>;
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
         $!scoped-data.last-title($caption);
         my $target = %config<target> = $.name-id($caption);
         with %config<id> {
@@ -1203,9 +1203,9 @@ class RakuDoc::Processor {
             }
         }
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), () );
-        $.make-placement(:$uri, :%config, :template<place>, :level(%config<headlevel> // $level));
+        $.make-placement(:$uri, :$caption, :%config, :template<place>, :level(%config<headlevel> // $level));
     }
-    method make-placement( :$uri, :%config, :$template, :$level ) {
+    method make-placement( :$uri, :$caption, :%config, :$template, :$level ) {
         my Bool $keep-format = False;
         # defaults when no schema is explicit
         my $schema = 'file';
@@ -1296,7 +1296,7 @@ class RakuDoc::Processor {
              }
         }
         $prs.body ~= %!templates{ $template }(
-            %( :$contents, :$keep-format, :$schema, :$uri-body, :$uri, :$level, %config )
+            %( :$contents, :$caption, :$keep-format, :$schema, :$uri-body, :$uri, :$level, %config )
         )
     }
     #| The rakudoc block should encompass the output
@@ -1337,8 +1337,11 @@ class RakuDoc::Processor {
     #| Table has two forms of content: procedural / visual
     #| can take all standard options
     multi method gen-table($ast, %config, $type, $level, $numerate) {
-        my $caption = (%config<caption> // $type).Str;
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs caption in config
         my $prs := $*prs;
+        my $numeration = $numerate ?? self.help-numerate($type, $level, '', %config) !! ();
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
         my $target = $.name-id($caption) if $caption;
         $!scoped-data.last-title( $target );
         my $id = %config<id>;
@@ -1350,8 +1353,7 @@ class RakuDoc::Processor {
                 $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣") if %config<error>
             }
         }
-        my $numeration = $numerate ?? self.help-numerate($type, $level, '', %config) !! ();
-        self.manage-numalias($type, $level, '', %config);
+        self.manage-numalias($type, $level, '', $caption, %config);
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), $numeration);
         my Bool $procedural = $ast.visual-table.not;
         my @grid;
@@ -1535,7 +1537,6 @@ class RakuDoc::Processor {
     method gen-semantics($ast, %config, $type, $level, $numerate) {
         $!scoped-data.last-title( $type );
         # treat all semantic blocks as a heading level 1 unless otherwise specified
-        my $caption = (%config<caption> // $type).Str;
         my $hidden;
         my $contents;
         if $ast.for or $ast.abbreviated {
@@ -1544,9 +1545,12 @@ class RakuDoc::Processor {
         else {
             $contents = $.contents($ast, 'semantic' ).trim
         }
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs caption in config
+        my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config) !! ();
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
         $contents ~= $.complete-item-list ~ $.complete-defn-list;
         my $prs := $*prs;
-        my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config) !! ();
         my $rv;
         given $type {
             when 'TITLE' {
@@ -1602,7 +1606,7 @@ class RakuDoc::Processor {
         }
         $prs.semantics{ $type } = [] unless $prs.semantics{ $type }:exists;
         $prs.semantics{ $type }.push: $rv;
-        self.manage-numalias($type, $level, $contents, %config);
+        self.manage-numalias($type, $level, $contents, $caption, %config);
         $prs.body ~= $rv unless $hidden;
     }
     method gen-custom($ast, %config, $type, $level, $numerate) {
@@ -1616,9 +1620,9 @@ class RakuDoc::Processor {
         # - the content is rendered with 'unknown' template
         # - a warning is issued
         my $prs := $*prs;
-        my $caption = %config<caption> // $type;
         my $contents = $.contents($ast, $type).trim;
-        $contents ~= $.complete-item-list ~ $.complete-defn-list;
+        %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        # help-numerate needs caption in config
         my $numeration = $numerate ?? self.help-numerate($type, $level, '', %config) !! ();
         my $id = '';
         with %config<id> {
@@ -1633,8 +1637,10 @@ class RakuDoc::Processor {
                 ) if %config<error>
             }
         }
+        my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
         my $target = %config<id>:delete // $.name-id($caption);
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), $numeration);
+        $contents ~= $.complete-item-list ~ $.complete-defn-list;
         if %!templates{ $type }:exists {
             my $raw = $ast.paragraphs.Str.join;
             $prs.body ~= %!templates{ $type }( %( :$contents, :$raw, :$level, :$target, :$caption, :$id, :$numeration, %config ) )
@@ -1648,12 +1654,12 @@ class RakuDoc::Processor {
             ) if %config<error>;
             $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$target, :$caption, :$numeration, :$level ) )
         }
-        self.manage-numalias($type, $level, $contents, %config);
+        self.manage-numalias($type, $level, $contents, $caption, %config);
     }
     # directive type methods
     method manage-config($ast) {
         my %options = $ast.resolved-config;
-        my $name = $ast.paragraphs[0].Str;
+        my $name = $ast.paragraphs.head.Str;
         # all blocks without a level are assumed to be level 1
         # do not add 1 if just one letter == markup code
         $name = $name ~ '1' if $name ~~ / . \D $ /;
@@ -1685,7 +1691,7 @@ class RakuDoc::Processor {
         my $form = (%config<form> // '').Str;
         my $numeration;
         my $caption = (%config<caption> // '').Str;
-        my $counter = $!scoped-data.counter-tracker.get-enumeration($type, $level, :%config);
+        my $counter = $!scoped-data.counter-tracker.get-enumeration($type, $level, :counter( %config<counter> // '') );
         if $form {
             $numeration = $counter.numform(:$form, :$contents, :$caption, :$type)
         }
@@ -1706,7 +1712,7 @@ class RakuDoc::Processor {
         $numeration
     }
      # handle numalias
-    method manage-numalias($type, $level, $contents, %config) {
+    method manage-numalias($type, $level, $contents, $caption, %config) {
         return unless %config<numalias>:exists;
         if %config<numalias>.Str ~~ /
         ^ $<disp> = (.+?) '|' $<tag> = (.+?) $
@@ -1715,8 +1721,7 @@ class RakuDoc::Processor {
          / {
             my $tag = ~$<tag>.trim;
             my $expansion = '';
-            my $caption = (%config<caption> // '').Str;
-            my $counter = $!scoped-data.counter-tracker.last-enumeration($type, $level);
+            my $counter = $!scoped-data.counter-tracker.last-enumeration($type, $level, :counter( %config<counter> // ''));
             # if the option value was set in a =config and there is no TAG in this block
             # then TAG will be set to *, so ignore the option
             if $<disp>:exists {
@@ -1881,15 +1886,18 @@ class RakuDoc::Processor {
     #| when scope is rakudoc, pod, section or Semantic, strings are considered paragraphs
     method contents( $ast, $from ) {
         my ProcessedState $*prs .= new;
-        for $ast.paragraphs {
-            if $_ ~~ Str and $from ~~ < rakudoc pod section semantic nested >.any {
-                $.gen-paraish( $_.trim, %(), 'para', 1, False, :implied );
-            }
-            elsif $_ ~~ Str and $from ~~ <item defn para > {
-                $.gen-paraish( $_.trim, %(), $from, 1, False, :implied );
-            }
-            else {
-                $.handle( $_ );
+        if $ast ~~ (Str, RakuAST::Doc::Paragraph).any {
+            $.handle( $ast )
+        }
+        else {
+            for $ast.paragraphs {
+                if $_ ~~ Str and $from ~~ < rakudoc pod section semantic nested >.any {
+                    $!scoped-data.counter-tracker.process-counter( 'para', 1 );
+                    $.gen-paraish( $_.trim, %(), 'para', 1, False );
+                }
+                else {
+                    $.handle( $_ );
+                }
             }
         }
         my $prs := $*prs;
@@ -1909,6 +1917,15 @@ class RakuDoc::Processor {
         CALLERS::<$*prs> += $prs;
         $text
     }
+    #| return the contents of a meta option that might contain RakuDoc
+    multi method option-contents( $s ) {
+        return $s.Str unless $s.Str ~~ / <:Lu> \< / ; # test for a single upper case letter followed by <
+        # so some embedded rakudoc markup. Get the processed content
+        my $ast = "=begin rakudoc\n$s\n=end rakudoc".AST.rakudoc.head.paragraphs.head;
+        # result should be a Paragraph
+        $.markup-contents( $ast )
+    }
+
     #| options reserved for counter directive
     my @counter-opts = <restart-after restart-except-after prefix restart>;
 
@@ -1919,7 +1936,14 @@ class RakuDoc::Processor {
         # first get the block's inline options, which take precedence
         if $ast.defined && $ast.config {
             %config = .resolved-config with $ast;
-            for ($ast.config.keys (-) %config.keys).keys -> $k { %config{$k} = $ast.config{$k}.Str }
+            # .resolved-config does not work for all types of keys, so check to make sure
+            for ($ast.config.keys (-) %config.keys).keys -> $k {
+                my $opt = $ast.config{$k};
+                if $opt ~~ RakuAST::QuotedString {
+                    $opt = $ast.config{$k}.DEPARSE.substr(1,*-1).trim
+                }
+                %config{$k} = $opt.Str
+            }
         }
         return %config if $block-name eq 'counter1'; # only get ast-defined options
         # now get options declared with =config in scope
@@ -2125,21 +2149,26 @@ class RakuDoc::Processor {
             #| renders =defn block
             defn => -> %prm, $tmpl {
                 DEFN-TERM-ON ~ (%prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! %prm<term>) ~ DEFN-TERM-OFF ~ "\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n"
+                DEFN-TEXT-ON ~ %prm<contents> ~
+                %prm<extension>.join(' ') ~
+                DEFN-TEXT-OFF ~ "\n"
             },
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { [~] %prm<defn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
                 if %prm<numeration> {
-                    %prm<numeration>.grep( *.so )».Str.join ~ "\n"
+                    %prm<numeration>.grep( *.so )».Str.join ~ ' ' ~ %prm<extension> ~ "\n"
                 }
                 else {
                     my $num = %prm<level> - 1;
                     my $indent = ' ' x %prm<level>;
                     $num = @bullets.elems - 1 if $num >= @bullets.elems;
                     my $bullet = %prm<bullet> // @bullets[$num];
-                    $indent ~ $bullet ~ ' ' ~ %prm<contents> ~ "\n"
+                    $indent ~ $bullet ~ ' ' ~
+                        %prm<contents> ~ ' ' ~
+                        %prm<extension>.join(' ') ~
+                        "\n"
                 }
             },
             #| special template to render an item list data structure
@@ -2152,7 +2181,10 @@ class RakuDoc::Processor {
             },
             #| renders =para block
             para => -> %prm, $tmpl {
-                PStr.new: (%prm<delta> // '') ~ ( %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! %prm<contents> ) ~ "\n\n"
+                PStr.new: (%prm<delta> // '') ~
+                    ( %prm<numeration> ?? %prm<numeration>.grep( *.so )».Str.join !! %prm<contents> ) ~
+                    %prm<extension>.join(' ') ~
+                    "\n\n"
             },
             #| renders =place block, place cannot be enumerated
             place => -> %prm, $tmpl {

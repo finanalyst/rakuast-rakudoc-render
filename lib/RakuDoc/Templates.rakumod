@@ -89,6 +89,7 @@ sub express-params( %params, $name ) is export {
         my $vi = $v // 'UNINITIALISED';
         $vi = "Binary object with {$vi.bytes} bytes" if $vi ~~ Buf;
         $vi = $v.cache.join() if $v.isa( Seq );
+#        $vi = $v>>.Str.raku if $v.isa( Array );
         $rv ~= $k ~ ': ｢' ~ $vi ~ "｣\n";
     }
     $rv ~= "</$name>\n";

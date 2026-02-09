@@ -137,7 +137,7 @@ class CounterTracker {
             return %!last-seq{ $p-base }[$p-level].parts(+$p-level)
                 if %!last-seq{ $p-base }[$p-level]:exists;
             # last-seq is empty if the blocktype in the prefix has not been instantiated
-            self.get-enumeration($p-base, $p-level ).parts(+$p-level)
+            self.get-enumeration( $p-base, $p-level ).parts(+$p-level)
         }
         elsif  %!prefixes{ $base }[^$level].grep(*.defined) {
             # there is a prefix defined in the chain before $level
@@ -192,9 +192,9 @@ class CounterTracker {
         }
         True
     }
-    method get-enumeration( $base is copy, $level is copy, :%config --> Numeration ) {
-        # check for number-as first
-        ($base, $level) = block-split(%config<counter>) if %config<counter>:exists;
+    method get-enumeration( $base is copy, $level is copy, :$counter = '' --> Numeration ) {
+        # modify if counter exists
+        ($base, $level) = block-split($counter) if $counter;
         #| bind numeration to where it globally stored
         my $numeration := %!last-seq{ $base }[ $level ];
         if %!prefixes{ $base }.elems {
@@ -205,7 +205,9 @@ class CounterTracker {
         }
         $numeration;
     }
-    method last-enumeration( $base, $level --> Numeration ) {
+    method last-enumeration( $base is copy, $level is copy, :$counter = '' --> Numeration ) {
+        # modify if counter exists
+        ($base, $level) = block-split($counter) if $counter;
         %!last-seq{ $base }[ $level ]
     }
     #| Some blocks need to create a new scope locally, which
@@ -296,38 +298,14 @@ class Numeration {
     }
 
     multi method numform (
-            List :$form,
-            # The format string (contents of the :form<...>)
-            Str:D :$contents,
-            # The contents contained in the block
+            Str(List) :$form is copy,
+            #^ The format string (contents of the :form<...>)
+            :$contents where Str|PStr = '',
+            #^ The contents contained in the block
             Str :$type = q{},
-            # The type of the block
-            Str :$caption = q{}
-            # The caption to be shown
-                          ) {
-        self.numform(:form($form.Str), :contents( PStr.new( $contents )), :$type, :$caption)
-    }
-    multi method numform (
-            Str :$form,
-            # The format string (contents of the :form<...>)
-            Str:D :$contents,
-            # The contents contained in the block
-            Str :$type = q{},
-            # The type of the block
-            Str :$caption = q{}
-            # The caption to be shown
-                          ) {
-        self.numform(:$form, :contents( PStr.new( $contents )), :$type, :$caption)
-    }
-    multi method numform (
-            Str :$form is copy,
-            # The format string (contents of the :form<...>)
-            PStr :$contents = PStr.new,
-            # The contents contained in the block
-            Str :$type = q{},
-            # The type of the block
-            Str :$caption = q{}
-            # The caption to be shown
+            #^ The type of the block
+            :$caption where Str|PStr = ''
+            #^ The caption to be shown
           ){
         # What a :form<> format consists of...
         grammar Format {
@@ -428,7 +406,7 @@ class Numeration {
         }
         state %sc is default(make-sc-for({ !/<lower>/ }))
         = :en( make-sc-for({ !/<lower>/ || /^<[io]><-:Letter>*$/ }));
-        # Also capitalize "I" and "O"
+        # Also capitalize "I" and "O" when alone
 
         # No special cases (ahem!) for any of these yet...
         state %tc is default(&tc);
@@ -495,8 +473,8 @@ class Numeration {
 
             # Interpolate the field from the appropriate argument...
             my $value = do given $fieldname {
-                when 'C' { $caption // q{} }
-                when 'D' { $contents.clone // PStr.new }
+                when 'C' { .isa(PStr) ?? $caption.clone !! ( $caption // q{} ) }
+                when 'D' { .isa(PStr) ?? $contents.clone !! ( $contents // q{} ) }
                 when 'T' { $type.tclc }
                 when 'A' {
                     my $n = @nums.pop;
@@ -515,24 +493,27 @@ class Numeration {
                     $raw-fieldname;
                 }
             }
-
-            # Apply the various options...
-            # (This looks odd, I know, but we really do need to change case both beforehand and afterwards.
-            #  Beforehand because some langs use different ordinal markers for
-            #  formal and informal numbers; Afterwards because some langs add
-            #  ordinal markers that can then be upper- or lower-cased)
-            if $ord {
+            # When contents or caption are PStr, the user has included explicit formatting
+            unless $value ~~ PStr {
+                # Apply the various options...
+                # (This looks odd, I know, but we really do need to change case both beforehand and afterwards.
+                #  Beforehand because some langs use different ordinal markers for
+                #  formal and informal numbers; Afterwards because some langs add
+                #  ordinal markers that can then be upper- or lower-cased)
+                if $ord {
+                    $value = $case-handler($value);
+                    $value = %ord{$lang}($value);
+                }
                 $value = $case-handler($value);
-                $value = %ord{$lang}($value);
             }
-            $value = $case-handler($value);
             # Mark the result with its fieldtype and we're done...
-            return $value but FieldType($fieldname);
+            $value but FieldType($fieldname);
         }
 
         # Now process the entire format in a single pretty pipeline
         # (The twin reverses around the map ensures we interpolate just the last X numbers, left-to-right)...
-        return Format.parse($form).caps.reverse.map({ handle |$^cap }).grep(*.so).reverse;
+        my $rv = Format.parse($form).caps.reverse.map({ handle |$^cap }).grep(*.so).reverse;
+        $rv
     }
 
     # Generate Roman numerals...
