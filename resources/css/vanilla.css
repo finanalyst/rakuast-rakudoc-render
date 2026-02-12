@@ -33,7 +33,8 @@ span.junior {
 }
 
 span.replace {
-  font-style: small-caps;
+  font-style: italic;
+  font-variant-caps: small-caps;
   text-shadow: -1px 1px;
 }
 
@@ -59,6 +60,10 @@ span.terminal {
 
 span.footnote {
   vertical-align: super;
+}
+
+a.footnote-anchor {
+  text-decoration: none;
 }
 
 span.developer-version {
@@ -119,6 +124,9 @@ span.bad-markdown {
 
 div.defn-text {
   margin-left: 1rem;
+}
+div.defn-text p {
+  margin: 0;
 }
 
 div.defn-term {
@@ -193,7 +201,7 @@ span.developer-version {
 }
 
 .delta::before, span.developer-text::before {
-  content: "ℹ";
+  content: "🛈";
   vertical-align: super;
 }
 .delta:hover .developer-version, span.developer-text:hover .developer-version {
@@ -305,6 +313,9 @@ li.item {
 li.item::marker {
   content: attr(data-bullet);
 }
+li.item.extended-item > p {
+  margin: 0;
+}
 
 li.numitem {
   padding-left: 0.4rem;
@@ -356,6 +367,17 @@ div.rakudoc-image-placement {
 p span.numpara {
   position: absolute;
   text-indent: -3rem;
+}
+
+div.extended-para {
+  margin: 1rem 0;
+}
+div.extended-para span.numpara {
+  position: absolute;
+  text-indent: -3rem;
+}
+div.extended-para p.extended-para {
+  margin: 0.5rem 0;
 }
 
 .rakudoc-singlepage {

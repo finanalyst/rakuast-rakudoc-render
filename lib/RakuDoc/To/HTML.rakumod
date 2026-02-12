@@ -147,7 +147,7 @@ class RakuDoc::To::HTML {
             _name => -> %, $ { 'markdown templates' },
             #| escape contents of code block, which may contain <span ...> & </span> tabs, not to be escaped
             escape-code => -> %prm, $tmpl {
-                my $cont = (%prm<contents> // '').Str.trim;
+                my $cont = (%prm<contents> // '').Str.trim-trailing;
                 if $cont ~~ / <spantab> / {
                     ( $cont ~~ / ^ [ .*? <spantab> ]+ .*? $ / )
                     .chunks
@@ -272,20 +272,33 @@ class RakuDoc::To::HTML {
                 "\n\n"
             },#| renders =defn block
             defn => -> %prm, $tmpl {
-                PStr.new: DEFN-TERM-ON ~
-                ( %prm<numeration> ??
-                    [~] %prm<numeration>.grep( *.so ).map( {
-                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
-                        } )
-                !! %prm<term> ) ~
-                DEFN-TERM-OFF ~ "\n\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
+                my Bool $extended-defn = %prm<extension>:exists and %prm<extension>;
+                my PStr $rv .= new: DEFN-TERM-ON ~
+                    ( %prm<numeration> ??
+                        [~] %prm<numeration>.grep( *.so ).map( {
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                            } )
+                    !! %prm<term> ) ~
+                    DEFN-TERM-OFF ~ "\n" ~
+                    DEFN-TEXT-ON;
+                $rv ~= %prm<contents>;
+                if $extended-defn {
+                    for %prm<extension>.list -> $extra-p {
+                        $rv ~= '<p class="extended-defn">';
+                        $rv ~= $extra-p;
+                        $rv ~= '</p>'
+                    }
+                }
+                $rv ~= DEFN-TEXT-OFF ~ "\n\n";
+                $rv
             },
             #| renders =numdefn block
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
+                my PStr $rv .= new;
+                my Bool $extended-item = %prm<extension>:exists and %prm<extension>;
                 if %prm<numeration> {
                     # numeration is a sequence marked with field-type.
                     # Filter out D and put the rest in the bullet
@@ -295,14 +308,25 @@ class RakuDoc::To::HTML {
                         if .field-type eq 'D' { $text = $_ }
                         else { $bullet ~= $_ }
                     } );
-                    qq| \<li class="numitem" data-bullet="$bullet">$text\</li>\n |
+                    $rv ~= qq| \<li class="numitem{ ' extended-item' if $extended-item }" data-bullet="$bullet">|;
+                    $rv ~= $text;
                 }
                 else {
                     my $n = %prm<level> - 1;
                     $n = @bullets.elems - 1 if $n >= @bullets.elems;
                     my $bullet = %prm<bullet> // @bullets[$n];
-                    qq[<li class="item" data-bullet="$bullet" style ="--level:$n;" > {%prm<contents>}</li>\n]
+                    $rv ~= qq[<li class="item{ ' extended-item' if $extended-item }" data-bullet="$bullet" style ="--level:$n;" >];
+                    $rv ~= %prm<contents>
                 }
+                if $extended-item {
+                    for %prm<extension>.list -> $extra-p {
+                        $rv ~= '<p class="extended-item">';
+                        $rv ~= $extra-p;
+                        $rv ~= '</p>'
+                    }
+                }
+                $rv ~= "</li>\n";
+                $rv
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
@@ -325,20 +349,29 @@ class RakuDoc::To::HTML {
             para => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
                 my $number = '';
-                my $text = %prm<contents>;
+                my PStr $text = %prm<contents>;
+                my Bool $extended-para = %prm<extension>:exists and %prm<extension>;
                 %prm<numeration>.grep( *.so ).map( {
-                    if .field-type eq 'D' { $text = $_ }
+                    if .field-type eq 'D' { $text .= new: $_ }
                     else { $number ~= $_ }
                 } );
-                PStr.new: ('<div class="delta">' ~ $del if $del) ~
-                    '<p' ~
+                my PStr $rv .= new: ('<div class="delta">' ~ $del if $del) ~
+                    ( $extended-para ?? '<div class="extended-para"' !! '<p' ) ~
                     (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
                     (%prm<in-type> ?? ' class="' ~ %prm<in-type> ~ '"' !! '') ~
                     '>' ~
-                    (qq[<span class="numpara">$number\</span>] if $number) ~
-                    $text  ~
-                    "</p>\n"~
-                    (</div> if $del)
+                    (qq[<span class="numpara">$number\</span>] if $number);
+                $rv ~= $text;
+                if $extended-para {
+                    for %prm<extension>.list -> $extra-p {
+                        $rv ~= '<p class="extended-para">';
+                        $rv ~= $extra-p;
+                        $rv ~= '</p>'
+                    }
+                }
+                $rv ~= $extended-para ?? "</div>\n" !! "</p>\n";
+                $rv ~= '</div>' if $del;
+                $rv
             },
             #| renders =place block
             place => -> %prm, $tmpl {
@@ -509,7 +542,7 @@ class RakuDoc::To::HTML {
                         { [~] %prm<footnotes>.map({
                             PStr.new:
                                 '<div class="footnote">' ~ .<fnNumber> ~
-                                '<a id="' ~ .<fnTarget> ~
+                                '<a class="footnote-anchor" id="' ~ .<fnTarget> ~
                                 '" href="#' ~ .<retTarget> ~
                                 '"> |^| </a>' ~
                                  ~ .<contents>.Str ~
@@ -563,7 +596,7 @@ class RakuDoc::To::HTML {
             #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
             markup-N => -> %prm, $tmpl {
                 PStr.new:
-                qq[<a id="{ %prm<retTarget> }" href="#{ %prm<fnTarget> }">] ~
+                '<a class="footnote-anchor" id="' ~ %prm<retTarget> ~ '" href="#' ~ %prm<fnTarget> ~ '">' ~
                 FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF ~
                 '</a>'
             },
@@ -612,7 +645,7 @@ class RakuDoc::To::HTML {
             markup-E => -> %prm, $tmpl { %prm<contents> },
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
-            markup-F => -> %prm, $tmpl { CODE-ON ~ %prm<alt> ~ CODE-OFF },
+            markup-F => -> %prm, $tmpl { CODE-ON ~ ( %prm<alt> ?? %prm<alt> !! %prm<formula> ) ~ CODE-OFF },
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
             markup-L => -> %prm, $tmpl {

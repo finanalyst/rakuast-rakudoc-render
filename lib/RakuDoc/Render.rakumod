@@ -293,7 +293,7 @@ class RakuDoc::Processor {
     multi method handle(Str:D $ast) {
         $*prs.body ~=
             $!scoped-data.verbatim
-            ?? ~$ast !! $.compactify( $ast )
+            ?? ~$ast !! $.compactify( $ast );
     }
     multi method handle(RakuAST::Node:D $ast) {
         $ast.rakudoc.map({ $.handle($_) })
@@ -554,10 +554,9 @@ class RakuDoc::Processor {
                 my $fnTarget = "fn_target_$id";
                 # fnNumber is changed by complete-footnotes at end of rendering
                 $prs.footnotes.push: %( :$contents, :$retTarget, :0fnNumber, :$fnTarget );
-                my $rv = %!templates<markup-N>(
+                $prs.body ~= %!templates<markup-N>(
                     %( %config, :$retTarget, :$fnNumber, :$fnTarget )
                 );
-                $prs.body ~= $rv;
             }
 
             ## Markup codes, optional display and meta data
@@ -900,15 +899,15 @@ class RakuDoc::Processor {
                 }
                 $prs.inline-defns = ()
             }
-            $prs.body ~=
-                $!scoped-data.last-starter ~~ < rakudoc pod section semantic nested >.any
-                ??
-                %!templates<para>(
+            if $!scoped-data.last-starter ~~ < rakudoc pod section semantic nested >.any {
+                 my $rv = %!templates<para>(
                     %( :$contents, :$target, %config)
-                )
-                !!
-                $contents
-            ;
+                );
+                $prs.body ~= $rv;
+            }
+            else {
+                $prs.body ~=$contents
+            }
             CALLERS::<$*prs> += $prs;
         }
     }

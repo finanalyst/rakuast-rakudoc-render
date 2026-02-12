@@ -25,7 +25,8 @@ span.junior {
 	vertical-align: sub;
 }
 span.replace {
-	font-style: small-caps;
+	font-style: italic;
+	font-variant-caps: small-caps;
 	text-shadow: -1px 1px;
 }
 span.indexed {
@@ -47,6 +48,9 @@ span.terminal {
 }
 span.footnote {
 	vertical-align: super;
+}
+a.footnote-anchor {
+    text-decoration: none;
 }
 span.developer-text {
 
@@ -111,6 +115,9 @@ span.bad-markdown {
 }
 div.defn-text {
     margin-left: 1rem;
+    p {
+        margin: 0
+    }
 }
 div.defn-term {
 	font-weight: bold;
@@ -188,7 +195,7 @@ span.developer-version {
 }
 .delta, span.developer-text {
     &::before {
-        content: "\2139";
+        content: "\1F6C8";
         vertical-align: super;
 	}
 	&:hover .developer-version {
@@ -299,6 +306,9 @@ li.item {
     &::marker {
         content: attr(data-bullet);
     }
+    &.extended-item > p {
+        margin: 0;
+    }
 }
 li.numitem {
     padding-left: 0.4rem;
@@ -344,6 +354,18 @@ p span.numpara {
     position: absolute;
     text-indent: -3rem;
 }
+div.extended-para {
+    margin: 1rem 0;
+    span.numpara {
+        position: absolute;
+        text-indent: -3rem;
+    }
+    p.extended-para {
+        margin: 0.5rem 0;
+    }
+}
+
+
 .rakudoc-singlepage {
     margin-left: 4rem;
 }
