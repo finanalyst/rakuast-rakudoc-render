@@ -697,15 +697,19 @@ method raku-webs-scss {
         }
     }
     @media screen and (min-width: 1024px) {
-            p span.numpara {
-            position: absolute;
-            text-indent: -3rem;
+        div.extended-para , p {
+            span.numpara {
+                position: absolute;
+                text-indent: -3rem;
+            }
         }
     }
-    @media screen and (max-width: 1023px){
-            p span.numpara {
-            position: absolute;
-            text-indent: -1rem;
+    @media screen and (max-width: 1023px) {
+        div.extended-para , p {
+            span.numpara {
+                position: absolute;
+                text-indent: -1.5rem;
+            }
         }
     }
     @media (prefers-color-scheme: dark) {

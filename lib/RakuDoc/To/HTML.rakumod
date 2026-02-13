@@ -244,7 +244,7 @@ class RakuDoc::To::HTML {
                 $contents = [~] %prm<numeration>.grep( *.so ).map( {
                     '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
                 } ) if %prm<numeration>;
-                my $targ := %prm<target>;
+                my $targ = %prm<target> // '';
                 my $esc-cap = $tmpl.globals.escape.( $contents );
                 $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
                 my $id-target = %prm<id>:exists && %prm<id>
@@ -272,7 +272,7 @@ class RakuDoc::To::HTML {
                 "\n\n"
             },#| renders =defn block
             defn => -> %prm, $tmpl {
-                my Bool $extended-defn = %prm<extension>:exists and %prm<extension>;
+                my Bool $extended-defn = ?(%prm<extension>:exists and %prm<extension>);
                 my PStr $rv .= new: DEFN-TERM-ON ~
                     ( %prm<numeration> ??
                         [~] %prm<numeration>.grep( *.so ).map( {
@@ -298,7 +298,7 @@ class RakuDoc::To::HTML {
             #| renders =item block
             item => -> %prm, $tmpl {
                 my PStr $rv .= new;
-                my Bool $extended-item = %prm<extension>:exists and %prm<extension>;
+                my Bool $extended-item = ?(%prm<extension>:exists and %prm<extension>);
                 if %prm<numeration> {
                     # numeration is a sequence marked with field-type.
                     # Filter out D and put the rest in the bullet
@@ -308,14 +308,14 @@ class RakuDoc::To::HTML {
                         if .field-type eq 'D' { $text = $_ }
                         else { $bullet ~= $_ }
                     } );
-                    $rv ~= qq| \<li class="numitem{ ' extended-item' if $extended-item }" data-bullet="$bullet">|;
+                    $rv ~= qq| \<li class="numitem{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet">|;
                     $rv ~= $text;
                 }
                 else {
                     my $n = %prm<level> - 1;
                     $n = @bullets.elems - 1 if $n >= @bullets.elems;
                     my $bullet = %prm<bullet> // @bullets[$n];
-                    $rv ~= qq[<li class="item{ ' extended-item' if $extended-item }" data-bullet="$bullet" style ="--level:$n;" >];
+                    $rv ~= qq[<li class="item{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet" style ="--level:$n;" >];
                     $rv ~= %prm<contents>
                 }
                 if $extended-item {
@@ -350,7 +350,7 @@ class RakuDoc::To::HTML {
                 my $del = %prm<delta> // '';
                 my $number = '';
                 my PStr $text = %prm<contents>;
-                my Bool $extended-para = %prm<extension>:exists and %prm<extension>;
+                my Bool $extended-para = ?(%prm<extension>:exists and %prm<extension>);
                 %prm<numeration>.grep( *.so ).map( {
                     if .field-type eq 'D' { $text .= new: $_ }
                     else { $number ~= $_ }
