@@ -1,0 +1,408 @@
+    =para
+    We have now explored Q<rakudoc-evo-chapter> at some length
+    whether it would be better to use JSON or XML Q< JSONvsXMLmeta >
+    to specify citation data or whether it might be better to design
+    a bespoke DSL Q«10.1109/MODELS50736.2021.00031» instead.
+
+
+    =para
+    If we cite Q<AbsentFriends> but don't provide the reference,
+    it should still be okay Q<RD-citations_missing>.
+
+    =para
+    The design of Raku commenced Q<Apocalypse1; P6&Parrot; ConwayKeynote2010> in late 2000...
+
+    =citation
+        {   id        => 'Apocalypse1',
+            type      => "article-journal",
+            title     => "Apocalypse 1",
+            author    => { family => "Wall", given => "Larry" },
+            issued    => { 'date-parts' => [[2001, 4, 2]] },
+            publisher => "Perl.com",
+            URL       => "https://www.perl.com/pub/2001/04/02/apocalypse1.html/",
+            note      => "Initial design document for Perl 6 based on RFCs."
+        },
+        {   id        => 'P6&Parrot',
+            type      => "book",
+            title     => "Perl 6 and Parrot Essentials",
+            author    => [
+                { family => "Randal",   given => "Allison" },
+                { family => "Sugalski", given => "Dan" },
+                { family => "Tötsch",   given => "Leopold" }
+            ],
+            edition   => "2nd",
+            issued    => { 'date-parts' => [[2004, 7]] },
+            publisher => "O'Reilly Media",
+            ISBN      => "978-0596007379",
+        },
+        {   id          => 'ConwayKeynote2010',
+            type        => "speech",
+            title       => "ReDeveloping in Perl 6",
+            author      => { family => "Conway", given => "Damian" },
+            event       => "The Perl Conference (YAPC::NA 2010)",
+            event-place => "Columbus, Ohio, USA",
+            issued      => { 'date-parts' => [[2010, 6]] },
+        },
+
+
+
+
+    =para
+    We have now explored Q<rakudoc-evo-chapter, pp. 32-47> at some length
+    whether it would be better to use JSON or XML Q<JSONvsXMLmeta, table 8b>
+    to specify citation data or whether it might be better to design
+    a bespoke DSL Q<10.1109/MODELS50736.2021.00031, sect. III> instead.
+
+    =citation ({
+        id           => "rakudoc-evo-chapter",
+        type         => "chapter",
+        title        => "The Evolution of RakuDoc: From Pod6 to Modern Documentation Standards",
+        'container-title' => "The Raku Renaissance: A Comprehensive Guide to the 6.e Ecosystem",
+        author       => { family => "Docsworthy", given => "Poderick" },
+        editor       => { family => "Wally", given => "Larr" },
+        issued       => { 'date-parts' => [[2025, 10]] },
+        publisher    => "Camelid Press",
+        page         => "22-89",
+        ISBN         => "978-1-2345-6789-0",
+    })
+
+    =citation {
+        type      => "paper-conference",
+        title     => "Model-Driven Development of Documentation: The Case of RakuDoc",
+        author    => [
+            { family => "García-Domínguez", given => "Antonio" },
+            { family => "Worthington",     given => "Jonathan" }
+        ],
+        'container-title' => "2021 International Conference on Model Driven Engineering Languages and Systems (MODELS)",
+        issued    => { 'date-parts' => [[2021, 10]] },
+        publisher => "IEEE",
+        DOI       => "10.1109/MODELS50736.2021.00031",
+        page      => "233-243",
+        note      => "A pivotal paper describing the formal grammar and model-driven approach to RakuDoc."
+    }
+
+    =para
+    The design of Raku commenced Q<Apocalypse1; P6&Parrot, ch. 1; ConwayKeynote2010, ts=00:03:27>
+    in late 2000...
+
+
+    =comment  Citation source data specified in CSL-Raku
+    =begin citation :category<CSL Raku>
+        {
+            note            => "Fields can be specified as key => value pairs",
+            id              => "rakudoc-evo-chapter",
+            type            => "chapter",
+            title           => "The Evolution of RakuDoc",
+            author          => [ { family => "Hainsworth", given => "Richard"   },
+                                 { family => "Mattijsen",  given => "Elizabeth" },
+                                 { family => "Conway",     given => "Damian"    },
+                               ],
+            editor          => { family => "Smith", given => "Jane" },
+            container-title => "Modern Markup Systems",
+            publisher       => "Butterfly Press",
+            publisher-place => "Amsterdam",
+            page            => "42-65",
+            issued          => { date-parts => [[2024, 5, 12]] },
+            ISBN            => "978-3-16-148410-0",
+        },
+        {
+                       :note< Fields can also be specified as adverbial pairs >,
+                         :id< JSONvsXMLmeta >,
+                       :type< article-journal >,
+                      :title< A Performance Analysis of JSON vs XML in Academic Metadata >,
+                     :author{ family => "Doe", given => "John", ORCID => "0000-0001-2345-6789" },
+            :container-title< Journal of Digital Humanities >,
+                     :volume( 12 ),
+                      :issue( 3 ),
+                       :page< 101-115 >,
+                        :DOI< 10.1000/jdh.2024.03.01 >,
+                     :issued{ date-parts => [[2024]] },
+        }
+    =end citation
+
+    =comment  This citation data in in CSL-JSON format (with a missing ID)
+    =begin citation :category<CSL JSON>
+        [
+            {
+                     "type": "book",
+                    "title": "The Morphological Beauty of Raku Grammars",
+                   "author": {"family": "Mercurio", "given": "Silvia"},
+                   "issued": {"raw": "2025-03-14"},
+                "publisher": "Butterfly Press",
+                     "ISBN": "978-1-2345-6789-0"
+            }
+        ]
+    =end citation
+
+    =comment  This citation data is CSL-YAML
+    =for citation :category<CSL>
+        - id:    starlight2024
+          type:  article-journal
+          title: "Asynchronous Concurrency: A Journey Through Raku Supplies"
+          author:
+              - family: Starlight
+                given:  Orion
+          container-title: "The Reactive Programmer's Quarterly"
+          issued:
+              date-parts: [[2024, 11]]
+          volume: 12
+          issue:  4
+          page:   45-60
+
+    =comment  This citation is in BibLaTeX format
+    =citation  @article{zenraku2024,
+                   author = {Wall, Larry},
+                   title = {The Zen of Raku},
+                   journaltitle = {Journal of Camel Studies},
+                   date = {2024-05-12},
+                   volume = {42},
+                   number = {3},
+                   pages = {101-115},
+                   url = {https://example.org/raku},
+                   urldate = {2026-01-23}
+               }
+
+    =comment  This citation is in BibTeXML format
+    =begin citation :category<TeX>
+        <bibtex:file xmlns:bibtex="http://bibtexml.sf.net/">
+          <bibtex:entry id="mercurio2026">
+            <bibtex:book>
+              <bibtex:author>Silvia Mercurio</bibtex:author>
+              <bibtex:title>The Semantic Elegance of Raku Grammars</bibtex:title>
+              <bibtex:publisher>Butterfly Press</bibtex:publisher>
+              <bibtex:year>2026</bibtex:year>
+              <bibtex:month>May</bibtex:month>
+              <bibtex:isbn>978-1-2345-9876-0</bibtex:isbn>
+            </bibtex:book>
+          </bibtex:entry>
+        </bibtex:file>
+    =end citation
+
+    =comment  This in RIS data
+    =begin citation :category<tagged>
+        TY  - JOUR
+        ID  - thorne2023
+        AU  - Thorne, Alistair
+        TI  - Optimization Strategies for MoarVM Bytecode
+        JO  - Journal of Virtual Machine Design
+        PY  - 2023/08/21/
+        VL  - 9
+        IS  - 2
+        SP  - 210
+        EP  - 235
+        SN  - 1234-5678
+        ER  -
+    =end citation
+
+    =comment  This in MODS
+    =begin citation :category<medical XML>
+        <mods xmlns="http://www.loc.gov/mods/v3" ID="Vasiliev26">
+            <titleInfo>
+                <title>Functional Purity in a Multi-Paradigm World</title>
+            </titleInfo>
+            <name type="personal">
+                <namePart type="given">Elena</namePart>
+                <namePart type="family">Vasiliev</namePart>
+                <role>
+                    <roleTerm type="text">author</roleTerm>
+                </role>
+            </name>
+            <originInfo>
+                <publisher>Deep Space Coding Collective</publisher>
+                <dateIssued>2026</dateIssued>
+            </originInfo>
+            <typeOfResource>text</typeOfResource>
+            <genre>technical report</genre>
+        </mods>
+    =end citation
+
+    =comment This citation in PubMed/Medline NLM format
+    =citation
+        PMID- 39876543
+        STAT- Publisher
+        DA  - 2025/08/15
+        TI  - The Semantic Elegance of Raku Grammars.
+        BTI - The Semantic Elegance of Raku Grammars
+        AU  - Mercurio S
+        LA  - eng
+        PT  - Book
+        PB  - Butterfly Press
+        SN  - 978-1-2345-9876-0
+
+    =comment This citation in PubMed/Medline XML format
+    =citation
+       <PubmedArticleSet>
+         <PubmedArticle>
+           <MedlineCitation Status="Publisher">
+             <PMID Version="1">98765432</PMID>
+             <Article PubModel="Print">
+               <Journal>
+                 <ISSN IssnType="Print">1234-567X</ISSN>
+                 <JournalIssue>
+                   <Volume>14</Volume>
+                   <Issue>1</Issue>
+                   <PubDate>
+                     <Year>2026</Year>
+                     <Month>Jan</Month>
+                     <Day>30</Day>
+                   </PubDate>
+                 </JournalIssue>
+                 <Title>International Journal of Perl and Raku</Title>
+               </Journal>
+               <ArticleTitle>Concurrent Processing in RakuDoc: A Performance Analysis.</ArticleTitle>
+               <Pagination>
+                 <MedlinePgn>102-115</MedlinePgn>
+               </Pagination>
+               <AuthorList CompleteYN="Y">
+                 <Author ValidYN="Y">
+                   <LastName>Generic</LastName>
+                   <ForeName>A</ForeName>
+                 </Author>
+                 <Author ValidYN="Y">
+                   <LastName>Researcher</LastName>
+                   <ForeName>B</ForeName>
+                 </Author>
+               </AuthorList>
+               <Language>eng</Language>
+               <PublicationTypeList>
+                 <PublicationType>Journal Article</PublicationType>
+               </PublicationTypeList>
+             </Article>
+           </MedlineCitation>
+         </PubmedArticle>
+       </PubmedArticleSet>
+
+    =for citation  :load< file:citations.json >
+
+    =for citation  :load< https://gist.githubusercontent.com/larsgw/e5e7e7a5552df67d4dab4bd9378e5412/raw/82183d15daefe1d1c1d2999f261423e72193bf5c/csl-data.json >
+
+
+
+Most programming languages use everyday words for their keywords,
+but some have taken that notion much further, basing their entire
+syntax on (subsets) of natural languages Q<Perligata> or on conlangs
+Q<tlhInganHol::yIghun>.
+
+=begin citation :category<CSL>
+    [
+      {
+        "id":              "tlhInganHol::yIghun",
+        "type":            "software",
+        "title":           "Lingua::tlhInganHol::yIghun: Perl code in the original Klingon",
+        "author":          { "family": "Conway", "given": "Damian" },
+        "issued":          { "date-parts": [[2009, 6, 1 ]] },
+        "abstract":        "Perl module that allows programs to written Klingon syntax and vocabulary.",
+        "publisher":       "MetaCPAN",
+        "version":         "20090601",
+        "URL":             "https://metacpan.org/pod/Lingua::tlhInganHol::yIghun",
+        "accessed":        { "date-parts": [[2025, 1, 25 ]] }
+      },
+      {
+        "id":              "Perligata",
+        "type":            "paper-conference",
+        "title":           "Lingua::Romana::Perligata -- Perl for the XXI-imum Century",
+        "author":          { "family": "Conway", "given": "Damian" },
+        "event-title":     "Proceedings of the Perl Conference 4.0",
+        "event-place":     "Monterey, CA, USA",
+        "publisher":       "O'Reilly and Associates",
+        "publisher-place": "CA, USA",
+        "issued":          { "date-parts": [[2000, 7]] },
+        "page":            "1-15",
+        "ISBN":            "0-596-00013-8"
+      }
+    ]
+=end citation
+
+
+
+
+=head Cited References
+=place citation:cited
+
+=head Further Reading
+=place citation:uncited
+
+
+
+=for citation :category<SyntaxResearch>
+
+=for citation :category<OtherImpls>
+
+=for citation :category<SyntaxResearch Semantics>
+
+=for citation :category<Semantics>
+
+=comment And then...
+
+=head1 Categorized Bibliography
+
+=numhead2 JSON-related references
+=place citation:JSON
+
+=numhead2 CSL-related references
+=place citation:CSL
+
+=numhead2 Raku or TeX
+=place citation:Raku,TeX
+
+
+
+=head Full Bibliography
+
+=comment Whichever is last will be used throughout the document (swap the order to try different styles)...
+=for citation  :style< evolutionary-bioinformatics >
+=for citation  :style< din-1505-2-alphanumeric >
+=for citation  :style< iso690-author-date-en >
+=for citation  :style< ieee >
+=for citation  :style< acm-siggraph >
+
+=comment Whichever is last will be used (swap the order to try different locales)...
+=for citation  :locale< en-US >
+=for citation  :locale< de-CH >
+=for citation  :locale< en-GB >
+
+
+=place citation:*
+
+=comment A couple of uncited references to test citation:uncited selections...
+=begin citation
+{
+    id        => "fluffington2024uncited",
+    type      => "book",
+    title     => "Uncited Unsighted: The Art and Science of Padding your Bibliography",
+    author    => { family => "Fluffington", given => "Barnaby" },
+    issued    => { 'date-parts' => [[2024, 1]] },
+    publisher => "Vaporware Academic Press",
+    edition   => "3rd (Expanded with 500 unnecessary sources)",
+    ISBN      => "978-0-12345-678-X",
+    note      => "A satirical look at the inflation of reference lists in modern academia."
+},
+{
+    id        => "recursive2022phantom",
+    type      => "paper-conference",
+    title     => "Shadow Citations: On the Prevalence and Persistence of Uncited References in Proceeding Metadata",
+    author    => [
+        { family => "Réçürsioñ", given => "Grant" },
+        { family => "Ghostwriter", given => "A." }
+    ],
+    'container-title' => "Proceedings of the 12th International Conference on Bibliographic Integrity",
+    issued    => { 'date-parts' => [[2022, 11]] },
+    event     => "ICBI 2022",
+    page      => "101-105",
+    DOI       => "10.0000/meta.ref.2022.01",
+    note      => "Ironically, this paper includes 40 citations that are never mentioned in the body text."
+},
+{
+    id        => "hu2023malfeasance",
+    type      => "podcast-episode",
+    title     => "The Citation Sting: Detecting Academic Malfeasance",
+    author    => { family => "Hu", given => "Wilson" },
+    'container-title' => "Hu Sez",
+    episode   => 42,  # Our custom Raku-friendly field
+    number    => 42,  # The standard CSL-compatible field
+    issued    => { 'date-parts' => [[2023, 9, 14]] },
+    publisher => "Hu-man Productions",
+    URL       => "https://husez.fm/ep/detecting-malfeasance",
+    note      => "A deep dive into the forensics of fake references."
+}
+=end citation

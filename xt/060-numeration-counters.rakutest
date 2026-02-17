@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Numeration;
 
-plan 32;
+plan 39;
 
 sub blk( $ct, $bk, $lv, :%config --> Numeration ) {
     $ct.process-counter($bk, $lv, :%config);
@@ -58,7 +58,7 @@ is blk($ct, 'table', 1).Str, '1.', 'table now restarted by head';
 blk $ct, 'formula', 1;
 is blk($ct, 'table', 1).Str, '2.', 'table not restarted by fomula';
 
-# test subscribig to other counters
+# test subscribing to other counters
 # set table to 1
 $ct.manage-counter( 'table1', %(:restart));
 blk $ct, 'table', '1';
@@ -90,8 +90,26 @@ is $rv.Str, '6.1.2.2.1.4.', 'reset item3 counter but prefix remains';
 # check that the last enumeration is stored
 is $ct.last-enumeration('item', 3).Str, $rv.Str, 'last enumeration is stored';
 
+$ct .=new; # restart the system
+# increment superordinate
+$ct.manage-counter( 'table', %( :2restart, ));
+is blk( $ct, 'table', 1).Str(3), '2.1.1.', 'table setup ok';
+$ct.manage-counter( 'table3', %(:4restart));
+is blk( $ct, 'table', 3).Str, '2.1.4.', 'table3 setup ok';
+$ct.manage-counter( 'head', %(:6restart));
+is blk( $ct, 'head', 1).Str(3), '6.1.1.', 'setup ok';
+$ct.manage-counter( 'head3', %(:7restart));
+is blk( $ct, 'head', 3).Str, '6.1.7.', 'head3 setup ok';
+$ct.manage-counter( 'table', %(:prefix<head3>));
+$rv = blk($ct, 'table', 3);
+is $rv.Str, '6.1.7.2.1.5.', 'combined start ok';
+is blk( $ct, 'head', 1).Str(3), '7.1.1.', 'inc head ok';
+$rv = blk($ct, 'table', 3);
+is $rv.Str, '7.1.1.2.1.6.', 'table counter unaffected by head, but prefix changed';
+
+$ct .=new; # restart the system
 # test cycles
-# item -> head3
+$ct.manage-counter( 'item', %(:prefix<head3>));
 $ct.manage-counter: 'head2', %(:prefix<table2>);
 is $ct.warnings, (), 'no warnings issued yet';
 $ct.manage-counter: 'table1', %(:prefix<item>);
@@ -100,7 +118,7 @@ like $ct.warnings.head, /
     /, 'Got a cyclic warning';
 
 # test :!restart
-$ct.manage-counter( 'item', %(:prefix(''))); # remove the prefix
+$ct.manage-counter( 'item', %(:prefix(''), :3restart)); # remove the prefix
 blk $ct, 'item', 1;
 is blk($ct, 'item', 1).Str, '4.', 'item x 2';
 blk $ct, 'para', 1;

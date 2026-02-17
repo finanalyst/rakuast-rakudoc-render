@@ -216,10 +216,16 @@ class CounterTracker {
         %!last-seq{ $base }[ $level ] = $numeration
     }
     method inc($base, $level ) {
-        self.get-counter( $base ).inc( $level )
+        self.reset-subordinate-prefixes( $base, $level );
+        self.get-counter( $base ).inc( $level );
     }
     method set( $base, $level, $number ) {
-        self.get-counter( $base ).set( $level, $number )
+        self.reset-subordinate-prefixes( $base, $level );
+        self.get-counter( $base ).set( $level, $number );
+    }
+    method reset-subordinate-prefixes( $base, $level ) {
+        return if %!last-seq{ $base }:!exists or %!last-seq{ $base }.elems <= $level;
+        %!last-seq{ $base }.splice( +$level )
     }
     method get-counter( $base ) {
         unless %!type-counters{ $base }.defined {

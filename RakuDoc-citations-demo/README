@@ -1,0 +1,32 @@
+A sample implementation of =citation blocks and Q<> codes for RakuDoc.
+
+(Note: implemented as a preprocessor, which is probably not how a real renderer
+would do it, but the internal components will probably still be useful to
+anyone wanting to add the feature to their real renderer).
+
+
+INSTALLING THE DEMO:
+
+    1. Install the pandoc app
+       https://pandoc.org/installing.html
+
+    2. Install the Bibutils suite
+       https://sourceforge.net/p/bibutils/home/Bibutils/
+
+    3. Move the sample CSL and LOCALE files in ./csl and ./locales
+       to the standard pandoc locations for those files.
+       For example: on MacOS (and probably Linux):  ~/.local/share/pandoc/csl/
+                                                    ~/.local/share/pandoc/locales/
+
+
+RUNNING THE EXAMPLE ON THE COMMAND-LINE:
+
+    > ./citation-preprocessor.raku  ./sample-input-file.rakudoc | less
+
+    > ./citation-preprocessor.raku  ./sample-input-file.rakudoc  ./output.rakudoc
+
+
+SEEING THE RESULTS:
+
+    Paste the output into https://raku.finanalyst.org/rakudoc_editor/
+    (and gaze in silent wonder at the rendering! ;-)
