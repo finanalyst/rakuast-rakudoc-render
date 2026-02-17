@@ -10,7 +10,7 @@ class ProcessedState {
     has PStr $.body is rw .= new;
 
     #| Table of Contents data
-    #| Ordered array of { :level, :text, :target, :is-heading }
+    #| Ordered array of { :level, :text, :target, :is-heading, :toc-type }
     #| level - in heading hierarchy, text - to be shown in TOC
     #| target - of item in text, is-heading - used for Index placing
     has Hash @.toc;

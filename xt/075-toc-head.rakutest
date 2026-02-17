@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 8;
+plan 14;
 
 my $ast;
 my $rv;
@@ -35,5 +35,36 @@ like $parse<hd>[0]<cont>, / 'contents' .+ 'First header' /, 'Got first head';
 like $parse<hd>[1]<cont>, /'contents' .+ 'Second header' /, 'got 2nd head';
 like $parse<hd>[2]<cont>, /'contents' .+ 'Third test text' /, '3rd head is rendered';
 like $parse<hd>[3]<cont>, / 'Fourth without option'  /, '4th head rendered';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head First header
+    =head2 Second header
+    =head2 Third test
+    =for formula :toc<Forms> :caption<Eq One>
+    E = mc²
+    =for formula :caption<Not in TOC>
+    E = mc²
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.toc.elems, 4, 'toc structure has 4 elems';
+is $rv.toc.grep({ .<toc-type> eq 'head' }).elems, 3, 'only three head elems';
+is $rv.toc.grep({ .<toc-type> eq 'Forms' }).head.<caption>, 'Eq One', 'got the correct caption';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head First header
+    =head2 Second header
+    =head2 Third test
+    =for formula :toc<Forms> :caption<Eq One>
+    E = mc²
+    =for table  :toc<Forms> :caption<Table in Form TOC>
+    | one | two |
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.toc.elems, 5, 'toc structure has 5 elems';
+is $rv.toc.grep({ .<toc-type> eq 'Forms' }).elems, 2, 'Forms has 2 elems';
+is $rv.toc.grep({ .<toc-type> eq 'Forms' }).tail.<caption>, 'Table in Form TOC', 'got the correct caption';
 
 done-testing;

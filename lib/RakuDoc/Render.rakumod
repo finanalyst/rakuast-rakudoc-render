@@ -1755,23 +1755,28 @@ class RakuDoc::Processor {
         }
     }
     method help-toc($toc,$prs, $caption, $target, $level, $numeration) {
-        if $toc {
-            if $toc.isa(Seq) {
+        given $toc {
+            when Positional {
                 $toc.map({
                     $_ eq '*' ??
                     $prs.toc.push(
-                            { :toc-type<head>, :$caption, :$target, :$level, :$numeration }
-                            )
+                        %( :toc-type<head>, :$caption, :$target, :$level, :$numeration )
+                    )
                     !!
-                            $prs.toc.push(
-                                    { :toc-type($_), :$caption, :$target, :$level, :$numeration }
-                                    )
+                    $prs.toc.push(
+                        %( :toc-type($_), :$caption, :$target, :$level, :$numeration )
+                    )
                 })
             }
-            else {
+            when Bool {
                 $prs.toc.push(
-                        { :toc-type<head>, :$caption, :$target, :$level, :$numeration }
-                        )
+                    %( :toc-type<head>, :$caption, :$target, :$level, :$numeration )
+                ) if $toc
+            }
+            when Str {
+                $prs.toc.push(
+                    %( :toc-type($_), :$caption, :$target, :$level, :$numeration )
+                )
             }
         }
     }
