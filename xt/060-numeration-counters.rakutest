@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Numeration;
 
-plan 39;
+plan 40;
 
 sub blk( $ct, $bk, $lv, :%config --> Numeration ) {
     $ct.process-counter($bk, $lv, :%config);
@@ -106,6 +106,13 @@ is $rv.Str, '6.1.7.2.1.5.', 'combined start ok';
 is blk( $ct, 'head', 1).Str(3), '7.1.1.', 'inc head ok';
 $rv = blk($ct, 'table', 3);
 is $rv.Str, '7.1.1.2.1.6.', 'table counter unaffected by head, but prefix changed';
+
+# two counter directives can work on same base
+$ct .= new;
+$ct.manage-counter( 'table', %( :2restart, ));
+$ct.manage-counter( 'table3', %(:4restart));
+is blk( $ct, 'table', 3).Str, '2.1.4.', 'table3 combined counters';
+
 
 $ct .=new; # restart the system
 # test cycles

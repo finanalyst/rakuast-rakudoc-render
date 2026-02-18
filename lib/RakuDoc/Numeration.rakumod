@@ -173,10 +173,10 @@ class CounterTracker {
                 self.manage-counter( $blockname, %( :restart-after($base ~ ($level - 1)) ) );
             }
         }
+        # trigger any skipped superordinate counters
+        $.restarted( $base, $_ ) for 1 ..^ $level;
         # check for restart status of its own counter
         self.inc($base, $level) unless $.restarted( $base, $level );
-        # trigger any skipped superordinate counters
-        $.restarted( $base, $_ ) for 1 ..^ $level
     }
     method restarted( $base, $level --> Bool ) {
         my $rs = %!restart-status{ $base ~ $level };
