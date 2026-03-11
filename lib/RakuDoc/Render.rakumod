@@ -5,6 +5,7 @@ use RakuDoc::ScopedData;
 use RakuDoc::MarkupMeta;
 use RakuDoc::PromiseStrings;
 use RakuDoc::Numeration;
+use RakuDoc::Citations;
 use LibCurl::Easy;
 use Digest::SHA1::Native;
 use PrettyDump;
@@ -26,7 +27,7 @@ class RakuDoc::Processor {
     has SetHash $.installed-plugins .= new;
     constant @built-in = <
                 cell code input output comment head defn item nested para
-                rakudoc section pod table formula
+                rakudoc section pod table formula citation
             >;
     multi method debug(RDProcDebug $type --> Nil ) {
         given $type {
@@ -141,41 +142,86 @@ class RakuDoc::Processor {
         # Since the footnote order may only be known at the end
         # footnote numbers are PCells, which need triggering
         self.complete-footnotes;
-        # P<toc:>, P<index:> may put PCells into body
-        # so ToC and Index need to be rendered and any other PCells triggered
-        $!current.rendered-toc = self.complete-toc( :spec( '*' ), :caption( $!current.source-data<toc-caption>));
-        my @pcells = $!current.rendered-toc.has-PCells;
-        if @pcells.elems {
-            $!current.warnings.push( 'In ToC: ' ~ $_ ) for @pcells
+        # The pattern for ToC, Index, and Citations is:
+        # check if structure is populated, otherwise do not render
+        # check if a =place is specifed, otherwise generate
+        # an auto-placement that covers all items in structure
+        #Valid specs would be:
+        #=item C<*> (all levels of the default ToC)
+        #=item C<1..4> (levels 1-4 of the default ToC)
+        #=item C<Diagrams> (meaning all levels of the Diagrams ToC)
+        #=item C<Diagrams,*> (all levels of the Diagrams ToC)
+        #=item C<table,1..4> (levels 1..4 of the table ToC)
+        my %doc-options := $!current.document-options;
+        my $make-summary = %doc-options<auto-toc> // False;
+        if $make-summary and $!current.toc.elems {
+            my @place-toc = $!register.list-unexpanded('toc');
+            if @place-toc {
+                #render filtered toc, if any
+                for @place-toc -> (:key($id), :value($spec)) {
+                    my $payload = self.complete-toc( :$spec, :caption('')).strip.Str;
+                    $!register.add-payload(:$payload, :$id)
+                }
+            }
+            unless @place-toc.grep({ .value ~~ / ^ \d | ^ '*' | ^ 'head' / }) {
+                # auto generate unless place has done this
+                $!current.rendered-toc = self.complete-toc( :spec( '*'), :caption( %doc-options<auto-toc>));
+                for $!current.rendered-toc.has-PCells {
+                    $!current.warnings.push( 'In ToC: ' ~ $_ )
+                }
+                $!current.rendered-toc .= Str;
+            }
         }
-        $!current.rendered-toc .= Str;
-        #render filtered toc, if any
-        for $!register.list-unexpanded('toc').kv -> $id, $spec {
-            my $payload = self.complete-toc( :$spec, :caption('')).strip.Str;
-            $!register.add-payload(:$payload, :$id)
-        }
-        # make sure all 'place' elements in the index are strings, not PCells
-        stringify-index( $!current.index );
         # render indices
-        $!current.rendered-index = self.complete-index( :spec('*'), :caption( $!current.source-data<index-caption> ) );
-        @pcells = $!current.rendered-index.has-PCells;
-        if @pcells.elems {
-            $!current.warnings.push( 'In Index: ' ~ $_ ) for @pcells
+        $make-summary = %doc-options<auto-index> // False;
+        if $make-summary and $!current.index.elems {
+            my @place-index = $!register.list-unexpanded('index');
+            if @place-index {
+                #render filtered toc, if any
+                for @place-index.kv -> $id, $spec {
+                    my $payload = self.complete-index( :$spec, :caption('')).strip.Str;
+                    $!register.add-payload(:$payload, :$id)
+                }
+            }
+            else {
+                $!current.rendered-index = self.complete-index( :spec( '*'), :caption( %doc-options<auto-index>));
+                for $!current.rendered-index.has-PCells {
+                    $!current.warnings.push( 'In Index: ' ~ $_ )
+                }
+                $!current.rendered-index .= Str;
+            }
         }
-        $!current.rendered-index .= Str;
-        # place for rendering filtered index
-        for $!register.list-unexpanded('index').kv -> $id, $spec {
-                $!register.add-payload(:payload( self.complete-index(:$spec, :caption('')).strip.Str ) , :$id);
+        # check to see if there are Q<> markup
+        # wihout citation blocks the cittion list will have unknown elements
+        $make-summary = %doc-options<auto-citations> // False;
+        if $make-summary and $!current.q-codes.elems {
+            # expand quotations and citations
+            self.build-bibliography;
+            # check whether any citation list is placed
+            my @place-citations = $!register.list-unexpanded('citation');
+            if @place-citations.elems {
+                # placed filtered citations
+                for @place-citations.kv -> $id, $spec {
+                    $!register.add-payload(:payload( self.complete-citations(:$spec, :caption('')).strip.Str), :$id);
+                }
+            }
+            else {
+                # without a placed citation list generate one
+                $!current.rendered-citations =
+                    self.complete-citations( :spec('cited'), :caption( %doc-options<auto-citations> ) );
+            }
         }
-        $!current.body.strip; # replace expanded PCells with Str
+
+         $!current.body.strip; # replace expanded PCells with Str
         # all suspended PCells should have been replaced by Str
         # Remaining PCells should trigger warnings
-        @pcells = $!current.body.has-PCells;
+        my @pcells = $!current.body.has-PCells;
         if @pcells.elems {
             $!current.warnings.push( $_ ) for @pcells
         }
         # add any possible numeration warnings
         $!current.warnings.append: $!scoped-data.numeration-warnings;
+        $!current.warnings = () unless %doc-options<error>;
         $pre-finalised ?? $.current !! $.finalise
     }
 
@@ -184,6 +230,7 @@ class RakuDoc::Processor {
             %!templates<final>( %(
                 :body($!current.body.Str),
                 :source-data($!current.source-data),
+                :document-options($!current.document-options),
                 :front-matter($!current.front-matter),
                 :name($!current.name),
                 :title($!current.title),
@@ -192,6 +239,7 @@ class RakuDoc::Processor {
                 :modified($!current.modified),
                 :rendered-toc($!current.rendered-toc),
                 :rendered-index($!current.rendered-index),
+                :rendered-citations($!current.rendered-citations),
                 :footnotes(%!templates<footnotes>( %( :footnotes( $!current.footnotes ),) )),
                 :warnings(%!templates<warnings>( %(:warnings($!current.warnings),))),
             ) ).Str
@@ -308,8 +356,9 @@ class RakuDoc::Processor {
         my $level = $ast.level || 1;
         say "Doc::Block type: $type (level $level)"
             ~ ( ' [for]' if $ast.for )
-            ~ ( ' [abbreviated]' if $ast.abbreviated )
-            ~ ( ' [extended]' unless $ast.for or $ast.abbreviated )
+            ~ ( ' [abbreviated]' if $ast.abbreviated and ! $ast.directive )
+            ~ ( ' [directive]' if $ast.directive )
+            ~ ( ' [extended]' unless $ast.for or $ast.abbreviated or $ast.directive )
             if $.debug (cont) BlockType;
         # create config
         my %config = $.merged-config( $ast, "$type$level" );
@@ -321,7 +370,7 @@ class RakuDoc::Processor {
             $type = ~ $0;
             # by default numitem & numdefn appearing after the same type are continued
             # unless explicitly continued or not continued
-            if $type ~~ <alias begin end for place config finish row column counter>.any {
+            if $type ~~ <alias begin end for place config finish row column counter document>.any {
                 $prs.warnings.push: qq:to/WARN/;
                 'num' may not be prefixed to directive ｢$type｣.
                 WARN
@@ -345,11 +394,13 @@ class RakuDoc::Processor {
             when 'alias' { $.manage-alias( $ast ) }
             # =config
             # Block scope modifications to a block or markup instruction
-            when 'config' { $.manage-config($ast); }
+            when 'config' { $.manage-config($ast) }
             when 'counter' {
                 $!scoped-data.counter-tracker
                         .manage-counter( self.contents($ast, 'counter' ), %config )
             }
+            # =document
+            when 'document' { $.manage-document($ast) }
             # =cell
             # Contains data in a procedural table
             # =column
@@ -370,8 +421,8 @@ class RakuDoc::Processor {
             }
             # All blocks that are not directive or rakudoc pod nested or section need to manage counters
             when <alias begin end for place config finish
-                row column counter
-                rakudoc pod nested section >.none {
+                row column counter document
+                rakudoc pod nested section citation>.none {
                 $!scoped-data.counter-tracker.process-counter( $type, $level, :%config );
                 proceed; #continue with other handlers
             }
@@ -414,6 +465,8 @@ class RakuDoc::Processor {
             # Definition of a term
             when 'defn' { $.gen-defn($ast, %config, $type, $level, $numerate) }
             when 'place' { $.gen-place($ast, %config, $type, $level) }
+            # =citation
+            when 'citation' { $.gen-citation($ast, %config, $type, $level, $numerate) }
             # =rakudoc
             # No "ambient" blocks inside
             # could be called if P<> embeds a RakuDoc file
@@ -451,7 +504,6 @@ class RakuDoc::Processor {
                 $.gen-table($ast, %config, $type, $level, $numerate);
                 $!scoped-data.end-scope;
             }
-            # RESERVED
             # Semantic blocks (SYNOPSIS, TITLE, etc.)
             when all($_.uniprops) ~~ / Lu / {
                 # in RakuDoc v2 a Semantic block must have all uppercase letters
@@ -586,7 +638,6 @@ class RakuDoc::Processor {
                         "Unknown or as yet undeclared alias ｢$term｣"
                         ~ " in block ｢$context｣ with heading ｢$place｣"
                         ~ ( $alt ?? " over-riden by ｢$alt｣" !! ''  ))
-                        if %config<error>
                 }
                 $prs.body ~ %!templates<markup-A>( %( :$contents, %config ) )
             }
@@ -712,7 +763,6 @@ class RakuDoc::Processor {
                 else {
                     $prs.warnings.push("Ignored unparsable definition synonyms ｢{ ~$ast.meta }｣"
                         ~ " in block ｢$context｣ with heading ｢$place｣.")
-                        if %config<error>
                 }
                 my $rv = %!templates{"markup-$letter"}(
                     %( :$contents, %config )
@@ -746,8 +796,7 @@ class RakuDoc::Processor {
                 }
                 else {
                     $prs.warnings.push("Δ<> markup ignored because it has no version/note content ｢{ ~$ast.DEPARSE }｣"
-                        ~ " in block ｢$context｣ with heading ｢$place｣.")
-                        if %config<error>;
+                        ~ " in block ｢$context｣ with heading ｢$place｣.");
                     # treat as verbatim text
                     $prs.body ~= %!templates<markup-V>( %( :$contents, %config ))
                 }
@@ -758,8 +807,7 @@ class RakuDoc::Processor {
                 my $contents = self.markup-contents($ast);
                 unless $ast.meta {
                     $prs.body ~= %!templates<markup-M>( %(:$contents ) );
-                    $prs.warnings.push("Markup-M failed: no meta information. Got ｢{ $ast.DEPARSE }｣")
-                        if %config<error>;
+                    $prs.warnings.push("Markup-M failed: no meta information. Got ｢{ $ast.DEPARSE }｣");
                     return
                 }
                 my $meta = RakuDoc::MarkupMeta.parse( $ast.meta, actions => RMActions.new ).made<value>;
@@ -773,14 +821,12 @@ class RakuDoc::Processor {
                     else {
                         $prs.body ~= %!templates<markup-M>( %(:$contents, :$target ) );
                         $prs.warnings.push("Markup-M failed: template ｢$template｣ does not exist. Got ｢{ $ast.DEPARSE }｣")
-                        if %config<error>
                     }
                 }
                 else {
                     # template is spelt like a SEMANTIC or builtin
                     $prs.body ~= %!templates<markup-M>( %(:$contents ) );
                     $prs.warnings.push("Markup-M failed: first meta string must conform to Custom template spelling. Got ｢{ $ast.DEPARSE }｣")
-                        if %config<error>
                 }
             }
             # X< DISPLAY-TEXT |  METADATA = INDEX-ENTRY >
@@ -817,7 +863,6 @@ class RakuDoc::Processor {
                     $prs.warnings.push('Ignoring content of X<> after | ｢'
                         ~ $ast.meta.Str ~ '｣'
                         ~ " in block ｢$context｣ with heading ｢$place｣.")
-                        if %config<error>
                 }
                 else { # no meta
                     $prs.index{$contents} = %( :refs( [] ), :sub-index( {} ) ) unless $prs.index{$contents}:exists;
@@ -831,6 +876,19 @@ class RakuDoc::Processor {
 
             ## Technically only meta data, but just contents
 
+            # Q< METADATA = list of quoted sources >
+            # leave a PCell - to be filled later - for
+            # the marker, and for content to be made visible
+            # with a mouse-over
+            when 'Q' {
+                my $mark = self.markup-contents($ast).Str.trim;
+                my $id = self.name-id( $mark );
+                my $popup-id = "{ $id }-popup";
+                my $contents = PCell.new( :$id, :$!register );
+                my $pop-up = PCell.new( :$popup-id, :$!register );
+                $prs.q-notes.push: $id => $mark;
+                $prs.body ~= %!templates<markup-Q>( %( :$contents, :$pop-up ))
+            }
             # Z< METADATA = COMMENT >
             # Comment zero-width  (contents never rendered)
             when 'Z' {
@@ -839,12 +897,11 @@ class RakuDoc::Processor {
 
             ## Undefined and reserved, so generate warnings
             # do not go through templates as these cannot be redefined
-            when any(<G Q W Y>) {
+            when any(<G W Y>) {
                 $prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
                 $prs.warnings.push(
                     "｢$letter｣ is not defined, but is reserved for future use"
                         ~ " in block ｢$context｣ with heading ｢$place｣.")
-                    if %config<error>
             }
             when (.uniprop ~~ / Lu / and %!templates{ "markup-$letter" }:exists) {
                 my $contents = self.markup-contents($ast);
@@ -857,13 +914,11 @@ class RakuDoc::Processor {
                 $prs.warnings.push(
                     "｢$letter｣ does not have a template, but could be a custom code"
                         ~ " in block ｢$context｣ with heading ｢$place｣.")
-                    if %config<error>
             }
             default {
                 $prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
                 $prs.warnings.push("｢$letter｣ may not be a markup code"
                         ~ " in block ｢$context｣ with heading ｢$place｣.")
-                    if %config<error>
             }
         }
     }
@@ -1057,7 +1112,6 @@ class RakuDoc::Processor {
         #| :form to have a (default) value
         #| :numalias may be set, in which case the Tag will refer to the numeration value
         #| =head differs from other blocks as default order of enum & caption,
-        #| so cant use self.help-numerate
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config, :from-head)
                 !! ();
         my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $contents;
@@ -1073,7 +1127,6 @@ class RakuDoc::Processor {
             }
             else {
                 $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$contents｣")
-                if %config<error>
             }
         }
         else { $id = '' }
@@ -1104,7 +1157,6 @@ class RakuDoc::Processor {
             }
             else {
                 $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$alt｣")
-                if %config<error>
             }
         }
         self.manage-numalias($type, $level, '', $caption, %config);
@@ -1155,8 +1207,7 @@ class RakuDoc::Processor {
             $*prs.body ~= $string;
             $*prs.warnings.push(
                 "Invalid definition: ｢$string｣"
-                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
-                if %config<error>;
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.");
             return
         }
         my $target = $.name-id("defn_$term");
@@ -1198,7 +1249,6 @@ class RakuDoc::Processor {
             }
             else {
                 $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣")
-                if %config<error>
             }
         }
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), () );
@@ -1230,6 +1280,10 @@ class RakuDoc::Processor {
                 $keep-format = True;
                 $contents =  PCell.new( :$!register, :id( "semantic_$uri-body" ), :spec($uri-body) );
             }
+            when 'citation' {
+                $keep-format = True;
+                $contents =  PCell.new( :$!register, :id( "citation_$uri-body" ), :spec($uri-body) );
+            }
             when 'http' | 'https' {
                 my LibCurl::Easy $curl .= new(:URL($uri), :followlocation, :failonerror );
                 try {
@@ -1247,7 +1301,7 @@ class RakuDoc::Processor {
                         default {
                             my $error = "Link ｢$uri｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
                             $contents = %config<fallback> // $error;
-                            $prs.warnings.push($error) if %config<error>
+                            $prs.warnings.push($error)
                         }
                     }
                 }
@@ -1260,7 +1314,7 @@ class RakuDoc::Processor {
                 else {
                     my $error = "No file found at ｢$f-uri｣";
                     $contents = %config<fallback> // $error;
-                    $prs.warnings.push($error) if %config<error>
+                    $prs.warnings.push($error)
                 }
             }
             when 'defn' {
@@ -1280,7 +1334,7 @@ class RakuDoc::Processor {
                     $contents = %config<fallback> // "See $uri";
                     $prs.warnings.push(
                         "The schema ｢$schema｣ is not implemented. Full link was ｢$uri｣"
-                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.") if %config<error>
+                        ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
             }
         }
         # trap contents that have RakuDoc, could be from https, or file and attempt to process it.
@@ -1301,11 +1355,8 @@ class RakuDoc::Processor {
     #| The rakudoc block should encompass the output
     #| Config data associated with block is provided to overall process state
     #| If a rakudoc file is embedded via place, then another rakudoc block
-    #| will be called. Only allow embedding to three levels to avoid circularity.
+    #| will be called.
     method gen-rakudoc($ast, %config, $type, $level, $numerate) {
-        # make sure these defaults exist
-        %config<toc> = True unless %config<toc>:exists;
-        %config<index> = True unless %config<index>:exists;
         $!current.source-data<rakudoc-config> = %config;
         my $contents = self.contents($ast, $type);
         # render any tailing lists
@@ -1328,10 +1379,76 @@ class RakuDoc::Processor {
             else {
                 $*prs.warnings.push(
                     "Attempt to register already existing id ｢$_｣ as new target in ｢section｣"
-                    ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.") if %config<error>
+                    ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
             }
         }
         $*prs.body ~= %!templates<section>( %( :$contents, :$id, %config ) );
+    }
+    #| A citation block is invisible to ToC to render
+    #| Method obtains data from body, URL or local file
+    #| converts data to CSL-Raku
+    #| stores $!current.citations< style locale categories %data<id> >
+    method gen-citation($ast, %config, $type, $level, $numerate) {
+        # Allocate unique IDs for entries that lack them...
+        state $noIDcount = 1;
+        my $content = $ast.paragraphs.Str.join.trim;
+        my %citations := $!current.citations;
+        my $prs := $*prs;
+        # Does the block specify a style or locale???
+        # as per spec, the last such definition in the document over-rides others
+        with %config<style>  { %citations<style> = .trim }
+        with %config<locale> { %citations<locale> = .trim }
+        # Categorize data...
+        my @categories = (%config<category> // []).values;
+        # Does the citation block load data from elsewhere???
+        with %config<load> {
+            # Loading external content while also specifying internal content is confusing...
+            if $content ~~ /\S/ {
+                $prs.warnings.push('=citation blocks with :load<URL> and in-document data are better written as two separate blocks'
+                    ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.");
+            }
+            my $external-content;
+            when m/ ^ file ':' / {
+                my URI $f-uri .= new($_);
+                if $f-uri.path.Str.IO ~~ :e & :f {
+                    $external-content = $f-uri.path.Str.IO.slurp;
+                }
+                else {
+                    my $error = "No file found at ｢$f-uri｣";
+                    $prs.warnings.push($error)
+                }
+            }
+            default {
+                # Load and convert external data to internal Raku format, categorizing as well...
+                my LibCurl::Easy $curl .= new(:URL($_), :followlocation, :failonerror );
+                try {
+                    $external-content = $curl.perform.content;
+                }
+                if $! {
+                    my $error = "URL ｢$_｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
+                    $prs.warnings.push($error)
+                }
+            }
+            if $external-content ~~ / \S / {
+                for convert-to-CSL-Raku($external-content) -> $entry {
+                    $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
+                    %citations<categories>{ @categories }».push($entry<id>);
+                    %citations<data>{ $entry<id> } = $entry.&convert-dates;
+                }
+            }
+            else {
+                $prs.warnings.push( "Could not load citation data from %config<load>"
+                ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.");
+            }
+        }
+        # Convert citation block data to CSL-Raku and store it under its ID (or one we made up)...
+        if $content ~~ /\S/ {
+            for convert-to-CSL-Raku($content) -> $entry {
+                $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
+                %citations<categories>{ @categories }».push($entry<id>);
+                %citations<data>{ $entry<id> } = $entry.&convert-dates;
+            }
+        }
     }
     #| Table has two forms of content: procedural / visual
     #| can take all standard options
@@ -1349,7 +1466,7 @@ class RakuDoc::Processor {
                 $id = self.register-target( $_ );
             }
             else {
-                $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣") if %config<error>
+                $prs.warnings.push("Attempt to register already existing id ｢$_｣ as new target in heading ｢$caption｣")
             }
         }
         self.manage-numalias($type, $level, '', $caption, %config);
@@ -1406,8 +1523,7 @@ class RakuDoc::Processor {
             for $ast.paragraphs -> $grid-instruction {
                 unless $grid-instruction.^can('type') {
                     $prs.body ~= $ast.Str;
-                    $prs.warnings.push("｢{$grid-instruction.Str}｣ is illegal as an immediate child of a =table")
-                    if %config<error>;
+                    $prs.warnings.push("｢{$grid-instruction.Str}｣ is illegal as an immediate child of a =table");
                     return
                 }
                 next if $grid-instruction.type eq 'comment';
@@ -1467,8 +1583,7 @@ class RakuDoc::Processor {
                     }
                     default { # only =cell =row =column allowed after a =grid
                         $prs.body ~= $ast.Str;
-                        $prs.warnings.push("｢{$grid-instruction.DEPARSE}｣ is illegal as an immediate child of a =table")
-                        if %config<error>;
+                        $prs.warnings.push("｢{$grid-instruction.DEPARSE}｣ is illegal as an immediate child of a =table");
                         return
                     }
                 }
@@ -1482,8 +1597,7 @@ class RakuDoc::Processor {
                 next if $row ~~ Str; # rows as strings are row/header separators
                 unless $row ~~ RakuAST::Doc::LegacyRow {
                     $prs.body ~= $ast.DEPARSE;
-                    $prs.warnings.push("｢{$row.Str}｣ is illegal as an immediate child of a =table")
-                    if %config<error>;
+                    $prs.warnings.push("｢{$row.Str}｣ is illegal as an immediate child of a =table");
                     return
                 }
                 my @this-row;
@@ -1516,13 +1630,12 @@ class RakuDoc::Processor {
             $prs.warnings.push(
                 "｢$type｣ is a valid, but unimplemented builtin block"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.")
-                if %config<error>
         }
         else { # not known so create another warning
             $prs.warnings.push(
                 "｢$type｣ is not a valid builtin block, is it a misspelt Custom block?"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
-                ) if %config<error>
+                )
         }
         $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$level ) )
     }
@@ -1593,7 +1706,7 @@ class RakuDoc::Processor {
                         $prs.warnings.push(
                             "Attempt to register already existing id ｢$_｣ as new target in ｢$type｣"
                             ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
-                            ) if %config<error>
+                            )
                     }
                 }
                 $rv = %!templates{$template}(
@@ -1633,7 +1746,7 @@ class RakuDoc::Processor {
                 $prs.warnings.push(
                     "Attempt to register already existing id ｢$_｣ as new target in ｢$type｣"
                     ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
-                ) if %config<error>
+                )
             }
         }
         my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
@@ -1650,7 +1763,7 @@ class RakuDoc::Processor {
             $prs.warnings.push(
             "No template exists for custom block ｢$type｣. It has been rendered as unknown"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣."
-            ) if %config<error>;
+            );
             $prs.body ~= %!templates<unknown>( %( :$contents, :$type, :$target, :$caption, :$numeration, :$level ) )
         }
         self.manage-numalias($type, $level, $contents, $caption, %config);
@@ -1665,6 +1778,13 @@ class RakuDoc::Processor {
         # strip off any num as numblock and block are the same in config
         $name .= subst(/ $ 'num' /, '');
         $!scoped-data.config( { $name => %options } );
+    }
+    # document options are not black scoped
+    method manage-document($ast) {
+        my %options = $ast.resolved-config;
+        for %options.kv -> $k,$v {
+            $!current.document-options{$k} = $v
+        }
     }
     method manage-alias($ast) {
         my %config = $ast.resolved-config;
@@ -1682,7 +1802,7 @@ class RakuDoc::Processor {
             CALLERS::<$*prs> += $prs;
         }
         else {
-            $prs.warnings.push("Invalid alias ｢{ $ast.Str }｣") if %config<error>
+            $prs.warnings.push("Invalid alias ｢{ $ast.Str }｣")
         }
     }
     # helper methods
@@ -1810,6 +1930,73 @@ class RakuDoc::Processor {
             stringify-index( .value<sub-index>.hash ) if .value<sub-index>.elems.so
         }
     }
+    method complete-citations( :$spec, :$caption --> PStr ) {
+
+    }
+    #| take citation data and create data for complete-citations
+    #| expand Q-code markers
+    method build-bibliography {
+        # At the stage this method is called,
+        # $!current.citations contains citation block data
+        # is a hash with keys: style / locale /
+        # data = hash: citation-id => specification /
+        # categories = hash: category => array of citation-ids
+        # $!current.q-codes
+        # is an array of Pairs id => unpreprocessed content of Q markup
+        # convert
+
+        # adapted from Damian Conway's sub
+#        my $data = q:to<END>;
+#        ---
+#        nocite: |
+#          @*
+#        references:
+#        END
+#
+#        # Convert citation list to CSL-YAML...
+#        my $yaml = do {
+#            if @categories {
+#                my @IDs = %citations<categories>{@categories}».values.flat;
+#                save-yaml(%citations<data>{@IDs});
+#            }
+#            else {
+#                save-yaml(%citations<data>.values);
+#            }
+#        }
+#        $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
+#
+#        # Convert citation indicators to Markdown format and remember that we cited them...
+#        my %cited;
+#        my @indicators = gather for @Q-codes {
+#            my @md-citations = gather for .<cit-indic> {
+#                my $indic  = .<indic>.trim.subst(/<before '{' | '}' >/, '\\', :g);
+#                my $suffix = .<suffix> ?? ', ' ~ .<suffix>.trim !! q{};
+#                %cited{$indic} = True;
+#                take "\@\{$indic\}$suffix";
+#            }
+#            take '[' ~ @md-citations.join(';') ~ ']';
+#        }
+#        $data ~= qq{\n@indicators.join("\n\n")\n\nEND\n};
+#
+#        # Create the 'cited' and 'uncited' categories in %citations<categories>...
+#        for %citations<data>.keys -> $ID {
+#            if %cited{$ID} { %citations<categories><cited>.push($ID) }
+#            else           { %citations<categories><uncited>.push($ID) }
+#        }
+#
+#        # Run the pandoc --citeproc to generate the final renderings...
+#        my $citeproc = citeproc($data, :$STYLE, :$LOCALE);
+#        # Retrieve and translate the markers back to RakuDoc...
+#        my ($markers, $biblist) = $citeproc.split(/^^END\n/);
+#        my @markers = $markers.trim.comb(/[^^ \N*? \S \N* [\n|$]]+/).map({ markdown-to-rakudoc($_, :noblock) });
+#
+#        # Retrieve and translate the bibliographic list back to RakuDoc...
+#        my @biblist = $biblist.trim.split(/[^^ \h* \n]+/).map({ markdown-to-rakudoc($_) });
+#
+#        return @markers, @biblist.join("\n\n");
+
+
+    }
     method complete-index( :$spec, :$caption --> PStr ) {
         my $max; # the maximum number of index levels. Shouldn't be more than around 5
         if $spec eq '*' { $max = 100 }
@@ -1821,7 +2008,7 @@ class RakuDoc::Processor {
             })
         }
         PStr.new( @index-list.elems ?? %!templates<index>( %(:@index-list, :$caption ))
-                                    !! '')
+                !! '')
     }
     #| renders the toc objects
     method complete-toc( :$spec, :$caption --> PStr ) {
@@ -1836,7 +2023,7 @@ class RakuDoc::Processor {
                 $toc-type = ~$_
             }
             with $<range> {
-                if m/'*'/ {
+                if '*' {
                     $levels .=new: (^10).list
                 }
                 else {
@@ -1966,8 +2153,7 @@ class RakuDoc::Processor {
         });
         %config<error> = True unless %config<error>:exists;
         if   %config.keys.grep({ $_ (elem) @counter-opts })  -> $extra {
-            $*prs.warnings.push("The config directive should not contain (any of) : { '"' «~« $extra.list »~» '"' }. Should these be in a counter statement?")
-            if %config<error>;
+            $*prs.warnings.push("The config directive should not contain (any of) : { '"' «~« $extra.list »~» '"' }. Should these be in a counter statement?");
         }
         if %config<delta>:exists {
             my $contents = %config<delta>:delete;
@@ -1976,7 +2162,6 @@ class RakuDoc::Processor {
             }
             else {
                 $*prs.warnings.push("The delta option is ignored because it must have the form / 'v' \\S+ \\s* (['|'] .+)? \$ / ｢{ ~$ast.DEPARSE }｣")
-                if %config<error>
             }
         }
         else { %config<delta> = '' }
@@ -2064,9 +2249,9 @@ class RakuDoc::Processor {
     my constant STRIKE-ON = "\e[9m";
     my constant STRIKE-OFF = "\e[29m";
     my constant SUPERSCR-ON = "\e[48;5;78m\e[73m";
+    my constant SUPERSCR-OFF = "\e[75m\e[39;49m";
     my constant SUBSCR-ON = "\e[48;5;80m\e[74m";
     my constant SUBSCR-OFF = "\e[75m\e[39;49m";
-    my constant SUPERSCR-OFF = "\e[75m\e[39;49m";
     my constant INDEX-ENTRY-ON = "\e[48;5;2m";
     my constant INDEX-ENTRY-OFF = "\e[39;49m";
     my constant KEYBOARD-ON = "\e[48;5;5m";
@@ -2325,8 +2510,12 @@ class RakuDoc::Processor {
                 %prm<body>.Str ~ "\n" ~
                 %prm<footnotes>.Str ~ "\n" ~
                 ( %prm<rendered-index>
-                    ?? ( "\n\n" ~ '=' x (%*ENV<WIDTH> // 80) ~ "\n" ~ %prm<rendered-index> ~ "\n" )
+                    ?? ( "\n\n" ~ '=' x (%*ENV<WIDTH> // 80) ~ "\n" ~ %prm<rendered-citations> ~ "\n" )
                     !! ''
+                ) ~
+                ( %prm<rendered-citations>
+                        ?? ( "\n\n" ~ '=' x (%*ENV<WIDTH> // 80) ~ "\n" ~ %prm<rendered-index> ~ "\n" )
+                        !! ''
                 ) ~
                 "\x203b" x ( %*ENV<WIDTH> // 80 ) ~
                 "\nRendered from " ~ %prm<source-data><path> ~ '/' ~ %prm<source-data><name> ~
@@ -2358,6 +2547,12 @@ class RakuDoc::Processor {
                 my $cap = %prm<caption>:exists ?? (HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n") !! '';
                 PStr.new: $cap ~ "\n" ~
                 ([~] %prm<index-list>) ~ "\n\n"
+            },
+            #| special template to render the citations structure
+            citations => -> %prm, $tmpl {
+                my $cap = %prm<caption>:exists ?? (HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n") !! '';
+                PStr.new: $cap ~ "\n" ~
+                    ([~] %prm<citation-list>) ~ "\n\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
@@ -2480,6 +2675,8 @@ class RakuDoc::Processor {
                 (%prm<note> ?? DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF !! '') ~
                 DEVEL-VERSION-ON ~ '[for ' ~ %prm<versions> ~ ']' ~ DEVEL-VERSION-OFF
             },
+            #| Quotation = citation reference (typically rendered superscript)
+            markup-Q => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
 			markup-M => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },

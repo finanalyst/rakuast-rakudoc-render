@@ -1,7 +1,7 @@
 {
     "name": "Rakuast::RakuDoc::Render",
     "description": "Renders RakuDoc v2 to text, HTML, HTML-Extra, Markdown",
-    "version": "0.27.4",
+    "version": "0.27.5",
     "raku": "6.d",
     "authors": [
         "Richard Hainsworth"
@@ -19,7 +19,10 @@
         "Test::Run",
         "RakuAST::Deparse::Highlight",
         "Rainbow:ver<0.3.0+>",
-        "File::Directory::Tree"
+        "File::Directory::Tree",
+        "JSON::Fast",
+        "YAMLish",
+        "LibXML"
     ],
     "test-depends": [
         "Test",
@@ -46,7 +49,8 @@
         "RakuDoc::To::HTML": "lib/RakuDoc/To/HTML.rakumod",
         "RakuDoc::To::HTML-Extra": "lib/RakuDoc/To/HTML-Extra.rakumod",
         "RakuDoc::To::Markdown": "lib/RakuDoc/To/Markdown.rakumod",
-        "RenderDocs": "lib/RenderDocs.rakumod"
+        "RenderDocs": "lib/RenderDocs.rakumod",
+        "RakuDoc::Citations": "lib/RakuDoc/Citations.rakumod"
     },
     "resources": [
         "compliance-rendering/rakudociem-ipsum.rakudoc.pretty.text",

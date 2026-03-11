@@ -1,0 +1,130 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan 11;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new( :test );
+
+# test rakudoc toc autogen
+$ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =head This is a header
+
+    content
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-toc, / 'This is a header' /, 'ToC is rendered';
+$ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =document :!auto-toc
+    =head This is a header
+
+    content
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.rendered-toc, '', 'no ToC rendered';
+$ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =document :auto-toc<New Contents Table>
+    =head This is a header
+
+    content
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-toc, /
+    '<toc>' .+?
+    'caption' .+? 'New Contents Table' .+?
+    'This is a header'
+/, 'Modified auto ToC is rendered';
+
+$ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =head This is a header
+
+    content X<Some markup> stuff
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-index, /
+    '<index>' .+?
+    'Some markup'
+/, 'Index rendered';
+$ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =document :!auto-index
+    =head This is a header
+
+    content X<Some markup> stuff
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.rendered-index, '', 'Index not rendered';
+$ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =document :auto-index<Glossary>
+    =head This is a header
+
+    content X<Some markup> stuff
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-toc, /
+'<index>' .+?
+'caption' .+? 'Glossary' .+?
+'This is a header'
+/, 'Modified auto Index is rendered';
+
+## Citations
+#todo 'citations not implemented yet', 3;
+#$ast = q:to/QAST/.AST;
+#    =begin rakudoc
+#    =document :!auto-citations
+#    =head This is a header
+#
+#    content Q<Conway>
+#    =end rakudoc
+#    QAST
+#
+#$rv = $rdp.render( $ast, :pre-finalised );
+#is $rv.rendered-citations, '', 'no auto citations rendered';
+#$ast = q:to/QAST/.AST;
+#    =begin rakudoc
+#    =document :auto-citations<Further reading>
+#    =head This is a header
+#
+#    content
+#    =end rakudoc
+#    QAST
+#$rv = $rdp.render( $ast, :pre-finalised );
+#like $rv.rendered-citations, /
+#'<citations>' .+?
+#'caption' .+? 'Further reading' .+?
+#'This is a header'
+#/, 'Modified auto citations is rendered';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing G<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.warnings[0], / '｢G｣' .+ 'is reserved for future' /, 'warning generated';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =document :!error
+    Some thing G<to be said>inside letters.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.warnings.elems, 0, 'warnings removed';
+
+done-testing

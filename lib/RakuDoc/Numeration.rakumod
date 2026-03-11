@@ -13,7 +13,7 @@ class Numeration { ... }
 class CounterTracker {
     constant @built-in = <
         cell code input output comment head defn item nested para
-        rakudoc section pod table formula
+        rakudoc section pod table formula citation
     >;
     has @!warnings;
     #| tracks each counter, affected by block instance
@@ -417,7 +417,7 @@ class Numeration {
         # No special cases (ahem!) for any of these yet...
         state %tc is default(&tc);
         state %tclc is default(&tclc);
-        state %no-case is default(*.Str);
+        state %no-case is default(*.Str); # this does not work yet with RakuAST
 
         state %case-handler = :%lc, :%uc, :%tc, :%tclc, :%sc, :%pc, q{} => %no-case;
 
@@ -568,11 +568,11 @@ class Numeration {
     sub to-zh( Int() $num is copy ) {
 
         # The traditional glyphs for various magnitudes (10000s), orders (1000/100/10), and digits...
-        constant @mag = « '' 萬 億 兆 京 垓 秭 穰 溝 澗 正 載 極 恆河沙 阿僧祇 那由他 不可思議 無量大數 »;
-        constant @ord = « '' 拾 佰 仟 »;
-        constant @dig = « 零 壹 貳 叁 肆 伍 陸 柒 捌 玖 拾 »;
-        constant $zero = '零';
-        constant $final-zero = /零$/;
+        my constant @mag = « '' 萬 億 兆 京 垓 秭 穰 溝 澗 正 載 極 恆河沙 阿僧祇 那由他 不可思議 無量大數 »;
+        my constant @ord = « '' 拾 佰 仟 »;
+        my constant @dig = « 零 壹 貳 叁 肆 伍 陸 柒 捌 玖 拾 »;
+        my constant $zero = '零';
+        my constant $final-zero = /零$/;
 
         # Just look up small numbers directly...
         return @dig[$num] if $num <= 10;
@@ -632,9 +632,9 @@ class Numeration {
     sub to-ja( Int() $num is copy ) {
 
         # The traditional glyphs for various magnitudes (10000s), orders (1000,100,10), and digits...
-        constant @mag = « '' 万 億 兆 京 垓 𥝱 穣 溝 澗 正 載 極 恒河沙 阿僧祇 那由他 不可思議 無量大数 »;
-        constant @ord = « '' 拾 百 千 »;
-        constant @dig = « 零 壱 弐 参 四 五 六 七 八 九 拾 »;
+        my constant @mag = « '' 万 億 兆 京 垓 𥝱 穣 溝 澗 正 載 極 恒河沙 阿僧祇 那由他 不可思議 無量大数 »;
+        my constant @ord = « '' 拾 百 千 »;
+        my constant @dig = « 零 壱 弐 参 四 五 六 七 八 九 拾 »;
 
         # Just look up small numbers directly...
         return @dig[$num] if $num <= 10;

@@ -1,0 +1,20 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+
+plan *;
+
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new( :test );
+
+#$ast = Q:to/QAST/.AST;
+#    =begin rakudoc
+#    =config head2 :!toc
+#    =head2 Third test text
+#    =end rakudoc
+#    QAST
+#$rv = $rdp.render( $ast, :pre-finalised );
+#is $rv.toc.elems, 0, 'No toc registered';
+
+done-testing

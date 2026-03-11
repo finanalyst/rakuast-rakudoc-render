@@ -1,12 +1,15 @@
 use v6.d;
 use Test;
-my @modules = <MarkupMeta Numeration PromiseStrings ScopedData Templates Processed
+my @modules = <
+    MarkupMeta Numeration PromiseStrings
+    ScopedData Templates Processed Citations
     Render To::Generic To::HTML
     Plugin::HTML::Bulma Plugin::HTML::Graphviz Plugin::HTML::Latex Plugin::HTML::LeafletMaps
     Plugin::HTML::ListFiles Plugin::HTML::FontAwesome Plugin::HTML::Hilite Plugin::HTML::SCSS
     To::HTML-Extra
     Plugin::Markdown::Graphviz
-    To::Markdown>;
+    To::Markdown
+>;
 
 plan @modules.elems;
 

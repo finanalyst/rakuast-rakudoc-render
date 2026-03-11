@@ -60,8 +60,8 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast );
 like $rv, /
     'rendered-index: ｢｣' .+
-    'rendered-toc:' .+ '<toc>' .+? '</toc>'
-/, 'got rendered toc, and no index because no X<>';
+    'rendered-toc: ｢｣'
+/, 'auto rendered toc is removed because of place and no index because no X<>';
 like $rv, /
     '<rakudoc>' .+
     '<markup-P>' .+
@@ -95,10 +95,11 @@ $ast = Q:to/QAST/.AST;
 $rv = $rdp.render( $ast );
 like $rv, /
     'rendered-index: ｢｣' .+
-    'rendered-toc' .+ '<toc>' .+? '</toc>'
-/, 'got rendered toc, and no index because no X<>';
+    'rendered-toc: ｢｣'
+/, 'no toc because its placed, and no index because no X<>';
 like $rv, /
-    '<rakudoc>' .+
+    '<rakudoc>' .+?
+    'Some text' .+?
     '<place>' .+
     '<toc>' .+?
     '<toc-item>' .+ 'caption' .+ 'Head QQQ' .+

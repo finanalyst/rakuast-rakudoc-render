@@ -1,0 +1,41 @@
+[
+  {
+    "id": "Butterfly2019",
+    "type": "article-journal",
+    "title": "The Camelia Transition: A Phonetic Analysis of 'Raku' vs. 'Perl'",
+    "author": [
+      {"family": "Vowels", "given": "Aria"},
+      {"family": "Glottis", "given": "Stop"}
+    ],
+    "container-title": "The Journal of Arbitrary Orthography",
+    "volume": "42",
+    "issue": "3",
+    "page": "101-115",
+    "issued": {"date-parts": [[2019, 10, 15]]},
+    "abstract": "An empirical study on the reduction of mouth-strain when moving from a liquid 'l' in 'Perl' to the punchy, k-centric satisfaction of 'Raku'."
+  },
+  {
+    "id": "RakudoWay2021",
+    "type": "book",
+    "title": "Rakudo: The Way of the Camel-less",
+    "author": [
+      {"family": "Implementation", "given": "Lars"}
+    ],
+    "publisher": "Optimized Path Press",
+    "publisher-place": "Vienna",
+    "issued": {"date-parts": [[2021]]},
+    "note": "A deep dive into the Japanese etymology of 'Rakudo' (The Way of Raku) and why implementations should sound like martial arts."
+  },
+  {
+    "id": "Alias2023",
+    "type": "paper-conference",
+    "title": "Wait, what's it called now? A Longitudinal Study of Developer Confusion",
+    "author": [
+      {"family": "Nym", "given": "Sara"}
+    ],
+    "event-title": "International Symposium on Renaming Things",
+    "issued": {"date-parts": [[2023, 6]]},
+    "DOI": "10.0000/raku.isrt.2023.42",
+    "abstract": "Investigates the cognitive load required for veteran developers to stop typing 'p6' and start embracing the 'raku' CLI alias."
+  }
+]

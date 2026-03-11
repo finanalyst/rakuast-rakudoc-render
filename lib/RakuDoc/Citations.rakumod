@@ -1,254 +1,14 @@
-#! /usr/bin/env raku
 use v6.d;
-
 use JSON::Fast;
 use YAMLish;
-use PrettyDump;
+use XML;
 
-# Cmdline interface...
-sub MAIN (
-        $rakudoc-file where .IO.r & /'.' raku[doc]? $/,         # Requires a RakuDoc or Raku file
-        $output-file?,                                          # Optional output RakuDoc file
-        :style($DEFAULT-STYLE)   = 'ieee',   # Optional style file
-        :locale($DEFAULT-LOCALE) = 'en-US',  # Optional locale file
-          );
+# Adapted from Damian Conway's prototype
 
-# Grab the document...
-my $document = slurp $rakudoc-file;
-
-# Extract the =citation blocks and prep them for eventual replacement...
-my %citations = extract-citation-data($document);
-
-# Identify the Q<> codes...
-my @Q-codes = extract-Q-codes($document);
-say "@ $?LINE {$?FILE.comb(/\S+$/).head} q-codes\n", @Q-codes;
-# Identify and simulate any missing citation datasets...
-for @Q-codes {
-    for .<cit-indic> {
-        state $next-missing = 1;
-        my $indicator = S:g/ '\\' (.) /$0/ given .<indic>.Str.trim;
-        %citations<data>{$indicator} //= {
-            id              => $indicator,
-            type            => "article",
-            title           => "NO SUCH CITATION ID: $indicator",
-            author          => { family => "Unknown", given => "Reference" },
-            container-title => "Did you misspell <$indicator>?",
-            issued          => { date-parts => [[$next-missing++]] }
-        };
-    }
-}
-
-# Generate all bibliographic markers and replace the corresponding Q<> codes with them...
-# (Also sets up 'cited' and 'uncited' categories in %citations)...
-my ($markers, $biblist-all) = build-bibliography(@Q-codes, %citations, :categorize);
-
-# Update replacements for Q-codes...
-for @Q-codes.reverse -> $loc {
-    $document.substr-rw($loc.from, $loc.chars) = $markers.pop;
-}
-
-# Set up the universal bibliographic list (there maybe others later)...
-my %biblist = ('*' => $biblist-all );
-
-# Extract and process the relevant =place directives...
-my @places = extract-place-citations($document);
-
-for @places.reverse -> $placement {
-    given $placement<categories> -> $cat {
-        %biblist{$cat} //= build-bibliography(@Q-codes, %citations, :categories[$cat.split(',')])[1];
-        $document.substr-rw($placement.from, $placement.chars) = %biblist{$cat};
-    }
-}
-
-my $output = qq:to<END>;
-    =begin rakudoc
-    $document
-    =end rakudoc
-    END
-
-if $output-file { $output-file.IO.spurt($output) }
-else            {                   say $output  }
-
-#=====[ Utility subroutines ]====================================================
-
-# NOTE: In real life this info would be extracted from the AST (clearly this approach is a hack!)...
-sub extract-Q-codes ($document) {
-    # What the tag in a Q<> looks like...
-    my token indic ($ldel, $rdel) {
-        [ $ldel <.indic> $rdel                        # nested balanced delimiters
-        | [<!before $ldel | $rdel | <[,;|\\]> > .]+   # or non-special characters
-        ]+
-        %%                                         #   interspersed with
-        [ '\\' [ $ldel | $rdel | <[,;|\\]> ] ]        # quoted special characters
-    }
-
-    # What the optional suffix in a Q<> looks like...
-    my token suffix ($ldel, $rdel) {
-        # Same pattern as above, except raw commas are allowed...
-        [ $ldel <.suffix> $rdel | [<!before $ldel | $rdel | <[;|\\]> > .]+ ]*
-        % [ '\\' [ $ldel | $rdel | <[;|\\]> ] ]
-    }
-
-    # What the entire contents of a Q<> looks like...
-    my rule cit-indic ($ldel, $rdel) { <indic: $ldel, $rdel> [ ',' <suffix: $ldel, $rdel> ]? }
-
-    # Only bother with a few common delimiter forms, but allow multiple tags in any Q code...
-    $document ~~ m:g{ Q [ '<'   <cit-indic: '<',   '>'>+  %  ';'   '>'
-    | '<<'  <cit-indic: '<<', '>>'>+  %  ';'  '>>'
-    | '«'   <cit-indic: '«',   '»'>+  %  ';'   '»'
-    ]
-    }
-}
-
-# NOTE: In real life this info would be extracted from the AST (this approach is another hack!)...
-sub extract-citation-data ($document is rw) {
-
-    # Accumulate the data, indexed by ID...
-    my %citations;
-
-    # What abbreviated and =for block contents look like...
-    my regex data-line     { \h* <!before '='<ident> > \N* \S \N* [\n|$] }
-
-    # What the closing delimiter for a =begin block looks like...
-    my regex end-citation  { \h* '=end' \h+ 'citation' >> \h* [\n|$] }
-
-    # Extract (and remove) all the =citation blocks...
-    my @citation-blocks
-    = $document ~~ s:g/
-            ^^ \h*  '=' [           citation >>                  $<data>=[ \N* \n <&data-line>* ]
-            | for   \h+ citation >> $<opts>=[\N*] \n $<data>=[ <&data-line>* ]
-            | begin \h+ citation >> $<opts>=[\N*] \n $<data>=[.*?] \n <&end-citation>
-            ]
-
-            /\n/;
-
-    # Convert each citation block's data into CSL-Raku...
-    for @citation-blocks -> $block {
-
-        # Reify metaoptions...
-        my %opt = $block<opts> ?? safe-eval($block<opts>.Str, :desc<citation block option>) // {} !! {};
-
-        # Categorize data...
-        my @categories = (%opt<category> // []).values;
-
-        # Extract the block contents...
-        my $content = $block<data>.Str;
-
-        # Allocate unique IDs for entries that lack them...
-        state $noIDcount = 1;
-
-        # Does the block specify a style or locale???
-        with %opt<style>  { %citations<style>  = %opt<style>  }
-        with %opt<locale> { %citations<locale> = %opt<locale> }
-
-        # Does the citation block load data from elsewhere???
-        with %opt<load> {
-
-            # Loading external content while also specifying internal content is confusing...
-            if $content ~~ /\S/ {
-                note '=citation blocks with :load<URL> and in-document data';
-                note 'are better written as two separate blocks';
-            }
-
-            # Load and convert external data to internal Raku format, categorizing as well...
-            with curl(%opt<load>) -> $external-content {
-                for convert-to-CSL-Raku($external-content) -> $entry {
-                    $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
-                    %citations<categories>{ @categories }».push($entry<id>);
-                    %citations<data>{ $entry<id> } = $entry.&convert-dates;
-                }
-            }
-            else {
-                note "Could not load citation data from %opt<load>";
-            }
-        }
-
-        # Convert citation block data to CSL-Raku and store it under its ID (or one we made up)...
-        if $block<data>.Str ~~ /\S/ {
-            for convert-to-CSL-Raku($block<data>.Str) -> $entry {
-                $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
-                %citations<categories>{ @categories }».push($entry<id>);
-                %citations<data>{ $entry<id> } = $entry.&convert-dates;
-            }
-        }
-    }
-
-    # Ensure defaults are in place..
-    %citations<style>  //= $DEFAULT-STYLE;
-    %citations<locale> //= $DEFAULT-LOCALE;
-    return %citations;
-}
-
-# Extract every =place citation: directive...
-sub extract-place-citations ($document) {
-    $document ~~ m:g{ ^^ \h* '=place' \h+ 'citation:'
-    $<categories>=[ '*' | <ident> ]+ %% ','
-    \h* $$
-    }
-}
-
-# Build the complete list of bibliographic markers to replace Q<> codes...
-sub build-bibliography (@Q-codes, %citations, :@categories, :$categorize) {
-    # Prepare formatting...
-    my $STYLE  = %citations<style>  // $DEFAULT-STYLE;
-    my $LOCALE = %citations<locale> // $DEFAULT-LOCALE;
-
-    # Start building citeproc data...
-    my $data = q:to<END>;
-        ---
-        nocite: |
-          @*
-        references:
-        END
-
-    # Convert citation list to CSL-YAML...
-    my $yaml = do {
-        if @categories {
-            my @IDs = %citations<categories>{@categories}».values.flat;
-            save-yaml(%citations<data>{@IDs});
-        }
-        else {
-            save-yaml(%citations<data>.values);
-        }
-    }
-    $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
-
-    # Convert citation indicators to Markdown format and remember that we cited them...
-    my %cited;
-    my @indicators = gather for @Q-codes {
-        my @md-citations = gather for .<cit-indic> {
-            my $indic  = .<indic>.trim.subst(/<before '{' | '}' >/, '\\', :g);
-            my $suffix = .<suffix> ?? ', ' ~ .<suffix>.trim !! q{};
-            %cited{$indic} = True;
-            take "\@\{$indic\}$suffix";
-        }
-        take '[' ~ @md-citations.join(';') ~ ']';
-    }
-    $data ~= qq{\n@indicators.join("\n\n")\n\nEND\n};
-
-    say "@ $?LINE {$?FILE.comb(/\S+$/).head}", $data;
-    # Create the 'cited' and 'uncited' categories in %citations<categories>...
-    for %citations<data>.keys -> $ID {
-        if %cited{$ID} { %citations<categories><cited>.push($ID) }
-        else           { %citations<categories><uncited>.push($ID) }
-    }
-
-    # Run the pandoc --citeproc to generate the final renderings...
-    my $citeproc = citeproc($data, :$STYLE, :$LOCALE);
-    say "@ $?LINE {$?FILE.comb(/\S+$/).head}", $citeproc;
-    # Retrieve and translate the markers back to RakuDoc...
-    my ($markers, $biblist) = $citeproc.split(/^^END\n/);
-    my @markers = $markers.trim.comb(/[^^ \N*? \S \N* [\n|$]]+/).map({ markdown-to-rakudoc($_, :noblock) });
-
-    # Retrieve and translate the bibliographic list back to RakuDoc...
-    my @biblist = $biblist.trim.split(/[^^ \h* \n]+/).map({ markdown-to-rakudoc($_) });
-
-    return @markers, @biblist.join("\n\n");
-}
-
+unit module RakuDoc::Citations;
 
 # Use the appropriate external utility or utilities to convert any supported format to CSL-Raku...
-sub convert-to-CSL-Raku ( $data ) {
+sub convert-to-CSL-Raku ( $data, @warnings ) is export {
 
     # What kind of citation data is it???
     my $data-format = sniff-test($data);
@@ -297,7 +57,7 @@ sub convert-to-CSL-Raku ( $data ) {
 
     # No convertible data??? Warn and return nothing...
     if ($csl-json eq '[]' && $data ~~ /\S/) {
-        note "Could not understand $data-format citation data\n", ~($! // q{}, $data);
+        @warnings.push: "Could not understand $data-format citation data\n", ~($! // q{}, $data);
         return ();
     }
 
@@ -306,7 +66,7 @@ sub convert-to-CSL-Raku ( $data ) {
         return $csl-raku.values;
     }
     else {
-        note "Could not understand $data-format citation data\n", ~($! // q{});
+        @warnings.push: "Could not understand $data-format citation data\n", ~($! // q{});
         return ();
     }
 }
@@ -370,14 +130,6 @@ sub filter (:$data, :$fail = Nil, *@command) {
     return $proc.out.slurp: :close;
 }
 
-# Load URLs (mostly via curl, but short-circuit files and handle a wider range of filepaths)...
-sub curl ($URL ) {
-    given $URL {
-        when /^ file ':' ['//']? (.*) / { return slurp ~$0 }
-        default                         { return filter 'curl', '-LsSf', $URL }
-    }
-}
-
 # Useful external translation apps for citation data...
 sub pandoc       ($data, :$from) { filter :fail<[]> :$data, 'pandoc', « -f $from -t csljson » }
 sub xml2biblatex ($data)         { filter :fail()   :$data, 'xml2biblatex'                    }
@@ -385,7 +137,7 @@ sub med2xml      ($data)         { filter :fail()   :$data, 'med2xml'           
 sub nbib2xml     ($data)         { filter :fail()   :$data, 'nbib2xml'                        }
 
 # Format indicators and citation data into a set of markers and a bibliographic list...
-sub citeproc     ($data, :$STYLE, :$LOCALE) {
+sub citeproc     ($data, :$STYLE, :$LOCALE) is export {
     filter :fail(Nil) :$data, 'pandoc', « --citeproc -t markdown_strict »,
             "--metadata=lang:$LOCALE", "--csl=$STYLE";
 }
@@ -516,9 +268,8 @@ sub small-caps ($text) {
 
 }
 
-
 # Change the structure of date-like fields to pacify pandoc --citeproc...
-sub convert-dates ($csl-raku-data) {
+sub convert-dates ($csl-raku-data) is export {
 
     # Convert all of these...
     constant @DATE-LIKE-FIELDS = < issued released accessed original-date event-date submitted >;
