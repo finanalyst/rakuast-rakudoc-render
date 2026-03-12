@@ -118,6 +118,8 @@ class RakuDoc::Processor {
         $!register .= new;
         $!scoped-data .= new;
         $!scoped-data.debug = $!debug-modes{ Scoping }.so;
+        $!scoped-data.start-scope( :starter('document') );
+        $!scoped-data.last-title( $!current.document-options<FrontMatter> );
 
         # the following maps cannot be hyperised because the order of
         # blocks in the document is important for the numeration counters and Toc
@@ -178,7 +180,7 @@ class RakuDoc::Processor {
             my @place-index = $!register.list-unexpanded('index');
             if @place-index {
                 #render filtered toc, if any
-                for @place-index.kv -> $id, $spec {
+                for @place-index -> (:key($id), :value($spec)) {
                     my $payload = self.complete-index( :$spec, :caption('')).strip.Str;
                     $!register.add-payload(:$payload, :$id)
                 }
@@ -201,7 +203,7 @@ class RakuDoc::Processor {
             my @place-citations = $!register.list-unexpanded('citation');
             if @place-citations.elems {
                 # placed filtered citations
-                for @place-citations.kv -> $id, $spec {
+                for @place-citations -> (:key($id), :value($spec)) {
                     $!register.add-payload(:payload( self.complete-citations(:$spec, :caption('')).strip.Str), :$id);
                 }
             }
@@ -231,7 +233,6 @@ class RakuDoc::Processor {
                 :body($!current.body.Str),
                 :source-data($!current.source-data),
                 :document-options($!current.document-options),
-                :front-matter($!current.front-matter),
                 :name($!current.name),
                 :title($!current.title),
                 :title-target($!current.title-target),
@@ -470,28 +471,13 @@ class RakuDoc::Processor {
             # =rakudoc
             # No "ambient" blocks inside
             # could be called if P<> embeds a RakuDoc file
-            when 'rakudoc' | 'pod' {
-                my $rak-level := $!current.source-data<rakudoc-level>;
-                if $!scoped-data.last-starter eq 'original level' {
-                    $!scoped-data.start-scope(:starter($_), :title( $!current.source-data<rakudoc-title> ));
-                     $rak-level = 1;
-                }
-                else {
-                    $!scoped-data.start-scope(:starter($_), :title( 'embed RakuDoc' ));
-                    if ++$rak-level > 5 {
-                        $*prs.warnings.push: 'Attempting to embed more than five levels of rakudoc sources. Contents of deeper rakudoc blocks ignored.';
-                    }
-                }
-                $.gen-rakudoc($ast, %config, $type, $level, $numerate) unless $rak-level > 5;
-                $!scoped-data.end-scope;
-                $rak-level -= 1;
-            }
+            when 'rakudoc' | 'pod' { $.gen-rakudoc($ast, %config, $type, $level, $numerate) }
             # =pod
             # Legacy version of rakudoc
 #           when 'pod' { '' } # when rakudoc differs from pod
             # =section
             # Defines a section
-            # sectioin does not have its own output, so numsection has not meaning
+            # section does not have its own output, so numsection has no meaning
             when 'section' {
                 $!scoped-data.start-scope( :starter($_) ); # title will be a Block number
                 $.gen-section($ast, %config, $type, $level, $numerate);
@@ -954,7 +940,7 @@ class RakuDoc::Processor {
                 }
                 $prs.inline-defns = ()
             }
-            if $!scoped-data.last-starter ~~ < rakudoc pod section semantic nested >.any {
+            if $!scoped-data.last-starter ~~ < document rakudoc pod section semantic nested >.any {
                  my $rv = %!templates<para>(
                     %( :$contents, :$target, %config)
                 );

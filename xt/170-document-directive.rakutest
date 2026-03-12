@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 11;
+plan 10;
 
 my $ast;
 my $rv;
@@ -77,40 +77,44 @@ $ast = q:to/QAST/.AST;
     =end rakudoc
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
-like $rv.rendered-toc, /
+like $rv.rendered-index, /
 '<index>' .+?
 'caption' .+? 'Glossary' .+?
 'This is a header'
 /, 'Modified auto Index is rendered';
 
 ## Citations
-#todo 'citations not implemented yet', 3;
-#$ast = q:to/QAST/.AST;
-#    =begin rakudoc
-#    =document :!auto-citations
-#    =head This is a header
-#
-#    content Q<Conway>
-#    =end rakudoc
-#    QAST
-#
-#$rv = $rdp.render( $ast, :pre-finalised );
-#is $rv.rendered-citations, '', 'no auto citations rendered';
-#$ast = q:to/QAST/.AST;
-#    =begin rakudoc
-#    =document :auto-citations<Further reading>
-#    =head This is a header
-#
-#    content
-#    =end rakudoc
-#    QAST
-#$rv = $rdp.render( $ast, :pre-finalised );
-#like $rv.rendered-citations, /
-#'<citations>' .+?
-#'caption' .+? 'Further reading' .+?
-#'This is a header'
-#/, 'Modified auto citations is rendered';
+if 1 {
+    skip 'citations not implemented yet', 2;
+}
+else {
+    $ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =document :!auto-citations
+    =head This is a header
 
+    content Q<Conway>
+    =end rakudoc
+    QAST
+
+    $rv = $rdp.render( $ast, :pre-finalised );
+    is $rv.rendered-citations, '', 'no auto citations rendered';
+    $ast = q:to/QAST/.AST;
+    =begin rakudoc
+    =document :auto-citations<Further reading>
+    =head This is a header
+
+    content
+    =end rakudoc
+    QAST
+
+    $rv = $rdp.render( $ast, :pre-finalised );
+    like $rv.rendered-citations, /
+    '<citations>' .+?
+    'caption' .+? 'Further reading' .+?
+    'This is a header'
+    /, 'Modified auto citations is rendered';
+}
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     Some thing G<to be said>inside letters.

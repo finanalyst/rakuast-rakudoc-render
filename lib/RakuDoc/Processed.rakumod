@@ -94,12 +94,11 @@ class RakuDoc::Processed is ProcessedState {
         auto-citations => 'Bibliography',
         citation-style => 'ieee',
         citation-locale => 'en-GB',
-        lang => 'en'
+        lang => 'en',
+        FrontMatter => 'Preface',
     ;
     #| The output format that the source has been rendered into
     has $!output-format = 'txt';
-    #| Text between =TITLE and first header, used for X<> place before first header
-    has Str $.front-matter is rw = 'preface';
     #| Name to be used in titles and files
     #| name can be modified after creation of Object
     #| name can be set when creating object
@@ -150,9 +149,7 @@ class RakuDoc::Processed is ProcessedState {
             language => 'en',
             lang => 'en',
             modified => '2020-12-31T00:00:01Z',
-            rakudoc-title => 'Preface', # used to name sections before first title
             paragraph-id-length => 7,
-            rakudoc-level => 0,
         ;
         %!source-data{ .key } = .value for %source-data.pairs;
         $!output-format = $_ with $output-format;
@@ -166,7 +163,6 @@ class RakuDoc::Processed is ProcessedState {
     multi method gist(RakuDoc::Processed:D: Int :$output = 300 ) {
         qq:to/GIST/;
         RakuDoc source contains:
-            front-matter => Str=｢{ $!front-matter }｣
             name => Str=｢{ $!name }｣
             title => Str=｢{ $!title }｣
             title-target => Str=｢{ $!title-target }｣

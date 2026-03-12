@@ -19,9 +19,11 @@ my RakuDoc::Processor $rdp;
 $rdp  .= new(:test, :debug(AstBlock));
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
+    =begin section
     =head This is a header
 
     Some text
+    =end section
     =end rakudoc
     QAST
 $output = output-from {
