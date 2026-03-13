@@ -78,7 +78,7 @@ method templates {
             q[<link rel="icon" href="https://irclogs.raku.org/favicon.ico">]
         },
         html-root => -> %prm, $tmpl {
-            qq[lang="{%prm<source-data><language>}"
+            qq[lang="{%prm<document-options><lang>}"
            class="theme-light"
            style="scroll-padding-top:var(--bulma-navbar-height)"]
         },

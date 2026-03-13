@@ -146,8 +146,6 @@ class RakuDoc::Processed is ProcessedState {
         %!source-data =
             name => 'Unnamed-source',
             path => '.',
-            language => 'en',
-            lang => 'en',
             modified => '2020-12-31T00:00:01Z',
             paragraph-id-length => 7,
         ;

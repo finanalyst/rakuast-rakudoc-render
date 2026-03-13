@@ -753,7 +753,7 @@ class RakuDoc::To::HTML {
             ## sections of the final document
             #| root section, what is placed in the html tab
             html-root => -> %prm, $tmpl {
-                qq[lang="{%prm<source-data><language>}"]
+                qq[lang="{%prm<document-options><lang>}"]
             },
             #| head-block, what goes in the head tab
             head-block => -> %prm, $tmpl {

@@ -1,7 +1,7 @@
 use v6.d;
 use Test;
 use Test::Run :runs_ok;
-plan 9;
+plan 10;
 
 use RakuDoc::Render;
 use RakuDoc::To::HTML;
@@ -16,7 +16,7 @@ my @args = <<$*EXECUTABLE -I. --rakudoc=HTML xt/test-files/test.rakudoc>>;
 runs_ok(
     'simple html is generated',
     :@args,
-    :out( / '<html' .+  '<div' .+  'Just a test' / )
+    :out( / '<html' .+  'lang' .+ 'en' .+' <div' .+  'Just a test' / )
 );
 %*ENV<MORE_HTML> = 'xt/test-filles/example.raku';
 runs_ok(
@@ -29,7 +29,12 @@ runs_ok(
 runs_ok(
     :@args,
     :exitcode(0),
-    :out(/ '<head>'  .+ '<meta' .+ 'A Customised description' .+ '/>' .+ '</head>' / ),
+    :out(/
+        '<html' .+
+        '<head>'  .+
+        '<meta' .+ 'A Customised description' .+ '/>' .+
+        '</head>'
+    / ),
     'customisation in meta of head'
 );
 %*ENV<ALT_CSS> = 'xt/test-files/strawberry.css';
@@ -38,6 +43,13 @@ runs_ok(
     :exitcode(0),
     :out(/ 'h.title{font-size:larger;color:red' / ),
     'CSS customisation occurs'
+);
+
+@args = <<$*EXECUTABLE -I. --rakudoc=HTML xt/test-files/test-fr.rakudoc>>;
+runs_ok(
+    'simple html with fr lang set is generated',
+    :@args,
+    :out( / '<html' .+  'lang' .+ 'fr' .+' <div' .+  'Un simple test' / )
 );
 
 %*ENV<MORE_HTML>:delete;
