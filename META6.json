@@ -22,7 +22,7 @@
         "File::Directory::Tree",
         "JSON::Fast",
         "YAMLish",
-        "LibXML"
+        "XML"
     ],
     "test-depends": [
         "Test",
