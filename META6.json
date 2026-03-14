@@ -8,7 +8,6 @@
     ],
     "auth": "zef:finanalyst",
     "depends": [
-        "PrettyDump",
         "Test::Deeply::Relaxed",
         "Test::Output",
         "LibCurl",

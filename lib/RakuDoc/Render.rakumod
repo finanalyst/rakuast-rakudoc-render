@@ -8,7 +8,6 @@ use RakuDoc::Numeration;
 use RakuDoc::Citations;
 use LibCurl::Easy;
 use Digest::SHA1::Native;
-use PrettyDump;
 use URI;
 #no precompilation; note 'Render no precompilation';
 #use REPL; note 'Render using REPL module';
@@ -868,7 +867,7 @@ class RakuDoc::Processor {
             # with a mouse-over
             when 'Q' {
                 my $mark = self.markup-contents($ast).Str.trim;
-                my $id = self.name-id( $mark );
+                my $id = 'QCode_' ~ self.name-id( $mark );
                 my $popup-id = "{ $id }-popup";
                 my $contents = PCell.new( :$id, :$!register );
                 my $pop-up = PCell.new( :$popup-id, :$!register );
@@ -1924,21 +1923,27 @@ class RakuDoc::Processor {
     method build-bibliography {
         # At the stage this method is called,
         # $!current.citations contains citation block data
-        # is a hash with keys: style / locale /
         # data = hash: citation-id => specification /
         # categories = hash: category => array of citation-ids
         # $!current.q-codes
         # is an array of Pairs id => unpreprocessed content of Q markup
-        # convert
+        # $!current.document-options<citation-locale> & <citation-style>
+        # $!current.body has PCells with ids QCode_xxx and QCode_xxx-popup
+
+        my %q-codes := $!current.q-codes;
+        my %citations := $!current.citations;
+        my $STYLE := $!current.document-options<citation-style>;
+        my $LOCALE := $!current.document-options<citation-locale>;
 
         # adapted from Damian Conway's sub
-#        my $data = q:to<END>;
-#        ---
-#        nocite: |
-#          @*
-#        references:
-#        END
-#
+        my $data = q:to<END>;
+        ---
+        nocite: |
+          @*
+        references:
+        END
+
+        #
 #        # Convert citation list to CSL-YAML...
 #        my $yaml = do {
 #            if @categories {
@@ -2649,6 +2654,10 @@ class RakuDoc::Processor {
 			        default { %prm<contents> }
 			    }
 			},
+            #| Q< METADATA = citation string >
+            #| (typically rendered superscript)
+            #| Popup content ignored.
+            markup-Q => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
 
             ##| Markup codes, mandatory display and meta data
             #| D< DISPLAY-TEXT |  METADATA = SYNONYMS >
@@ -2661,8 +2670,6 @@ class RakuDoc::Processor {
                 (%prm<note> ?? DEVEL-NOTE-ON ~ %prm<note> ~ DEVEL-NOTE-OFF !! '') ~
                 DEVEL-VERSION-ON ~ '[for ' ~ %prm<versions> ~ ']' ~ DEVEL-VERSION-OFF
             },
-            #| Quotation = citation reference (typically rendered superscript)
-            markup-Q => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
             #| M< DISPLAY-TEXT |  METADATA = WHATEVER >
             #| Markup extra ( M<display text|functionality;param,sub-type;...>)
 			markup-M => -> %prm, $tmpl { CODE-ON ~ %prm<contents> ~ CODE-OFF },
