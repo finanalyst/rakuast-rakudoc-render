@@ -3,7 +3,9 @@ use v6.d;
 
 use JSON::Fast;
 use YAMLish;
-use PrettyDump;
+#use PrettyDump;
+use Data::Dump::Tree;
+
 
 # Cmdline interface...
 sub MAIN (
@@ -21,7 +23,7 @@ my %citations = extract-citation-data($document);
 
 # Identify the Q<> codes...
 my @Q-codes = extract-Q-codes($document);
-say "@ $?LINE {$?FILE.comb(/\S+$/).head} q-codes\n", @Q-codes;
+#say "@ $?LINE {$?FILE.comb(/\S+$/).head} q-codes\n", @Q-codes;
 # Identify and simulate any missing citation datasets...
 for @Q-codes {
     for .<cit-indic> {
@@ -189,6 +191,7 @@ sub extract-place-citations ($document) {
 
 # Build the complete list of bibliographic markers to replace Q<> codes...
 sub build-bibliography (@Q-codes, %citations, :@categories, :$categorize) {
+#    say "@ $?LINE {$?FILE.comb(/\S+$/).head} citations:\n",%citations.raku ;
     # Prepare formatting...
     my $STYLE  = %citations<style>  // $DEFAULT-STYLE;
     my $LOCALE = %citations<locale> // $DEFAULT-LOCALE;
@@ -212,7 +215,6 @@ sub build-bibliography (@Q-codes, %citations, :@categories, :$categorize) {
         }
     }
     $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
-
     # Convert citation indicators to Markdown format and remember that we cited them...
     my %cited;
     my @indicators = gather for @Q-codes {
@@ -225,8 +227,11 @@ sub build-bibliography (@Q-codes, %citations, :@categories, :$categorize) {
         take '[' ~ @md-citations.join(';') ~ ']';
     }
     $data ~= qq{\n@indicators.join("\n\n")\n\nEND\n};
+    state $done;
+#    say "@ $?LINE {$?FILE.comb(/\S+$/).head}"; ddt $data, :title<data yaml>
+#    unless $done++;
 
-    say "@ $?LINE {$?FILE.comb(/\S+$/).head}", $data;
+#    say "@ $?LINE {$?FILE.comb(/\S+$/).head}", $data;
     # Create the 'cited' and 'uncited' categories in %citations<categories>...
     for %citations<data>.keys -> $ID {
         if %cited{$ID} { %citations<categories><cited>.push($ID) }
@@ -235,7 +240,8 @@ sub build-bibliography (@Q-codes, %citations, :@categories, :$categorize) {
 
     # Run the pandoc --citeproc to generate the final renderings...
     my $citeproc = citeproc($data, :$STYLE, :$LOCALE);
-    say "@ $?LINE {$?FILE.comb(/\S+$/).head}", $citeproc;
+#    say "@ $?LINE {$?FILE.comb(/\S+$/).head}"; ddt $citeproc, :title<citeproc data>
+#    if $done < 2;
     # Retrieve and translate the markers back to RakuDoc...
     my ($markers, $biblist) = $citeproc.split(/^^END\n/);
     my @markers = $markers.trim.comb(/[^^ \N*? \S \N* [\n|$]]+/).map({ markdown-to-rakudoc($_, :noblock) });

@@ -9,7 +9,9 @@ use RakuDoc::Citations;
 use LibCurl::Easy;
 use Digest::SHA1::Native;
 use URI;
+use YAMLish;
 #no precompilation; note 'Render no precompilation';
+#use Data::Dump::Tree;
 #use REPL; note 'Render using REPL module';
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
@@ -1918,8 +1920,17 @@ class RakuDoc::Processor {
     method complete-citations( :$spec, :$caption --> PStr ) {
 
     }
-    #| take citation data and create data for complete-citations
-    #| expand Q-code markers
+    # regexes for quotations
+    my token indic {
+            <-[,;|\\]>+   # or non-special characters
+        }
+    my token suffix {
+        # Same pattern as above, except raw commas are allowed...
+        <-[;|\\]> *
+    }
+
+    #| take citation data and expand Q-code markers
+    #| create default citations list if required
     method build-bibliography {
         # At the stage this method is called,
         # $!current.citations contains citation block data
@@ -1932,61 +1943,63 @@ class RakuDoc::Processor {
 
         my %q-codes := $!current.q-codes;
         my %citations := $!current.citations;
-        my $STYLE := $!current.document-options<citation-style>;
-        my $LOCALE := $!current.document-options<citation-locale>;
+        my %doc-options := $!current.document-options;
+        my $style := %doc-options<citation-style>;
+        my $locale := %doc-options<citation-locale>;
+        my $caption := %doc-options<auto-citations>;
+        my $next-missing = 1;
+        my @indicators = gather for %q-codes.sort -> (:$key, :value($raw)) {
+            # the q-code keys are assumed to be unique, so sorting will create a unique set
+            my $inf = $raw ~~ / ^ [ $<term>=(<indic> [ ',' \s* <suffix> ]?) [\s* ';' \s*]? ]+ $/;
+            my @md-citations = gather for $inf.<term> {
+                my $indicator = .<indic>.Str;
+                my $suffix = .<suffix> ?? ', ' ~ .<suffix> !! '';
+                %citations<data>{$indicator} //= {
+                    id              => $indicator,
+                    type            => "article",
+                    title           => "NO SUCH CITATION ID: $indicator",
+                    author          => { family => "Unknown", given => "Reference" },
+                    container-title => "Did you misspell <$indicator>?",
+                    issued          => { date-parts => [[$next-missing++]] }
+                };
+                %citations<categories><cited>{ $indicator }++;
+                take "\@\{$indicator\}$suffix";
+            }
+            take '[' ~ @md-citations.join(';') ~ ']';
+        }
+        %citations<categories><uncited> = %citations<data>.keys (-) %citations<categories><cited>;
 
-        # adapted from Damian Conway's sub
         my $data = q:to<END>;
         ---
         nocite: |
           @*
         references:
         END
-
-        #
-#        # Convert citation list to CSL-YAML...
-#        my $yaml = do {
-#            if @categories {
-#                my @IDs = %citations<categories>{@categories}».values.flat;
-#                save-yaml(%citations<data>{@IDs});
-#            }
-#            else {
-#                save-yaml(%citations<data>.values);
-#            }
-#        }
-#        $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
-#
-#        # Convert citation indicators to Markdown format and remember that we cited them...
-#        my %cited;
-#        my @indicators = gather for @Q-codes {
-#            my @md-citations = gather for .<cit-indic> {
-#                my $indic  = .<indic>.trim.subst(/<before '{' | '}' >/, '\\', :g);
-#                my $suffix = .<suffix> ?? ', ' ~ .<suffix>.trim !! q{};
-#                %cited{$indic} = True;
-#                take "\@\{$indic\}$suffix";
-#            }
-#            take '[' ~ @md-citations.join(';') ~ ']';
-#        }
-#        $data ~= qq{\n@indicators.join("\n\n")\n\nEND\n};
-#
-#        # Create the 'cited' and 'uncited' categories in %citations<categories>...
-#        for %citations<data>.keys -> $ID {
-#            if %cited{$ID} { %citations<categories><cited>.push($ID) }
-#            else           { %citations<categories><uncited>.push($ID) }
-#        }
-#
-#        # Run the pandoc --citeproc to generate the final renderings...
-#        my $citeproc = citeproc($data, :$STYLE, :$LOCALE);
-#        # Retrieve and translate the markers back to RakuDoc...
-#        my ($markers, $biblist) = $citeproc.split(/^^END\n/);
-#        my @markers = $markers.trim.comb(/[^^ \N*? \S \N* [\n|$]]+/).map({ markdown-to-rakudoc($_, :noblock) });
-#
-#        # Retrieve and translate the bibliographic list back to RakuDoc...
-#        my @biblist = $biblist.trim.split(/[^^ \h* \n]+/).map({ markdown-to-rakudoc($_) });
-#
-#        return @markers, @biblist.join("\n\n");
-
-
+        my $yaml = save-yaml( %citations<data>.values );
+        $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
+        $data ~= qq{\n@indicators.join("\n\n")\n\nEND\n};
+        # Run the pandoc --citeproc to generate the final renderings...
+        my $citeproc = citeproc($data, :$style, :$locale);
+        # Retrieve and translate the markers back to RakuDoc...
+        my ($markers, $biblist) = $citeproc.split(/^^END\n/);
+        # Now replace the q-code PCells
+        my @markers = $markers.trim.comb(/[^^ \N*? \S \N* [\n|$]]+/)
+            .map({ markdown-to-rakudoc($_, :noblock) })
+            .map({ "=begin rakudoc\n$_\n=end rakudoc".AST})
+            .map({ self.contents( $_, 'q-code' )  })
+        ;
+        for %q-codes.sort>>.keys Z @markers -> ( $id, $payload ) {
+            $!register.add-payload( :$payload, :$id )
+        }
+        unless $caption {
+            # Retrieve and translate the bibliographic list back to RakuDoc...
+            my @citation-list = $biblist.trim.split(/[^^ \h* \n]+/)
+                .map({ markdown-to-rakudoc($_) })
+                .map({ "=begin rakudoc\n$_\n=end rakudoc".AST})
+                .map({ self.contents( $_, 'q-code' )  })
+            ;
+            $*prs.body ~= %!templates<citation-list>( %( :@citation-list, :$caption ) )
+        }
     }
     method complete-index( :$spec, :$caption --> PStr ) {
         my $max; # the maximum number of index levels. Shouldn't be more than around 5

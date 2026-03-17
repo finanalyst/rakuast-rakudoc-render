@@ -2,6 +2,7 @@ use v6.d;
 use JSON::Fast;
 use YAMLish;
 use XML;
+use experimental :rakuast;
 
 # Adapted from Damian Conway's prototype
 
@@ -137,9 +138,9 @@ sub med2xml      ($data)         { filter :fail()   :$data, 'med2xml'           
 sub nbib2xml     ($data)         { filter :fail()   :$data, 'nbib2xml'                        }
 
 # Format indicators and citation data into a set of markers and a bibliographic list...
-sub citeproc     ($data, :$STYLE, :$LOCALE) is export {
+sub citeproc     ($data, :$style, :$locale) is export {
     filter :fail(Nil) :$data, 'pandoc', « --citeproc -t markdown_strict »,
-            "--metadata=lang:$LOCALE", "--csl=$STYLE";
+            "--metadata=lang:$locale", "--csl=$style";
 }
 
 # Internal converter from BibTeX XML to classic BibTeX...
@@ -209,7 +210,7 @@ sub safe-eval ($source, :$desc) {
 }
 
 # Convert bibliographic list returned by pandoc --citeproc from Markdown to RakuDoc...
-sub markdown-to-rakudoc ($text is copy, :$noblock) {
+sub markdown-to-rakudoc ($text is copy, :$noblock) is export {
 
     # Select the appropriate number of <<<...>>> delimiters for the contents...
     sub delimit ($text) {
@@ -229,8 +230,8 @@ sub markdown-to-rakudoc ($text is copy, :$noblock) {
 
     # Simulate small-caps formatting (with special-casing of links)...
     $text ~~ s:g/ '<span' \h+ 'class="smallcaps">' \h* '[' (.*?) ']' '(' (.*?) ')' \h* '</span>'
-    /L<<<<{small-caps(~$0)} | $1>>>>/;
-    $text ~~ s:g/ '<span' \h+ 'class="smallcaps">'  (.*?)  '</span>' /{small-caps(~$0)}/;
+    /L<<<<W{delimit(~$0)} | $1>>>>/;
+    $text ~~ s:g/ '<span' \h+ 'class="smallcaps">'  (.*?)  '</span>' /W{delimit(~$0)}/;
 
     # Convert other links...
     $text ~~ s:g/ <!after '\\'> '[' (.*?) <!after '\\'> ']' '(' (.*?) ')' /L{delimit("$0|$1")}/;
@@ -249,23 +250,6 @@ sub markdown-to-rakudoc ($text is copy, :$noblock) {
     $text ~~ s:g/ '\\]' /]/;
 
     return $text;
-}
-
-
-# Some bibliographic styles use Sᴍᴀʟʟ Cᴀᴘs ꜰᴏʀ Nᴀᴍᴇs, so we need to be able to convert accordingly
-# (Note: unaccountably, there's no Unicode SMALL CAPITAL Q, so we cheat with ǫ)...
-sub small-caps ($text) {
-    $text.trans: 'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýÿ'
-            => 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢᴀ̀ᴀ́ᴀ̂ᴀ̃ᴀ̈ᴀ̊ᴄ̧ᴇ̀ᴇ́ᴇ̂ᴇ̈ɪ̀ɪ́ɪ̂ɪ̈ɴ̃ᴏ̀ᴏ́ᴏ̂ᴏ̃ᴏ̈ᴜ̀ᴜ́ᴜ̂ᴜ̈ʏ́ʏ̈',
-            'āăąćĉċčďēĕėęěĝğġģĥĩīĭįıĵķĸĺļľńņňōŏőŕŗřśŝşšţťũūŭůűųŵŷźżž'
-            => 'ᴀ̄ᴀ̆ᴀ̨ᴄ́ᴄ̂ᴄ̇ᴄ̌ᴅ̌ᴇ̄ᴇ̆ᴇ̇ᴇ̨ᴇ̌ɢ̂ɢ̆ɢ̇ɢ̧ʜ̂ɪ̃ɪ̄ɪ̆ɪ̨ıᴊ̂ᴋ̧ĸʟ́ʟ̧ʟ̌ɴ́ɴ̧ɴ̌ᴏ̄ᴏ̆ᴏ̋ʀ́ʀ̧ʀ̌śŝşšᴛ̧ᴛ̌ᴜ̃ᴜ̄ᴜ̆ᴜ̊ᴜ̋ᴜ̨ᴡ̂ʏ̂ᴢ́ᴢ̇ᴢ̌',
-            'ǎǐǒǔǖǘǚǜǟǡǧǩǫǭǰǵǹǻȁȃȅȇȉȋȍȏȑȓȕȗșțȥȧȩȫȭȯȱȳḁḃḅḇḉḋḍḏḑḓḕḗḙḛḝḟḡ'
-            => 'ᴀ̌ɪ̌ᴏ̌ᴜ̌ᴜ̈̄ᴜ̈́ᴜ̈̌ᴜ̈̀ᴀ̈̄ᴀ̇̄ɢ̌ᴋ̌ᴏ̨ᴏ̨̄ᴊ̌ɢ́ɴ̀ᴀ̊́ᴀ̏ᴀ̑ᴇ̏ᴇ̑ɪ̏ɪ̑ᴏ̏ᴏ̑ʀ̏ʀ̑ᴜ̏ᴜ̑șᴛ̦ȥᴀ̇ᴇ̧ᴏ̈̄ᴏ̃̄ᴏ̇ᴏ̇̄ʏ̄ᴀ̥ʙ̇ʙ̣ʙ̱ᴄ̧́ᴅ̇ᴅ̣ᴅ̱ᴅ̧ᴅ̭ᴇ̄̀ᴇ̄́ᴇ̭ᴇ̰ᴇ̧̆ꜰ̇ɢ̄',
-            'ḣḥḧḩḫḭḯḱḳḵḷḹḻḽḿṁṃṅṇṉṋṍṏṑṓṕṗṙṛṝṟṡṣṥṧṩṫṭṯṱṳṵṷṹṻṽṿẁẃẅẇẉẋẍẏẑẓẕ'
-            => 'ʜ̇ʜ̣ʜ̈ʜ̧ʜ̮ɪ̰ɪ̈́ᴋ́ᴋ̣ᴋ̱ʟ̣ʟ̣̄ʟ̱ʟ̭ᴍ́ᴍ̇ᴍ̣ɴ̇ɴ̣ɴ̱ɴ̭ᴏ̃́ᴏ̃̈ᴏ̄̀ᴏ̄́ᴘ́ᴘ̇ʀ̇ʀ̣ʀ̣̄ʀ̱ṡṣṥṧṩᴛ̇ᴛ̣ᴛ̱ᴛ̭ᴜ̤ᴜ̰ᴜ̭ᴜ̃́ᴜ̄̈ᴠ̃ᴠ̣ᴡ̀ᴡ́ᴡ̈ᴡ̇ᴡ̣ẋẍʏ̇ᴢ̂ᴢ̣ᴢ̱',
-            'ẖẗẘẙạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹœɠæðłɔɹʒγλπρψлɨǝꝵɯ'
-            => 'ʜ̱ᴛ̈ᴡ̊ʏ̊ᴀ̣ᴀ̉ᴀ̂́ᴀ̂̀ᴀ̂̉ᴀ̂̃ᴀ̣̂ᴀ̆́ᴀ̆̀ᴀ̆̉ᴀ̆̃ᴀ̣̆ᴇ̣ᴇ̉ᴇ̃ᴇ̂́ᴇ̂̀ᴇ̂̉ᴇ̂̃ᴇ̣̂ɪ̉ɪ̣ᴏ̣ᴏ̉ᴏ̂́ᴏ̂̀ᴏ̂̉ᴏ̂̃ᴏ̣̂ᴏ̛́ᴏ̛̀ᴏ̛̉ᴏ̛̃ᴏ̛̣ᴜ̣ᴜ̉ᴜ̛́ᴜ̛̀ᴜ̛̉ᴜ̛̃ᴜ̛̣ʏ̀ʏ̣ʏ̉ʏ̃ɶʛᴁᴆᴌᴐᴚᴣᴦᴧᴨᴩᴪᴫᵻⱻꝶꟺ';
-
 }
 
 # Change the structure of date-like fields to pacify pandoc --citeproc...
