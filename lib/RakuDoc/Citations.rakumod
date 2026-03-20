@@ -210,7 +210,7 @@ sub safe-eval ($source, :$desc) {
 }
 
 # Convert bibliographic list returned by pandoc --citeproc from Markdown to RakuDoc...
-sub markdown-to-rakudoc ($text is copy, :$noblock) is export {
+sub markdown-to-rakudoc ($text is copy) is export {
 
     # Select the appropriate number of <<<...>>> delimiters for the contents...
     sub delimit ($text) {
@@ -224,9 +224,10 @@ sub markdown-to-rakudoc ($text is copy, :$noblock) is export {
     $text.=trim;
 
     # Handle prefix marker (if any)...
-    $text ~~ s/ '<span' \h+ 'class="csl-left-margin">'  (.*?)  '</span>' /=for item :bullet('$0.trim()')\n/
-            or
-            !$noblock and $text ~~ s/ ^ /=para /;
+    $text ~~ s/ '<span' \h+ 'class="csl-left-margin">'  (.*?)  '</span>' /=for item :bullet<$0.trim()>\n/;
+
+    #handle raw link
+    $text ~~ s:g/ ( '<http' .+? '>' ) /L{delimit(~$0)}/;
 
     # Simulate small-caps formatting (with special-casing of links)...
     $text ~~ s:g/ '<span' \h+ 'class="smallcaps">' \h* '[' (.*?) ']' '(' (.*?) ')' \h* '</span>'

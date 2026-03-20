@@ -31,7 +31,7 @@ class ProcessedState {
     has @.footnotes;
 
     #| Quotations, array of Pairs, id => content
-    has @.q-codes;
+    has %.q-codes;
 
     #| Semantic blocks (which includes TITLE & SUBTITLE) can be hidden
     #| Hash of SEMANTIC => [ PStr | Str ]
@@ -214,7 +214,6 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     $p.toc.append: $q.toc;
     merge-index($p.index, $q.index);
     $p.footnotes.append: $q.footnotes;
-    $p.q-codes.append: $q.q-codes;
     for $q.semantics.kv -> $k, $v { # by definition, same key but multiple values
         $p.semantics{$k}.append: $v.Slip
     }
@@ -224,6 +223,9 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     $p.inline-defns.append: $q.inline-defns;
     for $q.definitions.kv -> $k, $v { # no multiple values
         $p.definitions{$k} = $v # redefinition possible
+    }
+    for $q.q-codes.kv -> $k, $v { # no multiple values
+        $p.q-codes{$k} = $v # redefinition possible
     }
     $p
 }

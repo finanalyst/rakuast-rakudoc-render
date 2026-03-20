@@ -8,6 +8,9 @@ span.important {
 span.unusual {
 	text-decoration: underline;
 }
+span.weighty {
+	font-variant: small-caps;
+}
 span.code {
 	font-weight: 500;
 	background-color: linen;
@@ -323,7 +326,7 @@ div.rakudoc-image-placement {
 }
 .rakudoc-placement-error {
     display: flex;
-    justify-content: sapace-around;
+    justify-content: space-around;
     align-items: center;
     color: red;
     font-weight: bold;

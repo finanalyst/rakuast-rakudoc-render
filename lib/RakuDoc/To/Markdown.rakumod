@@ -140,6 +140,8 @@ class RakuDoc::To::Markdown {
         my constant DEFN-TERM-OFF = '</span>';
         my constant BAD-MARK-ON = "`";
         my constant BAD-MARK-OFF = "`";
+        my constant WEIGHTY-ON = '<span style="font-variant: small-caps">';
+        my constant WEIGHTY-OFF = '</span>';
         my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
         %(
             #| special key to name template set
@@ -423,6 +425,17 @@ class RakuDoc::To::Markdown {
                 }
                 else { PStr.new: 'No indexed items'  ~ "\n\n" }
             },
+            #| special template to render the citations list
+            citations => -> %prm, $tmpl {
+                if %prm<citation-list>:exists && %prm<citation-list>.elems {
+                    my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
+                    PStr.new: $cap ~
+                            ([~] %prm<citation-list>) ~ "\n\n"
+                }
+                else {
+                    PStr.new: ''
+                }
+            },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
                 if %prm<footnotes>.elems {
@@ -527,6 +540,13 @@ class RakuDoc::To::Markdown {
             markup-V => -> %prm, $tmpl {
                 $tmpl.globals.escape.( %prm<contents> )
             },
+            #| W< DISPLAY-TEXT >
+            #| Weighty (typically rendered with small caps)
+            markup-W => -> %prm, $tmpl { WEIGHTY-ON ~ %prm<contents> ~ WEIGHTY-OFF },
+            #| Q< CITATION LIST >
+            #| Make into a superscript
+            markup-Q => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
+
 
             ##| Markup codes, optional display and meta data
 

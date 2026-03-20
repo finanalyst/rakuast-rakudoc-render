@@ -18,6 +18,8 @@ has @!save-spacer = 'None' => False , ;
 has Str $.in-head is rw = '';
 #| definitions have a second line that may be a paragraph but are not paraish blocks
 has Bool $.in-defn is rw = False;
+#| items have content that may be a Paragraph, but should not be a para block
+has Bool $.in-item is rw = False;
 has CounterTracker @!counter-tracker .= new;
 has Bool $.debug is rw = False;
 #| debug information

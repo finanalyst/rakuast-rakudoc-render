@@ -1,20 +1,100 @@
 use v6.d;
 use Test;
 use RakuDoc::Render;
+use Data::Dump::Tree;
 
 plan *;
 
 my $ast;
 my $rv;
 my RakuDoc::Processor $rdp .= new( :test );
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head Intro
 
-#$ast = Q:to/QAST/.AST;
-#    =begin rakudoc
-#    =config head2 :!toc
-#    =head2 Third test text
-#    =end rakudoc
-#    QAST
-#$rv = $rdp.render( $ast, :pre-finalised );
-#is $rv.toc.elems, 0, 'No toc registered';
+    We have now explored Q<rakudoc-evo-chapter> at some length
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-citations, / 'Bibliography' .+? 'rakudoc-evo-chapter' /, 'a citations list is rendered';
+like $rv.rendered-citations, / 'NO SUCH CITATION ID' /, 'citations list contains unknown ref';
+like $rv.body.Str, /'<markup-Q>' .+? 'contents' .+? '[1]' .+? '</markup-Q>' /, 'citation UK style';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head Intro
 
+    We have now explored Q<rakudoc-evo-chapter> at some length
+
+    =citation ({
+        id           => "rakudoc-evo-chapter",
+        type         => "chapter",
+        title        => "The Evolution of RakuDoc: From Pod6 to Modern Documentation Standards",
+        'container-title' => "The Raku Renaissance: A Comprehensive Guide to the 6.e Ecosystem",
+        author       => { family => "Docsworthy", given => "Poderick" },
+        editor       => { family => "Wally", given => "Larr" },
+        issued       => { 'date-parts' => [[2025, 10]] },
+        publisher    => "Camelid Press",
+        page         => "22-89",
+        ISBN         => "978-1-2345-6789-0",
+    })
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-citations, /
+    '<item>' .+?
+    'bullet' .+? '[1]' .+?
+    'The Evolution of RakuDoc'
+/, 'a citations list with items is rendered';
+unlike $rv.rendered-citations, / 'NO SUCH CITATION ID' /, 'citations list has ref now';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =document :citation-style<acm-siggraph> :auto-citations<General Reading>
+    =head Intro
+
+    We have now explored Q<rakudoc-evo-chapter> at some length
+
+    =citation ({
+        id           => "rakudoc-evo-chapter",
+        type         => "chapter",
+        title        => "The Evolution of RakuDoc: From Pod6 to Modern Documentation Standards",
+        'container-title' => "The Raku Renaissance: A Comprehensive Guide to the 6.e Ecosystem",
+        author       => { family => "Docsworthy", given => "Poderick" },
+        editor       => { family => "Wally", given => "Larr" },
+        issued       => { 'date-parts' => [[2025, 10]] },
+        publisher    => "Camelid Press",
+        page         => "22-89",
+        ISBN         => "978-1-2345-6789-0",
+    })
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-citations, /
+    'General Reading' .+?
+    'The Evolution of RakuDoc'
+/, 'autocitations with new caption, and list has correct ref';
+unlike $rv.rendered-citations, / '<item>' /, 'No items in citations for this style';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =document :!auto-citations
+    =head Intro
+
+    We have now explored Q<rakudoc-evo-chapter> at some length
+
+    =citation ({
+        id           => "rakudoc-evo-chapter",
+        type         => "chapter",
+        title        => "The Evolution of RakuDoc: From Pod6 to Modern Documentation Standards",
+        'container-title' => "The Raku Renaissance: A Comprehensive Guide to the 6.e Ecosystem",
+        author       => { family => "Docsworthy", given => "Poderick" },
+        editor       => { family => "Wally", given => "Larr" },
+        issued       => { 'date-parts' => [[2025, 10]] },
+        publisher    => "Camelid Press",
+        page         => "22-89",
+        ISBN         => "978-1-2345-6789-0",
+    })
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+is $rv.rendered-citations, '', 'citations turned off';
 done-testing

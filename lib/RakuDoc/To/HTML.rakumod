@@ -112,6 +112,8 @@ class RakuDoc::To::HTML {
         my constant IMPORTANT-OFF = '</span>';
         my constant UNUSUAL-ON = '<span class="unusual">';
         my constant UNUSUAL-OFF = '</span>';
+        my constant WEIGHTY-ON = '<span class="weighty">';
+        my constant WEIGHTY-OFF = '</span>';
         my constant CODE-ON = '<span class="code">';
         my constant CODE-OFF = '</span>';
         my constant OVERSTRIKE-ON = '<span class="overstrike">';
@@ -376,7 +378,7 @@ class RakuDoc::To::HTML {
             #| renders =place block
             place => -> %prm, $tmpl {
                 my $rv = $tmpl('head', %(
-                    :contents(%prm<caption>), |(%prm<id target delta numeration>:p)
+                    :contents(%prm<caption>), |(%prm<id target delta numeration level>:p)
                 ));
                 given %prm<content-type> {
                     when .contains('text') {
@@ -506,6 +508,22 @@ class RakuDoc::To::HTML {
                     PStr.new: ''
                 }
             },
+            #| special template to render the citationns list
+            citations => -> %prm, $tmpl {
+                if %prm<citation-items>:exists && %prm<citation-items>.elems {
+                    PStr.new: qq[<div class="citations">\n] ~
+                        ( "<h2 class=\"citation-caption\">%prm<caption>\</h2>" if  %prm<caption> ) ~
+                        "\n<ul class=\"citations-list\">\n" ~
+                        ([~] %prm<citation-items>) ~ "\n</ul>\n" ~
+                        "</div>\n"
+                }
+                else {
+                    PStr.new: qq[<div class="citations">\n] ~
+                        ( "<h2 class=\"citation-caption\">%prm<caption>\</h2>" if  %prm<caption> ) ~
+                        %prm<contents> ~
+                        "</div>\n"
+                }
+            },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
             # expecting a level, and entry name, whether its in a heading, and
@@ -626,6 +644,12 @@ class RakuDoc::To::HTML {
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g)
             },
+            #| W< DISPLAY-TEXT >
+            #| Weighty (typically rendered with small caps)
+            markup-W => -> %prm, $tmpl { WEIGHTY-ON ~ %prm<contents> ~ WEIGHTY-OFF },
+            #| Q< CITATION LIST >
+            #| Make into a superscript
+            markup-Q => -> %prm, $tmpl { HIGH-ON ~ %prm<contents> ~ HIGH-OFF },
 
             ##| Markup codes, optional display and meta data
 
@@ -775,13 +799,14 @@ class RakuDoc::To::HTML {
                 }
                 $rv ~= '<h1 class="title">' ~ %prm<title> ~ "</h1>\n\n" ~
                 (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
-                ( %prm<rendered-toc> if %prm<rendered-toc> && %prm<source-data><rakudoc-config><toc> )
+                ( %prm<rendered-toc> if %prm<rendered-toc> && %prm<document-options><auto-toc> )
             },
             #| the main section of body
             main-content => -> %prm, $tmpl {
                 %prm<body>.Str ~
                 %prm<footnotes>.Str ~ "\n" ~
-                ( %prm<rendered-index> if %prm<rendered-index> && %prm<source-data><rakudoc-config><index>)
+                ( %prm<rendered-index> if %prm<rendered-index> && %prm<document-options><auto-index>)~
+                ( %prm<rendered-citations> if %prm<rendered-citations> && %prm<document-options><auto-citations>)
             },
             #| the last section of body
             footer => -> %prm, $tmpl {

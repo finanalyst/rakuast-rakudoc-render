@@ -11,7 +11,7 @@ use Digest::SHA1::Native;
 use URI;
 use YAMLish;
 #no precompilation; note 'Render no precompilation';
-#use Data::Dump::Tree;
+use Data::Dump::Tree;
 #use REPL; note 'Render using REPL module';
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
@@ -199,19 +199,15 @@ class RakuDoc::Processor {
         $make-summary = %doc-options<auto-citations> // False;
         if $make-summary and $!current.q-codes.elems {
             # expand quotations and citations
-            self.build-bibliography;
+            self.build-bibliography; # creates the auto-citations
             # check whether any citation list is placed
             my @place-citations = $!register.list-unexpanded('citation');
             if @place-citations.elems {
+                $!current.rendered-citations = '';
                 # placed filtered citations
                 for @place-citations -> (:key($id), :value($spec)) {
                     $!register.add-payload(:payload( self.complete-citations(:$spec, :caption('')).strip.Str), :$id);
                 }
-            }
-            else {
-                # without a placed citation list generate one
-                $!current.rendered-citations =
-                    self.complete-citations( :spec('cited'), :caption( %doc-options<auto-citations> ) );
             }
         }
 
@@ -517,7 +513,7 @@ class RakuDoc::Processor {
             ｢{ $ast.DEPARSE }｣ is a declarator block and not rendered for text-based output formats.
             WARN
     }
-    my @format-codes = <B H I J K R T U O>;
+    my @format-codes = <B H I J K R T U O W>;
     multi method handle(RakuAST::Doc::Markup:D $ast) {
         my $letter = $ast.letter;
         my $prs := $*prs;
@@ -870,11 +866,9 @@ class RakuDoc::Processor {
             when 'Q' {
                 my $mark = self.markup-contents($ast).Str.trim;
                 my $id = 'QCode_' ~ self.name-id( $mark );
-                my $popup-id = "{ $id }-popup";
                 my $contents = PCell.new( :$id, :$!register );
-                my $pop-up = PCell.new( :$popup-id, :$!register );
-                $prs.q-notes.push: $id => $mark;
-                $prs.body ~= %!templates<markup-Q>( %( :$contents, :$pop-up ))
+                $prs.q-codes{ $id } = $mark;
+                $prs.body ~= %!templates<markup-Q>( %( :$contents ))
             }
             # Z< METADATA = COMMENT >
             # Comment zero-width  (contents never rendered)
@@ -884,7 +878,7 @@ class RakuDoc::Processor {
 
             ## Undefined and reserved, so generate warnings
             # do not go through templates as these cannot be redefined
-            when any(<G W Y>) {
+            when any(<G Y>) {
                 $prs.body ~= %!templates{"markup-bad"}( %( :contents($ast.DEPARSE), ) );
                 $prs.warnings.push(
                     "｢$letter｣ is not defined, but is reserved for future use"
@@ -912,12 +906,13 @@ class RakuDoc::Processor {
     #| A Doc::Paragraph is created by the parser when a text has embedded markup
     #| It is not necessarily a para block
     #| Implied para blocks are detected in the contents method
-    multi method handle(RakuAST::Doc::Paragraph:D $ast ) {
+    multi method handle( RakuAST::Doc::Paragraph:D $ast ) {
         if $!scoped-data.verbatim {
             $ast.atoms.map({ $.handle($_) });
             return
         }
-        my $rem = $.complete-item-list ~ $.complete-defn-list;
+        my $rem = '';
+        $rem = $.complete-item-list ~ $.complete-defn-list unless $!scoped-data.in-item;
         my %config = $.merged-config($, 'para' );
         do {
             my ProcessedState $*prs .= new;
@@ -941,9 +936,12 @@ class RakuDoc::Processor {
                 }
                 $prs.inline-defns = ()
             }
-            if $!scoped-data.last-starter ~~ < document rakudoc pod section semantic nested >.any {
+            if $!scoped-data.in-item {
+                $prs.body ~= $contents
+            }
+            elsif $!scoped-data.last-starter ~~ < document section semantic >.any {
                  my $rv = %!templates<para>(
-                    %( :$contents, :$target, %config)
+                    %( :$contents, :$target, %config )
                 );
                 $prs.body ~= $rv;
             }
@@ -1154,6 +1152,7 @@ class RakuDoc::Processor {
     #| nothing is added to the .body string
     #| bullet strategy can be left to template, with bullet in %config
     method gen-item($ast, %config, $type, $level, $numerate) {
+        $!scoped-data.in-item = True;
         my PStr $contents .= new;
         my @extension = ();
         if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated && $ast.paragraphs.elems > 1 {
@@ -1164,6 +1163,8 @@ class RakuDoc::Processor {
             $contents ~= $.contents( $ast, $type )
         }
         %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
+        $!scoped-data.in-item = False;
+        return unless $contents.Str; # ignore empty items
         # help-numerate needs caption in config
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config) !! ();
         my $caption = %config<caption> ?? ( %config<caption>:delete ) !! ''; # no caption by default
@@ -1218,6 +1219,18 @@ class RakuDoc::Processor {
     #| The contents of Place is a URI that is generated and then rendered with place template
     method gen-place($ast, %config, $type, $level) {
         my $uri = %config<uri>;
+        unless $uri { # should be a temporary workaround
+            $ast.paragraphs.head.Str ~~ / ^
+            $<uri>=( <ident>+ \: [ [ <ident> | ',' ]+ | '*'] ) \s*
+            [ \: $<option> = (
+                $<name> = ( <ident>+ ) <[ < « ]> ~ <[ > » ]> $<opt-val> = ( .+? )
+              | $<name> = ( <ident>+ )
+                )
+            ] * %% \s+ $
+            /;
+            $uri = ~$<uri>;
+            for $<option> { %config{ ~$_<name> } = $_<opt-val> ?? $_<opt-val> !! True }
+        }
         %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
         my $prs := $*prs;
         if $uri ~~ / 'semantic:' (.+) / {
@@ -1387,6 +1400,8 @@ class RakuDoc::Processor {
         with %config<locale> { %citations<locale> = .trim }
         # Categorize data...
         my @categories = (%config<category> // []).values;
+        # create new category
+        @categories.map({ %citations<categories>{$_} = SetHash.new unless %citations<categories>{$_}:exists });
         # Does the citation block load data from elsewhere???
         with %config<load> {
             # Loading external content while also specifying internal content is confusing...
@@ -1419,7 +1434,7 @@ class RakuDoc::Processor {
             if $external-content ~~ / \S / {
                 for convert-to-CSL-Raku($external-content) -> $entry {
                     $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
-                    %citations<categories>{ @categories }».push($entry<id>);
+                    %citations<categories>{ @categories }».set($entry<id>);
                     %citations<data>{ $entry<id> } = $entry.&convert-dates;
                 }
             }
@@ -1430,9 +1445,9 @@ class RakuDoc::Processor {
         }
         # Convert citation block data to CSL-Raku and store it under its ID (or one we made up)...
         if $content ~~ /\S/ {
-            for convert-to-CSL-Raku($content) -> $entry {
+            for convert-to-CSL-Raku($content, $!current.warnings ) -> $entry {
                 $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
-                %citations<categories>{ @categories }».push($entry<id>);
+                %citations<categories>{ @categories }».set($entry<id>);
                 %citations<data>{ $entry<id> } = $entry.&convert-dates;
             }
         }
@@ -1918,7 +1933,40 @@ class RakuDoc::Processor {
         }
     }
     method complete-citations( :$spec, :$caption --> PStr ) {
-
+        my %citations := $!current.citations;
+        my %doc-options := $!current.document-options;
+        my $style := %doc-options<citation-style>;
+        my $locale := %doc-options<citation-locale>;
+        my $data = q:to<END>;
+        ---
+        nocite: |
+          @*
+        references:
+        END
+        my $yaml;
+        if $spec ~~ / '*' / {
+            $yaml = save-yaml( %citations<data>.values );
+        }
+        else {
+            my @categories = ($spec ~~ / [ $<categories>=<ident>+ ] + %% ',' /).<categories>.map(*.Str);
+            my @ids =   %citations<categories>{@categories}».keys.flat;
+            $yaml = save-yaml( %citations<data>{ @ids } );
+        }
+        $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
+        # Run the pandoc --citeproc to generate the final renderings...
+        my $biblist = citeproc($data, :$style, :$locale);
+        # Retrieve and translate the markers back to RakuDoc...
+        my @citation-list = $biblist.trim.split(/[^^ \h* \n]+/)
+                .map({ markdown-to-rakudoc($_) });
+        $*prs .= new;
+        $.handle( "=begin rakudoc\n{ @citation-list.join("\n") }\n=end rakudoc".AST.rakudoc.head );
+        my $contents = '';
+        my @citation-items;
+        if $*prs.items.elems {
+            @citation-items = $*prs.items>>.Str
+        }
+        else { $contents = $*prs.body.Str }
+        %!templates<citations>( %( :$contents, :@citation-items, :$caption ) );
     }
     # regexes for quotations
     my token indic {
@@ -1958,7 +2006,7 @@ class RakuDoc::Processor {
                     id              => $indicator,
                     type            => "article",
                     title           => "NO SUCH CITATION ID: $indicator",
-                    author          => { family => "Unknown", given => "Reference" },
+                    author          => { family => "Unknown", given => "?" },
                     container-title => "Did you misspell <$indicator>?",
                     issued          => { date-parts => [[$next-missing++]] }
                 };
@@ -1975,7 +2023,7 @@ class RakuDoc::Processor {
           @*
         references:
         END
-        my $yaml = save-yaml( %citations<data>.values );
+        my $yaml = save-yaml( %citations<data>{ %citations<categories><cited>.keys } );
         $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
         $data ~= qq{\n@indicators.join("\n\n")\n\nEND\n};
         # Run the pandoc --citeproc to generate the final renderings...
@@ -1984,21 +2032,26 @@ class RakuDoc::Processor {
         my ($markers, $biblist) = $citeproc.split(/^^END\n/);
         # Now replace the q-code PCells
         my @markers = $markers.trim.comb(/[^^ \N*? \S \N* [\n|$]]+/)
-            .map({ markdown-to-rakudoc($_, :noblock) })
-            .map({ "=begin rakudoc\n$_\n=end rakudoc".AST})
-            .map({ self.contents( $_, 'q-code' )  })
+            .map({ markdown-to-rakudoc($_) })
+            .map({ "=begin rakudoc\n$_\n=end rakudoc"})
+            .map({ .AST.rakudoc.head.paragraphs.head })
+            .map({ self.contents( $_, 'q-code' )  }) # this to to expand internal format codes
         ;
         for %q-codes.sort>>.keys Z @markers -> ( $id, $payload ) {
             $!register.add-payload( :$payload, :$id )
         }
-        unless $caption {
-            # Retrieve and translate the bibliographic list back to RakuDoc...
+        if $caption {
             my @citation-list = $biblist.trim.split(/[^^ \h* \n]+/)
-                .map({ markdown-to-rakudoc($_) })
-                .map({ "=begin rakudoc\n$_\n=end rakudoc".AST})
-                .map({ self.contents( $_, 'q-code' )  })
-            ;
-            $*prs.body ~= %!templates<citation-list>( %( :@citation-list, :$caption ) )
+                .map({ markdown-to-rakudoc($_) });
+            $*prs .= new;
+            $.handle( "=begin rakudoc\n{ @citation-list.join("\n") }\n=end rakudoc".AST.rakudoc.head );
+            my $contents = '';
+            my @citation-items;
+            if $*prs.items.elems {
+                @citation-items = $*prs.items>>.Str
+            }
+            else { $contents = $*prs.body.Str }
+            $!current.rendered-citations = %!templates<citations>( %( :$contents, :@citation-items, :$caption ) ).Str;
         }
     }
     method complete-index( :$spec, :$caption --> PStr ) {
@@ -2556,7 +2609,7 @@ class RakuDoc::Processor {
             citations => -> %prm, $tmpl {
                 my $cap = %prm<caption>:exists ?? (HEADING-ON ~ %prm<caption> ~ HEADING-OFF ~ "\n") !! '';
                 PStr.new: $cap ~ "\n" ~
-                    ([~] %prm<citation-list>) ~ "\n\n"
+                    ([~] %prm<citation-items>) ~ %prm<contents> ~ "\n\n"
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
@@ -2622,6 +2675,9 @@ class RakuDoc::Processor {
             #| V< DISPLAY-TEXT >
             #| Verbatim (internal markup instructions ignored)
 			markup-V => -> %prm, $tmpl { %prm<contents> },
+            #| W< DISPLAY-TEXT >
+            #| Verbatim (internal markup instructions ignored)
+            markup-W => -> %prm, $tmpl { small-caps( %prm<contents> ) },
 
             ##| Markup codes, optional display and meta data
 
@@ -2669,7 +2725,6 @@ class RakuDoc::Processor {
 			},
             #| Q< METADATA = citation string >
             #| (typically rendered superscript)
-            #| Popup content ignored.
             markup-Q => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
 
             ##| Markup codes, mandatory display and meta data
@@ -2730,6 +2785,22 @@ sub textify-head($ast) is export {
 sub textify-markup($ast) {
     return 'Not valid markup' unless $ast.isa(RakuAST::Doc::Markup);
     rakudoc2text($ast).join
+}
+
+# Adapted from Damian Conway's code for citations
+# (Note: unaccountably, there's no Unicode SMALL CAPITAL Q, so we cheat with ǫ)...
+sub small-caps ($text) {
+    $text.Str.trans: 'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýÿ'
+            => 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢᴀ̀ᴀ́ᴀ̂ᴀ̃ᴀ̈ᴀ̊ᴄ̧ᴇ̀ᴇ́ᴇ̂ᴇ̈ɪ̀ɪ́ɪ̂ɪ̈ɴ̃ᴏ̀ᴏ́ᴏ̂ᴏ̃ᴏ̈ᴜ̀ᴜ́ᴜ̂ᴜ̈ʏ́ʏ̈',
+            'āăąćĉċčďēĕėęěĝğġģĥĩīĭįıĵķĸĺļľńņňōŏőŕŗřśŝşšţťũūŭůűųŵŷźżž'
+            => 'ᴀ̄ᴀ̆ᴀ̨ᴄ́ᴄ̂ᴄ̇ᴄ̌ᴅ̌ᴇ̄ᴇ̆ᴇ̇ᴇ̨ᴇ̌ɢ̂ɢ̆ɢ̇ɢ̧ʜ̂ɪ̃ɪ̄ɪ̆ɪ̨ıᴊ̂ᴋ̧ĸʟ́ʟ̧ʟ̌ɴ́ɴ̧ɴ̌ᴏ̄ᴏ̆ᴏ̋ʀ́ʀ̧ʀ̌śŝşšᴛ̧ᴛ̌ᴜ̃ᴜ̄ᴜ̆ᴜ̊ᴜ̋ᴜ̨ᴡ̂ʏ̂ᴢ́ᴢ̇ᴢ̌',
+            'ǎǐǒǔǖǘǚǜǟǡǧǩǫǭǰǵǹǻȁȃȅȇȉȋȍȏȑȓȕȗșțȥȧȩȫȭȯȱȳḁḃḅḇḉḋḍḏḑḓḕḗḙḛḝḟḡ'
+            => 'ᴀ̌ɪ̌ᴏ̌ᴜ̌ᴜ̈̄ᴜ̈́ᴜ̈̌ᴜ̈̀ᴀ̈̄ᴀ̇̄ɢ̌ᴋ̌ᴏ̨ᴏ̨̄ᴊ̌ɢ́ɴ̀ᴀ̊́ᴀ̏ᴀ̑ᴇ̏ᴇ̑ɪ̏ɪ̑ᴏ̏ᴏ̑ʀ̏ʀ̑ᴜ̏ᴜ̑șᴛ̦ȥᴀ̇ᴇ̧ᴏ̈̄ᴏ̃̄ᴏ̇ᴏ̇̄ʏ̄ᴀ̥ʙ̇ʙ̣ʙ̱ᴄ̧́ᴅ̇ᴅ̣ᴅ̱ᴅ̧ᴅ̭ᴇ̄̀ᴇ̄́ᴇ̭ᴇ̰ᴇ̧̆ꜰ̇ɢ̄',
+            'ḣḥḧḩḫḭḯḱḳḵḷḹḻḽḿṁṃṅṇṉṋṍṏṑṓṕṗṙṛṝṟṡṣṥṧṩṫṭṯṱṳṵṷṹṻṽṿẁẃẅẇẉẋẍẏẑẓẕ'
+            => 'ʜ̇ʜ̣ʜ̈ʜ̧ʜ̮ɪ̰ɪ̈́ᴋ́ᴋ̣ᴋ̱ʟ̣ʟ̣̄ʟ̱ʟ̭ᴍ́ᴍ̇ᴍ̣ɴ̇ɴ̣ɴ̱ɴ̭ᴏ̃́ᴏ̃̈ᴏ̄̀ᴏ̄́ᴘ́ᴘ̇ʀ̇ʀ̣ʀ̣̄ʀ̱ṡṣṥṧṩᴛ̇ᴛ̣ᴛ̱ᴛ̭ᴜ̤ᴜ̰ᴜ̭ᴜ̃́ᴜ̄̈ᴠ̃ᴠ̣ᴡ̀ᴡ́ᴡ̈ᴡ̇ᴡ̣ẋẍʏ̇ᴢ̂ᴢ̣ᴢ̱',
+            'ẖẗẘẙạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹœɠæðłɔɹʒγλπρψлɨǝꝵɯ'
+            => 'ʜ̱ᴛ̈ᴡ̊ʏ̊ᴀ̣ᴀ̉ᴀ̂́ᴀ̂̀ᴀ̂̉ᴀ̂̃ᴀ̣̂ᴀ̆́ᴀ̆̀ᴀ̆̉ᴀ̆̃ᴀ̣̆ᴇ̣ᴇ̉ᴇ̃ᴇ̂́ᴇ̂̀ᴇ̂̉ᴇ̂̃ᴇ̣̂ɪ̉ɪ̣ᴏ̣ᴏ̉ᴏ̂́ᴏ̂̀ᴏ̂̉ᴏ̂̃ᴏ̣̂ᴏ̛́ᴏ̛̀ᴏ̛̉ᴏ̛̃ᴏ̛̣ᴜ̣ᴜ̉ᴜ̛́ᴜ̛̀ᴜ̛̉ᴜ̛̃ᴜ̛̣ʏ̀ʏ̣ʏ̉ʏ̃ɶʛᴁᴆᴌᴐᴚᴣᴦᴧᴨᴩᴪᴫᵻⱻꝶꟺ';
+
 }
 # adapted from @lizmat's RakuDoc-to-Text
 # basically make sure Cool stuff that crept in doesn't bomb

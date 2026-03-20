@@ -95,7 +95,7 @@ method templates {
                     (
                     (%prm<source-data><rakudoc-config><direct-wrap><> =:= True)
                             ||
-                            (%prm<source-data><rakudoc-config><toc>.not)
+                            (%prm<document-options><auto-toc>.not)
                     )
                             ??
                             ''
@@ -167,7 +167,7 @@ method templates {
         #| Toc/Index floats below navbar except for mobile
         #| This section disappears on a mobile
         page-navigation => -> %prm, $tmpl {
-            ( %prm<source-data><rakudoc-config><toc>.not )
+            ( %prm<document-options><auto-toc>.not )
                 ?? '' !!
             Q:c:to/PAGENAV/;
             <nav class="raku-webs panel is-hidden-mobile" id="page-nav">
@@ -215,7 +215,7 @@ method templates {
                 # the document-level option :direct-wrap is used for a rakudoc source that contains a page manually written in HTML
                 %prm<body>
             }
-            elsif ( %prm<source-data><rakudoc-config><toc>.not )
+            elsif ( %prm<document-options><auto-toc>.not )
             {  # this is used for document-level :!toc option, which is used to remove a page TOC.
                 # The default is :toc, to include a TOC panel
                 qq:to/END/
