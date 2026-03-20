@@ -11,7 +11,7 @@ use Digest::SHA1::Native;
 use URI;
 use YAMLish;
 #no precompilation; note 'Render no precompilation';
-use Data::Dump::Tree;
+#use Data::Dump::Tree;
 #use REPL; note 'Render using REPL module';
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
