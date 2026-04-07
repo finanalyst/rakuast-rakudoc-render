@@ -5,7 +5,7 @@ use XML;
 # Adapted from Damian Conway's prototype
 
 unit module RakuDoc::Citations;
-constant CSL = '/home/richard/development/rakuast-rakudoc-render/RakuDoc-citations-demo/csl';
+constant CSL = '/usr/share/csl';
 class X::BadCitation is Exception {
     has $.extra;
     method message { "A citeproc dependency failed. " ~ $.extra }
