@@ -249,6 +249,9 @@ method templates {
                         { %prm<body> }
                         </div>
                         <div class="content px-4">
+                        { %prm<rendered-citations>.Str }
+                        </div>
+                        <div class="content px-4">
                         { %prm<footnotes>.Str }
                         </div>
                     </div>

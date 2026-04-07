@@ -10,9 +10,9 @@ use LibCurl::Easy;
 use Digest::SHA1::Native;
 use URI;
 use YAMLish;
-#no precompilation; note 'Render no precompilation';
-#use Data::Dump::Tree;
-#use REPL; note 'Render using REPL module';
+#no precompilation; note 'Render debug: no precompilation';
+#use Data::Dump::Tree; note 'Render debug: using DDD';
+#use REPL; note 'Render debug: using REPL module';
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
 
@@ -156,6 +156,32 @@ class RakuDoc::Processor {
         #=item C<Diagrams,*> (all levels of the Diagrams ToC)
         #=item C<table,1..4> (levels 1..4 of the table ToC)
         my %doc-options := $!current.document-options;
+        # check auto-citations for caption or to remove default Bibliography
+        my $caption = %doc-options<auto-citations> // False;
+        # check to see if there are Q<> markup, and if so, expand them
+        # also render the cited bibliography with links - if output format allows it
+        my $got-qs = $!current.q-codes.elems.so;
+        self.expand-qcodes if $got-qs;
+        # check whether any citation list is placed
+        my @place-citations = $!register.list-unexpanded('citation');
+        if @place-citations.elems {
+            # manage filtered citations
+            for @place-citations -> (:key($id), :value($spec)) {
+                $!register.add-payload(:payload( self.make-bibliography($spec)), :$id);
+            }
+            $!current.rendered-citations = ''; # remove the default
+        }
+        elsif $caption and $got-qs {
+            # when there are no placed bibliographies,
+            # and there are q-codes
+            # use the default created for cited references
+            my $target = $.name-id(textify-head($caption));
+            # add a heading to the cited bibligraphy and place in ToC
+            $!current.rendered-citations = %!templates<head>( %( :contents($caption), :$target, :1level) ).Str
+                ~ $!current.rendered-citations;
+            # add directly to ToC in current processed object, not $*prs, which is no longer used
+            $!current.toc.push: %( :toc-type<head>, :$caption, :$target, :1level, :numeration(''))
+        }
         my $make-summary = %doc-options<auto-toc> // False;
         if $make-summary and $!current.toc.elems {
             my @place-toc = $!register.list-unexpanded('toc');
@@ -194,23 +220,6 @@ class RakuDoc::Processor {
                 $!current.rendered-index .= Str;
             }
         }
-        # check to see if there are Q<> markup
-        # wihout citation blocks the cittion list will have unknown elements
-        $make-summary = %doc-options<auto-citations> // False;
-        if $make-summary and $!current.q-codes.elems {
-            # expand quotations and citations
-            self.build-bibliography; # creates the auto-citations
-            # check whether any citation list is placed
-            my @place-citations = $!register.list-unexpanded('citation');
-            if @place-citations.elems {
-                $!current.rendered-citations = '';
-                # placed filtered citations
-                for @place-citations -> (:key($id), :value($spec)) {
-                    $!register.add-payload(:payload( self.complete-citations(:$spec, :caption('')).strip.Str), :$id);
-                }
-            }
-        }
-
          $!current.body.strip; # replace expanded PCells with Str
         # all suspended PCells should have been replaced by Str
         # Remaining PCells should trigger warnings
@@ -936,7 +945,7 @@ class RakuDoc::Processor {
                 }
                 $prs.inline-defns = ()
             }
-            if $!scoped-data.in-item {
+            if $!scoped-data.in-item or $!scoped-data.in-q-code or $!scoped-data.in-para {
                 $prs.body ~= $contents
             }
             elsif $!scoped-data.last-starter ~~ < document section semantic >.any {
@@ -1053,6 +1062,7 @@ class RakuDoc::Processor {
     #| The para counter is triggered by the caller of this method
     method gen-paraish( $ast, %config, $type, $level, $numerate, :$in-type = ''  ) {
         my PStr $contents .= new;
+        $!scoped-data.in-para = True;
         my @extension = ();
         if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated && $ast.paragraphs.elems > 1 {
             $contents ~= $.contents( $ast.paragraphs.head, $type );
@@ -1068,11 +1078,12 @@ class RakuDoc::Processor {
         # help-numerate needs caption in config
         my $numeration = $numerate ?? self.help-numerate($type, $level, $contents, %config ) !! ();
         my $caption = (%config<caption> // $type.tc).Str;
-        my $target = %config<id> // $.name-id($caption);
-        self.help-toc(%config<toc>, $prs, $caption, $target, ( %config<headlevel> // $level), $numeration);
+        %config<id> //= $.name-id($caption);
+        self.help-toc(%config<toc>, $prs, $caption, %config<id>, ( %config<headlevel> // $level), $numeration);
         $prs.body ~= %!templates{ $type }(
             %( :@extension, :$contents, :$numeration, :$caption, %config)
         );
+        $!scoped-data.in-para = False;
         self.manage-numalias($type, $level, $contents, $caption, %config);
     }
     #| A header adds contents at given level to ToC, unless overridden by toc/headlevel/caption
@@ -1219,18 +1230,6 @@ class RakuDoc::Processor {
     #| The contents of Place is a URI that is generated and then rendered with place template
     method gen-place($ast, %config, $type, $level) {
         my $uri = %config<uri>;
-        unless $uri { # should be a temporary workaround
-            $ast.paragraphs.head.Str ~~ / ^
-            $<uri>=( <ident>+ \: [ [ <ident> | ',' ]+ | '*'] ) \s*
-            [ \: $<option> = (
-                $<name> = ( <ident>+ ) <[ < « ]> ~ <[ > » ]> $<opt-val> = ( .+? )
-              | $<name> = ( <ident>+ )
-                )
-            ] * %% \s+ $
-            /;
-            $uri = ~$<uri>;
-            for $<option> { %config{ ~$_<name> } = $_<opt-val> ?? $_<opt-val> !! True }
-        }
         %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
         my $prs := $*prs;
         if $uri ~~ / 'semantic:' (.+) / {
@@ -1384,20 +1383,14 @@ class RakuDoc::Processor {
         }
         $*prs.body ~= %!templates<section>( %( :$contents, :$id, %config ) );
     }
-    #| A citation block is invisible to ToC to render
-    #| Method obtains data from body, URL or local file
-    #| converts data to CSL-Raku
-    #| stores $!current.citations< style locale categories %data<id> >
+    #| A citation block only contains data, so is not added to ToC or have a rendered value
+    #| Method can obtain data from body, URL or local file
+    #| converts data to id->cls-object where cls-object is in form that citeproc can process
+    #| stores in $!current.citations< categories %data<id> >
     method gen-citation($ast, %config, $type, $level, $numerate) {
-        # Allocate unique IDs for entries that lack them...
-        state $noIDcount = 1;
         my $content = $ast.paragraphs.Str.join.trim;
         my %citations := $!current.citations;
-        my $prs := $*prs;
-        # Does the block specify a style or locale???
-        # as per spec, the last such definition in the document over-rides others
-        with %config<style>  { %citations<style> = .trim }
-        with %config<locale> { %citations<locale> = .trim }
+        my @warnings := $*prs.warnings;
         # Categorize data...
         my @categories = (%config<category> // []).values;
         # create new category
@@ -1406,7 +1399,7 @@ class RakuDoc::Processor {
         with %config<load> {
             # Loading external content while also specifying internal content is confusing...
             if $content ~~ /\S/ {
-                $prs.warnings.push('=citation blocks with :load<URL> and in-document data are better written as two separate blocks'
+                @warnings.push('=citation blocks with :load<URL> and in-document data are better written as two separate blocks'
                     ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.");
             }
             my $external-content;
@@ -1417,7 +1410,7 @@ class RakuDoc::Processor {
                 }
                 else {
                     my $error = "No file found at ｢$f-uri｣";
-                    $prs.warnings.push($error)
+                    @warnings.push($error)
                 }
             }
             default {
@@ -1428,27 +1421,25 @@ class RakuDoc::Processor {
                 }
                 if $! {
                     my $error = "URL ｢$_｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
-                    $prs.warnings.push($error)
+                    @warnings.push($error)
                 }
             }
             if $external-content ~~ / \S / {
-                for convert-to-CSL-Raku($external-content) -> $entry {
-                    $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
-                    %citations<categories>{ @categories }».set($entry<id>);
-                    %citations<data>{ $entry<id> } = $entry.&convert-dates;
+                for convert-to-id-cls($external-content, $!current.warnings ) -> ($id, $cls) {
+                    %citations<categories>{ @categories }».set($id);
+                    %citations<data>{$id} = $cls
                 }
             }
             else {
-                $prs.warnings.push( "Could not load citation data from %config<load>"
+                @warnings.push( "Could not load citation data from %config<load>"
                 ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.");
             }
         }
-        # Convert citation block data to CSL-Raku and store it under its ID (or one we made up)...
+        # Convert citation block data to CSL data that will be used by citation and store it under its ID (or one we made up)...
         if $content ~~ /\S/ {
-            for convert-to-CSL-Raku($content, $!current.warnings ) -> $entry {
-                $entry<id> //= $entry<DOI> // "Missing-ID-{$noIDcount++}";
-                %citations<categories>{ @categories }».set($entry<id>);
-                %citations<data>{ $entry<id> } = $entry.&convert-dates;
+            for convert-to-id-cls($content, $!current.warnings ) -> ($id, $cls) {
+                %citations<categories>{ @categories }».set($id);
+                %citations<data>{$id} = $cls
             }
         }
     }
@@ -1877,6 +1868,7 @@ class RakuDoc::Processor {
         }
     }
     method help-toc($toc,$prs, $caption, $target, $level, $numeration) {
+        return unless $toc;
         given $toc {
             when Positional {
                 $toc.map({
@@ -1932,41 +1924,44 @@ class RakuDoc::Processor {
             stringify-index( .value<sub-index>.hash ) if .value<sub-index>.elems.so
         }
     }
-    method complete-citations( :$spec, :$caption --> PStr ) {
+    #| Return a string with rendered bibliography according to category specification
+    method make-bibliography( $spec --> Str ) {
+        # At the stage this method is called,
+        # $!current.citations contains citation block data
+        # data = hash: citation-id => specification
+        # categories = hash: category => array of citation-ids
+        # $!current.document-options<citation-locale> & <citation-style>
         my %citations := $!current.citations;
         my %doc-options := $!current.document-options;
         my $style := %doc-options<citation-style>;
-        my $locale := %doc-options<citation-locale>;
-        my $data = q:to<END>;
-        ---
-        nocite: |
-          @*
-        references:
-        END
-        my $yaml;
+        my $lang := %doc-options<citation-locale>;
+        my @references;
+        my @citations; # will be left empty for this method
+        # special case * for all citations, and cited, which has already been created
         if $spec ~~ / '*' / {
-            $yaml = save-yaml( %citations<data>.values );
+            @references = %citations<data>.values
+        }
+        elsif $spec.trim eq 'cited' {
+            return $!current.rendered-citations
         }
         else {
             my @categories = ($spec ~~ / [ $<categories>=<ident>+ ] + %% ',' /).<categories>.map(*.Str);
             my @ids =   %citations<categories>{@categories}».keys.flat;
-            $yaml = save-yaml( %citations<data>{ @ids } );
+            @references = %citations<data>{ @ids };
         }
-        $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
-        # Run the pandoc --citeproc to generate the final renderings...
-        my $biblist = citeproc($data, :$style, :$locale);
-        # Retrieve and translate the markers back to RakuDoc...
-        my @citation-list = $biblist.trim.split(/[^^ \h* \n]+/)
-                .map({ markdown-to-rakudoc($_) });
+        my %input = :@citations, :$lang, :$style, :@references ;
+
+        my (@markers, @bibliography) = process-citations( %input, $!current.warnings );
+
         $*prs .= new;
-        $.handle( "=begin rakudoc\n{ @citation-list.join("\n") }\n=end rakudoc".AST.rakudoc.head );
+        $.handle( "=begin rakudoc\n{ @bibliography.join("\n") }\n=end rakudoc".AST.rakudoc.head );
         my $contents = '';
         my @citation-items;
         if $*prs.items.elems {
             @citation-items = $*prs.items>>.Str
         }
         else { $contents = $*prs.body.Str }
-        %!templates<citations>( %( :$contents, :@citation-items, :$caption ) );
+        %!templates<citations>( %( :$contents, :@citation-items ) ).strip.Str;
     }
     # regexes for quotations
     my token indic {
@@ -1976,82 +1971,60 @@ class RakuDoc::Processor {
         # Same pattern as above, except raw commas are allowed...
         <-[;|\\]> *
     }
-
     #| take citation data and expand Q-code markers
     #| create default citations list if required
-    method build-bibliography {
-        # At the stage this method is called,
-        # $!current.citations contains citation block data
-        # data = hash: citation-id => specification /
-        # categories = hash: category => array of citation-ids
-        # $!current.q-codes
+    method expand-qcodes {
+        # $!current.q-codes has quotation data
         # is an array of Pairs id => unpreprocessed content of Q markup
         # $!current.document-options<citation-locale> & <citation-style>
-        # $!current.body has PCells with ids QCode_xxx and QCode_xxx-popup
+        # $!current.body has PCells with ids QCode_xxx
 
         my %q-codes := $!current.q-codes;
         my %citations := $!current.citations;
         my %doc-options := $!current.document-options;
         my $style := %doc-options<citation-style>;
-        my $locale := %doc-options<citation-locale>;
+        my $lang := %doc-options<citation-locale>;
         my $caption := %doc-options<auto-citations>;
-        my $next-missing = 1;
-        my @indicators = gather for %q-codes.sort -> (:$key, :value($raw)) {
-            # the q-code keys are assumed to be unique, so sorting will create a unique set
+        # go through q-codes to verify that there are citation ids matching the quoted one, otherwise fake a citation
+        my @citations = gather for %q-codes.sort -> (:$key, :value($raw)) {
             my $inf = $raw ~~ / ^ [ $<term>=(<indic> [ ',' \s* <suffix> ]?) [\s* ';' \s*]? ]+ $/;
-            my @md-citations = gather for $inf.<term> {
-                my $indicator = .<indic>.Str;
+            my @citation-items = gather for $inf.<term> {
+                my $id = .<indic>.Str;
                 my $suffix = .<suffix> ?? ', ' ~ .<suffix> !! '';
-                %citations<data>{$indicator} //= {
-                    id              => $indicator,
-                    type            => "article",
-                    title           => "NO SUCH CITATION ID: $indicator",
-                    author          => { family => "Unknown", given => "?" },
-                    container-title => "Did you misspell <$indicator>?",
-                    issued          => { date-parts => [[$next-missing++]] }
-                };
-                %citations<categories><cited>{ $indicator }++;
-                take "\@\{$indicator\}$suffix";
+                %citations<data>{$id} //= citation-placeholder($id, 'NO SUCH CITATION ID');
+                %citations<categories><cited>{ $id }++;
+                take %( :$id, :$suffix );
             }
-            take '[' ~ @md-citations.join(';') ~ ']';
+            take @citation-items;
         }
         %citations<categories><uncited> = %citations<data>.keys (-) %citations<categories><cited>;
+        my @references = %citations<data>{ %citations<categories><cited>.keys }.values;
+        my %input = :@citations, :$lang, :$style, :@references ;
 
-        my $data = q:to<END>;
-        ---
-        nocite: |
-          @*
-        references:
-        END
-        my $yaml = save-yaml( %citations<data>{ %citations<categories><cited>.keys } );
-        $data ~= $yaml.subst(/^ '---' \N* \n/, '').subst(/^^ <!before '...'> /,'  ',:g);
-        $data ~= qq{\n@indicators.join("\n\n")\n\nEND\n};
-        # Run the pandoc --citeproc to generate the final renderings...
-        my $citeproc = citeproc($data, :$style, :$locale);
+        my %processed = process-citations( %input, $!current.warnings );
+        return unless %processed<markers>.elems;
+            # if no markers, then the citation process has failed
+            # a warning has been generated, any unfilled Q will generate errors
         # Retrieve and translate the markers back to RakuDoc...
-        my ($markers, $biblist) = $citeproc.split(/^^END\n/);
-        # Now replace the q-code PCells
-        my @markers = $markers.trim.comb(/[^^ \N*? \S \N* [\n|$]]+/)
-            .map({ markdown-to-rakudoc($_) })
+        my @markers = %processed<markers>
             .map({ "=begin rakudoc\n$_\n=end rakudoc"})
-            .map({ .AST.rakudoc.head.paragraphs.head })
+            .map( *.AST.rakudoc.head.paragraphs.head )
             .map({ self.contents( $_, 'q-code' )  }) # this to to expand internal format codes
         ;
         for %q-codes.sort>>.keys Z @markers -> ( $id, $payload ) {
             $!register.add-payload( :$payload, :$id )
         }
+        # create the default citation string
         if $caption {
-            my @citation-list = $biblist.trim.split(/[^^ \h* \n]+/)
-                .map({ markdown-to-rakudoc($_) });
-            $*prs .= new;
-            $.handle( "=begin rakudoc\n{ @citation-list.join("\n") }\n=end rakudoc".AST.rakudoc.head );
+            my $prs := $*prs .= new;
+            $.handle( "=begin rakudoc\n{ %processed<bibliography>.join("\n") }\n=end rakudoc".AST.rakudoc.head );
             my $contents = '';
             my @citation-items;
-            if $*prs.items.elems {
-                @citation-items = $*prs.items>>.Str
+            if $prs.items.elems {
+                @citation-items = $prs.items>>.Str
             }
-            else { $contents = $*prs.body.Str }
-            $!current.rendered-citations = %!templates<citations>( %( :$contents, :@citation-items, :$caption ) ).Str;
+            else { $contents = $prs.body.Str }
+            $!current.rendered-citations = %!templates<citations>( %( :$contents, :@citation-items ) ).Str;
         }
     }
     method complete-index( :$spec, :$caption --> PStr ) {
@@ -2134,6 +2107,7 @@ class RakuDoc::Processor {
     #| when scope is rakudoc, pod, section or Semantic, strings are considered paragraphs
     method contents( $ast, $from ) {
         my ProcessedState $*prs .= new;
+        $!scoped-data.in-q-code = True if $from eq 'q-code';
         if $ast ~~ (Str, RakuAST::Doc::Paragraph).any {
             $.handle( $ast )
         }
@@ -2152,6 +2126,7 @@ class RakuDoc::Processor {
         my $text = $prs.body.trim-trailing;
         $prs.body .= new;
         CALLERS::<$*prs> += $prs;
+        $!scoped-data.in-q-code = False if $from eq 'q-code';
         $text
     }
     #| similar to contents but expects atoms structure

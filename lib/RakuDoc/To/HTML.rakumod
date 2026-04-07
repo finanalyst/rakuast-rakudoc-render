@@ -34,10 +34,8 @@ class HTML::Processor is RakuDoc::Processor {
     method name-id($ast --> Str) {
         my $target = self.mangle($ast.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
-        my @rejects = $target, ;
-        # if plain target is rejected, then start adding a suffix
         $target ~= '_0';
-        ++$target while $target ~~ any(@rejects);
+        ++$target until $.is-target-unique($target);
         self.register-target($target);
     }
 
@@ -310,14 +308,14 @@ class RakuDoc::To::HTML {
                         if .field-type eq 'D' { $text = $_ }
                         else { $bullet ~= $_ }
                     } );
-                    $rv ~= qq| \<li class="numitem{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet">|;
+                    $rv ~= qq| \<li class="numitem{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet" { ' id="' ~ $_ ~ '" ' with %prm<id>}>|;
                     $rv ~= $text;
                 }
                 else {
                     my $n = %prm<level> - 1;
                     $n = @bullets.elems - 1 if $n >= @bullets.elems;
                     my $bullet = %prm<bullet> // @bullets[$n];
-                    $rv ~= qq[<li class="item{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet" style ="--level:$n;" >];
+                    $rv ~= qq[<li class="item{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet" style ="--level:$n;" { ' id="' ~ $_ ~ '" ' with %prm<id>} >];
                     $rv ~= %prm<contents>
                 }
                 if $extended-item {
@@ -358,9 +356,10 @@ class RakuDoc::To::HTML {
                     else { $number ~= $_ }
                 } );
                 my PStr $rv .= new: ('<div class="delta">' ~ $del if $del) ~
+                    "\n" ~
                     ( $extended-para ?? '<div class="extended-para"' !! '<p' ) ~
-                    (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
-                    (%prm<in-type> ?? ' class="' ~ %prm<in-type> ~ '"' !! '') ~
+                    (' id="' ~ %prm<id> ~ '"' if %prm<id>) ~
+                    (' class="' ~ %prm<in-type> ~ '"' if %prm<in-type>) ~
                     '>' ~
                     (qq[<span class="numpara">$number\</span>] if $number);
                 $rv ~= $text;
@@ -510,19 +509,16 @@ class RakuDoc::To::HTML {
             },
             #| special template to render the citationns list
             citations => -> %prm, $tmpl {
+                my $rv = PStr.new: qq[<div class="citations">\n];
                 if %prm<citation-items>:exists && %prm<citation-items>.elems {
-                    PStr.new: qq[<div class="citations">\n] ~
-                        ( "<h2 class=\"citation-caption\">%prm<caption>\</h2>" if  %prm<caption> ) ~
-                        "\n<ul class=\"citations-list\">\n" ~
-                        ([~] %prm<citation-items>) ~ "\n</ul>\n" ~
-                        "</div>\n"
+                    $rv ~= "\n<ul class=\"citations-list\">\n" ~
+                        ([~] %prm<citation-items>) ~ "\n</ul>\n"
                 }
                 else {
-                    PStr.new: qq[<div class="citations">\n] ~
-                        ( "<h2 class=\"citation-caption\">%prm<caption>\</h2>" if  %prm<caption> ) ~
-                        %prm<contents> ~
-                        "</div>\n"
+                    $rv ~=  %prm<contents>
                 }
+                $rv ~= "</div>\n";
+                $rv
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {

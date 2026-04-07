@@ -2,74 +2,180 @@ use v6.d;
 use JSON::Fast;
 use YAMLish;
 use XML;
-use experimental :rakuast;
-
 # Adapted from Damian Conway's prototype
 
 unit module RakuDoc::Citations;
+constant CSL = '/home/richard/development/rakuast-rakudoc-render/RakuDoc-citations-demo/csl';
+class X::BadCitation is Exception {
+    has $.extra;
+    method message { "A citeproc dependency failed. " ~ $.extra }
+}
 
-# Use the appropriate external utility or utilities to convert any supported format to CSL-Raku...
-sub convert-to-CSL-Raku ( $data, @warnings ) is export {
+multi sub csl-json-to-rakudoc( Str $el ) { $el }
+multi sub csl-json-to-rakudoc( Hash $el, :$bullet = '', :$id = '' ) {
+    given $el<format> {
+        when 'italics' { 'I«' ~ csl-json-to-rakudoc( $el<contents> ) ~ '»' }
+        when 'bold' { 'B«' ~ csl-json-to-rakudoc( $el<contents> ) ~ '»' }
+        when 'small-caps' { 'W«' ~ csl-json-to-rakudoc( $el<contents> ) ~ '»' }
+        when 'div' {
+            "=for item :id<$id>" ~
+            (" :bullet\<$bullet>" if $bullet ) ~
+            "\n" ~
+            csl-json-to-rakudoc( $el<contents> ) ~
+            "\n"
+        }
+        when 'link' {
+            'L«' ~ csl-json-to-rakudoc( $el<contents> ) ~ '|' ~ $el<target> ~ '»'
+        }
+        default { '=for para :id<' ~ $id ~ ">\n" ~ $el.Str }
+    }
+}
+multi sub csl-json-to-rakudoc( Array $el, :$id = '' ) {
+    my $bullet = '';
+    my $rv =
+            [~] gather for $el.list {
+                if .<class>:exists and .<class> eq 'csl-left-margin' {
+                    $bullet = csl-json-to-rakudoc( .<contents> );
+                }
+                elsif .isa(Hash) {
+                    take csl-json-to-rakudoc( $_, :$bullet, :$id )
+                }
+                else { take .Str }
+            }
+            ;
+    $rv = "=for para :id<$id>\n$rv\n" if $id and !$bullet;
+    $rv
+}
+sub csl-lint( $csl ) is export {
+    my %rv = $csl.hash;
+    for <author editor translator> {
+        %rv{$_} = [%rv{$_}] if %rv{$_}:exists and %rv{$_}.isa(Hash);
+    }
+    for <container-title title note> {
+        %rv{$_} = %rv{$_}.Str if %rv{$_}:exists and %rv{$_}.isa(Str).not;
+    }
+    convert-dates(%rv)
+}
+
+# Change the structure of date-like fields to pacify pandoc --citeproc...
+sub convert-dates ($csl-raku-data) is export {
+
+    # Convert all of these...
+    constant @DATE-LIKE-FIELDS = < issued released accessed original-date event-date submitted >;
+
+    # For each potential field...
+    my %converted;
+    for @DATE-LIKE-FIELDS -> $field {
+
+        # Does the date-like field use 'date-parts'???
+        with $csl-raku-data{$field}<date-parts> {
+
+            # For each part, convert to the format --citeproc requires...
+            for .values -> $date {
+                my ($year, $month, $day) = $date.values;
+                %converted{$field} = { :$year, |(:$month if $month), |(:$day if $day) };
+            }
+        }
+
+        # Does the date-like field use 'raw' (in ISO format)???
+        # (This could be extended to handle other 'raw' formats, but that way madness lies! :-)
+        orwith $csl-raku-data{$field}<raw> {
+            if / $<YYYY>=[\d\d\d\d] [ '-' $<MM>=[\d\d] [ '-' $<DD>=[\d\d] ]? ]? / {
+                %converted{$field} = {  :year(~$<YYYY>),
+                                        |(:month(~$<MM>  ) if $<MM>),
+                                        |(  :day(~$<DD>  ) if $<DD>)
+                };
+            }
+        }
+    }
+
+    # Insert converted fields back into the hash for the bibliographic entry...
+    return %( |$csl-raku-data.pairs, |%converted );
+}
+sub citation-placeholder( $id, $msg ) is export {
+    %(
+        :$id,
+        type            => "article",
+        title           => "$msg: $id",
+        author          => [ { family => "Unknown", given => "?" }, ],
+        container-title => "Check warnings for ｢$id｣"
+    )
+}
+sub test-citation( @tuple , @warnings ) {
+    my $proc = run ('citeproc', '--style='~CSL~'/ieee.csl' ),:in,:out,:err ;
+    my ($id, $csl) = @tuple;
+
+    my $input = to-json( %( references => [ $csl ] ) );
+    sink so $proc.in.print( $input );
+    sink so $proc.in.close;
+    if !$proc or $proc.exitcode !=0 {
+        @warnings.push: "For ｢$id｣:" ~ $proc.err.slurp(:close) ~ "Got: " ~ to-json($csl);
+        $csl = citation-placeholder($id, "Citation doesn't match CSL standard, check warnings")
+    };
+    [$id, $csl];
+}
+#| convert raw citation data, detect entry type, convert to cls-json and an id
+sub convert-to-id-cls( $data, @warnings --> Positional ) is export {
+    state $noIDcount = 1;
+    my $id;
 
     # What kind of citation data is it???
     my $data-format = sniff-test($data);
 
     # Whatever it is, convert it to CSL-JSON...
-    my $csl-json = do given $data-format {
+    my $csl = do given $data-format {
 
         # Already Raku data, so just reify it, check it, and return it (skipping the de-JSON-ification)...
         # (Note: must add an empty dummy hash at the beginning of the list, then strip it after conversion
         #        because EVAL sometimes gets muddled on single-hash '[{...}]' source data)...
-        when 'CSL-Raku'   { my $csl-raku = safe-eval("[\%(),$data]", :desc<CSL-Raku citation data>);
-        return $csl-raku.values.tail(*-1)
-        if $csl-raku ~~ Array && all($csl-raku) ~~ Hash;
-        '[]';
+        when 'CSL-Raku'   {
+            use MONKEY-SEE-NO-EVAL;
+            my $csl-raku = try EVAL "[\%(),$data]";
+            CATCH {
+                @warnings.push: "Invalid CSL-Raku citation data with\n$data" ;
+                my $id = 'Invalid_' ~ $noIDcount++ ;
+                $csl-raku = [ %(), citation-placeholder($id, "Invalid CSL-Raku, see warnings"), ];
+            }
+
+            $csl-raku.tail(*-1)
         }
 
         # Already CSL data, so just de-YAML-ize it, and return it (skipping the de-JSON-ification)...
-        when 'CSL-YAML'   { my $csl-raku = try load-yaml($data).values;
-        return $csl-raku.values if $csl-raku ~~ Array|List|Seq && all($csl-raku) ~~ Hash;
-        '[]';
-        }
+        when 'CSL-YAML'   { load-yaml($data).values}
 
-        # Already CSL-JSON data, so just send it back through the de-JSON-ifier...
-        when 'CSL-JSON'   { $data }
+        # CSL-JSON data, convert to RakuCLS to extract id and verify
+        when 'CSL-JSON'   { from-json($data).values }
 
         # Pandoc can directly translate these formats to CSL-JSON...
-        when 'RIS'        { pandoc :from<ris>,      left-justify $data }
-        when 'BibLaTeX'   { pandoc :from<biblatex>,              $data }
-        when 'BibTeX'     { pandoc :from<bibtex>,                $data }
+        when 'RIS'        { from-json(pandoc :from<ris>,      left-justify $data).values }
+        when 'BibLaTeX'   { from-json(pandoc :from<biblatex>,              $data).values }
+        when 'BibTeX'     { from-json(pandoc :from<bibtex>,                $data).values }
 
         # for BibTeXML:   BibTeXML ––(internal conversion)––> BibTeX ––(pandoc)––> CSL-JSON...
-        when 'BibTeXML'   { pandoc :from<bibtex>,  bibtexml-to-bibtex $data }
+        when 'BibTeXML'   { from-json(pandoc :from<bibtex>,  bibtexml-to-bibtex $data).values }
 
         # for PubMedNBIB: NBIB ––(nbib2xml)––> MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'PubMedNBIB' { pandoc :from<biblatex>,  xml2biblatex  nbib2xml  left-justify $data }
+        when 'PubMedNBIB' { from-json(pandoc :from<biblatex>,  xml2biblatex  nbib2xml  left-justify $data).values }
 
         # for PubMedXML:  PMXML ––(med2xml)––> MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'PubMedXML'  { pandoc :from<biblatex>,  xml2biblatex  med2xml $data }
+        when 'PubMedXML'  { from-json(pandoc :from<biblatex>,  xml2biblatex  med2xml $data).values }
 
         # for MODS:       MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'MODS'       { pandoc :from<biblatex>,  xml2biblatex $data }
+        when 'MODS'       { from-json(pandoc :from<biblatex>,  xml2biblatex $data).values }
 
         # No data or bad data...
-        default           { '[]' }
+        default           {
+            @warnings.push: "Could not understand $data-format citation data\n", ~($! // q{}, $data);
+            my $id = 'Bad_format_' ~ $noIDcount++ ;
+            citation-placeholder($id, 'Bad format of citation' ),
+        }
     }
-
-    # No convertible data??? Warn and return nothing...
-    if ($csl-json eq '[]' && $data ~~ /\S/) {
-        @warnings.push: "Could not understand $data-format citation data\n", ~($! // q{}, $data);
-        return ();
-    }
-
-    # Convert valid JSON and return, or warn that something went wrong...
-    with try from-json $csl-json -> $csl-raku {
-        return $csl-raku.values;
-    }
-    else {
-        @warnings.push: "Could not understand $data-format citation data\n", ~($! // q{});
-        return ();
-    }
+    $csl
+        .map({ csl-lint( $_ ) })
+        .map({ if .<id>:!exists { .<id> = 'MissingID_' ~ $noIDcount++ }; $_ })
+        .map({ [ .<id>, $_ ] })
+        .map({ test-citation($_, @warnings ) })
+        .Array
 }
 
 # Work out what kind of data a =citation block contains or loads, via a quick-and-dirty test.
@@ -122,8 +228,7 @@ sub filter (:$data, :$fail = Nil, *@command) {
 
     # Handle failures...
     if !$proc || $proc.exitcode != 0 {
-        note "Call to @command[0] failed:";
-        note $proc.err.slurp;
+        X::BadCitation.new( :extra("Call to @command[0] failed:\n" ~ $proc.err.slurp ~ " using: $data") ).throw;
         return $fail;
     }
 
@@ -138,9 +243,8 @@ sub med2xml      ($data)         { filter :fail()   :$data, 'med2xml'           
 sub nbib2xml     ($data)         { filter :fail()   :$data, 'nbib2xml'                        }
 
 # Format indicators and citation data into a set of markers and a bibliographic list...
-sub citeproc     ($data, :$style, :$locale) is export {
-    filter :fail(Nil) :$data, 'pandoc', « --citeproc -t markdown_strict »,
-            "--metadata=lang:$locale", "--csl=$style";
+sub citeproc     ($data, $style, :$link = True) is export {
+    filter :fail(Nil), :$data, 'citeproc', '--format=json', "--style={CSL}/$style.csl", ( '--link-citations' if $link );
 }
 
 # Internal converter from BibTeX XML to classic BibTeX...
@@ -202,89 +306,23 @@ sub bibtexml-to-bibtex(Str $data) {
     return @bibtex-output.join("\n\n");
 }
 
-# We sometimes need to reify Raku source...
-sub safe-eval ($source, :$desc) {
-    use MONKEY-SEE-NO-EVAL;
-    return EVAL $source;
-    CATCH { note "Invalid $desc\n$_"; return Nil; }
-}
+# expects input to have keys of citations, lang, style, and references
+# the keys point to data in form expe
+sub process-citations( %input, @warnings, :$link = True) is export {
+    my $style := %input<style>;
+    my $input-json = to-json( %input );
 
-# Convert bibliographic list returned by pandoc --citeproc from Markdown to RakuDoc...
-sub markdown-to-rakudoc ($text is copy) is export {
-
-    # Select the appropriate number of <<<...>>> delimiters for the contents...
-    sub delimit ($text) {
-        my @embedded_delims = $text ~~ m:g{ <[<>]>+ };
-        my $len = 1 + max( 0, |@embedded_delims».chars );
-        return ('<' x $len) ~ $text ~ ('>' x $len);
+    # Run citeproc to generate the final renderings...
+    my $citeproc = citeproc($input-json, $style, :$link);
+    CATCH {
+        @warnings.push: "citeproc error, ignoring Q<> or citation listing: " ~ .message;
+        return %( markers => [], bibliography => [] )
     }
+    my %cit-output = from-json $citeproc;
 
-    # Minimize whitespace...
-    $text ~~ tr/\n/ /;
-    $text.=trim;
-
-    # Handle prefix marker (if any)...
-    $text ~~ s/ '<span' \h+ 'class="csl-left-margin">'  (.*?)  '</span>' /=for item :bullet<$0.trim()>\n/;
-
-    #handle raw link
-    $text ~~ s:g/ ( '<http' .+? '>' ) /L{delimit(~$0)}/;
-
-    # Simulate small-caps formatting (with special-casing of links)...
-    $text ~~ s:g/ '<span' \h+ 'class="smallcaps">' \h* '[' (.*?) ']' '(' (.*?) ')' \h* '</span>'
-    /L<<<<W{delimit(~$0)} | $1>>>>/;
-    $text ~~ s:g/ '<span' \h+ 'class="smallcaps">'  (.*?)  '</span>' /W{delimit(~$0)}/;
-
-    # Convert other links...
-    $text ~~ s:g/ <!after '\\'> '[' (.*?) <!after '\\'> ']' '(' (.*?) ')' /L{delimit("$0|$1")}/;
-
-    # Remove other spans...
-    $text ~~ s:g/ '<span' >> .*? '>' | '</span>' //;
-
-    # Convert Markdown formatting to RakuDoc...
-    $text ~~ s:g/ '<sup>'  (.*?)  '</sup>' /H$0.trans('\\'=>'').&delimit()/;
-    $text ~~ s:g/ '<sub>'  (.*?)  '</sub>' /J$0.trans('\\'=>'').&delimit()/;
-    $text ~~ s:g/    '**'  (.*?)  '**'     /B$0.trans('\\'=>'').&delimit()/;
-    $text ~~ s:g/     '*'  (.*?)  '*'      /I$0.trans('\\'=>'').&delimit()/;
-
-    # Remove escaped brackets...
-    $text ~~ s:g/ '\\[' /[/;
-    $text ~~ s:g/ '\\]' /]/;
-
-    return $text;
-}
-
-# Change the structure of date-like fields to pacify pandoc --citeproc...
-sub convert-dates ($csl-raku-data) is export {
-
-    # Convert all of these...
-    constant @DATE-LIKE-FIELDS = < issued released accessed original-date event-date submitted >;
-
-    # For each potential field...
-    my %converted;
-    for @DATE-LIKE-FIELDS -> $field {
-
-        # Does the date-like field use 'date-parts'???
-        with $csl-raku-data{$field}<date-parts> {
-
-            # For each part, convert to the format --citeproc requires...
-            for .values -> $date {
-                my ($year, $month, $day) = $date.values;
-                %converted{$field}.push: { :$year, |(:$month if $month), |(:$day if $day) };
-            }
-        }
-
-        # Does the date-like field use 'raw' (in ISO format)???
-        # (This could be extended to handle other 'raw' formats, but that way madness lies! :-)
-        orwith $csl-raku-data{$field}<raw> {
-            if / $<YYYY>=[\d\d\d\d] [ '-' $<MM>=[\d\d] [ '-' $<DD>=[\d\d] ]? ]? / {
-                %converted{$field}.push: {  :year(~$<YYYY>),
-                                            |(:month(~$<MM>  ) if $<MM>),
-                                            |(  :day(~$<DD>  ) if $<DD>)
-                };
-            }
-        }
-    }
-
-    # Insert converted fields back into the hash for the bibliographic entry...
-    return %( |$csl-raku-data.pairs, |%converted );
+    my @markers = %cit-output<citations>
+        .map({ $_ = csl-json-to-rakudoc( $_ ) });
+    my @bibliography = %cit-output<bibliography>
+        .map({ $_ = csl-json-to-rakudoc( $_[1], :id( 'ref-' ~ $_[0] ) ) });
+    %( :@markers, :@bibliography )
 }

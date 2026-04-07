@@ -20,6 +20,11 @@ has Str $.in-head is rw = '';
 has Bool $.in-defn is rw = False;
 #| items have content that may be a Paragraph, but should not be a para block
 has Bool $.in-item is rw = False;
+#| content being generated for q-code
+has Bool $.in-q-code is rw = False;
+#| prevent double paras
+has Bool $.in-para is rw = False;
+#| the counter tracking object
 has CounterTracker @!counter-tracker .= new;
 has Bool $.debug is rw = False;
 #| debug information
