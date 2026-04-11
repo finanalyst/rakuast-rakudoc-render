@@ -27,9 +27,9 @@ class RakuDoc::Processor {
     #| installed plugins to prevent re-installation
     has SetHash $.installed-plugins .= new;
     constant @built-in = <
-                cell code input output comment head defn item nested para
-                rakudoc section pod table formula citation
-            >;
+        cell code input output comment head defn item nested para
+        rakudoc section pod table formula citation
+    >;
     multi method debug(RDProcDebug $type --> Nil ) {
         given $type {
             when None {
@@ -1951,10 +1951,9 @@ class RakuDoc::Processor {
         }
         my %input = :@citations, :$lang, :$style, :@references ;
 
-        my (@markers, @bibliography) = process-citations( %input, $!current.warnings );
-
+        my %processed = process-citations( %input, $!current.warnings );
         $*prs .= new;
-        $.handle( "=begin rakudoc\n{ @bibliography.join("\n") }\n=end rakudoc".AST.rakudoc.head );
+        $.handle( "=begin rakudoc\n{ %processed<bibliography>.join("\n") }\n=end rakudoc".AST.rakudoc.head );
         my $contents = '';
         my @citation-items;
         if $*prs.items.elems {
