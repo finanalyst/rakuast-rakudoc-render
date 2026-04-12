@@ -3,7 +3,7 @@ use Test;
 use RakuDoc::Render;
 use Data::Dump::Tree;
 
-plan 16;
+plan 17;
 
 my $ast;
 my $rv;
@@ -253,5 +253,25 @@ $ast = Q:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.rendered-citations, / 'Concurrent processing in RakuDoc' /, 'got Citation text using Bibtools dependency';
+
+my $internet = run <ping -c 2 8.8.8.8>, :merge;
+subtest 'live internet tests' => sub {
+    plan :skip-all<no internet connection>
+        if $internet.exitcode;
+    plan 2;
+    $ast = Q:to/QAST/.AST;
+        =begin rakudoc
+        =head Intro
+
+        We have now explored Q<RakudoWay2021> at some length
+
+        =for citation  :load< https://raw.githubusercontent.com/finanalyst/rakuast-rakudoc-render/main/xt/test-files/citations.json >
+
+        =end rakudoc
+        QAST
+        $rv = $rdp.render( $ast, :pre-finalised );
+        like $rv.rendered-citations, / 'Rakudo: The Way of the Camel-less' /, 'Bibliography from internet';
+        nok $rv.warnings.elems, 'no warnings';
+    }
 
 done-testing

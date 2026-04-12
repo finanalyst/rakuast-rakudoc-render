@@ -1403,7 +1403,7 @@ class RakuDoc::Processor {
                     ~ " in block ｢{ $!scoped-data.last-starter }｣ with heading ｢{ $!scoped-data.last-title }｣.");
             }
             my $external-content;
-            when m/ ^ file ':' / {
+            if m/ ^ file ':' / {
                 my URI $f-uri .= new($_);
                 if $f-uri.path.Str.IO ~~ :e & :f {
                     $external-content = $f-uri.path.Str.IO.slurp;
@@ -1413,7 +1413,7 @@ class RakuDoc::Processor {
                     @warnings.push($error)
                 }
             }
-            default {
+            else {
                 # Load and convert external data to internal Raku format, categorizing as well...
                 my LibCurl::Easy $curl .= new(:URL($_), :followlocation, :failonerror );
                 try {
@@ -1421,7 +1421,8 @@ class RakuDoc::Processor {
                 }
                 if $! {
                     my $error = "URL ｢$_｣ caused LibCurl Exception, response code ｢{ $curl.response-code }｣ with error ｢{ $curl.error }｣";
-                    @warnings.push($error)
+                    @warnings.push($error);
+                    $external-content = '';
                 }
             }
             if $external-content ~~ / \S / {
@@ -1962,7 +1963,7 @@ class RakuDoc::Processor {
         }
         else { $contents = $*prs.body.Str }
         @warnings.append: $*prs.warnings;
-        %!templates<citations>( %( :$contents, :@citation-items ) ).strip.Str;
+        %!templates<citations>( %( :$contents, :@citation-items ) ).Str;
     }
     # regexes for quotations
     my token indic {
