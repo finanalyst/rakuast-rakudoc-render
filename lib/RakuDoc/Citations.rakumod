@@ -105,18 +105,22 @@ sub test-citation( @tuple , @warnings ) {
     my $proc = run ('citeproc', '--style='~CSL~'/ieee.csl' ),:in,:out,:err ;
     my ($id, $csl) = @tuple;
 
-    my $input = to-json( %( references => [ $csl ] ) );
+    my $input = try to-json( %( references => [ $csl ] ) );
+    if $! {
+        @warnings.push: "Citation data with id ｢$id｣ has error\n" ~ $! ;
+        $input = to-json( %( references => [ citation-placeholder($id, "Bad citation data, see warnings") ] ) )
+    }
     sink so $proc.in.print( $input );
     sink so $proc.in.close;
     if !$proc or $proc.exitcode !=0 {
-        @warnings.push: "For ｢$id｣:" ~ $proc.err.slurp(:close) ~ "Got: " ~ to-json($csl);
+        @warnings.push: "With id ｢$id｣:" ~ $proc.err.slurp(:close) ~ " Got: \n" ~ $csl;
         $csl = citation-placeholder($id, "Citation doesn't match CSL standard, check warnings")
     };
     [$id, $csl];
 }
 #| convert raw citation data, detect entry type, convert to cls-json and an id
 sub convert-to-id-cls( $data, @warnings --> Positional ) is export {
-    state $noIDcount = 1;
+    state $badIDcount = 1;
     my $id;
 
     # What kind of citation data is it???
@@ -131,10 +135,15 @@ sub convert-to-id-cls( $data, @warnings --> Positional ) is export {
         when 'CSL-Raku'   {
             use MONKEY-SEE-NO-EVAL;
             my $csl-raku = try EVAL "[\%(),$data]";
-            CATCH {
-                @warnings.push: "Invalid CSL-Raku citation data with\n$data" ;
-                my $id = 'Invalid_' ~ $noIDcount++ ;
+            if $! {
+                @warnings.push: "Invalid CSL-Raku citation data with error\n" ~ $! ;
+                my $id = 'Invalid_' ~ $badIDcount++ ;
                 $csl-raku = [ %(), citation-placeholder($id, "Invalid CSL-Raku, see warnings"), ];
+            }
+            unless $csl-raku ~~ Array|List|Seq && all($csl-raku) ~~ Hash {
+                @warnings.push: "Valid Raku, invalid CSL-Raku citation data with\n$data" ;
+                my $id = 'Invalid_' ~ $badIDcount++ ;
+                $csl-raku = [ %(), citation-placeholder($id, "Valid Raku, invalid CSL-Raku, see warnings"), ];
             }
 
             $csl-raku.tail(*-1)
@@ -147,32 +156,32 @@ sub convert-to-id-cls( $data, @warnings --> Positional ) is export {
         when 'CSL-JSON'   { from-json($data).values }
 
         # Pandoc can directly translate these formats to CSL-JSON...
-        when 'RIS'        { from-json(pandoc :from<ris>,      left-justify $data).values }
-        when 'BibLaTeX'   { from-json(pandoc :from<biblatex>,              $data).values }
-        when 'BibTeX'     { from-json(pandoc :from<bibtex>,                $data).values }
+        when 'RIS'        { from-json(pandoc :@warnings, :from<ris>,      left-justify $data).values }
+        when 'BibLaTeX'   { from-json(pandoc :@warnings, :from<biblatex>,              $data).values }
+        when 'BibTeX'     { from-json(pandoc :@warnings, :from<bibtex>,                $data).values }
 
         # for BibTeXML:   BibTeXML ––(internal conversion)––> BibTeX ––(pandoc)––> CSL-JSON...
-        when 'BibTeXML'   { from-json(pandoc :from<bibtex>,  bibtexml-to-bibtex $data).values }
+        when 'BibTeXML'   { from-json(pandoc :@warnings, :from<bibtex>,  bibtexml-to-bibtex $data).values }
 
         # for PubMedNBIB: NBIB ––(nbib2xml)––> MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'PubMedNBIB' { from-json(pandoc :from<biblatex>,  xml2biblatex  nbib2xml  left-justify $data).values }
+        when 'PubMedNBIB' { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex  nbib2xml  left-justify $data).values }
 
         # for PubMedXML:  PMXML ––(med2xml)––> MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'PubMedXML'  { from-json(pandoc :from<biblatex>,  xml2biblatex  med2xml $data).values }
+        when 'PubMedXML'  { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex  med2xml $data).values }
 
         # for MODS:       MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'MODS'       { from-json(pandoc :from<biblatex>,  xml2biblatex $data).values }
+        when 'MODS'       { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex $data).values }
 
         # No data or bad data...
         default           {
             @warnings.push: "Could not understand $data-format citation data\n", ~($! // q{}, $data);
-            my $id = 'Bad_format_' ~ $noIDcount++ ;
+            my $id = 'Bad_format_' ~ $badIDcount++ ;
             citation-placeholder($id, 'Bad format of citation' ),
         }
     }
     $csl
         .map({ csl-lint( $_ ) })
-        .map({ if .<id>:!exists { .<id> = 'MissingID_' ~ $noIDcount++ }; $_ })
+        .map({ if .<id>:!exists { .<id> = 'MissingID_' ~ $badIDcount++ }; $_ })
         .map({ [ .<id>, $_ ] })
         .map({ test-citation($_, @warnings ) })
         .Array
@@ -216,7 +225,7 @@ sub left-justify ($data) {
 }
 
 # Support for using external cmdline apps as data filters...
-sub filter (:$data, :$fail = Nil, *@command) {
+sub filter (:$data, :$fail = Nil, :@warnings, *@command) {
     # Spawn the process...
     my $proc = run |@command, :in, :out, :err;
 
@@ -228,7 +237,7 @@ sub filter (:$data, :$fail = Nil, *@command) {
 
     # Handle failures...
     if !$proc || $proc.exitcode != 0 {
-        X::BadCitation.new( :extra("Call to @command[0] failed:\n" ~ $proc.err.slurp ~ " using: $data") ).throw;
+        @warnings.push: "Call to @command[0] failed:\n" ~ $proc.err.slurp ~ " using: $data";
         return $fail;
     }
 
@@ -237,14 +246,14 @@ sub filter (:$data, :$fail = Nil, *@command) {
 }
 
 # Useful external translation apps for citation data...
-sub pandoc       ($data, :$from) { filter :fail<[]> :$data, 'pandoc', « -f $from -t csljson » }
-sub xml2biblatex ($data)         { filter :fail()   :$data, 'xml2biblatex'                    }
-sub med2xml      ($data)         { filter :fail()   :$data, 'med2xml'                         }
-sub nbib2xml     ($data)         { filter :fail()   :$data, 'nbib2xml'                        }
+sub pandoc       ($data, :@warnings, :$from) { filter :@warnings, :fail<[]> :$data, 'pandoc', « -f $from -t csljson » }
+sub xml2biblatex ($data, :@warnings )        { filter :@warnings, :fail()   :$data, 'xml2biblatex'                    }
+sub med2xml      ($data, :@warnings)         { filter :@warnings, :fail()   :$data, 'med2xml'                         }
+sub nbib2xml     ($data, :@warnings)         { filter :@warnings, :fail()   :$data, 'nbib2xml'                        }
 
 # Format indicators and citation data into a set of markers and a bibliographic list...
-sub citeproc     ($data, $style, :$link = True) is export {
-    filter :fail(Nil), :$data, 'citeproc', '--format=json', "--style={CSL}/$style.csl", ( '--link-citations' if $link );
+sub citeproc     ($data, $style, :@warnings, :$link = True) is export {
+    filter :fail(Nil), :@warnings, :$data, 'citeproc', '--format=json', "--style={CSL}/$style.csl", ( '--link-citations' if $link );
 }
 
 # Internal converter from BibTeX XML to classic BibTeX...

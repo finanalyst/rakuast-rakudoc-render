@@ -811,7 +811,7 @@ class RakuDoc::To::HTML {
                     Rendered from<span class="footer-field">&nbsp;{%prm<source-data><path>}/{%prm<source-data><name>}</span>
                 <span class="footer-field">{sprintf( "&nbsp;at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
                 <span class="footer-line">Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
-                { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }
+                { qq[<div class="warnings">{ %prm<warnings> }\</div>] if %prm<warnings> }
                 </div>
                 FOOTER
             },

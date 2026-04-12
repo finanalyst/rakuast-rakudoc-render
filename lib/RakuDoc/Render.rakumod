@@ -1935,6 +1935,7 @@ class RakuDoc::Processor {
         my %doc-options := $!current.document-options;
         my $style := %doc-options<citation-style>;
         my $lang := %doc-options<citation-locale>;
+        my @warnings := $!current.warnings;
         my @references;
         my @citations; # will be left empty for this method
         # special case * for all citations, and cited, which has already been created
@@ -1951,7 +1952,7 @@ class RakuDoc::Processor {
         }
         my %input = :@citations, :$lang, :$style, :@references ;
 
-        my %processed = process-citations( %input, $!current.warnings );
+        my %processed = process-citations( %input, @warnings );
         $*prs .= new;
         $.handle( "=begin rakudoc\n{ %processed<bibliography>.join("\n") }\n=end rakudoc".AST.rakudoc.head );
         my $contents = '';
@@ -1960,6 +1961,7 @@ class RakuDoc::Processor {
             @citation-items = $*prs.items>>.Str
         }
         else { $contents = $*prs.body.Str }
+        @warnings.append: $*prs.warnings;
         %!templates<citations>( %( :$contents, :@citation-items ) ).strip.Str;
     }
     # regexes for quotations
@@ -1984,13 +1986,17 @@ class RakuDoc::Processor {
         my $style := %doc-options<citation-style>;
         my $lang := %doc-options<citation-locale>;
         my $caption := %doc-options<auto-citations>;
+        my @warnings := $!current.warnings;
         # go through q-codes to verify that there are citation ids matching the quoted one, otherwise fake a citation
         my @citations = gather for %q-codes.sort -> (:$key, :value($raw)) {
             my $inf = $raw ~~ / ^ [ $<term>=(<indic> [ ',' \s* <suffix> ]?) [\s* ';' \s*]? ]+ $/;
             my @citation-items = gather for $inf.<term> {
                 my $id = .<indic>.Str;
                 my $suffix = .<suffix> ?? ', ' ~ .<suffix> !! '';
-                %citations<data>{$id} //= citation-placeholder($id, 'NO SUCH CITATION ID');
+                unless %citations<data>{$id} {
+                    %citations<data>{$id} = citation-placeholder($id, 'NO SUCH CITATION ID');
+                    @warnings.push: "Q markup content ｢$id｣ does not correspond to a citation. Placeholder added."
+                }
                 %citations<categories><cited>{ $id }++;
                 take %( :$id, :$suffix );
             }
@@ -2000,7 +2006,7 @@ class RakuDoc::Processor {
         my @references = %citations<data>{ %citations<categories><cited>.keys }.values;
         my %input = :@citations, :$lang, :$style, :@references ;
 
-        my %processed = process-citations( %input, $!current.warnings );
+        my %processed = process-citations( %input, @warnings );
         return unless %processed<markers>.elems;
             # if no markers, then the citation process has failed
             # a warning has been generated, any unfilled Q will generate errors
@@ -2023,6 +2029,7 @@ class RakuDoc::Processor {
                 @citation-items = $prs.items>>.Str
             }
             else { $contents = $prs.body.Str }
+            @warnings.append: $*prs.warnings;
             $!current.rendered-citations = %!templates<citations>( %( :$contents, :@citation-items ) ).Str;
         }
     }
