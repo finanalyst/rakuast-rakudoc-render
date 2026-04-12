@@ -136,7 +136,7 @@ sub convert-to-id-cls( $data, @warnings --> Positional ) is export {
             use MONKEY-SEE-NO-EVAL;
             my $csl-raku = try EVAL "[\%(),$data]";
             if $! {
-                @warnings.push: "Invalid CSL-Raku citation data with error\n" ~ $! ;
+                @warnings.push: "Invalid CSL-Raku citation data with error\n$!\nData:\n$data";
                 my $id = 'Invalid_' ~ $badIDcount++ ;
                 $csl-raku = [ %(), citation-placeholder($id, "Invalid CSL-Raku, see warnings"), ];
             }
@@ -164,13 +164,13 @@ sub convert-to-id-cls( $data, @warnings --> Positional ) is export {
         when 'BibTeXML'   { from-json(pandoc :@warnings, :from<bibtex>,  bibtexml-to-bibtex $data).values }
 
         # for PubMedNBIB: NBIB ––(nbib2xml)––> MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'PubMedNBIB' { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex  nbib2xml  left-justify $data).values }
+        when 'PubMedNBIB' { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex( nbib2xml  (left-justify $data), :@warnings)).values }
 
         # for PubMedXML:  PMXML ––(med2xml)––> MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'PubMedXML'  { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex  med2xml $data).values }
+        when 'PubMedXML'  { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex( med2xml( $data, :@warnings), :@warnings)).values }
 
         # for MODS:       MODS ––(xml2biblatex)––> BibLaTeX ––(pandoc)––> CSL-JSON...
-        when 'MODS'       { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex $data).values }
+        when 'MODS'       { from-json(pandoc :@warnings, :from<biblatex>,  xml2biblatex( $data, :@warnings) ).values }
 
         # No data or bad data...
         default           {
@@ -237,7 +237,7 @@ sub filter (:$data, :$fail = Nil, :@warnings, *@command) {
 
     # Handle failures...
     if !$proc || $proc.exitcode != 0 {
-        @warnings.push: "Call to @command[0] failed:\n" ~ $proc.err.slurp ~ " using: $data";
+        @warnings.push: "Call to @command[0] failed:\n" ~ $proc.os-error ~ $proc.err.slurp ~ " using:\n$data";
         return $fail;
     }
 
@@ -257,7 +257,7 @@ sub citeproc     ($data, $style, :@warnings, :$link = True) is export {
 }
 
 # Internal converter from BibTeX XML to classic BibTeX...
-sub bibtexml-to-bibtex(Str $data) {
+sub bibtexml-to-bibtex(Str $data, :@warnings ) {
     use XML;
 
     # Extract data from XML tags...

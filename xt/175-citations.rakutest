@@ -3,7 +3,7 @@ use Test;
 use RakuDoc::Render;
 use Data::Dump::Tree;
 
-plan 15;
+plan 16;
 
 my $ast;
 my $rv;
@@ -199,4 +199,59 @@ $ast = Q:to/QAST/.AST;
     QAST
 $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.warnings[0], / 'With id' .+ 'Error' /, 'citation data error';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =head Intro
+
+    We have now explored Q<Generic2026> at some length
+
+    =comment This citation in PubMed/Medline XML format
+    =citation
+       <PubmedArticleSet>
+         <PubmedArticle>
+           <MedlineCitation Status="Publisher">
+             <PMID Version="1">98765432</PMID>
+             <Article PubModel="Print">
+               <Journal>
+                 <ISSN IssnType="Print">1234-567X</ISSN>
+                 <JournalIssue>
+                   <Volume>14</Volume>
+                   <Issue>1</Issue>
+                   <PubDate>
+                     <Year>2026</Year>
+                     <Month>Jan</Month>
+                     <Day>30</Day>
+                   </PubDate>
+                 </JournalIssue>
+                 <Title>International Journal of Perl and Raku</Title>
+               </Journal>
+               <ArticleTitle>Concurrent Processing in RakuDoc: A Performance Analysis.</ArticleTitle>
+               <Pagination>
+                 <MedlinePgn>102-115</MedlinePgn>
+               </Pagination>
+               <AuthorList CompleteYN="Y">
+                 <Author ValidYN="Y">
+                   <LastName>Generic</LastName>
+                   <ForeName>A</ForeName>
+                 </Author>
+                 <Author ValidYN="Y">
+                   <LastName>Researcher</LastName>
+                   <ForeName>B</ForeName>
+                 </Author>
+               </AuthorList>
+               <Language>eng</Language>
+               <PublicationTypeList>
+                 <PublicationType>Journal Article</PublicationType>
+               </PublicationTypeList>
+             </Article>
+           </MedlineCitation>
+         </PubmedArticle>
+       </PubmedArticleSet>
+
+
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.rendered-citations, / 'Concurrent processing in RakuDoc' /, 'got Citation text using Bibtools dependency';
+
 done-testing

@@ -575,7 +575,7 @@ class RakuDoc::To::HTML {
                         <h2 class="warnings-caption">Warnings</h2>
                             <ol>
                             { [~] %prm<warnings>.map({
-                                '<li>' ~ $tmpl.globals.escape.( $_ ) ~ "</li>\n"
+                                '<li>' ~ $tmpl.globals.escape.( $_ ).subst( / \v /,'<br>',:g ) ~ "</li>\n"
                                 })
                             }
                             </ol>
