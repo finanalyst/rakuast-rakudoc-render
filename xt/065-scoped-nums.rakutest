@@ -1,0 +1,31 @@
+use v6.d;
+use Test;
+use RakuDoc::Numeration;
+use RakuDoc::ScopedData;
+use RakuDoc::PromiseStrings;
+my $rv;
+
+plan 11;
+
+my RakuDoc::ScopedData $sc .= new;
+is $sc.counter-tracker.get-counter('item').inc.Str, '1.', 'item numeration initialises';
+is $sc.counter-tracker.inc('item',3).Str, '1.1.1.', 'item level increments';
+is $sc.counter-tracker.inc('item',3).Str, '1.1.2.', 'item level increments';
+$sc.start-scope(:starter<head>);
+is $sc.counter-tracker.get-counter('item').Str, '1.1.2.','item numeration kept with scope';
+is $sc.counter-tracker.inc('item',3).Str, '1.1.3.', 'increment works';
+is $sc.counter-tracker.set('item',1, 1).Str, '1.', 'reset works';
+is $sc.counter-tracker.set('defn',4,3).Str, '1.1.1.3.', 'set defn 4 level';
+# use numform
+is $sc.counter-tracker.set('item',1,3).Str, '3.', 'set item to 3';
+my PStr $contents .=new: 'Design :form mechanism';
+$rv =( [~] $sc.counter-tracker.get-counter('item').numform( :form('%A. %D'), :$contents ))>>.Str.join;
+is $rv,
+        'C. Design :form mechanism'
+        ,
+        'C. Design :form mechanism'
+        ;
+$sc.end-scope;
+is $sc.counter-tracker.get-counter('item').Str, '3.', 'item counter not affected by scope change';
+is $sc.counter-tracker.get-counter('defn').Str(4), '1.1.1.1.','defn back to before scope';
+done-testing

@@ -11,11 +11,21 @@ has @!aliases = {}, ;
 has @!starters;
 has @!titles;
 has @!save-spacer = 'None' => False , ;
+#| headers may have embedded RakuDoc markup, which cause AST paragraphs, but are not paraish blocks
+#| In addition X<> markup in a header needs a target, which should be the same as the header target
+#| so in-head is used to store the target of a head for its embedded X<>. Hence it is a string.
+#| A blank string boolifies to False
 has Str $.in-head is rw = '';
-#| the last item numeration
-has Numeration @.items-numeration = Numeration.new , ;
-#| the last defn numeration
-has Numeration @.defns-numeration = Numeration.new , ;
+#| definitions have a second line that may be a paragraph but are not paraish blocks
+has Bool $.in-defn is rw = False;
+#| items have content that may be a Paragraph, but should not be a para block
+has Bool $.in-item is rw = False;
+#| content being generated for q-code
+has Bool $.in-q-code is rw = False;
+#| prevent double paras
+has Bool $.in-para is rw = False;
+#| the counter tracking object
+has CounterTracker @!counter-tracker .= new;
 has Bool $.debug is rw = False;
 #| debug information
 method diagnostic {
@@ -35,8 +45,7 @@ method start-scope(:$starter!, :$title, :$verbatim ) {
     else {
         @!save-spacer.push: @!save-spacer.tail
     }
-    @!items-numeration.push: @!items-numeration.tail;
-    @!defns-numeration.push: @!defns-numeration.tail;
+    @!counter-tracker.push: @!counter-tracker.tail.clone;
     say 'New scope started. ', $.diagnostic if $!debug
 }
 #| ends the current scope, forgets new data
@@ -46,6 +55,9 @@ method end-scope {
     @!config.pop;
     @!aliases.pop;
     @!save-spacer.pop;
+    # before popping the enumerations, we need to preserve warnings, if any
+    my $last-ct = @!counter-tracker.pop;
+    @!counter-tracker.tail.warnings.append: $last-ct.warnings;
     say 'Scope ended. ', $.diagnostic if $!debug
 }
 multi method config(%h) {
@@ -77,16 +89,9 @@ multi method verbatim() {
 multi method verbatim( :called-by($)! ) {
     @!save-spacer.tail.key
 }
-multi method item-inc( $level --> Str ) {
-    @!items-numeration.tail.inc($level).Str
+multi method counter-tracker( --> CounterTracker ) {
+    @!counter-tracker.tail
 }
-multi method item-reset() {
-    @!items-numeration.tail.reset
+method numeration-warnings ( --> Positional ) {
+    @!counter-tracker.tail.warnings
 }
-multi method defn-inc( --> Str ) {
-    @!defns-numeration.tail.inc(1).Str
-}
-multi method defn-reset() {
-    @!defns-numeration.tail.reset
-}
-

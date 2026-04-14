@@ -1,5 +1,6 @@
 use v6.d;
 use RakuDoc::PromiseStrings;
+use RakuDoc::Numeration;
 use PrettyDump;
 
 #| Instances of ProcessedState are created to contain the rendered form and collected data
@@ -9,16 +10,10 @@ class ProcessedState {
     has PStr $.body is rw .= new;
 
     #| Table of Contents data
-    #| Ordered array of { :level, :text, :target, :is-heading }
+    #| Ordered array of { :level, :text, :target, :is-heading, :toc-type }
     #| level - in heading hierarchy, text - to be shown in TOC
     #| target - of item in text, is-heading - used for Index placing
     has Hash @.toc;
-
-    #| heading numbering data
-    #| Ordered array of [ $id, $level ]
-    #| $id is the PCell id of where the numeration structure is to be placed
-    #| level - in heading hierarchy
-    has Array @.head-numbering;
 
     #| Index (from X<> markup)
     #| Hash entry => Hash of :refs, :sub-index
@@ -35,6 +30,9 @@ class ProcessedState {
     #| retTarget is link to where footnote is defined to link back form footnote
     has @.footnotes;
 
+    #| Quotations, array of Pairs, id => content
+    has %.q-codes;
+
     #| Semantic blocks (which includes TITLE & SUBTITLE) can be hidden
     #| Hash of SEMANTIC => [ PStr | Str ]
     has Array %.semantics;
@@ -49,12 +47,6 @@ class ProcessedState {
 
     #| An array of accumulated rendered definitions, added to body when next non-defn block encountered
     has @.defns;
-
-    #| An array of accumulated rendered numbered items, added to body when next non-item block encountered
-    has @.numitems;
-
-    #| An array of accumulated rendered numbered definitions, added to body when next non-defn block encountered
-    has @.numdefns;
 
     #| Hash of definition => rendered value for definitions
     has %.definitions;
@@ -71,8 +63,6 @@ class ProcessedState {
             :indent('  '), :post-separator-spacing("\n  ") )  }
             toc => { pretty-dump(@.toc, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ")) }
-            head-numbering => { pretty-dump(@.head-numbering, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-               :indent('  '), :post-separator-spacing("\n  ")) }
             index => { pretty-dump( %.index, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ") )  }
             footnotes => { pretty-dump( @.footnotes, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
@@ -87,23 +77,28 @@ class ProcessedState {
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
-            numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
-            numdefns => { pretty-dump( @.numdefns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
             body => { with $.body.debug  { .substr(0, $output) ~ ( .chars > $output ?? "\n... (" ~ .chars - $output ~ ' more chars)' !! '') } }
         GIST
     }
 }
 
-|# Class object contains the rendered date of a RakuDoc source
+#| Class object contains the rendered data of a RakuDoc source
 class RakuDoc::Processed is ProcessedState {
     #| Information about the RakuDoc source, eg file name, path, modified, language
     has %.source-data;
+    #| Document level options
+    has %.document-options =
+        error => True,
+        auto-toc => 'Table of Contents',
+        auto-index => 'Index',
+        auto-citations => 'Bibliography',
+        citation-style => 'ieee',
+        citation-locale => 'en-GB',
+        lang => 'en',
+        FrontMatter => 'Preface',
+    ;
     #| The output format that the source has been rendered into
     has $!output-format = 'txt';
-    #| Text between =TITLE and first header, used for X<> place before first header
-    has Str $.front-matter is rw = 'preface';
     #| Name to be used in titles and files
     #| name can be modified after creation of Object
     #| name can be set when creating object
@@ -131,21 +126,28 @@ class RakuDoc::Processed is ProcessedState {
     #|
     has Hash %.links;
     #| Rendered version of the ToC
-    has $.rendered-toc is rw;
+    has $.rendered-toc is rw = '';
     #| Rendered version of the Index
-    has $.rendered-index is rw;
+    has $.rendered-index is rw = '';
+    #| Citations data generated from citation blocks
+    #| data are indexed by citation ids
+    #| categories keys are category names and contain arrays of ids
+    has %.citations =
+        data => %(),
+        categories => %(
+            cited => SetHash.new,
+            not-cited => SetHash.new
+        ),
+    ;
+    #| for the autogenerated bibliography
+    has $.rendered-citations is rw = '';
 
     submethod TWEAK( :%source-data, :$name, :$output-format ) {
         %!source-data =
             name => 'Unnamed-source',
             path => '.',
-            language => 'en',
             modified => '2020-12-31T00:00:01Z',
-            toc-caption => 'Table of Contents',
-            index-caption => 'Index',
-            rakudoc-title => 'Preface', # used to name sections before first title
             paragraph-id-length => 7,
-            rakudoc-level => 0,
         ;
         %!source-data{ .key } = .value for %source-data.pairs;
         $!output-format = $_ with $output-format;
@@ -159,17 +161,14 @@ class RakuDoc::Processed is ProcessedState {
     multi method gist(RakuDoc::Processed:D: Int :$output = 300 ) {
         qq:to/GIST/;
         RakuDoc source contains:
-            front-matter => Str=｢{ $!front-matter }｣
             name => Str=｢{ $!name }｣
             title => Str=｢{ $!title }｣
             title-target => Str=｢{ $!title-target }｣
             subtitle => Str=｢{ $!subtitle }｣
-            source-data => { pretty-dump( %!source-data ) }｣
+            source-data => { pretty-dump( %!source-data ) }
             semantics => { pretty-dump( %.semantics, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
             :indent('  '), :post-separator-spacing("\n  ") )  }
             toc => { pretty-dump(@.toc, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-               :indent('  '), :post-separator-spacing("\n  ")) }
-            head-numbering => { pretty-dump(@.head-numbering, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ")) }
             index => { pretty-dump( %.index, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                :indent('  '), :post-separator-spacing("\n  ") )  }
@@ -185,10 +184,6 @@ class RakuDoc::Processed is ProcessedState {
             defns => { pretty-dump( @.defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             inline-defns => { pretty-dump( @.inline-defns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
-            numitems => { pretty-dump( @.numitems, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
-                :indent('  '), :post-separator-spacing("\n  ") ) }
-            numdefns => { pretty-dump( @.numdefns, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
             warnings => { pretty-dump( @.warnings, :pre-item-spacing("\n   "),:post-item-spacing("\n    "),
                 :indent('  '), :post-separator-spacing("\n  ") ) }
@@ -217,7 +212,6 @@ multi sub merge-index( %p, %q ) {
 multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     sink $p.body ~ $q.body;
     $p.toc.append: $q.toc;
-    $p.head-numbering.append: $q.head-numbering;
     merge-index($p.index, $q.index);
     $p.footnotes.append: $q.footnotes;
     for $q.semantics.kv -> $k, $v { # by definition, same key but multiple values
@@ -230,7 +224,8 @@ multi sub infix:<+>( ProcessedState $p, ProcessedState $q ) is export {
     for $q.definitions.kv -> $k, $v { # no multiple values
         $p.definitions{$k} = $v # redefinition possible
     }
-    $p.numitems.append: $q.numitems;
-    $p.numdefns.append: $q.numdefns;
+    for $q.q-codes.kv -> $k, $v { # no multiple values
+        $p.q-codes{$k} = $v # redefinition possible
+    }
     $p
 }

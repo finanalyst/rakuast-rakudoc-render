@@ -1,17 +1,296 @@
 use v6.d;
 use Test;
 use RakuDoc::Numeration;
+use RakuDoc::PromiseStrings;
 
-plan 7;
+plan 62;
 
 my Numeration $n .= new;
 
-is $n.Str, '0.', 'first level is 0';
-is $n.inc(3).Str, '0.0.1.', 'incremented level 3 leaving others at 0';
-is $n.inc(2).Str, '0.1.', ' incremented level2, which resets level 3';
-is $n.reset.Str, '0.', 'resets to 0';
-is $n.inc(1).Str, '1.', 'first level when incremented is 1';
-is $n.inc(3).Str, '1.0.1.', 'incremented level 3 to stem = 1';
-is $n.inc(2).Str, '1.1.', ' incremented level2, which resets level 3';
+is $n.inc.Str, '1.', 'first level is 1';
+is $n.inc(3).Str, '1.1.1.', 'first time incrementing level 3 leaving others at 1';
+is $n.inc(3).Str, '1.1.2.', 'second time incrementing level 3 leaving others at 1';
+is $n.inc(2).Str, '1.2.', ' incremented level2, which resets level 3';
+is $n.reset.Str, '1.', 'resets to 1';
+is $n.Str(4), '1.1.1.1.', 'Stringify to level 4';
+is $n.inc(1).Str, '2.', 'first level when incremented is 2';
+$n.reset;
+is $n.inc, '2.', 'inc without arg is level 1';
 
+is $n.inc(3).Str, '2.1.1.', '1st increment give 1';
+is $n.inc(3).Str, '2.1.2.', 'incremented level 3 to stem = 2';
+is $n.inc(2).Str, '2.2.', ' incremented level2, which resets level 3';
+is $n.set(3,4).Str, '2.2.4.', 'set level3 to 4';
+is $n.set(5,3).Str, '2.2.4.1.3.', 'set beyond last extent puts 1 in intermediate postion';
+
+my $m = $n.clone;
+is $m.Str, '2.2.4.1.3.', 'same as n';
+is $m.inc(3).Str(5), '2.2.5.1.1.', 'increments properly';
+is $n.Str(5), '2.2.4.1.3.', 'increment m leaves n unchanged';
+
+$n .=new.inc;
+my $rv;
+$rv = $n.numform(:form<TOPIC %A - %D>, :contents('PHYSICS'), :caption(''), :type<head>);
+is $rv.join, 'TOPIC A - PHYSICS', 'test from RakuDoc v2 spec #1';
+$n .= new: init => (1, 2, 7) ;
+is $n.Str, '1.2.7.', 'create with initial sequence';
+my $xmp = 0;
+my $contents = 'The data';
+$rv = ([~] $n.numform( :form('%%N%:        (%N of %n): %D:lc%:'),                :$contents))>>.Str.join;
+is $rv,
+		'%N:        (2 of 7): the data:'
+		,
+		'%N:        (2 of 7): the data:'
+		;
+$rv = ( [~] $n.numform( :form('%%N:ord%:    (%N:ord of %n:ord): %D%:'),           :$contents))>>.Str.join;
+is $rv,
+		'%N:ord:    (2nd of 7th): The data:'
+		, '%N:ord:    (2nd of 7th): The data:'
+		;
+$rv =( [~] $n.numform( :form('%%N:ord:uc%: (%N:ord:uc of %N:ord:lc): %D:lc%:'),  :$contents))>>.Str.join;
+is $rv,
+		'%N:ord:uc: (2ND of 7th): the data:'
+		,
+		'%N:ord:uc: (2ND of 7th): the data:'
+		;
+$contents = 'Example data';
+$rv =( [~] $n.numform( :form('%%R%:     (%R of %r): %D:lc%:'),          :$contents))>>.Str.join;
+is $rv,
+	'%R:     (ⅠⅠ of ⅴⅰⅰ): example data:'
+	,
+	'%R:     (ⅠⅠ of ⅴⅰⅰ): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%R:ord%: (%R:ord of %r:ord): %D:lc%:'),  :$contents))>>.Str.join;
+is $rv,
+	'%R:ord: (ⅠⅠ of ⅴⅰⅰ): example data:'
+	,
+	'%R:ord: (ⅠⅠ of ⅴⅰⅰ): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%H%:     (%H of %h): %D:lc%:'),          :$contents))>>.Str.join;
+is $rv,
+	'%H:     (२ of ७): example data:'
+	,
+	'%H:     (२ of ७): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%ह%:     (%ह of %ह): %D:lc%:'),          :$contents))>>.Str.join;
+is $rv,
+	'%ह:     (२ of ७): example data:'
+	,
+	'%ह:     (२ of ७): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%H:ord%: (%H:ord of %h:ord): %D:lc%:'),  :$contents))>>.Str.join;
+is $rv,
+	'%H:ord: (२ of ७): example data:'
+	, '%H:ord: (२ of ७): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%B%:     (%B of %b): %D:lc%:'),          :$contents))>>.Str.join;
+is $rv,
+	'%B:     (২ of ৭): example data:'
+	,
+	'%B:     (২ of ৭): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%ব%:     (%ব of %ব): %D:lc%:'),          :$contents))>>.Str.join;
+is $rv,
+	'%ব:     (২ of ৭): example data:'
+	,
+	'%ব:     (২ of ৭): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%B:ord%: (%B:ord of %b:ord): %D:lc%:'),  :$contents))>>.Str.join;
+is $rv,
+	'%B:ord: (২ of ৭): example data:'
+	,
+	'%B:ord: (২ of ৭): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%Z%:     (%Z of %z): %D:lc%:'),          :$contents))>>.Str.join;
+is $rv,
+	'%Z:     (貳 of 七): example data:',
+	'%Z:     (貳 of 七): example data:'
+;
+$rv =( [~] $n.numform( :form('%%大%:    (%大 of %小): %D:lc%:'),        :$contents))>>.Str.join;
+is $rv,
+	'%大:    (貳 of 七): example data:'
+	,
+	'%大:    (貳 of 七): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%Z:ord%: (%Z:ord of %z:ord): %D:lc%:'),  :$contents))>>.Str.join;
+is $rv,
+	'%Z:ord: (第貳 of 第七): example data:'
+	, '%Z:ord: (第貳 of 第七): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%J%:     (%J of %j): %D:lc%:'),          :$contents))>>.Str.join;
+is $rv,
+	'%J:     (弐 of 七): example data:'
+	,
+	'%J:     (弐 of 七): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%業%:    (%業 of %並): %D:lc%:'),        :$contents))>>.Str.join;
+is $rv,
+	'%業:    (弐 of 七): example data:'
+	,
+	'%業:    (弐 of 七): example data:'
+	;
+$rv =( [~] $n.numform( :form('%%J:ord%: (%J:ord of %j:ord): %D:lc%:'),  :$contents))>>.Str.join;
+is $rv,
+	'%J:ord: (第弐 of 七番目): example data:'
+	,
+	'%J:ord: (第弐 of 七番目): example data:'
+	;
+$rv =( $n.numform( :form('%T %R: %C'),            :caption('Mass-energy equivalence') :type<formula> ))>>.Str.join;
+is $rv, 'Formula ⅤⅠⅠ: Mass-energy equivalence'
+	, 'Formula ⅤⅠⅠ: Mass-energy equivalence'
+	;
+$rv =( $n.numform( :form('%N:ord %T:lc: %C:lc'),  :caption('Mass-energy equivalence') :type<formula> ))>>.Str.join;
+is $rv,
+	'7th formula: mass-energy equivalence'
+	,
+	'7th formula: mass-energy equivalence'
+	;
+my @examples =
+	'%N:ord:lang<cy>:lc:  1af. Example data',
+	'%N:ord:lang<cy>:lc:  2il. Example data',
+	'%N:ord:lang<cy>:lc:  3ydd. Example data',
+	'%N:ord:lang<cy>:lc:  4ydd. Example data',
+	'%N:ord:lang<cy>:lc:  5ed. Example data',
+	'%N:ord:lang<cy>:lc:  17eg. Example data',
+	'%N:ord:lang<cy>:lc:  34ain. Example data'
+	;
+$xmp = 0;
+for 1...5, 17, 34 {
+    $n .= new: :init( [$_] );
+    $rv =( [~] $n.numform( :form('%%N:ord:lang<cy>:lc%:  %N:ord:lang<cy>. %D'), :$contents))>>.Str.join;
+	is $rv, @examples[$xmp], "example { $xmp++ }"
+}
+$n .= new: :init([1]);
+$contents = 'Design :form mechanism';
+$rv =( [~] $n.numform( :form('%A. %D'),         :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'A. Design :form mechanism'
+	,
+	'A. Design :form mechanism'
+	;
+$n .= new: :init([2]);
+$contents = 'Implement it (:lc)';
+$rv =( [~] $n.numform( :form('%A. %d'),         :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'B. implement it (:lc)'
+	,
+	'B. implement it (:lc)'
+	;
+$n .= new: :init([3]);
+$contents = '???';
+$rv =( [~] $n.numform( :form('%a. %D'),         :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'c. ???'
+	,
+	'c. ???'
+	;
+$n .= new: :init([4]);
+$contents = 'Profit!!! (:uc)';
+$rv =( [~] $n.numform( :form('%A. %D:uc'),      :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'D. PROFIT!!! (:UC)'
+	,
+	'D. PROFIT!!! (:UC)'
+	;
+$n .= new: :init([27]);
+$contents = 'hUh? dOUblE ISO lEttErs? (:tc)';
+$rv =( [~] $n.numform( :form('%A. %D:tc'),     :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'AA. HUh? dOUblE ISO lEttErs? (:tc)'
+	,
+	'AA. HUh? dOUblE ISO lEttErs? (:tc)'
+	;
+$n .= new: :init([731]);
+$contents = 'whAt??? trIplE the ISO lEttErs? (:tclc)';
+$rv =( [~] $n.numform( :form('%A. %D:tclc'),  :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'ABC. What??? triple the iso letters? (:tclc)'
+	,
+	'ABC. What??? triple the iso letters? (:tclc)'
+	;
+$n .= new: :init([732]);
+$contents = 'What else do i see, o, reader??? triple the ISO letters? (:sc)';
+$rv =( [~] $n.numform( :form('%A. %D:sc'),    :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'ABD. What else do I see, O, reader??? Triple the ISO letters? (:sc)'
+	, "example $xmp";
+$n .= new: :init([732]);
+$contents = 'What else do i see, o reader??? triple the ISO letters? (:sc:lang<de>)';
+$rv =( [~] $n.numform( :form('%A. %D:sc:lang<de>'),    :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'ABD. What else do i see, o reader??? Triple the ISO letters? (:sc:lang<de>)'
+	,
+	'ABD. What else do i see, o reader??? Triple the ISO letters? (:sc:lang<de>)'
+	;
+$n .= new: :init([732]);
+$contents = 'whAt do i see now??? trIple the ISO lEttErs? (:pc)';
+$rv =( [~] $n.numform( :form('%A. %D:pc'),    :type<item>, :$contents ))>>.Str.join;
+is $rv,
+	'ABD. What Do I See Now??? Triple The ISO Letters? (:pc)'
+	,
+	'ABD. What Do I See Now??? Triple The ISO Letters? (:pc)'
+	;
+diag "Various warnings...";
+$n .= new: init => (1, 2, 7) ;
+$rv = $n.numform( :form('(%J:lc:uc:tclc of %並:pc:lang<fr>:ord): %Q %D:uc%:'), :contents('Example data') );
+is ([~] $rv)>>.Str.join,
+		'(弐 of 七番目): %Q EXAMPLE DATA:'
+		,
+		'(弐 of 七番目): %Q EXAMPLE DATA:'
+		;
+is $n.warnings.join("\n") ~ "\n", q:to/ERRS/,'errors as expected';
+	Can't specify :lc :tclc :uc on %J. Using :uc
+	Can't specify :pc on field %並 (which implies :lc). Using :lc
+	Can't specify :lang<fr> on field %並 (which implies :lang<ja>). Ignoring :lang<fr>
+	Field %Q is reserved for future use
+	ERRS
+$n .= new: :init([1]);
+$rv =( $n.numform( :form('%N:ord: %d:uc'),    :contents('warn about :uc') ))>>.Str.join;
+is $rv,
+	'1st: warn about :uc'
+	, '1st: warn about :uc'
+	;
+$n .= new: :init([2]);
+	$rv =( $n.numform( :form('%N:ord: %d:tc'),    :contents('warn about :tc') ))>>.Str.join;
+is $rv,
+	'2nd: warn about :tc'
+	, '2nd: warn about :tc'
+	;
+$n .= new: :init([3]);
+	$rv =( $n.numform( :form('%N:ord: %d:tclc'),  :contents('warn about :tclc') ))>>.Str.join;
+is $rv,
+	'3rd: warn about :tclc'
+	, '3rd: warn about :tclc'
+	;
+$n .= new: :init([4]);
+	$rv =( $n.numform( :form('%N:ord: %d:sc:pc'), :contents('warn about :sc and :pc') ))>>.Str.join;
+is $rv,
+	'4th: warn about :sc and :pc'
+	, '4th: warn about :sc and :pc'
+	;
+$n .= new: :init([5]);
+	$rv =( $n.numform( :form('%N:ord: %d:lc'),    :contents('no warning about :lc') ))>>.Str.join;
+is $rv,
+	'5th: no warning about :lc',
+	'5th: no warning about :lc'
+	;
+
+# test that PStr over-ride case handling
+$n .= new: :init([4]);
+$contents = PStr.new: 'Profit!!! (:uc) but has Rakudoc content';
+$rv =( [~] $n.numform( :form('%A. %D:uc'),      :type<item>, :$contents ))>>.Str.join;
+is $rv,
+        'D. Profit!!! (:uc) but has Rakudoc content'
+        ,
+        'upper case not implemented'
+        ;
+my $caption = PStr.new: 'Mass-energy equivalence';
+$rv =( $n.numform( :form('%N:ord %T:lc: %C:lc'),  :$caption :type<formula> ))>>.Str.join;
+is $rv,
+        '4th formula: Mass-energy equivalence'
+        ,
+        'Caption is PStr, :lc over-ride'
+        ;
 done-testing;
+
+

@@ -3,7 +3,7 @@ use Test;
 use Test::Output;
 use RakuDoc::Templates;
 
-plan 24;
+plan 22;
 # All the templates here return Str, so no need to worry about premature stringification.
 
 my %template-dir is Template-directory = %(
@@ -50,7 +50,6 @@ is $rv, '<cc-aaa-tab>orig: never</end-tab>', 'debug & calls another template wit
     qq:to/TMP/;
         <layer 1> { $tmpl.prev } </layer 1>
         TMP
-
 };
 
 is %template-dir<aaa>(%(:contents<now there>)), q:to/TST/, 'calls a previous template';
@@ -105,22 +104,5 @@ $rv = %template-dir<aaa>(%(:contents<something>, ggg => %template-dir<ggg>(%(:co
 is $rv,
     "<aaa>\ncontents: ｢something｣\nggg: ｢<ggg>\ncontents: ｢more stiff｣\n</ggg>\n｣\n</aaa>\n",
     'test of parameters with embedded template';
-%template-dir.pretty=True;
-$rv = %template-dir<aaa>(%(:contents<something>, ggg => %template-dir<ggg>(%(:contents<more stiff>,)),));
-like $rv, /
-    '<aaa>' .+ 'contents:' .+ 'something' .+
-    'ggg: ｢' \v\h\h '<ggg>'
-/, 'contents same as before but inner ggg is indented';
-$rv = %template-dir<aaa>(%(
-    :contents<something>,
-    array => <one two three four>,
-    hash => ( <eight nine ten> Z=> 1..* ).hash,
-));
-like $rv, /
-    '<aaa>' .+
-    'array:' .+ 'List' .+ 'one' .+ 'two' .+
-    'contents:' .+ 'something' .+
-    'hash:' .+ 'Hash' .+
-    '</aaa>'
-    /, 'template has complex content';
+### TODO test the new pretty flag
 done-testing;

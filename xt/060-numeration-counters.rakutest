@@ -1,0 +1,135 @@
+use v6.d;
+use Test;
+use RakuDoc::Numeration;
+
+plan 40;
+
+sub blk( $ct, $bk, $lv, :%config --> Numeration ) {
+    $ct.process-counter($bk, $lv, :%config);
+    $ct.get-enumeration( $bk, $lv, :counter( %config<counter> // '') )
+}
+
+my CounterTracker $ct;
+my $rv;
+
+$ct .= new;
+
+blk $ct, 'head', 1;
+blk $ct, 'head', 1;
+$rv = blk $ct, 'head', 1;
+isa-ok $rv, Numeration, 'got correct return type';
+is $rv.Str, '3.', 'simple numeration';
+blk $ct, 'head', 3;
+$rv = blk $ct, 'head', 3;
+is $rv, '3.1.2.', 'head level 3';
+$ct.manage-counter( 'head3', %(:5restart));
+$rv = blk $ct, 'head', 3;
+is $rv, '3.1.5.', 'number option works';
+is blk($ct,'head',2).Str, '3.2.', 'inc head2';
+blk $ct, 'item', 1;
+is blk($ct, 'item', 1).Str, '2.', 'item x 2';
+blk $ct, 'para', 1;
+is blk($ct, 'item', 1).Str, '1.', 'item resets after para';
+blk $ct, 'item', 1;
+blk $ct, 'item', 1;
+$ct.manage-counter( 'item2', %(:4restart));
+is blk( $ct, 'item', 2 ).Str, '3.4.', 'item2 En';
+is blk( $ct, 'item', 1 ).Str(2), '4.1.', 'item2 reset';
+$rv = blk $ct, 'head', 3;
+is $rv, '3.2.1.', 'head level 3 inc-d';
+is blk( $ct, 'item', 1 ).Str(2), '1.1.', 'item1 reset by head3';
+blk $ct, 'para', 1;
+# now create custom restarts
+$ct.manage-counter('item', %( :restart-except-after< item para > ) );
+
+blk $ct, 'item', 1;
+is blk($ct, 'item', 1).Str, '2.', 'item x 2';
+blk $ct, 'para', 1;
+is blk($ct, 'item', 1).Str, '3.', 'item does not now reset after para';
+blk $ct, 'head', 1;
+is blk($ct, 'item', 1).Str, '1.', 'item resets after head';
+
+$ct.manage-counter( 'table1', %(:4restart));
+blk $ct, 'head', 1;
+is blk($ct, 'table', 1).Str, '4.', 'table by default not restarted by head';
+$ct.manage-counter('table', %( :restart-after< head > ) );
+blk $ct, 'head', 1;
+is blk($ct, 'table', 1).Str, '1.', 'table now restarted by head';
+blk $ct, 'formula', 1;
+is blk($ct, 'table', 1).Str, '2.', 'table not restarted by fomula';
+
+# test subscribing to other counters
+# set table to 1
+$ct.manage-counter( 'table1', %(:restart));
+blk $ct, 'table', '1';
+is blk($ct, 'formula', 1, :config(%(:counter<table1>))).Str, '2.', 'formula uses current table counter';
+is $ct.get-counter('formula').Str, '1.', 'formula counter is not incremented';
+is blk($ct, 'table', 1).Str, '3.', 'table now 3';
+is blk($ct, 'formula', 1, :config(%(:counter<table1>))).Str, '4.', 'formula uses current table counter';
+
+is $ct.warnings, (), 'no errors so far';
+is blk($ct, 'formula', 1, :config(%(:counter<tableorformula>))).Str, '1.', 'formula now uses custom counter';
+like $ct.warnings.join, / 'should follow custom' /, 'Custom block error';
+
+$ct .=new; # restart the system
+# test prefix
+# set head counter to 6 and add a prefix to item
+$ct.manage-counter( 'head', %(:6restart));
+$rv = blk $ct, 'head', 1; # trigger the counter
+$ct.manage-counter( 'item', %(:prefix<head1>));
+is blk($ct, 'item', 1).Str, '6.1.', 'item prefixed by head1';
+blk $ct, 'head', 3;
+blk $ct, 'head', 3;
+blk $ct, 'item', 1;
+$ct.manage-counter( 'item', %(:prefix<head3>));
+is blk($ct, 'item', 1).Str, '6.1.2.2.', 'item prefixed by head3';
+$ct.manage-counter( 'item3', %(:4restart));
+$rv = blk($ct,'item',3);
+is $rv.Str, '6.1.2.2.1.4.', 'reset item3 counter but prefix remains';
+
+# check that the last enumeration is stored
+is $ct.last-enumeration('item', 3).Str, $rv.Str, 'last enumeration is stored';
+
+$ct .=new; # restart the system
+# increment superordinate
+$ct.manage-counter( 'table', %( :2restart, ));
+is blk( $ct, 'table', 1).Str(3), '2.1.1.', 'table setup ok';
+$ct.manage-counter( 'table3', %(:4restart));
+is blk( $ct, 'table', 3).Str, '2.1.4.', 'table3 setup ok';
+$ct.manage-counter( 'head', %(:6restart));
+is blk( $ct, 'head', 1).Str(3), '6.1.1.', 'setup ok';
+$ct.manage-counter( 'head3', %(:7restart));
+is blk( $ct, 'head', 3).Str, '6.1.7.', 'head3 setup ok';
+$ct.manage-counter( 'table', %(:prefix<head3>));
+$rv = blk($ct, 'table', 3);
+is $rv.Str, '6.1.7.2.1.5.', 'combined start ok';
+is blk( $ct, 'head', 1).Str(3), '7.1.1.', 'inc head ok';
+$rv = blk($ct, 'table', 3);
+is $rv.Str, '7.1.1.2.1.6.', 'table counter unaffected by head, but prefix changed';
+
+# two counter directives can work on same base
+$ct .= new;
+$ct.manage-counter( 'table', %( :2restart, ));
+$ct.manage-counter( 'table3', %(:4restart));
+is blk( $ct, 'table', 3).Str, '2.1.4.', 'table3 combined counters';
+
+
+$ct .=new; # restart the system
+# test cycles
+$ct.manage-counter( 'item', %(:prefix<head3>));
+$ct.manage-counter: 'head2', %(:prefix<table2>);
+is $ct.warnings, (), 'no warnings issued yet';
+$ct.manage-counter: 'table1', %(:prefix<item>);
+like $ct.warnings.head, /
+    'Ignoring cyclic'
+    /, 'Got a cyclic warning';
+
+# test :!restart
+$ct.manage-counter( 'item', %(:prefix(''), :3restart)); # remove the prefix
+blk $ct, 'item', 1;
+is blk($ct, 'item', 1).Str, '4.', 'item x 2';
+blk $ct, 'para', 1;
+$ct.manage-counter( 'item', %(:!restart));
+is blk($ct, 'item', 1).Str, '5.', 'item continues after para';
+
+done-testing

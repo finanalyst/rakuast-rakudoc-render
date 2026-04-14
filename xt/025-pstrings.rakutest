@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::PromiseStrings;
 
-plan 47;
+plan 54;
 
 my $register = PCellTracker.new;
 my $payload;
@@ -44,6 +44,7 @@ like $s.debug, /
     'PCell'
     .+ 'Waiting for: AAA'
     /, 'debug method works';
+ok $s.has-PCells, 'There are PCells in the PStr';
 $payload = 'first value now';
 $register.add-payload(:$payload, :id<AAA>);
 unlike $s.debug, / 'PCell, Waiting' /, 'debug shows no waiting';
@@ -89,16 +90,25 @@ $s .= new: ' one ', PCell.new(:$register, :id('QQQ')), ' two ';
 my PStr $v .= new: ' three ', PCell.new(:$register, :id('QQQ')), ' four ', $s;
 is $v.segments, 6, 'new takes segments from a PStr';
 
-my $str = 'string';
+my $str = 'String';
 $str ~= PCell.new(:$register, :id('NewID'));
 isa-ok $str, PStr, 'string coerced to PStr if PCell added to it';
 $str = 'string';
 $s .= new: ' one ', PCell.new(:$register, :id('PPPPP')), ' two ';
 $str ~= $s;
 isa-ok $str, PStr, 'string coerced to PStr if PStr added to it';
-my $str2 = 'new str';
-$s .= new: ' one ', PCell.new(:$register, :id('GGGGGG')), ' two ';
+my $str2 = 'New str';
+$s .= new: ' One ', PCell.new(:$register, :id('GGGGGG')), ' two ';
 $str ~= $str2 ~ ': ｢' ~ $s ~  "｣\n";
 isa-ok $str, PStr, 'string coerced to PStr if seq of str & PStr concated to it';
+$s .= new: 'One Two Three', PCell.new(:$register, :id('IJOEJOIJ')), ' Four Five TwoTwo';
+
+like $s.lc, /^ 'one two three' .+ 'four five' /, 'lower case works';
+like $s.uc, /^ 'ONE TWO THREE' .+ 'FOUR FIVE' /, 'upper case works';
+like $s.tc, /^ 'ONE TWO THREE' .+ 'FOUR FIVE' /, 'tc case works';
+like $s.tclc, /^ 'One two three' .+ 'four five' /, 'tclc case works';
+like $s.subst(/ 'two' /,'Twenty',:g), / 'One Twenty three' .+ 'five TwentyTwenty' /, 'subst works';
+$register.add-payload(:payload<payload stuff>, :id<IJOEJOIJ>);
+like $s, / 'payload stuff' /, 'PStr structure maintained until add-payload';
 
 done-testing;

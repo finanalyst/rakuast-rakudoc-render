@@ -35,8 +35,10 @@ method enable( RakuDoc::Processor:D $rdp ) {
 method templates {
     %(
         LeafletMap => sub (%prm, $tmpl) {
-            my $level = %prm<headlevel> // 1;
-            my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
+            my $rv = $tmpl('head', %(
+                :contents(%prm<caption>),
+                |(%prm<level id target delta numeration >:p )
+            ));
             my %leaflet := $tmpl.globals.data<leafletmap>;
             my $map-id = %prm<map-id> // %leaflet<map-id>;
             my $var-name = 'v' ~ $map-id.trans('-' => '_');

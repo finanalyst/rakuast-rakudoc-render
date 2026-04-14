@@ -30,7 +30,7 @@ $ast = Q:to/QAST/.AST;
     =head2 Third test text with option
     =end section
     =head2 Fourth without option
-    =for MyNewBlock :caption<I got here>
+    =for MyNewBlock :toc :caption<I got here>
     Some text
 
     =end rakudoc

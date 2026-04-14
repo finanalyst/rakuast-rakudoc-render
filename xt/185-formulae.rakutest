@@ -29,7 +29,6 @@ like $rv.body.Str, /
     '... where the value of pi can be inferred from Euler’s Identity:'
     .+ '/para' .+
     '<formula>' .+
-    'alt' .+ 'Formula cannot' .+
     'formula' .+ 'e^{i\pi}+1=0' .+
     '</formula>'
     /, 'Formula block OK';

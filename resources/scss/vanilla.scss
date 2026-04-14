@@ -8,6 +8,9 @@ span.important {
 span.unusual {
 	text-decoration: underline;
 }
+span.weighty {
+	font-variant: small-caps;
+}
 span.code {
 	font-weight: 500;
 	background-color: linen;
@@ -25,7 +28,8 @@ span.junior {
 	vertical-align: sub;
 }
 span.replace {
-	font-style: small-caps;
+	font-style: italic;
+	font-variant-caps: small-caps;
 	text-shadow: -1px 1px;
 }
 span.indexed {
@@ -48,6 +52,9 @@ span.terminal {
 span.footnote {
 	vertical-align: super;
 }
+a.footnote-anchor {
+    text-decoration: none;
+}
 span.developer-text {
 
 }
@@ -67,42 +74,58 @@ span.bad-markdown {
 	text-shadow: 1px 1px red;
 }
 
-pre.code-block {
-	background-color: #eee;
-	margin: 1rem;
-	padding: 0 1rem 1rem 1rem;
-}
-pre.input-block {
-	background-color: #eee;
-	margin: 1rem;
-	padding: 0 1rem 1rem 1rem;
-	&::before {
-	    content: '--- input ---';
-        display: block;
-        text-shadow: -2px -2px 4px black;
-        color: white;
-        padding-bottom: 1rem;
+.raku-code {
+    pre.rakudoc:first-child {
+        background-color: #eee;
+        margin: 0 1rem;
+        padding: 0.5rem 1rem 0.5rem 1rem;
 	}
+	.code-caption {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+        margin: 0 0 1rem 1rem;
+    }
 }
-pre.output-block {
-	background-color: #eee;
-	margin: 1rem;
-	padding: 0 1rem 1rem 1rem;
-	&::before {
-        content: '--- output ---';
-        display: block;
-        text-shadow: 2px 2px 4px black;
-        color: white;
-        padding-bottom: 1rem;
+.raku-input {
+    pre.rakudoc:first-child {
+        background-color: #eee;
+        margin: 0 1rem;
+        padding: 0.5rem 1rem 0.5rem 1rem;
 	}
+	.input-caption {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+        margin: 0 0 1rem 1rem;
+    }
 }
-
+.raku-output {
+	pre.rakudoc:first-child {
+        background-color: #eee;
+        margin: 0 1rem;
+        padding: 0.5rem 1rem 0.5rem 1rem;
+    }
+	.output-caption {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+        margin: 0 0 1rem 1rem;
+    }
+}
 div.defn-text {
     margin-left: 1rem;
+    p {
+        margin: 0
+    }
 }
 div.defn-term {
 	font-weight: bold;
 	font-style: italic;
+	.N { margin-right: 5px }
 }
 div.id-target {
 	display: none;
@@ -175,7 +198,7 @@ span.developer-version {
 }
 .delta, span.developer-text {
     &::before {
-        content: "\2139";
+        content: "\1F6C8";
         vertical-align: super;
 	}
 	&:hover .developer-version {
@@ -227,10 +250,34 @@ h2.warnings-caption {
 h.title {
 	font-size: larger;
 }
-
-table, th, td {
-  border: 1px solid;
-  border-collapse: collapse;
+.rakudoc-table {
+    display: flex;
+    align-content: flex-start;
+    flex-direction: column;
+    margin: 1rem;
+    width: fit-content;
+    table, th, td {
+      border: 1px solid lightgray;
+      border-collapse: collapse;
+    }
+    .table-caption.rakudoc {
+        color: maroon;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+    }
+    .table {
+        padding: 15px;
+        margin-bottom: 10px;
+        margin-top: 10px;
+        border: 1px solid black;
+        td, td {
+          padding: 5px;
+        }
+        caption {
+           margin-bottom: 5px;
+        }
+    }
 }
 tbody.procedural tr.procedural .procedural-cell-left {
 	text-align: left;
@@ -262,6 +309,15 @@ li.item {
     &::marker {
         content: attr(data-bullet);
     }
+    &.extended-item > p {
+        margin: 0;
+    }
+}
+li.numitem {
+    padding-left: 0.4rem;
+    &::marker {
+        content: attr(data-bullet);
+    }
 }
 div.rakudoc-image-placement {
     display: flex;
@@ -270,12 +326,11 @@ div.rakudoc-image-placement {
 }
 .rakudoc-placement-error {
     display: flex;
-    justify-content: sapace-around;
+    justify-content: space-around;
     align-items: center;
     color: red;
     font-weight: bold;
 }
-
 .raku-anchor {
   font-size: 0.9em;
   text-decoration: none;
@@ -284,4 +339,36 @@ div.rakudoc-image-placement {
 .heading:hover .raku-anchor {
   visibility: visible;
   padding-left: 5px;
+}
+.enumeration-N {
+    margin: 0 5px 0 5px;
+}
+.formula {
+    margin: 1rem;
+    .formula-caption {
+        color: maroon;
+        padding: 0.2rem 0 1rem 0;
+        font-size: 0.875rem;
+        font-weight: 500;
+        font-style: italic;
+    }
+}
+p span.numpara {
+    position: absolute;
+    text-indent: -3rem;
+}
+div.extended-para {
+    margin: 1rem 0;
+    span.numpara {
+        position: absolute;
+        text-indent: -3rem;
+    }
+    p.extended-para {
+        margin: 0.5rem 0;
+    }
+}
+
+
+.rakudoc-singlepage {
+    margin-left: 4rem;
 }

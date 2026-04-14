@@ -17,7 +17,7 @@ has %.config =
           [ self.toc-scss, 1],
           [ self.bulma-additions-scss, 1],
           [ self.raku-webs-scss, 1],
-          [ self.html-vanilla, 1 ]
+#          [ self.html-vanilla, 1 ]
     ),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
@@ -78,7 +78,7 @@ method templates {
             q[<link rel="icon" href="https://irclogs.raku.org/favicon.ico">]
         },
         html-root => -> %prm, $tmpl {
-            qq[lang="{%prm<source-data><language>}"
+            qq[lang="{%prm<document-options><lang>}"
            class="theme-light"
            style="scroll-padding-top:var(--bulma-navbar-height)"]
         },
@@ -95,7 +95,7 @@ method templates {
                     (
                     (%prm<source-data><rakudoc-config><direct-wrap><> =:= True)
                             ||
-                            (%prm<source-data><rakudoc-config><toc>.not)
+                            (%prm<document-options><auto-toc>.not)
                     )
                             ??
                             ''
@@ -167,7 +167,7 @@ method templates {
         #| Toc/Index floats below navbar except for mobile
         #| This section disappears on a mobile
         page-navigation => -> %prm, $tmpl {
-            ( %prm<source-data><rakudoc-config><toc>.not )
+            ( %prm<document-options><auto-toc>.not )
                 ?? '' !!
             Q:c:to/PAGENAV/;
             <nav class="raku-webs panel is-hidden-mobile" id="page-nav">
@@ -215,7 +215,7 @@ method templates {
                 # the document-level option :direct-wrap is used for a rakudoc source that contains a page manually written in HTML
                 %prm<body>
             }
-            elsif ( %prm<source-data><rakudoc-config><toc>.not )
+            elsif ( %prm<document-options><auto-toc>.not )
             {  # this is used for document-level :!toc option, which is used to remove a page TOC.
                 # The default is :toc, to include a TOC panel
                 qq:to/END/
@@ -247,6 +247,9 @@ method templates {
                             %prm<source-data><rakudoc-config><page-content-two-columns> ?? 'listing' !! ''
                         }">
                         { %prm<body> }
+                        </div>
+                        <div class="content px-4">
+                        { %prm<rendered-citations>.Str }
                         </div>
                         <div class="content px-4">
                         { %prm<footnotes>.Str }
@@ -336,24 +339,26 @@ method templates {
             my $del = %prm<delta> // '';
             my $h = 'h' ~ (%prm<level> // '1');
             my $classes = ( %prm<classes> // "heading raku-webs-$h" ) ~ ( 'delta' if $del ) ;
-            my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
-            $caption = "%prm<numeration> $caption" if %prm<numeration>;
+            my $contents = %prm<contents>.Str.split(/ \< ~ \> <-[>]>+? /).join.trim;
+            $contents = [~] %prm<numeration>.grep( *.so ).map( {
+                '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+            } ) if %prm<numeration>;
             my $targ := %prm<target>;
-            my $esc-cap = $tmpl.globals.escape.( $caption );
-            $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
+            my $esc-cap = $tmpl.globals.escape.( $contents );
+            $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
             my $id-target = %prm<id>:exists && %prm<id>
                     ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                     !! '';
             PStr.new:
                     $id-target ~
-                            ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
-                            qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
-                            ($del if $del) ~
-                    ($caption ?? (
+                    ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
+                    qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
+                    ($del if $del) ~
+                    ($contents ?? (
                     qq|<a href="#">| ~
-                            $caption ~
-                            qq|</a><a class="raku-webs-anchor" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>| ~
-                            qq|</$h>\n|
+                    $contents ~
+                    qq|</a><a class="raku-webs-anchor" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>| ~
+                    qq|</$h>\n|
                     ) !! '')
         },
         table => -> %prm, $tmpl {
@@ -424,7 +429,7 @@ method js-text {
     window.addEventListener('load', function () {
         // initialise if localStorage is set
         let theme = persisted_theme();
-        if ( theme ) {
+        if ( theme == null ) {
             theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
             change_theme(theme);
             persist_theme(theme);
@@ -515,251 +520,6 @@ method js-text {
         document.getElementById( div + activate + '-menu').classList.remove('is-hidden');
     }
     SCRIPT
-}
-method html-vanilla {
-    q:to/VANIL/;
-    /*! Vanilla CSS */
-    span.basis {
-        font-weight: 800;
-    }
-    span.important {
-        font-style: italic;
-    }
-    span.unusual {
-        text-decoration: underline;
-    }
-    span.code {
-        font-weight: 500;
-        background-color: linen;
-        display:inline-block;
-        margin: 2px;
-        padding: 2px;
-    }
-    span.overstrike {
-        text-decoration: line-through;
-    }
-    span.high {
-        vertical-align: super;
-    }
-    span.junior {
-        vertical-align: sub;
-    }
-    span.replace {
-        font-style: small-caps;
-        text-shadow: -1px 1px;
-    }
-    span.indexed {
-        text-shadow: 1px 1px orange;
-        &:hover::before {
-            content: attr(data-index-text);
-            translate: 0 -1.5em;
-            position: absolute;
-            opacity: 75%;
-            background-color: turquoise;
-            color: indigo;
-        }
-    }
-    span.keyboard {
-        text-shadow: 1px 1px;
-    }
-    span.terminal {
-        text-decoration: overline underline;
-    }
-    span.footnote {
-        vertical-align: super;
-    }
-    span.developer-version {
-        display: none;
-        color: red;
-        span.developer-note {
-            font-family: 'Brush Script MT', cursive;
-        }
-        &:hover {
-            display: inline-block;
-            transform: translate(50px, 100px);
-            z-index: 5;
-        }
-    }
-    span.bad-markdown {
-        text-shadow: 1px 1px red;
-    }
-
-    pre.code-block {
-        background-color: #eee;
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-    }
-    pre.input-block {
-        background-color: #eee;
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-            content: '--- input ---';
-            display: block;
-            text-shadow: -2px -2px 4px black;
-            color: white;
-            padding-bottom: 1rem;
-        }
-    }
-    pre.output-block {
-        background-color: #eee;
-        margin: 1rem;
-        padding: 0 1rem 1rem 1rem;
-        &::before {
-            content: '--- output ---';
-            display: block;
-            text-shadow: 2px 2px 4px black;
-            color: white;
-            padding-bottom: 1rem;
-        }
-    }
-
-    div.defn-text {
-        margin-left: 1rem;
-    }
-    div.defn-term {
-        font-weight: bold;
-        font-style: italic;
-    }
-    div.id-target {
-        display: none;
-    }
-    div.nested {
-        margin-left: 5rem;
-    }
-    div.toc {
-        .toc-item {
-            margin-left: calc(var(--level) * 1rem);
-            &::before {
-                content: attr(data-bullet);
-            }
-            a {
-                padding-left: 0.4rem;
-            }
-        }
-    }
-    div.index-section {
-        margin-left: calc(( var(--level) - 1 ) * 1rem);
-        &[data-index-level="1"] {
-            text-shadow: 1px 1px orange;
-        }
-        > a.index-ref {
-            margin-left: calc(var(--level) * 1rem);
-            display:block;
-            width:auto;
-            white-space:normal;
-        }
-    }
-    span.developer-note {
-        display: none;
-        width: 0;
-        color: blue;
-        text-shadow: 2px 2px 5px green;
-    }
-    span.developer-version {
-        display: none;
-        width: 0;
-        color: red;
-        text-shadow: 2px 2px 5px green;
-    }
-    .delta, span.developer-text {
-        &::before {
-            content: "\2139";
-            vertical-align: super;
-        }
-        &:hover .developer-version {
-            display: inline-block;
-            position: absolute;
-            width: 100%;
-            z-index: 5;
-            transform: translate(0.5rem,-1rem);
-        }
-        &:hover .developer-note {
-            display: inline-block;
-            position: absolute;
-            width: auto;
-            z-index: 5;
-            margin-left: 1rem;
-        }
-    }
-    span.developer-text:hover {
-        text-decoration: overline;
-    }
-    div.footer {
-        border-top: 2px dashed;
-        margin: 1rem 0;
-        padding: 2rem;
-        .footer-field {
-            display:inline-block;
-        }
-        .footer-line {
-            display: block;
-        }
-    }
-    .heading > a {
-        color: maroon;
-        text-decoration: none;
-    }
-    h.title {
-        font-size: larger;
-    }
-    table, th, td {
-      border: 1px solid;
-      border-collapse: collapse;
-    }
-    tbody.procedural tr.procedural .procedural-cell-left {
-        text-align: left;
-    }
-    tbody.procedural tr.procedural .procedural-cell-centre {
-        text-align: center;
-    }
-    tbody.procedural tr.procedural .procedural-cell-center {
-        text-align: center;
-    }
-    tbody.procedural tr.procedural .procedural-cell-right {
-        text-align: right;
-    }
-    tbody.procedural tr.procedural .procedural-cell-top {
-        vertical-align: text-top;
-    }
-    tbody.procedural tr.procedural .procedural-cell-middle {
-        vertical-align: baseline;
-    }
-    tbody.procedural tr.procedural .procedural-cell-bottom {
-        vertical-align: text-bottom;
-    }
-    tbody.procedural tr.procedural .procedural-cell-label {
-        font-weight: bold;
-    }
-    li.item {
-        padding-left: 0.4rem;
-        margin-left: calc(var(--level) * 1rem);
-        &::marker {
-            content: attr(data-bullet);
-        }
-    }
-    div.rakudoc-image-placement {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .rakudoc-placement-error {
-        display: flex;
-        justify-content: sapace-around;
-        align-items: center;
-        color: red;
-        font-weight: bold;
-    }
-    .raku-anchor {
-      font-size: 0.9em;
-      text-decoration: none;
-      visibility: hidden;
-    }
-    .heading:hover .raku-anchor {
-      visibility: visible;
-      padding-left: 5px;
-    }
-    VANIL
 }
 method raku-webs-scss {
     q:to/SCSS/;
@@ -929,6 +689,38 @@ method raku-webs-scss {
             white-space:normal;
         }
     }
+    .rakudoc-table {
+        display: flex;
+        align-content: center;
+        flex-direction: column;
+        .table-caption {
+            margin-inline: auto;
+            color: $heading;
+            font-size: 1.375rem;
+        }
+    }
+    @media screen and (min-width: 1024px) {
+        div.extended-para , p {
+            span.numpara {
+                position: absolute;
+                text-indent: -3rem;
+            }
+        }
+    }
+    @media screen and (max-width: 1023px) {
+        div.extended-para , p {
+            span.numpara {
+                position: absolute;
+                text-indent: -1.5rem;
+            }
+        }
+    }
+    @media (prefers-color-scheme: dark) {
+        .latex-equation > img {
+          filter: invert(1) brightness(2);
+        }
+    }
+
     /* Hopepage title */
     .raku-webs {
         .hero-body {

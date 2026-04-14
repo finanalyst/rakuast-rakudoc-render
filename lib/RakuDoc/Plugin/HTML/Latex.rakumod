@@ -28,24 +28,22 @@ method templates {
                 LATEX
             }
             else { # if url does not exist, then no output
-                q:to/RSP/
-                <div class="latex-render-error">
-                    Internet access to ｢latex.codecogs.com｣ is needed for an image.
-                </div>
-                RSP
+                ''
             }
         },
-        LatexFormula => -> %prm, $tmpl {
-            my $level = %prm<headlevel> // 1;
-            my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
-            PStr.new: $head ~ '<div class="latex-equation">' ~ $tmpl<getLatexImage> ~ '</div>'
-        },
         formula => -> %prm, $tmpl {
-            $tmpl<LatexFormula>
+            if $tmpl<getLatexImage> -> $rv {
+                %prm<formula> = qq[<div class="latex-equation">$rv\</div>];
+                %prm<alt> = ''
+            }
+            else {
+                %prm<alt> = qq[<div title="No internet connection to https://codecogs.com">{ %prm<alt> }</div>]
+            }
+            $tmpl.prev(%prm)
         },
         markup-F => -> %prm, $tmpl {
             my $formula = $tmpl('getLatexImage', %(:raw(%prm<formula>),));
-            qq[ <span class="latex-formula">$formula\</span>]
+            qq[ <span {$formula ?? '' !! ' title="No internet connection to https://codecogs.com"'} class="latex-formula">{ $formula ?? $formula !! %prm<alt> }</span>]
         },
     )
 }
@@ -54,10 +52,11 @@ method scss-str {
     /* Latex formula stying */
     div.latex-equation {
         display: flex;
-        justify-content: space-around;
-        align-items: center;
-        a.logo {
-            align-self: flex-last;
+        justify-content: space-between;
+        a.logo img {
+            width: 60%;
+            border: gray solid 1px;
+            border-radius: 5px;
         }
     }
     span.latex-formula {

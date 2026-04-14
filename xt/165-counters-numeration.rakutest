@@ -1,0 +1,972 @@
+use v6.d;
+use Test;
+use RakuDoc::Render;
+my $ast;
+my $rv;
+my RakuDoc::Processor $rdp .= new( :test );
+
+plan 17;
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '2.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '3.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '4.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '3.' .+?
+    '</formula>'
+    /, 'A1. Independent counters that don’t reset';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+    =counter table1 :restart
+        =for numtable1   :caption< Caption for first table >    :!continued
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+    =counter formula1 :restart
+        =for numformula1 :caption< Caption for first formula >  :!continued
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '2.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.' .+?
+    '</formula>'
+    /, 'A2. Independent counters that reset';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =counter table1    :restart-after< head3 >
+    =counter formula   :restart-after< head3 >
+
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '2.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.' .+?
+    '</formula>'
+    /, 'Alt A2. Independent counters that reset';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =config formula1  :counter< table1 >
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '2.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '3.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '4.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '5.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '6.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '7.' .+?
+    '</formula>'
+    /, 'A3. Shared counters that don’t reset';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =config formula1  :counter< TablesAndFormulae >
+    =config table1    :counter< TablesAndFormulae >
+
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '2.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '3.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '4.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '5.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '6.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '7.' .+?
+    '</formula>'
+    /, 'Alt A3. Shared counters that don’t reset';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =counter TablesAndFormulae   :restart-after< head3 >
+    =config formula1 :counter< TablesAndFormulae >
+    =config table1 :counter< TablesAndFormulae >
+
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '2.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '3.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '4.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '3.' .+?
+    '</formula>'
+    /, 'A4. Shared counters that reset';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =counter formula1   :restart-after< head3 > :prefix< head3 >
+    =counter table1     :restart-after< head3 > :prefix< head3 >
+
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.1.1.1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.1.1.1.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '1.1.1.2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '1.1.1.2.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.1.2.1.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '1.1.2.2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.1.2.1.' .+?
+    '</formula>'
+    /, 'A5-A8. Hierarchical numbering borrowed from another block';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =config formula1 :counter<TableAndFormula>
+    =config table1   :counter<TableAndFormula>
+
+    =counter TableAndFormula :prefix<head1>
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+    =numhead1 Second heading
+        =for numtable1   :caption< Caption for next table >
+        | one   | two  |
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.2.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '1.3.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '1.4.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.5.' .+?
+    '</table>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '1.6.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.7.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Second heading' .+?
+    'numeration:' .+ '2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for next table' .+?
+    'numeration:' .+? '2.8.' .+?
+    '</table>'
+    /, 'Alt A5-A8. Hierarchical numbering borrowed from another block';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =config formula1  :counter< TableAndFormula >
+    =config table1    :counter< TableAndFormula >
+    =counter TableAndFormula :prefix<head1>
+
+    =numhead1 Heading
+    =numhead2 Subheading
+    =numhead3 Subsubheading
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+    =numhead3 Subsubheading
+    =begin section
+        =config table1   :counter<SpecialTable>
+        =counter SpecialTable :restart(1000)
+
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for first formula >
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+    =end section
+    =numhead1 Second heading
+        =for numtable1   :caption< Caption for next table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for next formula >
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents:' .+? 'Heading' .+?
+    'numeration:' .+ '1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subheading' .+?
+    'numeration:' .+ '1.1.' .+?
+    '</head>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.1.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1.1.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.2.' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '1.3.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for second formula' .+?
+    'numeration:' .+? '1.4.' .+?
+    '</formula>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Subsubheading' .+?
+    'numeration:' .+ '1.1.2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for first table' .+?
+    'numeration:' .+? '1000.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for first formula' .+?
+    'numeration:' .+? '1.5' .+?
+    '</formula>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for second table' .+?
+    'numeration:' .+? '1001.' .+?
+    '</table>' .+?
+
+    '<head>' .+?
+    'contents:' .+? 'Second heading' .+?
+    'numeration:' .+ '2.' .+?
+    '</head>' .+?
+
+    '<table>' .+?
+    'caption:' .+? 'Caption for next table' .+?
+    'numeration:' .+? '2.6.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption:' .+? 'Caption for next formula' .+?
+    'numeration:' .+? '2.7' .+?
+    '</formula>'
+    /, 'A9-A16. Localized independent numbering';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =counter item  :restart-except-after< item1 head1 table formula >
+
+    =numhead1 Heading
+        =numitem Item the first
+        =numitem Item the second
+        =for numtable1   :caption< Caption for first table >
+        | one   | two  |
+        =numitem Item the third
+    =numhead2 Subheading
+        =numitem Item the fourth
+        =for numformula1 :caption< Caption for first formula >
+        =numitem Item the fifth
+        =for numtable1   :caption< Caption for second table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for second formula >
+        =numitem Item the sixth
+    =numhead1 Second heading
+        =numitem Item the seventh
+        =for numtable1   :caption< Caption for next table >
+        | one   | two  |
+        =for numformula1 :caption< Caption for next formula >
+        =numitem Item the eighth
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents' .+? 'Heading' .+?
+    'numer' .+? '1.' .+?
+    '</head>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the first' .+?
+    'numer' .+? '1.' .+?
+    '</item>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the second' .+?
+    'numer' .+? '2.' .+?
+    '</item>' .+?
+    '<table>' .+?
+    'caption' .+? 'Caption for first table' .+?
+    'numer' .+? '1.' .+?
+    '</table>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the third' .+?
+    'numer' .+? '3.' .+?
+    '</item>' .+?
+    '<head>' .+?
+    'contents' .+? 'Subheading' .+?
+    'numer' .+? '1.1.' .+?
+    '</head>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the fourth' .+?
+    'numer' .+? '4.' .+?
+    '</item>' .+?
+    '<formula>' .+?
+    'caption' .+? 'Caption for first formula' .+?
+    'numer' .+? '1.' .+?
+    '</formula>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the fifth' .+?
+    'numer' .+? '5.' .+?
+    '</item>' .+?
+    '<table>' .+?
+    'caption' .+? 'Caption for second table' .+?
+    'numer' .+? '2.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption' .+? 'Caption for second formula' .+?
+    'numer' .+? '2.' .+?
+    '</formula>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the sixth' .+?
+    'numer' .+? '6.' .+?
+    '</item>' .+?
+    '<head>' .+?
+    'contents' .+? 'Second heading' .+?
+    'numer' .+? '2.' .+?
+    '</head>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the seventh' .+?
+    'numer' .+? '7.' .+?
+    '</item>' .+?
+    '<table>' .+?
+    'caption' .+? 'Caption for next table' .+?
+    'numer' .+? '3.' .+?
+    '</table>' .+?
+
+    '<formula>' .+?
+    'caption' .+? 'Caption for next formula' .+?
+    'numer' .+? '3.' .+?
+    '</formula>' .+?
+
+    '<item>' .+?
+    'contents' .+? 'Item the eighth' .+?
+    'numer' .+? '8.' .+?
+    '</item>'
+    /, 'Except-after test';
+# combining counters with :form & :number-prefix
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc :!toc
+    =config formula :form<Equation %N: %C>
+    =counter formula :prefix<head2>
+    =numhead1 PHYSICS
+    =numhead2 Newtonian
+    =begin numformula :caption<Mass-Energy Equivalence> :numalias<RELFORM>
+    E = MC²
+    =end numformula
+    =numhead2 Relativistic
+    =begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N.%N.%N | EQNRELFORM>
+    E = MC²
+    =end numformula
+    Some text with enumeration from aliases A<RELFORM>. And here is one differently formated A<EQNRELFORM>.
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+# formating of evaluated enumeration too simple
+like $rv.body.Str, /
+'from aliases' .+?
+'<markup-A>' .+? 'Formula 1.1.1' .+?
+'<markup-A>' .+? 'Equation  1 . 2 . 2'
+/, 'Aliases have enumerations with prefixes';
+
+# skipped superordinates
+
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc
+    =counter head3 :restart(6)
+    =numhead5  First fifth
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<head>' .+?
+    'contents' .+? 'First fifth' .+?
+    'level' .+? '5' .+?
+    'numer' .+? '1.1.6.1.1. First fifth' .+?
+    '</head>' .+?
+/, 'Skipped superordinates';
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc :!toc
+    =counter head3 :restart(6)
+    =counter item :prefix< head4 >
+    =counter item :restart(4)
+
+    =numitem False fourth item
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<item>' .+?
+    'contents' .+? 'False fourth item' .+?
+    'level' .+? '1' .+?
+    'numer' .+? '1.1.6.1.4. False fourth item' .+?
+    '</item>' .+?
+/, 'Skipped superordinates second example';
+
+# Check that warnings are issued for bad counter and config options
+
+$ast = qq:to/QAST/.AST;
+    =begin rakudoc :!toc
+    =config head3 :restart(6)
+    =counter item :prefix< head4 > :left-align
+    =counter item :toc<head>
+    =counter table :restart-after<item> :restart-except-after<para>
+
+    =numitem False fourth item
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render( $ast, :pre-finalised );
+my @warns = $rv.warnings;
+like @warns.join, /
+    'counter directive should not contain' .+? '"left-align"'
+/, 'got bad option in counter directive';
+
+like @warns.join, /
+'counter directive must contain' .+? 'only has' .+? '"toc"'
+/, 'got bad option in counter directive';
+
+like @warns.join, /
+'counter directive has both'
+/, 'got both restart-x options';
+
+like @warns.join, /
+'config directive should not contain' .+? '"restart"' .+? 'Should'
+/, 'got bad option in config directive';
+
+done-testing;

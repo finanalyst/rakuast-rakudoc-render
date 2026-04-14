@@ -74,12 +74,12 @@ like $rv.body.Str, /
     '<defn>' .+? 'target:' .+? 'defn_lexiphania' .+?
     '<defn>' .+? 'target:' .+? 'defn_glossoligation' .+
     '<markup-L>' .*?
-        'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
+        'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania").｣' .+
         'link-label:' .+? 'lexiphania' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
     '<markup-L>' .*?
-        'extra:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
+        'extra:' .+? '｢Restraint of' .+? 'otherwise)｣' .+
         'link-label:' .+? 'glossoligation' .+
         'target:' .+? 'defn_glossoligation' .+
         'type:' .+? 'defn'
@@ -102,13 +102,13 @@ $rv = $rdp.render( $ast, :pre-finalised );
 like $rv.body.Str, /
     'To treat his' .+?
     '<markup-L>' .*?
-        'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania"). ｣' .+
+        'extra:' .+? '｢An unfortunate proclivity' .+? 'indeed "lexiphania").｣' .+
         'link-label:' .+? 'lexiphania' .+
         'target:' .+? 'defn_lexiphania' .+
         'type:' .+? 'defn' .+
     '</markup-L>' .*?
     '<markup-L>' .*?
-        'extra:' .+? '｢Restraint of' .+? 'otherwise) ｣' .+
+        'extra:' .+? '｢Restraint of' .+? 'otherwise)｣' .+
         'link-label:' .+? 'glossoligation' .+
         'target:' .+? 'defn_glossoligation' .+
         'type:' .+? 'defn' .+
@@ -134,7 +134,7 @@ like $rv.body.Str, /
 /, 'inline definition rendered';
 like $rv.body.Str, /
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢coyotus interruptus｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>'
@@ -159,12 +159,12 @@ like $rv.body.Str, /
 /, 'inline definition rendered';
 like $rv.body.Str, /
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢crazy coyote｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>' .+?
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢speed runner revenge｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>'
@@ -194,12 +194,12 @@ like $rv.body.Str, /
 /, 'inline definition rendered';
 like $rv.body.Str, /
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢coyotus interruptus｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>' .+?
     '<markup-L>' .+?
-    'extra' .+? '<para>' .+? 'There ensued' .+? '</para>' .+?
+    'extra' .+? 'There ensued' .+?
     'link-label' .+? '｢hubris｣' .+?
     'target' .+? '｢' <xdigit>+ '｣' .+
     '</markup-L>'

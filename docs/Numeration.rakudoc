@@ -25,8 +25,23 @@ numbers / behaviours.
 Increment the given level, resetting higher levels.
 Returns a string of the result.
 
+However, for consistency, a numeration needs to be incremented whenever a
+I<num>B<BLOCK> is encountered, so to get 1, the numeration needs to be incremented
+
 =head2 method reset
 Reset the counters for all levels.
+
+=head2 errors
+
+If a warning is created when trying an illegal C<:form> string, then the errors
+are attached to the Numeration object.
+
+The errors can be retrieved with
+    my Numeration $n;
+    # later after using it with $n.numvalue
+    .say for $n.warnings.list
+
+Warnings are generated, but a fallback is rendered.
 
 =place semantic:AUTHOR :caption<Credits>
 

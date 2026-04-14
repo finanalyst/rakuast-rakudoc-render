@@ -177,7 +177,8 @@ offer more.
 =numitem1 reset to level one
 =numitem3 jump levels
 =item an unnumbered item
-=for numitem2 :continued
+=counter item :restart
+=for numitem2
 but we can resume after a break
 =para
 =defn Definitions
@@ -206,7 +207,8 @@ just phone the SWAT team
 
 An ordinary paragraph creates the definition list.
 
-=for numdefn :continued
+=counter numdefn :restart
+=for numdefn
 Lemma 4
 Claim you are the victim here
 
@@ -399,9 +401,305 @@ text messages for other formats.
 =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.jpeg :caption<JPEG image placement> :headlevel(2)
 =place https://github.com/Raku/RakuDoc-GAMMA/raw/main/compliance-files/camelia.png :caption<Png image placement> :headlevel(2)
 
+=head Enumerated blocks
+
+The heading from now on will not be included in the Table of Contents
+=config head :!toc
+=config head2 :!toc
+=config head3 :!toc
+
+=numhead1 PHYSICS
+=numhead2 Newtonian
+=numhead2 Relativistic
+=begin numformula :caption<Mass-Energy Equivalence>
+e^{ipi}+1=0
+=end numformula
+
+=config numhead1   :form<TOPIC %A - %D>
+=config numhead2   :form<%D [subtopic %A%N]>
+=config numformula :form<Equation %N: %C>
+=numhead1 PHYSICS
+=numhead2 Newtonian
+=numhead2 Relativistic
+=begin numformula :caption<Mass-Energy Equivalence> :numalias<RELFORM>
+e^{ipi}+1=0
+=end numformula
+=begin numformula :caption<Mass-Energy Equivalence> :numalias< Equation %N. | EQNFORM>
+e^{ipi}+1=0
+=end numformula
+
+=begin section
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=end section
+
+Here we can use the formula enumerations, viz.
+=item Default is A<RELFORM>
+=item Instance configured is A<EQNFORM>
+
+=begin section
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >    :!continued
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >  :!continued
+e^{ipi}+1=0
+=end section
+
+=begin section
+=counter table1    :restart-after< head3 >
+=counter formula   :restart-after< head3 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=end section
+=begin section
+=config formula1  :counter< table1 >
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=end section
+
+=begin section
+=config formula1  :counter< TablesAndFormulae >
+=config table1    :counter< TablesAndFormulae >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=end section
+
+=begin section
+=counter TablesAndFormulae   :restart-after< head3 >
+=config formula1 :counter< TablesAndFormulae >
+=config table1 :counter< TablesAndFormulae >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=end section
+
+=begin section
+=counter formula1   :restart-after< head3 > :prefix< head3 >
+=counter table1     :restart-after< head3 > :prefix< head3 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=end section
+
+=begin section
+=config formula1  :counter< TablesAndFormulae >
+=config table1    :counter< TablesAndFormulae >
+=counter TablesAndFormulae :prefix< head1 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=numhead1 Second heading
+=for numtable1   :caption< Caption for next table >
+| one   | two  |
+=end section
+
+=begin section
+=config formula1  :counter< TablesAndFormulae >
+=config table1    :counter< TablesAndFormulae >
+=counter TablesAndFormulae :prefix< head1 >
+
+=numhead1 Heading
+=numhead2 Subheading
+=numhead3 Subsubheading
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numhead3 Subsubheading
+=begin section
+=config table :counter< SpecialTable >
+
+=counter SpecialTable :restart(1000)
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=end section
+=numhead1 Second heading
+=for numtable1   :caption< Caption for next table >
+| one   | two  |
+=for numformula1 :caption< Caption for next formula >
+e^{ipi}+1=0
+=end section
+
+=begin section
+=counter item  :restart-except-after< item1 head1 table formula >
+
+=numhead1 Heading
+=numitem Item the first
+=numitem Item the second
+=for numtable1   :caption< Caption for first table >
+| one   | two  |
+=numitem Item the third
+=numhead2 Subheading
+=numitem Item the fourth
+=for numformula1 :caption< Caption for first formula >
+e^{ipi}+1=0
+=numitem Item the fifth
+=for numtable1   :caption< Caption for second table >
+| one   | two  |
+=for numformula1 :caption< Caption for second formula >
+e^{ipi}+1=0
+=numitem Item the sixth
+=numhead1 Second heading
+=numitem Item the seventh
+=for numtable1   :caption< Caption for next table >
+| one   | two  |
+=for numformula1 :caption< Caption for next formula >
+e^{ipi}+1=0
+=numitem Item the eighth
+=end section
+
+=for head :toc
+Non-arabic numerals
+
+=config head :form< %Z %D >
+=config head2 :form< ｢%Z｣%R %D >
+=config head3 :form< ｢%Z｣%R｢%B｣ %D >
+=numhead First title
+=numhead Second title
+=numhead3 Sub-sub-head one (implies the sub-head)
+=numhead3 Sub-sub-head two
+=numhead2 Sub-head first explicit
+=numhead2 Sub-head second explicit
+=for numformula2 :form<%T %Z.%R. >
+e^{i\pi}+1=0
+
 Text finishes after version number
 =place semantic:AUTHORS :caption<Credits>
 =place semantic:LICENSE
 =place semantic:VERSION :!toc
 =end rakudoc
-

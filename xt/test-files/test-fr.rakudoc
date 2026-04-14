@@ -1,0 +1,7 @@
+=begin rakudoc
+=document :lang<fr>
+=TITLE Un simple test
+=head Premier titre
+
+Texte
+=end rakudoc

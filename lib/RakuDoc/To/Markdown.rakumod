@@ -140,6 +140,8 @@ class RakuDoc::To::Markdown {
         my constant DEFN-TERM-OFF = '</span>';
         my constant BAD-MARK-ON = "`";
         my constant BAD-MARK-OFF = "`";
+        my constant WEIGHTY-ON = '<span style="font-variant: small-caps">';
+        my constant WEIGHTY-OFF = '</span>';
         my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
         %(
             #| special key to name template set
@@ -147,21 +149,24 @@ class RakuDoc::To::Markdown {
             #| renders =code blocks
             code => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n```\n"
+                my $numeration = %prm<numeration> ?? %prm<numeration>».Str.join ~ "\n" !! '';
+                PStr.new: "$del\n$numeration```\n"
                 ~ %prm<contents>.Str.trim-trailing
                 ~ "\n```\n"
             },
             #| renders =input block
             input => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n```\n  --- input --- \n"
+                my $numeration = %prm<numeration> ?? %prm<numeration>».Str.join ~ "\n" !! '';
+                PStr.new: "$del\n$numeration```\n  --- input --- \n"
                 ~ %prm<contents>
                 ~ "\n```\n"
             },
             #| renders =output block
             output => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: $del ~ "\n```\n  --- output --- \n"
+                my $numeration = %prm<numeration> ?? %prm<numeration>».Str.join ~ "\n" !! '';
+                PStr.new: "$del\n$numeration```\n  --- output --- \n"
                 ~ %prm<contents>
                 ~ "\n```\n"
              },
@@ -169,8 +174,10 @@ class RakuDoc::To::Markdown {
             comment => -> %prm, $tmpl { '' },
             #| renders =formula block
             formula => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
+                my $head = $tmpl('head', %(
+                    :contents(%prm<caption>),
+                    |(%prm<level id target numeration delta>:p),
+                ));
                 PStr.new: $head ~ %prm<formula> ~ "\n\n"
             },
             #| renders =head block
@@ -178,11 +185,11 @@ class RakuDoc::To::Markdown {
                 my $del = %prm<delta> // '';
                 # using level + 1 so that TITLE is always larger
                 my $h = '#' x ( %prm<level> + 1)  ~ ' ' ;
-                my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
-                $caption = "%prm<numeration> $caption" if %prm<numeration>;
+                my $contents = %prm<contents>.split(/ \< ~ \> <-[>]>+? /).join.trim;
+                $contents = %prm<numeration>».Str.join if %prm<numeration>;
                 my $targ := %prm<target>;
-                my $esc-cap = $tmpl.globals.escape.( $caption );
-                $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
+                my $esc-cap = $tmpl.globals.escape.( $contents );
+                $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
                 my $id-target = %prm<id>:exists && %prm<id>
                     ?? qq[[\n<div id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                     !! '';
@@ -191,12 +198,8 @@ class RakuDoc::To::Markdown {
                     ( $esc-cap ?? qq[[\n<div id="$esc-cap"></div>]] !! '') ~
                     qq[[<div id="$targ"></div>]] ~
                     ($del if $del) ~ "\n\n" ~
-                    $h ~ $caption ~ "\n"
+                    $h ~ $contents ~ "\n"
             },
-            #| renders =numhead block
-            numhead => -> %prm, $tmpl { $tmpl<head> },
-            #| renders the numeration part for a toc
-            toc-numeration => -> %prm, $tmpl { %prm<contents> },
             #| rendering the content from the :delta option
             #| see inline variant markup-Δ
             delta => -> %prm, $tmpl {
@@ -208,46 +211,37 @@ class RakuDoc::To::Markdown {
                 " for " ~
                 %prm<versions> ~ DEVEL-VERSION-OFF ~
                 "\n\n"
-            },#| renders =defn block
+            },
+            #| renders =defn block
             defn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
+                DEFN-TERM-ON ~ (%prm<numeration> ?? %prm<numeration>».Str.join !! %prm<term>) ~ DEFN-TERM-OFF ~ "\n\n" ~
                 DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
             },
             #| renders =numdefn block
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
-            #| special template to render a numbered defn list data structure
-            numdefn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ %prm<numeration> ~ '&nbsp;' ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
-            },
-            #| special template to render a numbered item list data structure
-            numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
-                my $num = %prm<level> - 1;
-                my $indent = '&nbsp;&nbsp;' x %prm<level>;
-                $num = @bullets.elems - 1 if $num >= @bullets.elems;
-                my $bullet = %prm<bullet> // @bullets[$num];
-                $indent ~ $bullet ~ ' ' ~ %prm<contents>.trim ~ "  \n"
+                if %prm<numeration> {
+                   %prm<numeration>».Str.join ~ "\n"
+                }
+                else {
+                    my $num = %prm<level> - 1;
+                    my $indent = '&nbsp;&nbsp;' x %prm<level>;
+                    $num = @bullets.elems - 1 if $num >= @bullets.elems;
+                    my $bullet = %prm<bullet> // @bullets[$num];
+                    $indent ~ $bullet ~ ' ' ~ %prm<contents>.trim ~ "  \n"
+                }
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
                 [~] %prm<item-list>
             },
-            #| renders =numitem block
-            numitem => -> %prm, $tmpl {
-                %prm<numeration> ~ ' ' ~ %prm<contents> ~ "  \n\n"
-            },
-            #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl {
-                [~] %prm<numitem-list>
-            },
             #| renders =nested block
             nested => -> %prm, $tmpl {
                 PStr.new: '> ' ~
                     (%prm<target> ?? '<span class="nested" id="' ~ %prm<target> ~ '"></span>' !! '') ~
-                    %prm<contents> ~ ("\n\n" unless %prm<inline>)
+                        ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~ ("\n\n" unless %prm<inline>)
             },
             #| renders =para block
             para => -> %prm, $tmpl {
@@ -257,13 +251,15 @@ class RakuDoc::To::Markdown {
                 else {
                     PStr.new:
                         (%prm<target> ?? '<span class="para" id="' ~ %prm<target> ~ '"></span>' !! '') ~
-                        %prm<contents> ~ ("  \n" unless %prm<inline>)
+                        ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~ ("  \n" unless %prm<inline>)
                 }
             },
             #| renders =place block
             place => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $rv = $tmpl('head', %(:$level, |( %prm<id target caption delta>:p )));
+                my $rv = $tmpl('head', %(
+                    :contents(%prm<caption>),
+                    |(%prm<level id target delta numeration >:p )
+                ));
                 given %prm<content-type> {
                     when .contains('text') {
                         $rv ~= %prm<contents>
@@ -282,13 +278,14 @@ class RakuDoc::To::Markdown {
             #| renders =section block
             section => -> %prm, $tmpl {
                 (%prm<delta> // '') ~
-                %prm<contents> ~ "\n"
+                ( %prm<numeration> ?? %prm<numeration>».Str.join !! %prm<contents> ) ~ "\n"
             },
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(:$level, |( %prm<id target caption delta>:p )));
-
+                my $head = $tmpl('head', %(
+                    :contents(%prm<caption>),
+                    |( %prm<level id target caption delta>:p )
+                ));
                 ( $head unless %prm<hidden> ) ~
                 %prm<contents> ~ "\n\n"
             },
@@ -352,9 +349,11 @@ class RakuDoc::To::Markdown {
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $contents = qq[UNKNOWN { %prm<block-name> }];
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption("Unknown %prm<block-name>"), :$contents, :delta('')));
+                my $contents = qq[Unknown { %prm<type> } has no template];
+                my $head = $tmpl('head', %(
+                    :contents(%prm<caption>),
+                    |(%prm<level id target delta numeration >:p )
+                ));
                 PStr.new: $head ~
                     "```\n" ~
                     $tmpl.globals.escape.( %prm<contents>.Str.trim-trailing ) ~
@@ -362,14 +361,12 @@ class RakuDoc::To::Markdown {
             },
             #| Version numbers should appear on the same line as the heading
             VERSION => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $content := %prm<contents>.Str;
+                my $contents = (%prm<caption> ?? %prm<caption> !! 'Version' ) ~ '&nbsp;' x 4 ~ %prm<contents>.Str;
                 my $head = $tmpl('head', %(
-                    :$level, :id(%prm<id>), :target(%prm<target>),
-                    :caption(%prm<caption> ~ '&nbsp;' x 4 ~  $content ),
-                    :delta(%prm<delta>)
+                    :$contents,
+                    |(%prm<level id target delta numeration >:p )
                 ));
-                if %prm<hidden> { qq| <div class="rakudoc-version">$content\</div> | }
+                if %prm<hidden> { qq| <div class="rakudoc-version">$contents\</div> | }
                 else { $head }
             },
             #| special template to encapsulate all the output to save to a file
@@ -427,6 +424,17 @@ class RakuDoc::To::Markdown {
                     ([~] @inds ) ~ "\n\n"
                 }
                 else { PStr.new: 'No indexed items'  ~ "\n\n" }
+            },
+            #| special template to render the citations list
+            citations => -> %prm, $tmpl {
+                if %prm<citation-list>:exists && %prm<citation-list>.elems {
+                    my $cap = %prm<caption> ?? ("----\n\n## " ~ %prm<caption> ~ "\n\n") !! '';
+                    PStr.new: $cap ~
+                            ([~] %prm<citation-list>) ~ "\n\n"
+                }
+                else {
+                    PStr.new: ''
+                }
             },
             #| special template to render the footnotes data structure
             footnotes => -> %prm, $tmpl {
@@ -532,6 +540,13 @@ class RakuDoc::To::Markdown {
             markup-V => -> %prm, $tmpl {
                 $tmpl.globals.escape.( %prm<contents> )
             },
+            #| W< DISPLAY-TEXT >
+            #| Weighty (typically rendered with small caps)
+            markup-W => -> %prm, $tmpl { WEIGHTY-ON ~ %prm<contents> ~ WEIGHTY-OFF },
+            #| Q< CITATION LIST >
+            #| Make into a superscript
+            markup-Q => -> %prm, $tmpl { SUPERSCR-ON ~ %prm<contents> ~ SUPERSCR-OFF },
+
 
             ##| Markup codes, optional display and meta data
 

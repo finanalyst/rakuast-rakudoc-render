@@ -34,10 +34,8 @@ class HTML::Processor is RakuDoc::Processor {
     method name-id($ast --> Str) {
         my $target = self.mangle($ast.Str.trim);
         return self.register-target($target) if $.is-target-unique($target);
-        my @rejects = $target, ;
-        # if plain target is rejected, then start adding a suffix
         $target ~= '_0';
-        ++$target while $target ~~ any(@rejects);
+        ++$target until $.is-target-unique($target);
         self.register-target($target);
     }
 
@@ -112,6 +110,8 @@ class RakuDoc::To::HTML {
         my constant IMPORTANT-OFF = '</span>';
         my constant UNUSUAL-ON = '<span class="unusual">';
         my constant UNUSUAL-OFF = '</span>';
+        my constant WEIGHTY-ON = '<span class="weighty">';
+        my constant WEIGHTY-OFF = '</span>';
         my constant CODE-ON = '<span class="code">';
         my constant CODE-OFF = '</span>';
         my constant OVERSTRIKE-ON = '<span class="overstrike">';
@@ -147,7 +147,7 @@ class RakuDoc::To::HTML {
             _name => -> %, $ { 'markdown templates' },
             #| escape contents of code block, which may contain <span ...> & </span> tabs, not to be escaped
             escape-code => -> %prm, $tmpl {
-                my $cont = %prm<contents>.Str // '';
+                my $cont = (%prm<contents> // '').Str.trim-trailing;
                 if $cont ~~ / <spantab> / {
                     ( $cont ~~ / ^ [ .*? <spantab> ]+ .*? $ / )
                     .chunks
@@ -163,48 +163,90 @@ class RakuDoc::To::HTML {
             #| renders =code blocks
             code => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
-                PStr.new: ('<div class="delta">' ~ $del if $del) ~
-                q[<pre class="code-block">] ~
-                $tmpl<escape-code> ~
-                "\n</pre>\n" ~
-                (</div> if $del)
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                PStr.new: qq:to/CODE/
+                    { '<div class="delta">' ~ $del if $del }
+                    <div class="raku-code">
+                    <pre class="rakudoc">{ $tmpl<escape-code> }</pre>
+                    <div class="code-caption">$caption\</div>
+                    </div>
+                    { '</div>' if $del }
+                CODE
             },
             #| renders =input block
             input => -> %prm, $tmpl {
                 %prm<html-tags> = True;
                 my $del = %prm<delta> // '';
-                PStr.new: q[<pre class="input-block">] ~
-                $del ~
-                $tmpl<escape-code> ~
-                "\n</pre>\n"
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                PStr.new: qq:to/CODE/
+                    { '<div class="delta">' ~ $del if $del }
+                    <div class="raku-input">
+                    <pre class="rakudoc">{ $tmpl<escape-code> }</pre>
+                    <div class="input-caption">$caption\</div>
+                    </div>
+                    { '</div>' if $del }
+                CODE
             },
             #| renders =output block
             output => -> %prm, $tmpl {
                 %prm<html-tags> = True;
                 my $del = %prm<delta> // '';
-                PStr.new: q[<pre class="output-block">] ~
-                $del ~
-                $tmpl<escape-code> ~
-                "\n</pre>\n"
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                PStr.new: qq:to/CODE/
+                    { '<div class="delta">' ~ $del if $del }
+                    <div class="raku-output">
+                    <pre class="rakudoc">{ $tmpl<escape-code> }</pre>
+                    <div class="output-caption">$caption\</div>
+                    </div>
+                    { '</div>' if $del }
+                CODE
             },
             #| renders =comment block
             comment => -> %prm, $tmpl { '' },
             #| renders =formula block
             formula => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
-                PStr.new: $head ~ qq[[<div class="formula">{%prm<formula>}</div>]]
+                # beware premature stringification!
+                my $del = %prm<delta> // '';
+                my $caption = %prm<caption>;
+                $caption = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                my $targ := %prm<target>;
+                my $id-target = %prm<id>:exists &&
+                        %prm<id>
+                        ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
+                        !! '';
+                PStr.new: ('<div class="delta">' ~ $del if $del) ~
+                    $id-target ~
+                    qq[<div class="formula" id="{ $tmpl.globals.escape.($targ) }">] ~
+                    ( %prm<alt> ?? %prm<alt> !! %prm<formula> ) ~
+                    q[<div class="formula-caption">] ~
+                    $caption ~
+                    q[</div>
+                    </div>] ~
+                    ( '</div>' if $del )
             },
             #| renders =head block
             head => -> %prm, $tmpl {
                 my $del = %prm<delta> // '';
                 my $classes = ( %prm<classes> // "heading" ) ~ ( 'delta' if $del ) ;
                 my $h = 'h' ~ (%prm<level> // '1');
-                my $caption = %prm<caption>.split(/ \< ~ \> <-[>]>+? /).join.trim;
-                $caption = "%prm<numeration> $caption" if %prm<numeration>;
-                my $targ := %prm<target>;
-                my $esc-cap = $tmpl.globals.escape.( $caption );
-                $esc-cap = '' if ($caption eq $targ or $esc-cap eq $targ);
+                my $contents = %prm<contents>.Str.split(/ \< ~ \> <-[>]>+? /).join.trim;
+                $contents = [~] %prm<numeration>.grep( *.so ).map( {
+                    '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                } ) if %prm<numeration>;
+                my $targ = %prm<target> // '';
+                my $esc-cap = $tmpl.globals.escape.( $contents );
+                $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
                 my $id-target = %prm<id>:exists && %prm<id>
                     ?? qq[[\n<div class="id-target" id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
                     !! '';
@@ -213,19 +255,13 @@ class RakuDoc::To::HTML {
                     ( $esc-cap ?? qq[[\n<div class="id-target" id="$esc-cap"></div>]] !! '') ~
                     qq[[<$h id="$targ" class="$classes {'delta' if $del}">]] ~
                     ($del if $del) ~
-                    ($caption ?? (
+                    ($contents ?? (
                     qq[[<a href="#" title="go to top of document">]] ~
-                    $caption ~
+                    $contents ~
                     qq[[</a><a class="raku-anchor" title="direct link" href="#{$esc-cap.so ?? $esc-cap !! $targ}">§\</a>]] ~
                     qq[[</$h>\n]]
                     ) !! '')
             },
-            #| renders =numhead block
-            numhead => -> %prm, $tmpl { $tmpl<head> },
-            #| renders the numeration part for a toc
-            toc-numeration => -> %prm, $tmpl { %prm<contents> },
-            #| rendering the content from the :delta option
-            #| see inline variant markup-Δ
             delta => -> %prm, $tmpl {
                 DEVEL-VERSION-ON ~ %prm<versions> ~
                 ( %prm<note> ??
@@ -236,58 +272,113 @@ class RakuDoc::To::HTML {
                 "\n\n"
             },#| renders =defn block
             defn => -> %prm, $tmpl {
-                PStr.new: DEFN-TERM-ON ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
+                my Bool $extended-defn = ?(%prm<extension>:exists and %prm<extension>);
+                my PStr $rv .= new: DEFN-TERM-ON ~
+                    ( %prm<numeration> ??
+                        [~] %prm<numeration>.grep( *.so ).map( {
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                            } )
+                    !! %prm<term> ) ~
+                    DEFN-TERM-OFF ~ "\n" ~
+                    DEFN-TEXT-ON;
+                $rv ~= %prm<contents>;
+                if $extended-defn {
+                    for %prm<extension>.list -> $extra-p {
+                        $rv ~= '<p class="extended-defn">';
+                        $rv ~= $extra-p;
+                        $rv ~= '</p>'
+                    }
+                }
+                $rv ~= DEFN-TEXT-OFF ~ "\n\n";
+                $rv
             },
             #| renders =numdefn block
             #| special template to render a defn list data structure
             defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
-            #| special template to render a numbered defn list data structure
-            numdefn => -> %prm, $tmpl {
-                PStr.new: DEFN-TERM-ON ~ %prm<numeration> ~ '&nbsp;' ~ %prm<term> ~ DEFN-TERM-OFF ~ "\n\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
-            },
-            #| special template to render a numbered item list data structure
-            numdefn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<numdefn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
-                my $n = %prm<level> - 1;
-                $n = @bullets.elems - 1 if $n >= @bullets.elems;
-                my $bullet = %prm<bullet> // @bullets[$n];
-                qq[<li class="item" data-bullet="$bullet" style="--level:$n;"> {%prm<contents>}</li>\n]
+                my PStr $rv .= new;
+                my Bool $extended-item = ?(%prm<extension>:exists and %prm<extension>);
+                if %prm<numeration> {
+                    # numeration is a sequence marked with field-type.
+                    # Filter out D and put the rest in the bullet
+                    my $bullet = '';
+                    my $text = '';
+                    %prm<numeration>.grep( *.so ).map( {
+                        if .field-type eq 'D' { $text = $_ }
+                        else { $bullet ~= $_ }
+                    } );
+                    $rv ~= qq| \<li class="numitem{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet" { ' id="' ~ $_ ~ '" ' with %prm<id>}>|;
+                    $rv ~= $text;
+                }
+                else {
+                    my $n = %prm<level> - 1;
+                    $n = @bullets.elems - 1 if $n >= @bullets.elems;
+                    my $bullet = %prm<bullet> // @bullets[$n];
+                    $rv ~= qq[<li class="item{ $extended-item ?? ' extended-item' !! '' }" data-bullet="$bullet" style ="--level:$n;" { ' id="' ~ $_ ~ '" ' with %prm<id>} >];
+                    $rv ~= %prm<contents>
+                }
+                if $extended-item {
+                    for %prm<extension>.list -> $extra-p {
+                        $rv ~= '<p class="extended-item">';
+                        $rv ~= $extra-p;
+                        $rv ~= '</p>'
+                    }
+                }
+                $rv ~= "</li>\n";
+                $rv
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
                 "\n<ul class=\"item-list\">" ~ ([~] %prm<item-list>) ~ "</ul>\n"
             },
-            #| renders =numitem block
-            numitem => -> %prm, $tmpl {
-                my $n = %prm<level> - 1;
-                qq[<li class="item" data-bullet="{%prm<numeration>}" style="--level:$n;"> {%prm<contents>}</li>\n]
-            },
-            #| special template to render a numbered item list data structure
-            numitem-list => -> %prm, $tmpl {
-                "\n<ol class=\"item-list\">" ~ ([~] %prm<numitem-list>) ~ "</ol>\n"
-            },
             #| renders =nested block
             nested => -> %prm, $tmpl {
-                PStr.new: '<div class="nested">' ~ %prm<contents> ~ "</div>\n"
+                PStr.new:
+                    '<div class="nested"' ~
+                    (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
+                    '>' ~
+                        ( %prm<numeration>
+                        ?? [~] %prm<numeration>.grep( *.so ).map( {
+                            '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                        } )
+                        !! %prm<contents> ) ~
+                    "</div>\n"
             },
             #| renders =para block
             para => -> %prm, $tmpl {
-                if %prm<is-in-head> {
-                    PStr.new: %prm<contents>
+                my $del = %prm<delta> // '';
+                my $number = '';
+                my PStr $text = %prm<contents>;
+                my Bool $extended-para = ?(%prm<extension>:exists and %prm<extension>);
+                %prm<numeration>.grep( *.so ).map( {
+                    if .field-type eq 'D' { $text .= new: $_ }
+                    else { $number ~= $_ }
+                } );
+                my PStr $rv .= new: ('<div class="delta">' ~ $del if $del) ~
+                    "\n" ~
+                    ( $extended-para ?? '<div class="extended-para"' !! '<p' ) ~
+                    (' id="' ~ %prm<id> ~ '"' if %prm<id>) ~
+                    (' class="' ~ %prm<in-type> ~ '"' if %prm<in-type>) ~
+                    '>' ~
+                    (qq[<span class="numpara">$number\</span>] if $number);
+                $rv ~= $text;
+                if $extended-para {
+                    for %prm<extension>.list -> $extra-p {
+                        $rv ~= '<p class="extended-para">';
+                        $rv ~= $extra-p;
+                        $rv ~= '</p>'
+                    }
                 }
-                else {
-                    PStr.new: '<p' ~
-                        (%prm<target> ?? ' id="' ~ %prm<target> ~ '"' !! '') ~
-                    '>' ~ %prm<contents> ~ "</p>\n"
-                }
+                $rv ~= $extended-para ?? "</div>\n" !! "</p>\n";
+                $rv ~= '</div>' if $del;
+                $rv
             },
             #| renders =place block
             place => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $rv = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
+                my $rv = $tmpl('head', %(
+                    :contents(%prm<caption>), |(%prm<id target delta numeration level>:p)
+                ));
                 given %prm<content-type> {
                     when .contains('text') {
                         $rv ~= %prm<contents>
@@ -310,13 +401,19 @@ class RakuDoc::To::HTML {
             section => -> %prm, $tmpl {
                 qq[<div class="rakudoc-section { 'delta' if %prm<delta>}">] ~
                 %prm<delta> ~
-                %prm<contents> ~ "\n</div>\n"
+                ( %prm<numeration>
+                    ?? [~] %prm<numeration>.grep( *.so ).map( {
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                        } )
+                    !! %prm<contents>
+                ) ~
+                "\n</div>\n"
             },
             #| renders =SEMANTIC block, if not otherwise given
             semantic => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption(%prm<caption>), :delta(%prm<delta>)));
-
+                my $head = $tmpl('head', %(
+                    :contents( %prm<caption> ),
+                    |(%prm<id target delta numeration level>:p)));
                 ( $head unless %prm<hidden> ) ~
                 %prm<contents> ~ "\n\n"
             },
@@ -326,10 +423,16 @@ class RakuDoc::To::HTML {
             table => -> %prm, $tmpl {
                 my $classes = ( %prm<classes> // "table" );
                 my $del = %prm<delta> // '';
-                my $rv = PStr.new: $del;
-                $rv ~= qq[<div id="{%prm<target>}"></div>\n] if %prm<target>:exists and %prm<target>;
+                my $align-table = %prm<alignment>:exists && %prm<alignment> ?? ' align-' ~ %prm<alignment> !! '';
+                my $caption =
+                    %prm<numeration>
+                    ?? [~] %prm<numeration>.grep( *.so ).map( {
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                    } )
+                    !! %prm<caption> ;
+                my $rv = PStr.new: ('<div class="delta">' ~ $del if $del);
+                $rv ~= qq[<div id="{%prm<target> // 'default-table'}" class="rakudoc-table$align-table">\n];
                 $rv ~= '<table class="' ~ $classes ~ '">';
-                $rv ~= qq[<caption>{%prm<caption>}</caption>] if %prm<caption>;
                 if %prm<procedural> {
                     $rv ~= '<tbody class="procedural">';
                     for %prm<grid>.list -> @row {
@@ -364,13 +467,16 @@ class RakuDoc::To::HTML {
                     $rv ~= [~] %prm<rows>.map({ '<tr><td>' ~ .map(*.trim).join('</td><td>') ~ "</td></tr>\n\t\t" });
                     $rv ~= "\t</tbody>\n";
                 }
-                $rv ~= "</table>\n"
+                $rv ~= "</table>\n";
+                $rv ~= qq[<div class="table-caption rakudoc">$caption\</div>] if $caption;
+                $rv ~= '</div>';
+                $rv ~= '</div>' if $del;
+                $rv
             },
             #| renders any unknown block minimally
             unknown => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $contents = qq[UNKNOWN { %prm<block-name> }];
-                my $head = $tmpl('head', %(:$level, :id(%prm<id>), :target(%prm<target>), :caption("Unknown %prm<block-name>"), :$contents, :delta('')));
+                my $contents = qq[UNKNOWN { %prm<type> }];
+                my $head = $tmpl('head', %( :$contents, |(%prm<id level target caption delta>:p)) );
                 PStr.new: $head ~ $tmpl.globals.escape.(%prm<contents>)
                         .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                         .subst(/ \v /, '<br>', :g) ~
@@ -378,14 +484,9 @@ class RakuDoc::To::HTML {
             },
             #| Version numbers should appear on the same line as the heading
             VERSION => -> %prm, $tmpl {
-                my $level = %prm<headlevel> // 1;
-                my $content := %prm<contents>.Str;
-                my $head = $tmpl('head', %(
-                    :$level, :id(%prm<id>), :target(%prm<target>),
-                    :caption(%prm<caption> ~ '&nbsp' x 4 ~  $content ),
-                    :delta(%prm<delta>)
-                ));
-                if %prm<hidden> { qq| <div class="rakudoc-version">$content\</div> | }
+                my $contents = ( %prm<caption> || 'VERSION' ).Str ~ '&nbsp' x 4 ~ %prm<contents>.Str;
+                my $head = $tmpl('head', %( :$contents, |(%prm< level id target delta numeration >:p) ) );
+                if %prm<hidden> { qq| <div class="rakudoc-version">$contents\</div> | }
                 else { $head }
             },
             #| renders a single item in the toc
@@ -405,6 +506,19 @@ class RakuDoc::To::HTML {
                 else {
                     PStr.new: ''
                 }
+            },
+            #| special template to render the citationns list
+            citations => -> %prm, $tmpl {
+                my $rv = PStr.new: qq[<div class="citations">\n];
+                if %prm<citation-items>:exists && %prm<citation-items>.elems {
+                    $rv ~= "\n<ul class=\"citations-list\">\n" ~
+                        ([~] %prm<citation-items>) ~ "\n</ul>\n"
+                }
+                else {
+                    $rv ~=  %prm<contents>
+                }
+                $rv ~= "</div>\n";
+                $rv
             },
             #| renders a single item in the index
             index-item => -> %prm, $tmpl {
@@ -442,7 +556,7 @@ class RakuDoc::To::HTML {
                         { [~] %prm<footnotes>.map({
                             PStr.new:
                                 '<div class="footnote">' ~ .<fnNumber> ~
-                                '<a id="' ~ .<fnTarget> ~
+                                '<a class="footnote-anchor" id="' ~ .<fnTarget> ~
                                 '" href="#' ~ .<retTarget> ~
                                 '"> |^| </a>' ~
                                  ~ .<contents>.Str ~
@@ -461,7 +575,7 @@ class RakuDoc::To::HTML {
                         <h2 class="warnings-caption">Warnings</h2>
                             <ol>
                             { [~] %prm<warnings>.map({
-                                '<li>' ~ $tmpl.globals.escape.( $_ ) ~ "</li>\n"
+                                '<li>' ~ $tmpl.globals.escape.( $_ ).subst( / \v /,'<br>',:g ) ~ "</li>\n"
                                 })
                             }
                             </ol>
@@ -496,7 +610,7 @@ class RakuDoc::To::HTML {
             #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
             markup-N => -> %prm, $tmpl {
                 PStr.new:
-                qq[<a id="{ %prm<retTarget> }" href="#{ %prm<fnTarget> }">] ~
+                '<a class="footnote-anchor" id="' ~ %prm<retTarget> ~ '" href="#' ~ %prm<fnTarget> ~ '">' ~
                 FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF ~
                 '</a>'
             },
@@ -526,18 +640,32 @@ class RakuDoc::To::HTML {
                     .subst(/ \h\h /, '&nbsp;&nbsp;', :g)
                     .subst(/ \v /, '<br>', :g)
             },
+            #| W< DISPLAY-TEXT >
+            #| Weighty (typically rendered with small caps)
+            markup-W => -> %prm, $tmpl { WEIGHTY-ON ~ %prm<contents> ~ WEIGHTY-OFF },
+            #| Q< CITATION LIST >
+            #| Make into a superscript
+            markup-Q => -> %prm, $tmpl { HIGH-ON ~ %prm<contents> ~ HIGH-OFF },
 
             ##| Markup codes, optional display and meta data
 
             #| A< DISPLAY-TEXT |  METADATA = ALIAS-NAME >
             #| Alias to be replaced by contents of specified V<=alias> directive
-            markup-A => -> %prm, $tmpl { %prm<contents> },
+            markup-A => -> %prm, $tmpl {
+                my $c = %prm<contents>;
+                $c ~~ Positional
+                    ??
+                    [~] $c.grep( *.so ).map( {
+                        '<span class="enumeration-' ~ .field-type ~ '">' ~ $_ ~ '</span>'
+                    } )
+                    !! $c
+            },
             #| E< DISPLAY-TEXT |  METADATA = HTML/UNICODE-ENTITIES >
             #| Entity (HTML or Unicode) description ( E<entity1;entity2; multi,glyph;...> )
             markup-E => -> %prm, $tmpl { %prm<contents> },
             #| F< DISPLAY-TEXT |  METADATA = LATEX-FORM >
             #| Formula inline content ( F<ALT|LaTex notation> )
-            markup-F => -> %prm, $tmpl { CODE-ON ~ %prm<formula> ~ CODE-OFF },
+            markup-F => -> %prm, $tmpl { CODE-ON ~ ( %prm<alt> ?? %prm<alt> !! %prm<formula> ) ~ CODE-OFF },
             #| L< DISPLAY-TEXT |  METADATA = TARGET-URI >
             #| Link ( L<display text|destination URI> )
             markup-L => -> %prm, $tmpl {
@@ -629,7 +757,7 @@ class RakuDoc::To::HTML {
             final => -> %prm, $tmpl {
                 qq:to/PAGE/
                 <!DOCTYPE html>
-                <html { $tmpl<html-root> } >
+                <html { $tmpl<html-root> } class="rakudoc-singlepage">
                     <head>
                     <meta charset="UTF-8" />
                     { $tmpl<head-block> }
@@ -645,7 +773,7 @@ class RakuDoc::To::HTML {
             ## sections of the final document
             #| root section, what is placed in the html tab
             html-root => -> %prm, $tmpl {
-                qq[lang="{%prm<source-data><language>}"]
+                qq[lang="{%prm<document-options><lang>}"]
             },
             #| head-block, what goes in the head tab
             head-block => -> %prm, $tmpl {
@@ -667,13 +795,14 @@ class RakuDoc::To::HTML {
                 }
                 $rv ~= '<h1 class="title">' ~ %prm<title> ~ "</h1>\n\n" ~
                 (%prm<subtitle> ?? ( "\t" ~ %prm<subtitle> ~ "\n\n" ) !! '') ~
-                ( %prm<rendered-toc> if %prm<rendered-toc> && %prm<source-data><rakudoc-config><toc> )
+                ( %prm<rendered-toc> if %prm<rendered-toc> && %prm<document-options><auto-toc> )
             },
             #| the main section of body
             main-content => -> %prm, $tmpl {
                 %prm<body>.Str ~
                 %prm<footnotes>.Str ~ "\n" ~
-                ( %prm<rendered-index> if %prm<rendered-index> && %prm<source-data><rakudoc-config><index>)
+                ( %prm<rendered-index> if %prm<rendered-index> && %prm<document-options><auto-index>)~
+                ( %prm<rendered-citations> if %prm<rendered-citations> && %prm<document-options><auto-citations>)
             },
             #| the last section of body
             footer => -> %prm, $tmpl {
@@ -682,7 +811,7 @@ class RakuDoc::To::HTML {
                     Rendered from<span class="footer-field">&nbsp;{%prm<source-data><path>}/{%prm<source-data><name>}</span>
                 <span class="footer-field">{sprintf( "&nbsp;at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<modified>.DateTime }</span>
                 <span class="footer-line">Source last modified {(sprintf( "at %02d:%02d UTC on %s", .hour, .minute, .yyyy-mm-dd) with %prm<source-data><modified>.DateTime)}</span>
-                { qq[<div class="warnings">%prm<warnings>\</div>] if %prm<warnings> }
+                { qq[<div class="warnings">{ %prm<warnings> }\</div>] if %prm<warnings> }
                 </div>
                 FOOTER
             },
