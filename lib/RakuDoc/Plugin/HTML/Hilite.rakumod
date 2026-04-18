@@ -1,10 +1,7 @@
-use experimental :rakuast;
-use RakuAST::Deparse::Highlight;
 use Rainbow;
 use RakuDoc::Render;
 
 unit class RakuDoc::Plugin::HTML::Hilite;
-has $!default-engine;
 has %.config = %(
     :name-space<hilite>,
 	:license<Artistic-2.0>,
@@ -66,7 +63,6 @@ has %!hilight-langs = %(
     'HASKELL' => 'haskell',
 );
 method enable( RakuDoc::Processor:D $rdp ) {
-    $!default-engine = (%*ENV<HIGHLIGHTER> // 'rainbow').lc;
     $rdp.add-templates( $.templates, :source<Hilite plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
@@ -94,10 +90,6 @@ method templates {
             # if :lang is set to lang not in list, not raku or RakuDoc, then no highlighting
             # if :lang is not set, then highlight as Raku
 
-            # select hilite engine
-            my $engine = $!default-engine;
-            $engine = %prm<highlighter>.lc
-                if (%prm<highlighter>:exists && %prm<highlighter> ~~ /:i 'Deparse' | 'Rainbow' /);
             my $code;
             my $syntax-label;
             my $source = %prm<contents>.Str.trim-trailing;
@@ -140,41 +132,7 @@ method templates {
                     NOHIGHS
             }
             without $code { # so need Raku highlighting
-                if $engine eq 'deparse' {
-                    # for RakuDoc, deparse needs an explicit =rakudoc block
-                    if $syntax-label eq 'RakuDoc' {
-#                        $code = $source;
-                         $source = "=begin rakudoc\n$source\n=end rakudoc";
-                    }
-                    my $c = highlight( $source, :unsafe, %mapping);
-                    if $c {
-                        $code = $c.trim
-                    } else {
-                        my $m = $c.exception.message;
-                        $tmpl.globals.helper<add-to-warnings>( 'Error when highlighting ｢' ~
-                            ( $source.chars > CUT-LENG
-                                ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
-                                !! $source.trim ) ~
-                            '｣' ~ "\nbecause\n$m" );
-                        $code = $source;
-                    }
-                    CATCH {
-                        default {
-                            $tmpl.globals.helper<add-to-warnings>( 'Error in code block with ｢' ~
-                                ( $source.chars > CUT-LENG
-                                    ?? ($source.substr(0,CUT-LENG) ~ ' ... ')
-                                    !! $source.trim ) ~
-                                '｣' ~ "\nbecause\n" ~ .message );
-                            $code = $tmpl.globals.escape.($source);
-                        }
-                    }
-                    if $syntax-label eq 'RakuDoc' {
-                         $code .= subst(/ '<span' <-[ > ]>+ '>=begin</span> <span' <-[ > ]>+  '>rakudoc</span>' \s*/,'');
-                         $code .= subst(/ \s* '<span' <-[ > ]>+ '>=end</span> <span' <-[ > ]>+  '>rakudoc</span>' \s* /,'')
-                    }
-                }
-                else {
-                    if $syntax-label eq 'RakuDoc' {
+                if $syntax-label eq 'RakuDoc' {
                         $code = Rainbow::tokenize-rakudoc($source).map( -> $t {
                             my $cont = $tmpl.globals.escape.($t.text);
                             if $t.type.key ne 'TEXT' {
@@ -196,10 +154,9 @@ method templates {
                             }
                         }).join('');
                     }
-                    $code .= subst( / \v+ <?before $> /, '');
-                    $code .= subst( / \v /, '<br>', :g);
-                    $code .= subst( / "\t" /, '&nbsp' x 4, :g );
-                }
+                $code .= subst( / \v+ <?before $> /, '');
+                $code .= subst( / \v /, '<br>', :g);
+                $code .= subst( / "\t" /, '&nbsp' x 4, :g );
                 $code = qq:to/NOHIGHS/;
                         <pre class="nohighlights">$code\</pre>
                         NOHIGHS
@@ -212,7 +169,7 @@ method templates {
             qq:to/CODE/
                 { '<div class="delta">' ~ $del if $del }
                 <div class="raku-code">
-                <button class="copy-code" title="Copy code"><i class="far fa-clipboard"></i></button>
+                <button class="copy-code" title="Copy code">⿻</button>
                 <label>$syntax-label\</label>
                 <div>$code\</div>
                 <div class="code-caption">$caption\</div>
@@ -256,6 +213,28 @@ method js-text {
 method scss-str {
     q:to/SCSS/
     /* Raku code highlighting */
+
+    //hardwire hilite colours (for now)
+    :root {
+        --base-color-scalar: #2458a2;       /* Darker than #3273dc */
+        --base-color-array: #B01030;        /* Darkened crimson */
+        --base-color-hash: #00a693;         /* Darker cyan-green */
+        --base-color-code: #209cee;         /* Bulma info */
+        --base-color-keyword: #008c7e;      /* Darkened primary cyan */
+        --base-color-operator: #1ca24f;     /* Darker green for contrast */
+        --base-color-type: #d12c4c;         /* Deeper pinkish red */
+        --base-color-routine: #489fdc;      /* Richer blue, not too pale */
+        --base-color-string: #369ec6;       /* Stronger blue-cyan */
+        --base-color-string-delimiter: #1d90d2; /* More contrast than #7dd3fc */
+        --base-color-escape: #2b2b2b;       /* Darkened for visibility */
+        --base-color-text: #2a2a2a;         /* Darker base text */
+        --base-color-comment: #4aa36c;      /* Less pastel, more visible green */
+        --base-color-regex-special: #00996f; /* Balanced mid-green */
+        --base-color-regex-literal: #a52a2a; /* brown */
+        --base-color-regex-delimiter: #aa00aa; /* Darkened fuchsia */
+        --base-color-doc-text: #2b9e71;     /* Deeper mint green */
+        --base-color-doc-markup: #d02b4c;   /* Matches adjusted danger */
+    }
     .raku-code {
         position: relative;
         margin: 0 1rem 0 1rem;
@@ -298,77 +277,82 @@ method scss-str {
             /* https://github.com/Raku/doc-website/issues/144 */
             padding: 0rem;
         }
+        // Exception: If inside .nohighlights, reset styles
+        .nohighlights {
+            background: none;
+            color: inherit;
+        }
         .rainbow-name_scalar {
-            color: var(--bulma-link-40);
-            font-weight:500;
+          color: var(--base-color-scalar);
+          font-weight: 500;
         }
         .rainbow-name_array {
-            color: var(--bulma-link);
-            font-weight:500;
+          color: var(--base-color-array);
+          font-weight: 500;
         }
         .rainbow-name_hash {
-            color: var(--bulma-link-60);
-            font-weight:500;
+          color: var(--base-color-hash);
+          font-weight: 500;
         }
         .rainbow-name_code {
-            color: var(--bulma-info);
-            font-weight:500;
+          color: var(--base-color-code);
+          font-weight: 500;
         }
         .rainbow-keyword {
-            color: var(--bulma-primary);
-            font-weight:500;
+          color: var(--base-color-keyword);
+          font-weight: 500;
         }
         .rainbow-operator {
-            color: var(--bulma-success);
-            font-weight:500;
+          color: var(--base-color-operator);
+          font-weight: 500;
         }
         .rainbow-type {
-            color: var(--bulma-danger-60);
-            font-weight:500;
+          color: var(--base-color-type);
+          font-weight: 500;
         }
         .rainbow-routine {
-            color: var(--bulma-info-30);
-            font-weight:500;
+          color: var(--base-color-routine);
+          font-weight: 500;
         }
         .rainbow-string {
-            color: var(--bulma-info-40);
-            font-weight:500;
+          color: var(--base-color-string);
+          font-weight: 500;
         }
         .rainbow-string_delimiter {
-            color: var(--bulma-primary-40);
-            font-weight:500;
+          color: var(--base-color-string-delimiter);
+          font-weight: 500;
         }
         .rainbow-escape {
-            color: var(--bulma-black-60);
-            font-weight:500;
+          color: var(--base-color-escape);
+          font-weight: 500;
         }
         .rainbow-text {
-            color: var(--bulma-black);
-            font-weight:500;
+          color: var(--base-color-text);
+          font-weight: 500;
         }
         .rainbow-comment {
-            color: var(--bulma-success-30);
-            font-weight:500;
+          color: var(--base-color-comment);
+          font-weight: 500;
         }
         .rainbow-regex_special {
-            color: var(--bulma-success-60);
-            font-weight:500;
+          color: var(--base-color-regex-special);
+          font-weight: 500;
         }
         .rainbow-regex_literal {
-            color: var(--bulma-black-60);
-            font-weight:500;
+          color: var(--base-color-regex-literal);
+          font-weight: 500;
         }
         .rainbow-regex_delimiter {
-            color: var(--bulma-primary-60);
-            font-weight:500;
+          color: var(--base-color-regex-delimiter);
+          font-weight: 500;
         }
         .rainbow-rakudoc_text {
-            color: var(--bulma-success-40);
-            font-weight:500;
+          color: var(--base-color-doc-text);
+          font-weight: 500;
         }
         .rainbow-rakudoc_markup {
-            color: var(--bulma-danger-40);
-            font-weight:500;
+          color: var(--base-color-doc-markup);
+          font-weight: 500;
         }
     }
     SCSS
