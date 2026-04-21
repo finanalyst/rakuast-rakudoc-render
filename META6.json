@@ -63,7 +63,15 @@
         "compliance-rendering/rakudociem-ipsum.html",
         "compliance-rendering/rakudociem-ipsum.md",
         "compliance-rendering/rakudociem-ipsum.rakudoc",
-        "compliance-rendering/rakudociem-ipsum_singlefile.html"
+        "compliance-rendering/rakudociem-ipsum_singlefile.html",
+        "csl/acm-siggraph.csl",
+        "csl/din-1505-2-alphanumeric.csl",
+        "csl/evolutionary-bioinformatics.csl",
+        "csl/ieee.csl",
+        "csl/iso690-author-date-en.csl",
+        "locales/locales-de-CH.xml",
+        "locales/locales-en-GB.xml",
+        "locales/locales-en-US.xml"
     ],
     "support": {
         "email": "richard@hainsworth.wales",

@@ -69,17 +69,6 @@ method enable( RakuDoc::Processor:D $rdp ) {
 sub wrapper(str $color, str $c) {
     $c.trim ?? "<span style=\"color:var(--bulma-$color);font-weight:500;\">$c\</span>" !! $c
 }
-my %mapping = mapper(
-          black     => -> $c { wrapper( "black",   $c ) },
-          blue      => -> $c { wrapper( "link",    $c ) },
-          cyan      => -> $c { wrapper( "info",    $c ) },
-          green     => -> $c { wrapper( "primary", $c ) },
-          magenta   => -> $c { wrapper( "success", $c ) },
-          none      => -> $c { wrapper( "none",    $c ) },
-          red       => -> $c { wrapper( "danger",  $c ) },
-          yellow    => -> $c { wrapper( "warning", $c ) },
-          white     => -> $c { wrapper( "white",   $c ) },
-);
 method templates {
     constant CUT-LENG = 500; # crop length in error message
     %(
