@@ -1,7 +1,6 @@
 use experimental :rakuast;
 use RakuDoc::Render;
 use RakuDoc::PromiseStrings;
-use RakuAST::Deparse::Highlight;
 
 class HTML::Processor is RakuDoc::Processor {
     ## A set of methods to generate anchors / targets
@@ -87,7 +86,7 @@ class RakuDoc::To::HTML {
         if %*ENV<MORE_HTML>:exists {
             exit note( "｢{%*ENV<MORE_HTML>}｣ is not a file" ) unless %*ENV<MORE_HTML>.IO ~~ :e & :f;
             try {
-                $rdp.add-templates( EVALFILE( %*ENV<MORE_HTML> ), :source<User-supplied-markdown> );
+                $rdp.add-templates( EVALFILE( %*ENV<MORE_HTML> ), :source<User-supplied-HTML> );
                 CATCH {
                     default { exit note "Could not utilise ｢{%*ENV<MORE_HTML>}｣ " ~ .message }
                 }
