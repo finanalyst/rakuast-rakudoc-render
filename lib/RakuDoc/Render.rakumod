@@ -541,8 +541,9 @@ class RakuDoc::Processor {
                     $prs.body ~= self.escape($ast.closer)
                 }
                 when 'E' {
-                    $prs.body ~= $letter ~ self.escape($ast.opener) ~ self.markup-contents($ast);
-                    if $ast.meta -> $_ { $prs.body ~= '|' ~ .map(*.key).join('; ') }
+                    my $contents = self.markup-contents($ast);
+                    $prs.body ~= $letter ~ self.escape($ast.opener) ~ $contents.clone;
+                    if $ast.meta -> $_ { $prs.body ~= ( $contents.Str ?? '|' !! '' ) ~ .map(*.key).join('; ') }
                     $prs.body ~= self.escape($ast.closer)
                 }
                 default { $prs.body ~= self.escape($ast.DEPARSE) }
