@@ -609,9 +609,12 @@ class RakuDoc::To::HTML {
             #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
             markup-N => -> %prm, $tmpl {
                 PStr.new:
-                '<a class="footnote-anchor" id="' ~ %prm<retTarget> ~ '" href="#' ~ %prm<fnTarget> ~ '">' ~
-                FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF ~
-                '</a>'
+                '<a class="footnote-anchor" id="' ~
+                    %prm<retTarget> ~ '" href="#' ~ %prm<fnTarget> ~
+                    '" title="' ~ %prm<contents> ~
+                    '">' ~
+                    FOOTNOTE-ON ~ '[ ' ~ %prm<fnNumber> ~ ' ]' ~ FOOTNOTE-OFF ~
+                    '</a>'
             },
             #| O< DISPLAY-TEXT >
             #| Overstrike or strikethrough
