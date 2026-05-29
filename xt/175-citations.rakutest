@@ -1,7 +1,6 @@
 use v6.d;
 use Test;
 use RakuDoc::Render;
-use Data::Dump::Tree;
 
 plan 17;
 
