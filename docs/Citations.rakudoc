@@ -1,0 +1,50 @@
+=begin rakudoc
+=TITLE Citations and Q markup
+=SUBTITLE Support for the citation block
+=head Prerequisites
+
+Currently the citations support is provided using the `citeproc` and `pandoc` utilities,
+qudos to John MacFarlane, which are written in Haskell.
+
+Some of the alternative citation block formats are supported by converting
+other xml formats to the one used by pandoc.
+
+Consequently, these need to be installed.
+Assuming an Ubuntu OS.
+
+=item pandoc
+
+    sudo apt install pandoc
+
+=item cabal, which creates the citeproc utility
+
+    sudo apt install cabal-install
+    cabal user-config init
+    cabal --version
+    ghc --version
+    cabal update
+
+=item citeproc, download repo, compile, then place in path
+
+    git clone https://github.com/jgm/citeproc.git citeproc
+    cd citeproc
+    cabal build -fexecutable
+    sudo ln -sr dist-newstyle/build/x86_64-linux/ghc-*/citeproc-*/x/citeproc/build/citeproc/citeproc /usr/local/bin/citeproc
+
+=item citeproc styles, download to a standard directory
+
+    sudo mkdir /usr/share/csl
+    sudo git clone https://github.com/citation-style-language/styles.git /usr/share/csl
+
+=item bibutils, needed to convert some bibliographic formats
+
+    mkdir bibutils
+    cd bibutils
+    wget https://sourceforge.net/projects/bibutils/files/latest/download -O bibutils.tgz
+    tar -xzf bibutils.tgz && rm bibutils.tgz
+    cd bibutils_*
+    sh -f configure
+    sudo make install 
+
+
+=end rakudoc

@@ -12,7 +12,6 @@ use URI;
 use YAMLish;
 #no precompilation; note 'Render debug: no precompilation';
 #use Data::Dump::Tree; note 'Render debug: using DDD';
-#use REPL; note 'Render debug: using REPL module';
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
 
@@ -598,9 +597,9 @@ class RakuDoc::Processor {
                 my $fnNumber = PCell.new( :id("fn_num_$id"), :$!register);
                 my $fnTarget = "fn_target_$id";
                 # fnNumber is changed by complete-footnotes at end of rendering
-                $prs.footnotes.push: %( :$contents, :$retTarget, :0fnNumber, :$fnTarget );
+                $prs.footnotes.push: %( :contents($contents.clone), :$retTarget, :0fnNumber, :$fnTarget );
                 $prs.body ~= %!templates<markup-N>(
-                    %( %config, :$retTarget, :$fnNumber, :$fnTarget )
+                    %( %config, :$retTarget, :$fnNumber, :$fnTarget, :$contents )
                 );
             }
 

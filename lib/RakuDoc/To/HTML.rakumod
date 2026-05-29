@@ -607,7 +607,7 @@ class RakuDoc::To::HTML {
             markup-K => -> %prm, $tmpl { KEYBOARD-ON ~ %prm<contents> ~ KEYBOARD-OFF },
             #| N< DISPLAY-TEXT >
             #| Note (text not rendered inline, but visible in some way: footnote, sidenote, pop-up, etc.))
-            markup-N => -> %prm, $tmpl {
+            markup-N => -> %prm, $tmpl { 
                 PStr.new:
                 '<a class="footnote-anchor" id="' ~
                     %prm<retTarget> ~ '" href="#' ~ %prm<fnTarget> ~

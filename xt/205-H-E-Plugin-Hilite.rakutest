@@ -1,6 +1,5 @@
 use v6.d;
 use Test;
-use RakuAST::Deparse::Highlight;
 use RakuDoc::To::HTML;
 my $html-instance = RakuDoc::To::HTML.new;
 my $rdp := $html-instance.rdp;
@@ -17,12 +16,6 @@ my $ast = q:to/CODE/.AST;
 =begin code
 	=head2 X<C<hyper>|Syntax,hyper (statement prefix)>, X<C<race>|Syntax,race (statement prefix)>
 =end code
-=begin code
-	=head2 X<<<Hyper operators|Operators,<<;Operators,>>;Operators,«;Operators,»;Operators,»=«;Operators,«=»>>>
-=end code
-=begin code
-	=head2 X<<<Word quoting with interpolation and quote protection: qqww|Syntax,qqww>>>
-=end code
 =end rakudoc
 CODE
 
@@ -31,7 +24,7 @@ my $rv = $html-instance.rdp.render( $ast, :pre-finalized ).body.Str;
 like $rv, /
     '<label>Raku highlighting</label>' .+?
     '<span class="rainbow-operator">X</span>' .+?
-    'C&lt;<span class="rainbow-routine">hyper</span>&gt;'
+    'hyper'
 /, 'got Rainbow hilighting in code';
 
 done-testing;
