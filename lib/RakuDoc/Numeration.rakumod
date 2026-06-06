@@ -67,12 +67,13 @@ class CounterTracker {
         my $expression;
         my $after = False;
         my $restart-trigger = False;
-        unless %config.keys.any ~~ @counter-opts.any {
-            @!warnings.push: "The counter directive must contain minimum of one of: { '"' «~«  @counter-opts »~» '"' } options but only has: { '"' «~« %config.keys »~» '"' }. Should this be in a =config statement?";
+        my @keys = %config.keys;
+        unless @keys.any ~~ @counter-opts.any {
+            @!warnings.push: "The counter directive must contain minimum of one of: { '"' «~«  @counter-opts »~» '"' } options but only has: { '"' «~« @keys »~» '"' }. Should this be in a =config statement?";
             return
         }
-        if (%config.keys (-) @counter-opts) -> $extra {
-            @!warnings.push: "The counter directive should not contain (any of): { '"' «~« $extra.keys »~» '"' }. Should these be in a =config statement?"
+        if (@keys.grep( * ∉ @counter-opts )) -> @extra {
+            @!warnings.push: "The counter directive should not contain (any of): { '"' «~« @extra »~» '"' }. Should these be in a =config statement?"
         }
         if %config<restart-after>:exists and %config<restart-except-after>:exists {
             @!warnings.push: "The counter directive has both ｢:restart-after｣ and ｢:restart-except-after｣ options, only ｢:restart-except-after｣ is used";

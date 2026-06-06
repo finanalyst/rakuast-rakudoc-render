@@ -84,7 +84,7 @@ class RakuDoc::Processor {
         %!templates.data{ $key } = $object;
     }
 
-    multi submethod TWEAK(:$!output-format = 'txt',
+    submethod TWEAK(:$!output-format = 'txt',
      :$test = False,
      :$pretty = False,
      :$debug = None ) {
@@ -2167,7 +2167,7 @@ class RakuDoc::Processor {
         if $ast.defined && $ast.config {
             %config = .resolved-config with $ast;
             # .resolved-config does not work for all types of keys, so check to make sure
-            for ($ast.config.keys (-) %config.keys).keys -> $k {
+            for $ast.config.keys.grep( * ∉ %config.keys) -> $k {
                 my $opt = $ast.config{$k};
                 if $opt ~~ RakuAST::QuotedString {
                     $opt = $ast.config{$k}.DEPARSE.substr(1,*-1).trim
