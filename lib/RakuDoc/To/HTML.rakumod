@@ -743,8 +743,8 @@ class RakuDoc::To::HTML {
                 }
                 else {
                     my $index-text;
-                    $index-text = %prm<meta>.map( { $_.elems ?? ( "\x2983" ~ $_.map({ "\x301a$_\x301b" }) ~ "\x2984") !! "\x301a$_\x301b" })
-                        if %prm<meta>.elems;
+                    $index-text = %prm<meta>.Str
+                        if %prm<meta>;
                     '<span class="indexed" id="' ~ %prm<target> ~ '"' ~
                     ($index-text && $contents ?? (' data-index-text="' ~ $index-text ~ '">') !! '>') ~
                     $contents ~

@@ -16,10 +16,11 @@ multi sub MAIN(
         :$debug,
         Str :$verbose,
         Bool :$pretty,
-        Bool :$force = False
+        Bool :$force = False,
+        Bool :$html
     ) {
     my %docs = list-files( $src, < .rakudoc .rakumod >);
-    my $extension = $format eq 'html' ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
+    my $extension = ($format eq 'html' or $html) ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
     mktree $to unless $to.IO ~~ :e & :d; # just make sure the rendered directory exist
     my %rendered = list-files( $to, ( $extension, ) );
     my @to-be-rendered = %docs.pairs.grep({
@@ -47,11 +48,13 @@ multi sub MAIN(
         :$debug,                   #= apply debug parameters. Valid names are: None (default) All AstBlock BlockType Scoping Templates MarkUp
         Str :$verbose,             #= name of a template gives more detail about parameters / output
         Bool :$pretty,             #= set Template response to pretty
-        Bool :$force = False       #= force render of all files
+        Bool :$force = False,       #= force render of all files,
+        Bool :$html = False   #= format is html
      ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
     mktree "$to/$file".IO.dirname unless "$to/$file".IO.dirname.IO ~~ :e & :d;
     my $nformat = ($format eq 'html' && $single) ?? 'html-single' !! $format;
+    $nformat = 'html' if $html;
     render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty, :$force)
 }
 multi sub MAIN(

@@ -33,7 +33,16 @@ span.replace {
 	text-shadow: -1px 1px;
 }
 span.indexed {
-	text-shadow: 1px 1px orange;
+    /* The default state: invisible to the reader */
+    transition: background-color 0.5s ease, outline 0.5s ease;
+    padding: 0 2px;
+    border-radius: 3px;
+
+    /* The "Jumped To" state */
+    &:target {
+        background-color: #fff3bf; /* Soft yellow highlight */
+        outline: 2px solid #fab005;
+    }
 	&:hover::before {
         content: attr(data-index-text);
         translate: 0 -1.5em;
@@ -41,6 +50,7 @@ span.indexed {
         opacity: 75%;
         background-color: turquoise;
         color: indigo;
+        padding: 0 5px;
     }
 }
 span.keyboard {

@@ -43,7 +43,15 @@ span.replace {
 }
 
 span.indexed {
-  text-shadow: 1px 1px orange;
+  /* The default state: invisible to the reader */
+  transition: background-color 0.5s ease, outline 0.5s ease;
+  padding: 0 2px;
+  border-radius: 3px;
+  /* The "Jumped To" state */
+}
+span.indexed:target {
+  background-color: #fff3bf; /* Soft yellow highlight */
+  outline: 2px solid #fab005;
 }
 span.indexed:hover::before {
   content: attr(data-index-text);
@@ -52,6 +60,7 @@ span.indexed:hover::before {
   opacity: 75%;
   background-color: turquoise;
   color: indigo;
+  padding: 0 5px;
 }
 
 span.keyboard {
@@ -161,6 +170,17 @@ div.toc .toc-item a {
 
 div.index-section {
   margin-left: calc((var(--level) - 1) * 1rem);
+}
+div.index-section[data-index-level="1"] {
+  text-shadow: 1px 1px orange;
+}
+div.index-section > a.index-ref {
+  margin-left: calc(var(--level) * 1rem);
+  display: block;
+  width: auto;
+  white-space: normal;
+}
+div.index-section {
   /*
   	> a.index-ref {
   	    white-space: nowrap;
@@ -179,15 +199,6 @@ div.index-section {
   	    }
   	}
   	*/
-}
-div.index-section[data-index-level="1"] {
-  text-shadow: 1px 1px orange;
-}
-div.index-section > a.index-ref {
-  margin-left: calc(var(--level) * 1rem);
-  display: block;
-  width: auto;
-  white-space: normal;
 }
 
 span.developer-note {

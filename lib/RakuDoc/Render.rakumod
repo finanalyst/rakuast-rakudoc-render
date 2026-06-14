@@ -1167,10 +1167,12 @@ class RakuDoc::Processor {
         my PStr $contents .= new;
         my @extension = ();
         if $ast ~~ RakuAST::Doc::Block && !$ast.for && !$ast.abbreviated && $ast.paragraphs.elems > 1 {
+        say "@ $$?LINE {$$?FILE.comb(/ ~  .+? /)}", ;
             $contents ~= $.contents( $ast.paragraphs.head, $type );
             @extension = $ast.paragraphs.tail( * -1  ).map({ $.contents( $_, $type ) })
         }
         else {
+        say "@ $$?LINE {$$?FILE.comb(/ ~  .+? /)}", ;
             $contents ~= $.contents( $ast, $type )
         }
         %config<caption> = $.option-contents( %config<caption> ) if %config<caption>;
