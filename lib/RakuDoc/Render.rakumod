@@ -1489,7 +1489,7 @@ class RakuDoc::Processor {
                     # Search downwards for first row with an empty cell to the right...
                     # (Note: starts by searching current row before moving down)
                     for %at<row> ..* -> $row {
-                        for 0 ..^ %at<col> -> $col {
+                        for 0 ..^ (%at<col> || 1) -> $col {
                             return { :$row, :$col } if !defined @grid[$row][$col];
                         }
                     }
@@ -1498,7 +1498,7 @@ class RakuDoc::Processor {
                     # Search rightwards for first column with an empty cell above...
                     # (Note: starts by searching current column before moving left)
                     for %at<col> ..* -> $col {
-                        for 0 ..^ %at<row> -> $row {
+                        for 0 ..^ (%at<row> || 1) -> $row {
                             return { :$row, :$col } if !defined @grid[$row][$col];
                         }
                     }
@@ -2120,7 +2120,7 @@ class RakuDoc::Processor {
         }
         else {
             for $ast.paragraphs {
-                if $_ ~~ Str and $from ~~ < rakudoc pod section semantic nested >.any {
+                if $_ ~~ Str and $from ~~ < rakudoc pod section semantic nested cell>.any {
                     $!scoped-data.counter-tracker.process-counter( 'para', 1 );
                     $.gen-paraish( $_.trim, %(), 'para', 1, False );
                 }
