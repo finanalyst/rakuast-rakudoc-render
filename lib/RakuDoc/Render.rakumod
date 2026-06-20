@@ -343,8 +343,11 @@ class RakuDoc::Processor {
 
     #| All handle methods may generate debug reports
     proto method handle( $ast ) {
-        say "Handling: { $ast.WHICH.Str.subst(/ \| .+ $/, '') }"
-            if $.debug (cont) AstBlock;
+        if $.debug (cont) AstBlock {
+            my $block = $ast.WHICH.Str.subst(/ \| .+ $/, '');
+            my $content = $block ~~ <Str RakuAST::Doc::Paragraph>.any ?? ' [' ~ $ast~  ']' !! '';
+            say "Handling: $block$content"
+        }
         {*}
     }
     multi method handle(Str:D $ast) {
@@ -2116,7 +2119,7 @@ class RakuDoc::Processor {
     #| incorporated using the template of the block calling content
     #| when scope is rakudoc, pod, section or Semantic, strings are considered paragraphs
     method contents( $ast, $from ) {
-        my ProcessedState $*prs .= new;
+       my ProcessedState $*prs .= new;
         $!scoped-data.in-q-code = True if $from eq 'q-code';
         if $ast ~~ (Str, RakuAST::Doc::Paragraph).any {
             $.handle( $ast )
@@ -2128,7 +2131,7 @@ class RakuDoc::Processor {
                     $.gen-paraish( $_.trim, %(), 'para', 1, False );
                 }
                 else {
-                    $.handle( $_ );
+                   $.handle( $_ );
                 }
             }
         }
