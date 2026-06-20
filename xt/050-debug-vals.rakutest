@@ -15,8 +15,6 @@ my $output;
 # enum RDProcDebug <None All AstBlock BlockType Scoping Templates>;
 my RakuDoc::Processor $rdp;
 
-# AstBlock
-$rdp  .= new(:test, :debug(AstBlock));
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     =begin section
@@ -26,6 +24,9 @@ $ast = Q:to/QAST/.AST;
     =end section
     =end rakudoc
     QAST
+
+# AstBlock
+$rdp  .= new(:test, :debug(AstBlock));
 $output = output-from {
     $rv = $rdp.render( $ast, :pre-finalised )
     };

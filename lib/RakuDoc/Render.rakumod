@@ -71,6 +71,9 @@ class RakuDoc::Processor {
     multi method debug {
         $!debug-modes
     }
+    multi method debug( Bool $ ) {
+        exit note "Debug option must be followed by one or more of: { RDProcDebug::.values,join(', ') }"
+    }
     method verbose( Str $template ){ # hook onto $!templates
         %!templates.verbose = $template
     }
