@@ -345,7 +345,7 @@ class RakuDoc::Processor {
     proto method handle( $ast ) {
         if $.debug (cont) AstBlock {
             my $block = $ast.WHICH.Str.subst(/ \| .+ $/, '');
-            my $content = $block ~~ <Str RakuAST::Doc::Paragraph>.any ?? ' [' ~ $ast~  ']' !! '';
+            my $content = $block ~~ <Str RakuAST::Doc::Paragraph>.any ?? ' ｢' ~ $ast~  '｣' !! '';
             say "Handling: $block$content"
         }
         {*}
