@@ -1057,11 +1057,10 @@ class RakuDoc::Processor {
     #| nested is a container block; $level, num prefix and counters are ignored
     #| toc and caption are also ignored
     method gen-nested( $ast, %config, $type, $level, $numerate, :$implied = False ) {
-        my PStr $contents .= new;
-        $contents ~= $.contents($ast, $type );
         my $prs := $*prs;
-        $prs.body ~= $.complete-item-list;
-        $prs.body ~= $.complete-defn-list;
+        $prs.body ~= $.complete-item-list ~ $.complete-defn-list;
+        my PStr $contents .= new;
+        $contents ~= $.contents($ast, $type )  ~ $.complete-item-list ~ $.complete-defn-list;
         $prs.body ~= %!templates{ $type }(
             %( :$contents, %config)
         );
