@@ -511,7 +511,7 @@ class RakuDoc::Processor {
             }
             # CustomName
             # User-defined block
-            when any($_.uniprops) ~~ / Lu / and any($_.uniprops) ~~ / Ll / {
+            when .&Custom {
                 # in RakuDoc v2 a custom block must have mix of uppercase and lowercase letters
                 $!scoped-data.start-scope( :starter($_) );
                 $!scoped-data.last-title( $_ );
@@ -521,6 +521,9 @@ class RakuDoc::Processor {
             default { $.gen-unknown-builtin($ast, %config, $type, $level, $numerate) }
         }
     }
+    # helper function to define Custom block
+    sub Custom( $s ) { ?(any($s.uniprops) ~~ / Lu / and any($s.uniprops) ~~ / Ll / )}
+    
     # RakuDoc declarator block
     multi method handle(RakuAST::Doc::DeclaratorTarget:D $ast) {
         $*prs.warnings.push: qq:to/WARN/;
@@ -2124,6 +2127,13 @@ class RakuDoc::Processor {
         if $ast ~~ (Str, RakuAST::Doc::Paragraph).any {
             $.handle( $ast )
         }
+        elsif $from eq <item defn para>
+            and $ast.isa(RakuAST::Doc::Block) 
+            and ( $ast.type eq <code input output head formula data comment citation>.any 
+                    or $ast.type.&Custom )
+            {
+                $.handle( $ast )
+        }
         else {
             for $ast.paragraphs {
                 if $_ ~~ Str and $from ~~ < rakudoc pod section semantic nested cell>.any {
@@ -2131,7 +2141,7 @@ class RakuDoc::Processor {
                     $.gen-paraish( $_.trim, %(), 'para', 1, False );
                 }
                 else {
-                   $.handle( $_ );
+                    $.handle( $_ );
                 }
             }
         }
