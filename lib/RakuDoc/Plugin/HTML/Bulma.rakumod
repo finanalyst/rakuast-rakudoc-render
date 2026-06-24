@@ -11,7 +11,7 @@ has %.config =
 	:author<Richard Hainsworth, aka finanalyst>,
 	:version<0.2.0>,
 	:css-link(['href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css"',1],),
-	:js-link(['src="https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js"',1],),
+	:js-link(['src="https://cdn.jsdelivr.net/npm/fuzzysort@3.1.0/fuzzysort.min.js"',1],),
     :js([self.js-text,2],),
     :scss([self.chevron-scss,1],
           [ self.toc-scss, 1],
