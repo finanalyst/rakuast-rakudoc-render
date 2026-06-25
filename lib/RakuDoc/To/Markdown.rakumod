@@ -186,9 +186,9 @@ class RakuDoc::To::Markdown {
                 # using level + 1 so that TITLE is always larger
                 my $h = '#' x ( %prm<level> + 1)  ~ ' ' ;
                 my $contents = %prm<contents>.split(/ \< ~ \> <-[>]>+? /).join.trim;
+                my $esc-cap = $tmpl.globals.escape.( $contents );
                 $contents = %prm<numeration>».Str.join if %prm<numeration>;
                 my $targ := %prm<target>;
-                my $esc-cap = $tmpl.globals.escape.( $contents );
                 $esc-cap = '' if ($contents eq $targ or $esc-cap eq $targ);
                 my $id-target = %prm<id>:exists && %prm<id>
                     ?? qq[[\n<div id="{ $tmpl.globals.escape.(%prm<id>) }"></div>]]
