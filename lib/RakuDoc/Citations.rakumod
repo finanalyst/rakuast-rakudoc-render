@@ -181,7 +181,12 @@ sub convert-to-id-cls( $data, @warnings --> Positional ) is export {
     }
     $csl
         .map({ csl-lint( $_ ) })
-        .map({ if .<id>:!exists { .<id> = 'MissingID_' ~ $badIDcount++ }; $_ })
+        .map({ 
+            if .<id>:!exists {
+                if .<DOI>:exists { .<id> = .<DOI> }
+                else { .<id> = 'MissingID_' ~ $badIDcount++ } }
+            $_
+        })
         .map({ [ .<id>, $_ ] })
         .map({ test-citation($_, @warnings ) })
         .Array

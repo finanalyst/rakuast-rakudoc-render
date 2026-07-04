@@ -675,7 +675,7 @@ class RakuDoc::To::HTML {
                 my $text = %prm<link-label>;
                 given %prm<type> {
                     when 'local' {
-                        if %prm<extra>:exists {
+                        if %prm<extra> {
                             qq[<a href="{$target}#%prm<extra>">$text\</a>]
                         }
                         else {
