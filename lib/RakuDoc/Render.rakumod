@@ -882,7 +882,7 @@ class RakuDoc::Processor {
             # the marker, and for content to be made visible
             # with a mouse-over
             when 'Q' {
-                my $mark = self.markup-contents($ast).Str.trim;
+                my $mark = $ast.atoms.Str.trim;
                 my $id = 'QCode_' ~ self.name-id( $mark );
                 my $contents = PCell.new( :$id, :$!register );
                 $prs.q-codes{ $id } = $mark;
