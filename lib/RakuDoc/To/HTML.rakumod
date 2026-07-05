@@ -140,7 +140,8 @@ class RakuDoc::To::HTML {
         my constant BAD-MARK-ON = '<span class="bad-markdown">';
         my constant BAD-MARK-OFF = '</span>';
         my @bullets = <<\x2022 \x25b9 \x2023 \x2043 \x2219>> ;
-        my regex spantab { '<' \/? 'span' <-[>]>* '>'};
+        # we do not expect there to be recursively embedded spans, nor for spans to be broken accross strings
+        my regex spantab { '<span' ~ '</span>'  .+ };
         %(
             #| special key to name template set
             _name => -> %, $ { 'markdown templates' },
@@ -157,7 +158,12 @@ class RakuDoc::To::HTML {
                     })
                     .join
                 }
-                else { $tmpl.globals.escape.( $cont ) }
+                else { 
+                $tmpl.globals.escape.( $cont ) }
+                # else { 
+                #     # do not avoid double escaping
+                #     $cont.trans(qw｢  & " > < ｣ => qw｢ &amp; &quot; &gt; &lt;｣)
+                # }
             },
             #| renders =code blocks
             code => -> %prm, $tmpl {

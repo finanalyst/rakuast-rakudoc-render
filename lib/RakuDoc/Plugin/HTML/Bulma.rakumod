@@ -271,7 +271,7 @@ method templates {
                 }"></div>]
             }
             $rv ~= '<h1 class="raku-webs title">' ~ %prm<title> ~ "</h1>\n\n" ~
-            (%prm<subtitle> ?? ( '<p class="raku-webs subtitle">' ~ $tmpl.globals.escape.( %prm<subtitle> ) ~ "</p>\n" ) !! '') ~
+            (%prm<subtitle> ?? ( '<p class="raku-webs subtitle">' ~ %prm<subtitle> ~ "</p>\n" ) !! '') ~
                     q:to/END/
                   </div>
                 </section>
