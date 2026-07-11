@@ -108,10 +108,6 @@ class RakuDoc::To::Markdown {
         my constant SUPERSCR-OFF = "</sup>";
         my constant SUBSCR-ON = "<sub>";
         my constant SUBSCR-OFF = "</sub>";
-    #    my constant DBL-UNDERLINE-ON = "\e[21m";
-    #    my constant DBL-UNDERLINE-OFF = "\e[24m";
-    #    my constant CURL-UNDERLINE-ON = "\e[4:3m";
-    #    my constant CURL-UNDERLINE-OFF = "\e[4:0m";
         my constant REPLACE-ON = "**__";
         my constant REPLACE-OFF = "__**";
         my constant INDEXED-ON = '<span style="color:green; background-color: antiquewhite;">';
@@ -134,7 +130,7 @@ class RakuDoc::To::Markdown {
         my constant DEVEL-VERSION-OFF = "</span>";
         my constant DEVEL-NOTE-ON = '<span style="color: white; background-color: #ff7b25;">';
         my constant DEVEL-NOTE-OFF = "</span>";
-        my constant DEFN-TEXT-ON = '&nbsp;&nbsp;<span style="background-color: lightgrey;">';
+        my constant DEFN-TEXT-ON = '&nbsp;&nbsp;<span style="background-color: linen;">';
         my constant DEFN-TEXT-OFF = '</span>';
         my constant DEFN-TERM-ON = '<span style="font-weight: 600; font-style: italic">';
         my constant DEFN-TERM-OFF = '</span>';
@@ -214,16 +210,16 @@ class RakuDoc::To::Markdown {
             },
             #| renders =defn block
             defn => -> %prm, $tmpl {
-                DEFN-TERM-ON ~ (%prm<numeration> ?? %prm<numeration>».Str.join !! %prm<term>) ~ DEFN-TERM-OFF ~ "\n\n" ~
-                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "\n\n"
+                DEFN-TERM-ON ~ (%prm<numeration> ?? %prm<numeration>».Str.join !! %prm<term>) ~ DEFN-TERM-OFF ~ "  \n" ~
+                DEFN-TEXT-ON ~ %prm<contents> ~ DEFN-TEXT-OFF ~ "  \n"
             },
             #| renders =numdefn block
             #| special template to render a defn list data structure
-            defn-list => -> %prm, $tmpl { "\n" ~ [~] %prm<defn-list> },
+            defn-list => -> %prm, $tmpl { "  \n" ~ [~] %prm<defn-list> },
             #| renders =item block
             item => -> %prm, $tmpl {
                 if %prm<numeration> {
-                   %prm<numeration>».Str.join ~ "\n"
+                   %prm<numeration>».Str.join ~ "  \n"
                 }
                 else {
                     my $num = %prm<level> - 1;
@@ -235,7 +231,7 @@ class RakuDoc::To::Markdown {
             },
             #| special template to render an item list data structure
             item-list => -> %prm, $tmpl {
-                [~] %prm<item-list>
+                "  \n" ~ [~] %prm<item-list>
             },
             #| renders =nested block
             nested => -> %prm, $tmpl {
@@ -297,8 +293,8 @@ class RakuDoc::To::Markdown {
                 # using level + 1 so that TITLE is always larger
                 # a line above heading level one to separate sections
                 my $rv = PStr.new: $del ~ "\n";
-                $rv ~= qq[<div id="{%prm<target>}"></div>\n] if %prm<target>:exists and %prm<target>;
-                $rv ~= qq[<div>{%prm<caption>}</div>] if %prm<caption>;
+                $rv ~= qq[<div id="{%prm<target>}"></div>\n\n] if %prm<target>:exists and %prm<target>;
+                $rv ~= qq[<div>{%prm<caption>}</div>\n\n] if %prm<caption>;
                 if %prm<procedural> {
                     # Markdown appears to only allow, but require one header row
                     # so insert header separator once after first row
