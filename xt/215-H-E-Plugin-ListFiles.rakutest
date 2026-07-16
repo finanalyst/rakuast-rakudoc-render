@@ -3,7 +3,7 @@ use Test;
 
 use RakuDoc::To::HTML;
 
-plan 7;
+plan 11;
 
 my $html-instance = RakuDoc::To::HTML.new;
 my $rdp := $html-instance.rdp;
@@ -15,6 +15,10 @@ lives-ok {
 isa-ok %d<listfiles>, Associative, 'ListFiles plugin config available';
 my %lf := %d<listfiles>;
 %lf<meta> = EVALFILE 'xt/test-files/file-data.rakuon';
+%lf<meta><Language/operators><config><nav-order> = 20;
+%lf<meta><Language/101-basics><config><nav-order> = 5;
+%lf<meta><Language/operators><config><nav-label> = '20L';
+%lf<meta><Language/101-basics><config><nav-label> = '5L';
 my $temp-out;
 lives-ok { $temp-out = $rdp.templates<ListFiles>( %(
     :raw("Getting started\n\n"),
@@ -28,5 +32,25 @@ like $temp-out, /
 like $temp-out, / 'Language/operators' /, 'got link';
 like $temp-out, / 'Operators' /, 'got title';
 like $temp-out, / 'Common Raku infixes, prefixes' /, 'got subtitle';
+
+my $numeric-sorted-out;
+lives-ok { $numeric-sorted-out = $rdp.templates<ListFiles>( %(
+    :select('kind=Language'),
+    :sort-by('nav-order')
+    )
+    )},
+    'template sorts numerically on configured metadata';
+ok $numeric-sorted-out.index('Raku by example 101') < $numeric-sorted-out.index('Operators'),
+    '5 sorts before 20 numerically';
+
+my $string-sorted-out;
+lives-ok { $string-sorted-out = $rdp.templates<ListFiles>( %(
+    :select('kind=Language'),
+    :sort-by('nav-label')
+    )
+    )},
+    'template sorts lexically on configured metadata';
+ok $string-sorted-out.index('Operators') < $string-sorted-out.index('Raku by example 101'),
+    '20L sorts before 5L lexically';
 
 done-testing;

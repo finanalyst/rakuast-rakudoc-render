@@ -16,6 +16,27 @@ method enable( RakuDoc::Processor:D $rdp ) {
     $rdp.add-templates( $.templates, :source<ListFiles plugin> );
     $rdp.add-data( %!config<name-space>, %!config );
 }
+method !file-title(%data, $fn) {
+    (%data<title> eq '' or %data<title> eq 'NO_TITLE') ?? $fn !! %data<title>
+}
+method !sort-key(%data, $fn, $sort-by --> Str) {
+    my $title = self!file-title(%data, $fn);
+    my $title-key = $title.lc;
+    $sort-by.chars or return "1|$title-key|$title-key";
+
+    my $raw = do given $sort-by {
+        when 'title' { $title }
+        when 'subtitle' | 'route' { %data{$sort-by} // '' }
+        default { %data<config>{$sort-by} // '' }
+    }
+    ;
+    my $sort-value = $raw.Str.trim;
+    $sort-value eq '' and return "1|$title-key|$title-key";
+
+    $sort-value ~~ /^ '-'? \d+ $/
+        ?? "0|{sprintf('%020d', $sort-value.Int)}|$title-key"
+        !! "1|{$sort-value.lc}|$title-key"
+}
 method templates {
     my regex s-pair {
         (<-[=]>+) \= (.+?)
@@ -66,8 +87,10 @@ method templates {
                     last unless $ok
                 }
                 next unless $ok;
+                my $title = self!file-title(%data, $fn);
                 @sel-files.push: [
-                    ((%data<title> eq '' or %data<title> eq 'NO_TITLE') ?? $fn !! %data<title> ),
+                    self!sort-key(%data, $fn, %prm<sort-by>:exists ?? %prm<sort-by>.Str !! ''),
+                    $title,
                     (%data<subtitle> ?? %data<subtitle> !! 'No description found'),
                     %data<route> // $fn
                 ];
@@ -78,7 +101,7 @@ method templates {
             my $cap = qq:to/CAP/;
                     <p class="listf-caption">{ %prm<raw>.trim }</p>
                     CAP
-            for  @sel-files.sort(*.[0]) -> ($nm, $desc, $route) {
+            for  @sel-files.sort(*.[0]) -> ($sort, $nm, $desc, $route) {
                 $rv ~= qq:to/NOFL/;
                     <div class="listf-file">
                     $cap
