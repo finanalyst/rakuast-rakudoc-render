@@ -882,6 +882,20 @@ method bulma-additions-scss {
     q:to/GENERAL/;
     .content p + ul.item-list { margin-top: 0; }
     .content p + ol.item-list { margin-top: 0; }
+    li.item {
+        margin-left: calc(var(--level) * 2rem);
+        &::marker {
+            content: attr(data-bullet) " ";
+        }
+        &.extended-item > p {
+            margin: 0;
+        }
+    }
+    li.numitem {
+        &::marker {
+            content: attr(data-bullet) " ";
+        }
+    }
     .delta:hover { border: var(--bulma-border-hover) 1px solid; }
     .navbar-start { margin-bottom: 1rem; }
     table {
