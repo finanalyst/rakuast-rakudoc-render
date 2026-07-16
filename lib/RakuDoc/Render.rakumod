@@ -684,6 +684,22 @@ class RakuDoc::Processor {
                         when / ^ 'http://' | ^ 'https://' / {
                             $target = $_;
                             $type = 'external';
+                            # handle an empty link label
+                            unless $link-label {
+                                my LibCurl::Easy $curl .= new(:URL($entry), :followlocation, :failonerror );
+                                try {
+                                    $curl.perform;
+                                    if $curl.Content-Type.contains('text') {
+                                        $curl.perform.content ~~ / '<head>' .+ '<title>' ( .+? ) '</title>' .+ '</hea' /;
+                                        $link-label = $/[0].Str if $/
+                                    }
+                                    CATCH {
+                                        default {
+                                            .resume
+                                        }
+                                    }
+                                }
+                            }
                         }
                         # next deal with internal links
                         when / ^ '#' $<tgt> = (.+) $ / {
@@ -719,6 +735,11 @@ class RakuDoc::Processor {
                             $type = 'local';
                             $extra = '';
                         }
+                    }
+                    # handle an empty link label & replace it with target
+                    # should not be possible to have empty target and link
+                    unless $link-label {
+                        $link-label = $target.subst(/ \.\* $ /,'.' ~ $!output-format)
                     }
                 }
                 $!current.links{$_} = %(:$target, :$link-label, :$type, :$extra);
@@ -882,7 +903,7 @@ class RakuDoc::Processor {
             # the marker, and for content to be made visible
             # with a mouse-over
             when 'Q' {
-                my $mark = self.markup-contents($ast).Str.trim;
+                my $mark = $ast.atoms.Str.trim;
                 my $id = 'QCode_' ~ self.name-id( $mark );
                 my $contents = PCell.new( :$id, :$!register );
                 $prs.q-codes{ $id } = $mark;

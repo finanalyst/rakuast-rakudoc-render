@@ -1,4 +1,3 @@
-use experimental :rakuast;
 use RakuDoc::Templates;
 use RakuDoc::Render;
 

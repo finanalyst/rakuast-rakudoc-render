@@ -1,7 +1,7 @@
 use v6.d;
 use Test;
 use Test::Run :runs_ok;
-plan 10;
+plan 11;
 
 use RakuDoc::Render;
 use RakuDoc::To::HTML;
@@ -110,5 +110,17 @@ like $rv, /
     '<pre' .+? 'rakudoc' .+? '=head2 X&lt;&lt;&lt;Word quoting with <span class="basis">interpolation</span> and quote protection: qqww|Syntax,qqww&gt;&gt;&gt;'
     /, 'escaping with allow';
 
+
+$ast = q:to/CODE/.AST;
+=begin rakudoc
+This is a block with escaped HTML C<&amp;> in it
+=end rakudoc
+CODE
+
+$rv = $html-instance.rdp.render( $ast, :pre-finalized ).body.Str;
+todo 'explicitly requested HTML are properly escaped';
+like $rv, /
+    '<span class="code">&amp;amp;</span>'
+    /, 'explicitly escaped HTML entity';
 
 done-testing;
