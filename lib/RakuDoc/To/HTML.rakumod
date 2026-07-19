@@ -1,6 +1,16 @@
 use experimental :rakuast;
 use RakuDoc::Render;
 use RakuDoc::PromiseStrings;
+use MIME::Base64;
+
+#| Prefer embedded binary for file: images; otherwise keep the original URI (http/https).
+sub html-image-src(%prm --> Str) {
+    if (%prm<contents> ~~ Blob:D) && %prm<contents>.elems {
+        return 'data:' ~ (%prm<content-type> // 'application/octet-stream')
+            ~ ';base64,' ~ MIME::Base64.encode(%prm<contents>, :oneline);
+    }
+    ~(%prm<uri> // '')
+}
 
 class HTML::Processor is RakuDoc::Processor {
     ## A set of methods to generate anchors / targets
@@ -381,21 +391,28 @@ class RakuDoc::To::HTML {
             },
             #| renders =place block
             place => -> %prm, $tmpl {
+                # Filter undefined head options (e.g. level) so the head template
+                # does not warn about uninitialized values.
+                my %head = %prm<id target delta numeration level>:p;
                 my $rv = $tmpl('head', %(
-                    :contents(%prm<caption>), |(%prm<id target delta numeration level>:p)
+                    :contents(%prm<caption> // ''),
+                    |%head.grep({ .value.defined })
                 ));
-                given %prm<content-type> {
+                given %prm<content-type> // '' {
                     when .contains('text') {
-                        $rv ~= %prm<contents>
+                        $rv ~= %prm<contents> // ''
                     }
                     when .contains('image') {
                         my $alt = '';
                         $alt = qq[ alt="$_" title="$_"] with %prm<alt>;
+                        my $src = html-image-src(%prm);
+                        my $caption-html = '';
+                        %prm<caption> and ($caption-html = qq[<div>{ %prm<caption> }</div>]);
                         $rv ~= qq[<div class="rakudoc-image-placement">
-                            <img src="{ %prm<uri> }"$alt><div>{ %prm<caption> }</div></img></div> ]
+                            <img src="$src"$alt>$caption-html</div> ]
                     }
                     default {
-                        $rv ~= qq[<div class="rakudoc-placement-error"><p>Placement of {%prm<content-type>} is not yet implemented or requires internet connection</p></div> ]
+                        $rv ~= qq[<div class="rakudoc-placement-error"><p>Placement of {%prm<content-type> // 'unknown'} is not yet implemented or requires internet connection</p></div> ]
                     }
                 }
                 $rv ~= "\n\n";
@@ -706,15 +723,18 @@ class RakuDoc::To::HTML {
                         "\n&#x2998;"
                     }
                     default {
-                        given %prm<content-type> {
+                        given %prm<content-type> // '' {
                             when .contains('text') {
-                                %prm<contents>
+                                %prm<contents> // ''
                             }
                             when .contains('image') {
-                                qq[<img src="{ %prm<uri> }">%prm<caption>\</img> ]
+                                my $alt = '';
+                                $alt = qq[ alt="$_" title="$_"] with (%prm<alt> // %prm<fallback>);
+                                my $src = html-image-src(%prm);
+                                qq[<img src="$src"$alt>]
                             }
                             default {
-                                qq[<p>Placement of {%prm<content-type>} is not yet implemented or requires internet connection</p> ]
+                                qq[<p>Placement of {%prm<content-type> // 'unknown'} is not yet implemented or requires internet connection</p> ]
                             }
                         }
                     }

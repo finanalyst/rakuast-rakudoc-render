@@ -762,6 +762,7 @@ class RakuDoc::Processor {
                     %config<fallback> = ~$0;
                     $uri = ~$1
                 }
+                %config<fallback>:exists and (%config<alt> //= %config<fallback>);
                 $.make-placement(:$uri, :%config, :template<markup-P>);
             }
 
@@ -1266,7 +1267,8 @@ class RakuDoc::Processor {
                 %config<toc> = 'head' unless %config<toc>
         }
         else {
-            %config<caption> = 'Placement' unless %config<caption>
+            %config<alt>:exists and (%config<caption> //= %config<alt>);
+            %config<caption> or (%config<caption> = 'Placement');
         }
         my $caption = %config<caption> ?? ( %config<caption>:delete ) !! $type.tc;
         $!scoped-data.last-title($caption);
@@ -1281,6 +1283,82 @@ class RakuDoc::Processor {
         }
         self.help-toc(%config<toc>, $prs, $caption, $target, (%config<headlevel> // $level), () );
         $.make-placement(:$uri, :$caption, :%config, :template<place>, :level(%config<headlevel> // $level));
+    }
+    constant %IMAGE-EXTENSION-TYPES = %(
+        png  => 'image/png',
+        jpg  => 'image/jpeg',
+        jpeg => 'image/jpeg',
+        gif  => 'image/gif',
+        webp => 'image/webp',
+        svg  => 'image/svg+xml',
+        bmp  => 'image/bmp',
+        ico  => 'image/x-icon',
+        avif => 'image/avif',
+    );
+    method !image-content-type-from-extension(IO::Path:D $path --> Str) {
+        %IMAGE-EXTENSION-TYPES{$path.extension.lc} // ''
+    }
+    method !image-content-type-from-magic(IO::Path:D $path --> Str) {
+        # If this table grows much further, we should switch to a proper detector
+        # such as Filetype::Magic rather than maintaining our own signature list.
+        # Note: $buf[0..n] is a List, so compare via .list — Buf eqv List is always False.
+        my $buf = $path.open(:r, :bin).read(32);
+        if $buf.elems >= 8
+            && $buf.subbuf(0, 8).list eqv (0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+        {
+            return 'image/png';
+        }
+        if $buf.elems >= 3
+            && $buf.subbuf(0, 3).list eqv (0xff, 0xd8, 0xff)
+        {
+            return 'image/jpeg';
+        }
+        if $buf.elems >= 6
+            && ($buf.subbuf(0, 6).list eqv (0x47, 0x49, 0x46, 0x38, 0x37, 0x61)
+                || $buf.subbuf(0, 6).list eqv (0x47, 0x49, 0x46, 0x38, 0x39, 0x61))
+        {
+            return 'image/gif';
+        }
+        if $buf.elems >= 12
+            && $buf.subbuf(0, 4).list eqv (0x52, 0x49, 0x46, 0x46)
+            && $buf.subbuf(8, 4).list eqv (0x57, 0x45, 0x42, 0x50)
+        {
+            return 'image/webp';
+        }
+        if $buf.elems >= 2
+            && $buf.subbuf(0, 2).list eqv (0x42, 0x4d)
+        {
+            return 'image/bmp';
+        }
+        if $buf.elems >= 4
+            && $buf.subbuf(0, 4).list eqv (0x00, 0x00, 0x01, 0x00)
+        {
+            return 'image/x-icon';
+        }
+        if $buf.elems >= 12
+            && $buf.subbuf(4, 4).list eqv (0x66, 0x74, 0x79, 0x70)
+            && ($buf.subbuf(8, 4).list eqv (0x61, 0x76, 0x69, 0x66)
+                || $buf.subbuf(8, 4).list eqv (0x61, 0x76, 0x69, 0x73))
+        {
+            return 'image/avif';
+        }
+        if $buf.elems >= 4 {
+            my $head = $buf.subbuf(0, min($buf.elems, 32)).decode('latin1').trim-leading.lc;
+            if $head.starts-with('<?xml') || $head.starts-with('<svg') {
+                return 'image/svg+xml';
+            }
+        }
+        ''
+    }
+    method !verified-image-content-type(IO::Path:D $path --> Str) {
+        my $from-extension = self!image-content-type-from-extension($path);
+        my $from-magic = self!image-content-type-from-magic($path);
+        if $from-extension ne $from-magic {
+            my $ext-label = $from-extension || 'non-image';
+            my $magic-label = $from-magic || 'non-image';
+            die "Image type mismatch for ｢{$path}｣: extension implies ｢$ext-label｣, contents imply ｢$magic-label｣";
+        }
+        $from-extension
     }
     method make-placement( :$uri, :$caption, :%config, :$template, :$level ) {
         my Bool $keep-format = False;
@@ -1337,7 +1415,36 @@ class RakuDoc::Processor {
             when 'file' {
                 my URI $f-uri .= new($uri);
                 if $f-uri.path.Str.IO ~~ :e & :f {
-                    $contents = $f-uri.path.Str.IO.slurp;
+                    my $path = $f-uri.path.Str.IO;
+                    my $image-content-type = '';
+                    try {
+                        $image-content-type = self!verified-image-content-type($path);
+                        CATCH {
+                            default {
+                                my $error = .message;
+                                $contents = %config<fallback> // $error;
+                                $prs.warnings.push($error);
+                            }
+                        }
+                    }
+                    if !$contents.defined {
+                        if $image-content-type ne '' {
+                            %config<content-type> = $image-content-type;
+                            $contents = $path.slurp(:bin);
+                        }
+                        else {
+                            try {
+                                $contents = $path.slurp;
+                                CATCH {
+                                    default {
+                                        my $error = .message;
+                                        $contents = %config<fallback> // $error;
+                                        $prs.warnings.push($error);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 else {
                     my $error = "No file found at ｢$f-uri｣";
@@ -1366,7 +1473,11 @@ class RakuDoc::Processor {
             }
         }
         # trap contents that have RakuDoc, could be from https, or file and attempt to process it.
-        if %config<content-type>.contains('text') && $contents ~~ /^ '=begin rakudoc' / {
+        if $contents.defined
+            && $contents !~~ Buf
+            && (%config<content-type> // '').contains('text')
+            && $contents.Str ~~ /^ '=begin rakudoc' /
+        {
              do {
                 my ProcessedState $*prs .= new;
                 $contents.AST.rakudoc.map( { $.handle( $_ ) } );
@@ -1376,9 +1487,15 @@ class RakuDoc::Processor {
                 CALLERS::<$*prs> += $prs;
              }
         }
-        $prs.body ~= %!templates{ $template }(
-            %( :$contents, :$caption, :$keep-format, :$schema, :$uri-body, :$uri, :$level, %config )
-        )
+        my $placement = %!templates{ $template }(
+            %( %config, :$caption, :$keep-format, :$schema, :$uri-body, :$uri, :$level, :contents($contents) )
+        );
+        if $placement ~~ PStr {
+            $prs.body ~= $placement;
+        }
+        else {
+            $prs.body ~= PStr.new($placement.Str);
+        }
     }
     #| The rakudoc block should encompass the output
     #| Config data associated with block is provided to overall process state
