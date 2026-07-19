@@ -48,6 +48,26 @@ Descriptions of the Renderer classes
 File from other sources or automatically generated
 =end code
 
+By default, matching files are listed alphabetically by title.
+To control the order, add C<:sort-byE<lt>fieldE<gt>> to the
+C<ListFiles> block. Any metadata field can be used for ordering, eg.
+
+=begin code :lang<RakuDoc>
+    =begin rakudoc :type<plugin> :nav-order<20>
+    =TITLE Grouping files in an index
+    =SUBTITLE The plugin takes data collected from other files
+    ...
+    =end rakudoc
+
+    =for ListFiles :select<type=plugin> :sort-by<nav-order>
+=end code
+
+If the chosen sort field contains integers, the entries are
+sorted numerically. When the field is missing or empty, that
+entry falls back to sorting by title. The values C<title>,
+C<subtitle>, and C<route> can also be used with C<:sort-by>,
+as can custom metadata such as C<nav-order>.
+
 The last example shows how to capture files that do not have a
 type option. A file not matching any of the select criteria are
 not listed, so having a catchall syntax ensures all the
