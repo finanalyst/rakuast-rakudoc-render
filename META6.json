@@ -1,10 +1,10 @@
 {
     "name": "Rakuast::RakuDoc::Render",
     "description": "Renders RakuDoc v2 to text, HTML, HTML-Extra, Markdown",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "raku": "6.d",
     "authors": [
-        "Richard Hainsworth"
+        "Richard Hainsworth", "Tim Nelson"
     ],
     "auth": "zef:finanalyst",
     "depends": [

@@ -5,11 +5,11 @@ use RakuDoc::Render;
 unit class RakuDoc::Plugin::HTML::ListFiles;
 has %.config =
     :name-space<listfiles>,
-	:version<0.1.0>,
+	:version<0.2.0>,
     :block-name('ListFiles'),
 	:license<Artistic-2.0>,
-	:credit<finanalyst>,
-	:authors<finanalyst>,
+	:credit<finanalyst, wayland>,
+	:authors<finanalyst, wayland>,
     :scss([self.add-scss,1],),
 ;
 method enable( RakuDoc::Processor:D $rdp ) {
@@ -99,7 +99,7 @@ method templates {
                     <div class="listf-container" id="{ $tmpl.globals.escape.( %prm<target>) }">
                     FIRST
             my $cap = qq:to/CAP/;
-                    <p class="listf-caption">{ %prm<raw>.trim }</p>
+                    <p class="listf-caption">{ %prm<raw>:exists ?? %prm<raw>.Str.trim !! 'No caption'  }</p>
                     CAP
             for  @sel-files.sort(*.[0]) -> ($sort, $nm, $desc, $route) {
                 $rv ~= qq:to/NOFL/;

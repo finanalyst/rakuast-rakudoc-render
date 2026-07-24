@@ -1983,8 +1983,8 @@ class RakuDoc::Processor {
             my $counter = $!scoped-data.counter-tracker.last-enumeration($type, $level, :counter( %config<counter> // ''));
             # if the option value was set in a =config and there is no TAG in this block
             # then TAG will be set to *, so ignore the option
-            if $<disp>:exists {
-                my $form = $<disp>.Str.trim;
+            if $/<disp>:exists {
+                my $form = $/<disp>.Str.trim;
                 if  $tag eq '*' {}
                 elsif $form { # disp has a non-blank Str value and tag has a value, so disp over-rides config
                     $expansion = $counter.numform(:$form, :$caption, :$contents, :$type).list;
@@ -1996,7 +1996,7 @@ class RakuDoc::Processor {
             else { #so only TAG is set
                 if $!scoped-data.config{"$type$level"}<numalias> -> $c-disp { #check to see if a config specs a numalias
                     if $c-disp ~~ / ^ $<disp> = (.*) '|' \s* '*' \s* $ / {
-                        $expansion = $counter.numform(:form( ~$<disp>), :$caption, :$contents, :$type)
+                        $expansion = $counter.numform(:form( ~$/<disp>), :$caption, :$contents, :$type)
                     }
                     else {
                         $*prs.warnings.push: "Mal-formed config declaration of numalias ｢$c-disp｣"
