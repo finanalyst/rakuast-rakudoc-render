@@ -2,7 +2,7 @@ use v6.d;
 use Test;
 use RakuDoc::Render;
 
-plan 9;
+plan 13;
 
 my $ast;
 my $rv;
@@ -210,5 +210,40 @@ like $rv.body.Str, /
     'numeration' .+? '3.' .+?
     '</para'
     /, 'extended paragraph';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin item
+    =table
+    one | two
+    ===|===
+    three | four
+    =end item
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<item>' .+? '<table>' .+? '</table' .+? '</item>'
+/, 'table inside extended item';
+is $rv.warnings.elems, 0, 'No warnings generated';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    =begin item
+    Some initial text
+    =table
+    one | two
+    ===|===
+    three | four
+    =end item
+    =end rakudoc
+    QAST
+$rv = $rdp.render( $ast, :pre-finalised );
+like $rv.body.Str, /
+    '<item>' .+?
+    'Some initial text' .+?
+    '<table>' .+? '</table' .+? '</item>'
+    /, 'table inside extended item';
+is $rv.warnings.elems, 0, 'No warnings generated';
 
 done-testing;

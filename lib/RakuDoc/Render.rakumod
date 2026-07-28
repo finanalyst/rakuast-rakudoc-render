@@ -2266,7 +2266,7 @@ class RakuDoc::Processor {
         }
         elsif $from eq <item defn para>.any
             and $ast.isa(RakuAST::Doc::Block) 
-            and ( $ast.type eq <code input output head formula data comment citation>.any 
+            and ( $ast.type eq <code input output head formula data comment citation table>.any
                     or $ast.type.&Custom )
             {
                 $.handle( $ast )
