@@ -11,13 +11,13 @@ multi sub MAIN(
         :$src = 'docs',
         :$to = $*CWD,
         Bool :q($quiet) = False,
-        Str :$format = 'md',
+        Bool :$html = False,
+        Str :$format = $html ?? 'html' !! 'md',
         Bool :$single = False,
         :$debug,
         Str :$verbose,
         Bool :$pretty,
-        Bool :$force = False,
-        Bool :$html
+        Bool :$force = False
     ) {
     my %docs = list-files( $src, < .rakudoc .rakumod >);
     my $extension = ($format eq 'html' or $html) ?? ($single ?? '_singlefile.html' !! '.html') !! ".$format";
@@ -35,7 +35,7 @@ multi sub MAIN(
         }
         else { say "All files in $src rendered to ｢$format｣ format in ｢$to/｣"}
     }
-    my $nformat = ($format eq 'html' && $single) ?? 'html-extra' !! $format;
+    my $nformat = ($format eq 'html' && $single) ?? 'html-single' !! $format;
     render-files(@to-be-rendered, :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty)
 }
 multi sub MAIN(
@@ -43,18 +43,17 @@ multi sub MAIN(
         Str :$src = 'docs',        #= the directory containing the source files, defaults to docs/
         :$to = $*CWD,              #= the directory to which the output is directed, defaults to $*CWD,
         Bool :q($quiet) = False,   #= Don't output info
-        Str :$format = 'md',       #= Output file extension, must be 'html' if not 'md'
+        Bool :$html = False,   #= format is html
+        Str :$format = $html ?? 'html' !! 'md',       #= Output file extension, must be 'html' if not 'md'
         Bool :$single = False,     #= Use ::HTML renderer, otherwise ::HTML-Extra renderer
         :$debug,                   #= apply debug parameters. Valid names are: None (default) All AstBlock BlockType Scoping Templates MarkUp
         Str :$verbose,             #= name of a template gives more detail about parameters / output
         Bool :$pretty,             #= set Template response to pretty
-        Bool :$force = False,       #= force render of all files,
-        Bool :$html = False   #= format is html
+        Bool :$force = False,       #= force render of all files
      ) {
     exit note "｢$src\/$file.rakudoc｣ does not exist" unless "$src\/$file.rakudoc".IO ~~ :e & :f;
     mktree "$to/$file".IO.dirname unless "$to/$file".IO.dirname.IO ~~ :e & :d;
     my $nformat = ($format eq 'html' && $single) ?? 'html-single' !! $format;
-    $nformat = 'html' if $html;
     render-files([$file,], :$src, :$to, :$quiet, :$nformat, :$debug, :$verbose, :$pretty, :$force)
 }
 multi sub MAIN(
@@ -70,7 +69,7 @@ sub list-files( $src, @exts --> Hash ) {
             elsif $path.ends-with( @exts.any ) {
                 %docs{$path.relative($src).IO.extension('')} = %(
                     :$path,
-                    modified => $path.modified
+                    :modified($path.modified)
                 )
             }
             # ignore all other files
