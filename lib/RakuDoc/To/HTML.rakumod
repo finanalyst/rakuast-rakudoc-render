@@ -409,7 +409,7 @@ class RakuDoc::To::HTML {
                         my $caption-html = '';
                         %prm<caption> and ($caption-html = qq[<div>{ %prm<caption> }</div>]);
                         $rv ~= qq[<div class="rakudoc-image-placement">
-                            <img src="$src"$alt>$caption-html</div> ]
+                            <img src="$src"$alt>$caption-html\</div> ]
                     }
                     default {
                         $rv ~= qq[<div class="rakudoc-placement-error"><p>Placement of {%prm<content-type> // 'unknown'} is not yet implemented or requires internet connection</p></div> ]
