@@ -27,7 +27,7 @@ class RakuDoc::Processor {
     has SetHash $.installed-plugins .= new;
     constant @built-in = <
         cell code input output comment head defn item nested para
-        rakudoc section pod table formula citation
+        rakudoc section pod table formula citation ignore
     >;
     multi method debug(RDProcDebug $type --> Nil ) {
         given $type {
@@ -434,6 +434,7 @@ class RakuDoc::Processor {
             # All blocks that are not directive or rakudoc pod nested or section need to manage counters
             when <alias begin end for place config finish
                 row column counter document
+                comment ignore
                 rakudoc pod nested section citation>.none {
                 $!scoped-data.counter-tracker.process-counter( $type, $level, :%config );
                 proceed; #continue with other handlers
@@ -459,7 +460,7 @@ class RakuDoc::Processor {
             }
             # =comment
             # Content to be ignored by all renderers
-            when 'comment' { '' }
+            when any(<comment ignore>) { '' }
             # =formula
             # Render content as LaTex formula
             when 'formula' { $.gen-formula($ast, %config, $type, $level, $numerate) }

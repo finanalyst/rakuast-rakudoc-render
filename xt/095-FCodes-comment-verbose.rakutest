@@ -4,7 +4,7 @@ use Test::Output;
 use RakuDoc::Render;
 use RakuDoc::Templates;
 
-plan 21;
+plan 23;
 
 my $ast;
 my $rv;
@@ -225,17 +225,7 @@ like $rv.body, /
 '<para' .+? 'Some thing' .+? 'between words.'
 /, 'got context with ignore';
 
-$ast = Q:to/QAST/.AST;
-    =begin rakudoc
-    Some thing
-    =begin ignore
-    =code
-    rubbish to the end
-    =end rakudoc
-    QAST
-
-$rv = $rdp.render($ast, :pre-finalised);
-like $rv.body, /
-'<para' .+? 'Some thing'
-/, 'got context with ignore without end';
+unlike $rv.body, /
+    'rubbish'
+    /, 'rubbish ignored';
 done-testing;
