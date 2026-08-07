@@ -4,7 +4,7 @@ use Test::Output;
 use RakuDoc::Render;
 use RakuDoc::Templates;
 
-plan 15;
+plan 21;
 
 my $ast;
 my $rv;
@@ -16,31 +16,34 @@ $ast = Q:to/QAST/.AST;
     Some thingB<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-finalised );
+
+$rv = $rdp.render($ast, :pre-finalised);
 like $rv.body, /
-    'Some thing'
-    '<markup-B>' .*? 'contents:' .*? '｢to be said｣' .*? '</markup-B>' .*?
-    'inside letters.'
-    /, 'B-markup works with text with spaces inside text';
+'Some thing'
+'<markup-B>' .*? 'contents:' .*? '｢to be said｣' .*? '</markup-B>' .*?
+'inside letters.'
+/, 'B-markup works with text with spaces inside text';
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     Some thing to B<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-finalised );
+
+$rv = $rdp.render($ast, :pre-finalised);
 like $rv.body, /
-    'Some thing to '
-    '<markup-B>' .*? 'contents:' .*? '｢say｣' .+? '</markup-B>' .*?
-    ' in between words.'
-    /, 'B-markup works with space';
+'Some thing to '
+'<markup-B>' .*? 'contents:' .*? '｢say｣' .+? '</markup-B>' .*?
+' in between words.'
+/, 'B-markup works with space';
 
 $ast = Q:to/QAST/.AST;
     =begin rakudoc
     Some thingZ<to be said>inside letters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-finalised );
+
+$rv = $rdp.render($ast, :pre-finalised);
 like $rv.body, /
     'Some thinginside letters.'
     /, 'Z-markup works with text with spaces inside text';
@@ -50,7 +53,8 @@ $ast = Q:to/QAST/.AST;
     Some thing to Z<say> in between words.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-finalised );
+
+$rv = $rdp.render($ast, :pre-finalised);
 like $rv.body, /
     'Some thing to  in between words.'
     /, 'Z-markup works with space';
@@ -60,7 +64,8 @@ $ast = Q:to/QAST/.AST;
     Raku makes considerable use of the E<0xAB;0xBB> characters.
     =end rakudoc
     QAST
-$rv = $rdp.render( $ast, :pre-finalised );
+
+$rv = $rdp.render($ast, :pre-finalised);
 like $rv.body, /
     'Raku makes' .+
     '<markup-E>' .*? 'contents: ｢«»｣' .*? '</markup-E>' .*? 'characters'
@@ -73,6 +78,7 @@ $ast = Q:to/QAST/.AST;
     And also I<in italics>.
     =end rakudoc
     QAST
+
 $rdp.verbose('markup-I');
 my $out = output-from {
     $rv = $rdp.render( $ast, :pre-finalised );
@@ -149,5 +155,59 @@ like $rv.body, /
     ' in between words.'
     /, 'Ɵ-markup works with space';
 is $rv.warnings.elems, 0, 'no warning';
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing
+    =comment In line comment
 
+    between words.
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render($ast, :pre-finalised);
+unlike $rv.body, /
+'In line comment'
+/, 'in line comment excluded';
+like $rv.body, /
+'<para' .+? 'Some thing' .+? 'between words.'
+/, 'got context with comment';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing
+    =begin comment
+    Multi line comment
+    More comm
+    =end comment
+    between words.
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render($ast, :pre-finalised);
+unlike $rv.body, /
+'Multi line comment'
+/, 'comment excluded';
+like $rv.body, /
+'<para' .+? 'Some thing' .+? 'between words.'
+/, 'got context with comment';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing
+    =begin ignore
+    =code
+    rubbish
+    =end ignore
+    between words.
+    =end rakudoc
+    QAST
+
+$rv = $rdp.render($ast, :pre-finalised);
+like $rv.body, /
+'<para' .+? 'Some thing' .+? 'between words.'
+/, 'got context with ignore';
+
+unlike $rv.body, /
+    'rubbish'
+    /, 'rubbish ignored';
 done-testing;

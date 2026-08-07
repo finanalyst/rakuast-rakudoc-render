@@ -75,8 +75,8 @@ unlike $out, /
     'Could not enable' .+ 'FontAwesome'
     /, 'FontAwesome was enabled';
 like $out, /
-    'Could not enable' .+ 'Non-existent-plugin'
-    /, 'could not find Non-existent';
+    'Non-existent-plugin is not installed'
+    /, 'could not install Non-existent';
 
 $fn-io.unlink if $fn-io ~~ :e;
 $fn-io.spurt: q:to/CONFIG/;
@@ -93,8 +93,8 @@ unlike $out, /
     'Could not enable' .+ 'FontAwesome'
     /, 'FontAwesome was enabled';
 like $out, /
-    'Could not enable' .+ 'NonExistentPlugin'
-    /, 'could not find Non-existent';
+    'NonExistentPlugin is not installed'
+    /, 'could not install NonExistentPlugin';
 
 $fn-io.unlink if $fn-io ~~ :e;
 $fn-io.spurt: q:to/CONFIG/;

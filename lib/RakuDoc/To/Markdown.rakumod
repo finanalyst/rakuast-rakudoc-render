@@ -1,4 +1,3 @@
-use experimental :rakuast;
 use RakuDoc::Render;
 use RakuDoc::PromiseStrings;
 
