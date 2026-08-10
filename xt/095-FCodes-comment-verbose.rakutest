@@ -4,7 +4,7 @@ use Test::Output;
 use RakuDoc::Render;
 use RakuDoc::Templates;
 
-plan 21;
+plan 23;
 
 my $ast;
 my $rv;
@@ -187,6 +187,20 @@ $rv = $rdp.render($ast, :pre-finalised);
 unlike $rv.body, /
 'Multi line comment'
 /, 'comment excluded';
+like $rv.body, /
+'<para' .+? 'Some thing' .+? 'between words.'
+/, 'got context with comment';
+
+$ast = Q:to/QAST/.AST;
+    =begin rakudoc
+    Some thing
+    =begin comment
+    =end comment
+    between words.
+    =end rakudoc
+    QAST
+
+lives-ok { $rv = $rdp.render($ast, :pre-finalised) }, 'empty comment is fine';
 like $rv.body, /
 '<para' .+? 'Some thing' .+? 'between words.'
 /, 'got context with comment';

@@ -525,7 +525,7 @@ class Numeration {
 
     # Generate Roman numerals...
     # [Adapted from the Perl module Unicode::Roman by brian d foy]
-    sub to-roman(PosInt() $n is copy) {
+    sub to-roman(Int $n  is copy where $n >= 0) {
 
         # Create static translation tables for Arabic-to-Roman...
         state %roman-digits = 1 => 'ⅠⅤ', 10 => 'ⅩⅬ', 100 => 'ⅭⅮ', 1000 => 'Ⅿↁ', 10000 => 'ↂↇ', 100000 => 'ↈↈↈↈ';
