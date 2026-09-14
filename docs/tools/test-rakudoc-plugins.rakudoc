@@ -1,0 +1,14 @@
+=document -/auto-toc
+=begin rakudoc
+=TITLE Test local plugins
+
+This module can be used in a test suite and tests all files named in the META6 file with C<::Plugin::> in
+their name.
+
+If MAIN is called with a string, then that string is used as a namespace for the plugins, otherwise C<namespace=RakuDoc>
+
+    MAIN('Elucid8')
+
+will look for plugins prefixed by C<Elucid8::Plugin::>
+
+=end rakudoc

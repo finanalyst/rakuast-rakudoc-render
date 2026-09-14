@@ -6,8 +6,6 @@ use RakuDoc::PromiseStrings;
 # based on code by Damian Conway (numform and restart)
 # some revision by Elizabeth Mattijsen
 
-# Enumeration values must be positive integers...
-subset PosInt   of Int   where     * > 0;
 class Numeration { ... }
 
 class CounterTracker {

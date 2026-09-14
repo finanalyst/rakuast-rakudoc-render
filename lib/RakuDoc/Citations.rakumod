@@ -1,7 +1,9 @@
 use v6.d;
-use JSON::Fast;
+use JSON::Tiny;
+#use JSON::Fast;
 use YAMLish;
 use XML;
+
 # Adapted from Damian Conway's prototype
 
 unit module RakuDoc::Citations;
@@ -200,13 +202,13 @@ sub sniff-test ($citation-data, :$filename) {
 
     # Start by inferring from the filename, if any...
     with $filename -> $_ {
-        when / '.' json  $ /  { 'CSL-JSON'   }
-        when / '.' yaml  $ /  { 'CSL-YAML'   }
-        when / '.' raku  $ /  { 'CSL-Raku'   }
-        when / '.' bib   $ /  { 'BibLaTeX'   }
-        when / '.' mods  $ /  { 'MODS'       }
-        when / '.' nbib  $ /  { 'PubMedNBIB' }
-        when / '.' ris   $ /  { 'RIS'        }
+        when / '.' json  $ /  { return 'CSL-JSON'   }
+        when / '.' yaml  $ /  { return 'CSL-YAML'   }
+        when / '.' raku  $ /  { return 'CSL-Raku'   }
+        when / '.' bib   $ /  { return 'BibLaTeX'   }
+        when / '.' mods  $ /  { return 'MODS'       }
+        when / '.' nbib  $ /  { return 'PubMedNBIB' }
+        when / '.' ris   $ /  { return 'RIS'        }
     }
 
     # Otherwise, fall back on the "first few characters" heuristic...
