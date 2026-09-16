@@ -1,6 +1,5 @@
 use v6.d;
-use JSON::Tiny;
-#use JSON::Fast;
+use JSON::Fast;
 use YAMLish;
 use XML;
 

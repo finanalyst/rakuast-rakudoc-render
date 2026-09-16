@@ -1,8 +1,6 @@
 use Test;
-# use Test::META;
+use Test::META;
 plan 1;
 diag "prove6 must be run with RAKUDO_RAKUAST=1";
-skip 'skip til pos error fixed';
-# meta-ok;
+meta-ok;
 done-testing;
-# comment out until pos error fixed
