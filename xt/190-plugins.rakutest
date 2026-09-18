@@ -4,7 +4,7 @@ use Test::Output;
 #test-output-verbosity(:on);
 use RakuDoc::Render;
 
-plan 2;
+plan 3;
 
 my RakuDoc::Processor $rdp .= new(:test);
 my @plugs = < FontAwesome ListFiles >;
@@ -14,5 +14,11 @@ is-deeply $rdp.installed-plugins.keys.sort, ('RakuDoc::Plugin::HTML::' «~« @pl
 $rdp .= new(:test);
 stderr-like { $rdp.add-plugins('RakuDoc::Plugin::HTML::' «~« @plugs ) },
     / 're-install ｢' .+ 'ListFiles｣' /, 'trapped duplicate plugin';
+@plugs.pop;
+@plugs.push: 'Latex:ver<20.1>';
+$rdp.add-plugins('RakuDoc::Plugin::HTML::' «~« @plugs );
+$rdp .= new(:test);
+stderr-like { $rdp.add-plugins('RakuDoc::Plugin::HTML::' «~« @plugs ) },
+        / 'Latex' .+? 'version is lower' /, 'plugin version too low';
 
 done-testing;

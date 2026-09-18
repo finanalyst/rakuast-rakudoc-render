@@ -10,7 +10,9 @@ use LibCurl::Easy;
 use Digest::SHA1::Native;
 use URI;
 use YAMLish;
+use Version::Raku;
 #no precompilation; note 'Render debug: no precompilation';
+#use REPL; note 'Using REPL';
 #use Data::Dump::Tree; note 'Render debug: using DDD';
 
 enum RDProcDebug <None All AstBlock BlockType Scoping Templates MarkUp>;
@@ -292,23 +294,32 @@ class RakuDoc::Processor {
     #| plugins are enabled by calling their .enable method on the processor
     #| typically the enable method will create the plugin's dataspace and add templates
     method add-plugins( @plugin-list ) {
-        for @plugin-list -> $plugin {
+        for @plugin-list -> $plugin is copy {
             next if $plugin.starts-with('#');
+            $plugin ~~ / (.+?) ':ver<'  (.+)  '>' | (.+) $ /;
+            $plugin = ~$/[0];
+            my $required-v = ($/[1] // '*').Str;
+            my $instance;
             if $plugin (elem) $!installed-plugins {
-                note "Attempted to re-install ｢$plugin｣, ignoring duplicate installation";
+                note "Render: Attempted to re-install ｢$plugin｣, ignoring duplicate installation";
                 next
             }
             else { $!installed-plugins{ $plugin }++ }
             require ::($plugin);
             CATCH {
-                note "$plugin is not installed, try ｢ zef install $plugin ｣";
+                note "Render: $plugin is not installed, try ｢ zef install $plugin ｣";
                 next
             }
             try {
-                ::($plugin).new.enable( self )
+                $instance = ::($plugin).new;
+                $instance.enable( self )
             }
             with $! {
-                note "Could not enable «$plugin» in Render. Error: ", .message;
+                note "Render: Could not enable «$plugin». Error: ", .message;
+            }
+            my $installed-v = $instance.config<version>;
+            if  Version::Raku.new($installed-v)."<"(Version::Raku.new($required-v)) {
+                note "Render: installed $plugin version is lower than in plugin config file, so needs reinstalling"
             }
         }
     }
