@@ -9,6 +9,8 @@ class RakuDoc::To::HTML-Extra is RakuDoc::To::HTML {
         my $rdp := self.rdp;
         # templates are attached first as plugins may over-ride base templates
         $rdp.add-templates(self.templates, :source<HTML-Extra>);
+        # add the vanilla css attached to RakuDoc::To::HTML
+        $rdp.add-data('css', self.vanilla-css);
 
         #| the plugins to be attached to the processor
         #| the order of the plugins matters as templates names

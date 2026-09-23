@@ -74,14 +74,7 @@ class RakuDoc::To::HTML {
 
     submethod TWEAK {
         $!rdp.add-templates( self.html-templates, :source<RakuDoc::To::HTML> );
-        my $css;
-        if 'resources/css/vanilla.css'.IO ~~ :e & :f { # use local value if available
-            $css = 'resources/css/vanilla.css'.IO.slurp;
-        }
-        else {
-            $css = %?RESOURCES<css/vanilla.css>.slurp(:close)
-        }
-        $!rdp.add-data('css', $css);
+        $!rdp.add-data('css', self.vanilla-css);
         $!rdp.debug( %*ENV<RAKURENDEROPTS>.list ) if %*ENV<RAKURENDEROPTS>:exists
     }
     method render($ast) {
@@ -111,6 +104,15 @@ class RakuDoc::To::HTML {
 
     # no post processing needed
     method postprocess( $final ) { $final };
+
+    method vanilla-css {
+        if 'resources/css/vanilla.css'.IO ~~ :e & :f { # use local value if available
+            'resources/css/vanilla.css'.IO.slurp(:close);
+        }
+        else {
+            %?RESOURCES<css/vanilla.css>.slurp(:close)
+        }
+    }
 
     method html-templates {
         my constant BASIS-ON = '<span class="basis">';
